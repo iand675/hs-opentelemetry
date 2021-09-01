@@ -1,0 +1,61 @@
+name:                opentelemetry-haskell
+version:             0.1.0.0
+github:              "githubuser/opentelemetry-haskell"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2021 Author name here"
+
+default-extensions:
+- OverloadedStrings
+- RecordWildCards
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/opentelemetry-haskell#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- clock
+- aeson
+- unordered-containers
+- mtl
+- unliftio
+- mwc-random
+- random
+- text
+- async
+- vault
+- vector
+- primitive
+- atomic-primops
+- stm
+- ghc-prim
+- containers
+- thread-utils-context
+# used for simple span processor
+- unagi-chan
+library:
+  source-dirs: src
+
+tests:
+  opentelemetry-haskell-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hspec
+    - opentelemetry-haskell

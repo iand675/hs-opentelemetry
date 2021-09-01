@@ -1,0 +1,1 @@
+# otel-exporter-in-memory
