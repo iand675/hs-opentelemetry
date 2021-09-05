@@ -10,12 +10,18 @@ module OpenTelemetry.Trace
   , TracerOptions(..)
   , tracerOptions
   -- * Span operations
+  , Span
+  , ImmutableSpan(..)
+  , SpanContext(..)
   , createSpan
   , emptySpanArguments
+  , SpanKind(..)
   , endSpan
   , CreateSpanArguments(..)
   , SpanParent(..)
+  , Link(..)
   , addLink
+  , Event(..)
   , addEvent
   , NewEvent(..)
   , updateName
@@ -26,6 +32,8 @@ module OpenTelemetry.Trace
   , insertAttributes
   , isRecording
   , isValid
+  -- $ Utilities
+  , getTimestamp
   ) where
 
 import Control.Applicative
@@ -40,8 +48,8 @@ import OpenTelemetry.Context
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.SpanExporter
 import OpenTelemetry.Trace.IdGenerator
-import OpenTelemetry.Trace.Types
-import qualified OpenTelemetry.Trace.Types as Types
+import OpenTelemetry.Internal.Trace.Types
+import qualified OpenTelemetry.Internal.Trace.Types as Types
 import System.Clock
 import System.IO.Unsafe
 
@@ -50,6 +58,9 @@ globalTracer = unsafePerformIO $ do
   p <- createTracerProvider [] emptyTracerProviderOptions
   newIORef p
 {-# NOINLINE globalTracer #-}
+
+getTimestamp :: MonadIO m => m Timestamp
+getTimestamp = liftIO $ getTime Realtime
 
 newtype TracerProviderOptions = TracerProviderOptions 
   { tracerProviderOptionsIdGenerator :: Maybe IdGenerator
@@ -131,10 +142,11 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
         , spanStatus = Unset
         , spanStart = st
         , spanEnd = Nothing
+        , spanTracer = t
         }
-  s <- Span <$> newIORef is 
+  s <- newIORef is 
   mapM_ (\processor -> (onStart processor) s ctxt) $ tracerProcessors t
-  pure s
+  pure $ Span s
 
 -- TODO should this use the atomic variant
 addLink :: MonadIO m => Span -> Link -> m ()
@@ -154,20 +166,20 @@ shutdownTracer = undefined
 forceFlushTracer :: MonadIO m => Tracer -> Int -> m (Async FlushResult)
 forceFlushTracer = undefined
 
-insertAttribute :: ToAttribute a => Span -> Text -> a -> IO ()
-insertAttribute (Span s) k v = modifyIORef s $ \i -> i
+insertAttribute :: MonadIO m => ToAttribute a => Span -> Text -> a -> m ()
+insertAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes = (k, toAttribute v) : spanAttributes i
   }
 insertAttribute (FrozenSpan _) _ _ = pure ()
 
-insertAttributes :: Span -> [(Text, Attribute)] -> IO ()
-insertAttributes (Span s) attrs = modifyIORef s $ \i -> i
+insertAttributes :: MonadIO m => Span -> [(Text, Attribute)] -> m ()
+insertAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes = attrs ++ spanAttributes i
   }
 insertAttributes (FrozenSpan _) _ = pure ()
 
-addEvent :: Span -> NewEvent -> IO ()
-addEvent (Span s) NewEvent{..} = do
+addEvent :: MonadIO m => Span -> NewEvent -> m ()
+addEvent (Span s) NewEvent{..} = liftIO $ do
   t <- case newEventTimestamp of
     Nothing -> getTime Realtime
     Just t -> pure t
@@ -182,24 +194,27 @@ addEvent (Span s) NewEvent{..} = do
     }
 addEvent (FrozenSpan _) _ = pure ()
 
-setStatus :: Span -> SpanStatus -> IO ()
-setStatus (Span s) st = modifyIORef s $ \i -> i 
+setStatus :: MonadIO m => Span -> SpanStatus -> m ()
+setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i 
   { spanStatus = if st > spanStatus i
       then st
       else spanStatus i
   }
 setStatus (FrozenSpan _) _ = pure ()
 
-updateName :: Span -> Text -> IO ()
-updateName (Span s) n = modifyIORef s $ \i -> i { spanName = n }
+updateName :: MonadIO m => Span -> Text -> m ()
+updateName (Span s) n = liftIO $ modifyIORef s $ \i -> i { spanName = n }
 updateName (FrozenSpan _) _ = pure ()
 
-endSpan :: Span -> Maybe Timestamp -> IO ()
-endSpan (Span s) mts = do
+endSpan :: MonadIO m => Span -> Maybe Timestamp -> m ()
+endSpan (Span s) mts = liftIO $ do
   ts <- case mts of
     Nothing -> getTime Realtime
     Just t -> pure t
-  modifyIORef s $ \i -> i { spanEnd = spanEnd i <|> Just ts }
+  frozenS <- atomicModifyIORef s $ \i -> 
+    let ref = i { spanEnd = spanEnd i <|> Just ts }
+    in (ref, ref)
+  mapM_ (`onEnd` s) $ tracerProcessors $ spanTracer frozenS
 endSpan (FrozenSpan _) _ = pure ()
 
 recordException :: Span -> () -> IO ()

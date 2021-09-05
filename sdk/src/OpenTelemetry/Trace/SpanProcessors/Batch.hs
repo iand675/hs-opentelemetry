@@ -13,7 +13,6 @@ import qualified Data.Vector.Mutable as M
 import OpenTelemetry.Trace.SpanProcessor
 import OpenTelemetry.Trace.SpanExporter (SpanExporter)
 import qualified OpenTelemetry.Trace.SpanExporter as Exporter
-import OpenTelemetry.Trace.Types
 
 -- data BatchTimeoutConfig = BatchTimeoutConfig
   -- { exporter :: SpanExporter 

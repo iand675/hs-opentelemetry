@@ -33,6 +33,7 @@ library
   build-depends:
       base >=4.7 && <5
     , otel-api
+    , text
   default-language: Haskell2010
 
 test-suite otel-exporter-handle-test
@@ -47,4 +48,5 @@ test-suite otel-exporter-handle-test
       base >=4.7 && <5
     , otel-api
     , otel-exporter-handle
+    , text
   default-language: Haskell2010

@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: thread-utils-context-0.1.0.0@sha256:561575b50765921fb3846af96eb2e75ba38e7c03e585dcc3641c34637442be39,1471
+    hackage: thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
     pantry-tree:
-      size: 395
-      sha256: cd24c9b9bf8c575da444631f89b89f9521375d561d5e7adc33a75608b3cecd4b
+      size: 450
+      sha256: 605ea068880ad39c96fce0d91db9f2d54553ed43dfc41c37845fade8be2e9568
   original:
-    hackage: thread-utils-context-0.1.0.0
+    hackage: thread-utils-context-0.2.0.0
 - completed:
     hackage: thread-utils-finalizers-0.1.0.0@sha256:a8435240bfc0ae96c94704d2986699a11a395c496f9a7f2e5f5d729a0b967549,1381
     pantry-tree:

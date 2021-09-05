@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
-module OpenTelemetry.Trace.Types where
+module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
 import Control.Exception (SomeException)
@@ -20,15 +20,15 @@ data ExportResult
   | Failure SomeException
 
 data SpanExporter = SpanExporter
-  { export :: forall f. Foldable f => f Span -> IO ExportResult
+  { export :: forall f. Foldable f => f ImmutableSpan -> IO ExportResult
   , shutdown :: IO ()
   }
 
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
 
 data SpanProcessor = SpanProcessor
-  { onStart :: Span -> Context -> IO ()
-  , onEnd :: Span -> IO ()
+  { onStart :: IORef ImmutableSpan -> Context -> IO ()
+  , onEnd :: IORef ImmutableSpan -> IO ()
   , shutdown :: IO (Async ShutdownResult)
   , forceFlush :: IO ()
   }
@@ -86,6 +86,8 @@ data ImmutableSpan = ImmutableSpan
   , spanLinks :: [Link]
   , spanEvents :: [Event]
   , spanStatus :: SpanStatus
+  , spanTracer :: Tracer
+  -- ^ Creator of the span
   }
 
 data Span 

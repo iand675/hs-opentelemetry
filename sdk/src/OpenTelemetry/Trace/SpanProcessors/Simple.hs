@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module OpenTelemetry.Trace.SpanProcessors.Simple
   ( SimpleProcessorConfig(..)
   , simpleProcessor
@@ -9,8 +10,9 @@ import Control.Concurrent.Async
 import Control.Concurrent.Chan.Unagi
 import Control.Monad
 import Data.Functor.Identity
+import Data.IORef
 import OpenTelemetry.Trace.SpanProcessor
-import OpenTelemetry.Trace.Types (Span)
+import "otel-api" OpenTelemetry.Trace (Span, ImmutableSpan)
 import qualified OpenTelemetry.Trace.SpanExporter as Exporter
 
 newtype SimpleProcessorConfig = SimpleProcessorConfig
@@ -19,10 +21,11 @@ newtype SimpleProcessorConfig = SimpleProcessorConfig
 
 simpleProcessor :: SimpleProcessorConfig -> IO SpanProcessor
 simpleProcessor SimpleProcessorConfig{..} = do
-  (inChan, outChan) <- newChan :: IO (InChan Span, OutChan Span)
+  (inChan :: InChan (IORef ImmutableSpan), outChan :: OutChan (IORef ImmutableSpan)) <- newChan
   exportWorker <- async $ forever $ do
     -- TODO, masking vs bracket here, not sure what's the right choice
-    span <- readChanOnException outChan (>>= writeChan inChan)
+    spanRef <- readChanOnException outChan (>>= writeChan inChan)
+    span <- readIORef spanRef
     mask_ (exporter `Exporter.export` Identity span)
 
   pure $ SpanProcessor
@@ -31,18 +34,21 @@ simpleProcessor SimpleProcessorConfig{..} = do
     , shutdown = async $ mask $ \restore -> do
         cancel exportWorker
         -- TODO handle timeouts
-        restore (shutdownProcessor outChan `finally` Exporter.shutdown exporter)
+        restore $ do
+          shutdownProcessor outChan `finally` Exporter.shutdown exporter
         pure ShutdownSuccess
     , forceFlush = pure ()
     }
 
   where
+    shutdownProcessor :: OutChan (IORef ImmutableSpan) -> IO ()
     shutdownProcessor outChan = do
       (Element m, _) <- tryReadChan outChan
       mSpan <- m
       case mSpan of 
         Nothing -> pure ()
-        Just span -> do
+        Just spanRef -> do
+          span <- readIORef spanRef
           exporter `Exporter.export` Identity span
           shutdownProcessor outChan
 

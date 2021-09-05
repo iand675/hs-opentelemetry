@@ -19,6 +19,9 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/otel-sdk#readme>
 
+default-extensions:
+- PackageImports
+
 dependencies:
 - base >= 4.7 && < 5
 - otel-api
@@ -39,4 +42,5 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - hspec
     - otel-sdk

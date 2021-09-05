@@ -1,1 +1,0 @@
-module OpenTelemetry.Propagators.W3CBaggage where

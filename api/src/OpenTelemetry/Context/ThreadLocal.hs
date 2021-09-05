@@ -66,10 +66,10 @@ lookupContext = lookup threadContextMap
 lookupContextOnThread :: MonadIO m => ThreadId -> m (Maybe Context)
 lookupContextOnThread = lookupOnThread threadContextMap
 
-attachContext :: MonadIO m => Context -> m ()
+attachContext :: MonadIO m => Context -> m (Maybe Context)
 attachContext = attach threadContextMap
 
-attachContextOnThread :: MonadIO m => ThreadId -> Context -> m ()
+attachContextOnThread :: MonadIO m => ThreadId -> Context -> m (Maybe Context)
 attachContextOnThread = attachOnThread threadContextMap
 
 detachContext :: MonadIO m => m (Maybe Context)

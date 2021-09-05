@@ -30,22 +30,19 @@ library
       OpenTelemetry.Context.Class
       OpenTelemetry.Context.Propagators
       OpenTelemetry.Context.ThreadLocal
-      OpenTelemetry.Context.Types
-      OpenTelemetry.Internal
       OpenTelemetry.Logs
       OpenTelemetry.Metrics
       OpenTelemetry.Propagators.B3
       OpenTelemetry.Propagators.Jaeger
-      OpenTelemetry.Propagators.W3CBaggage
-      OpenTelemetry.Propagators.W3CTraceContext
       OpenTelemetry.Resource
       OpenTelemetry.Trace
       OpenTelemetry.Trace.IdGenerator
       OpenTelemetry.Trace.SpanExporter
       OpenTelemetry.Trace.SpanProcessor
-      OpenTelemetry.Trace.Types
   other-modules:
-      Paths_otel_api
+      OpenTelemetry.Internal
+      OpenTelemetry.Context.Types
+      OpenTelemetry.Internal.Trace.Types
   hs-source-dirs:
       src
   default-extensions:
@@ -53,11 +50,18 @@ library
       RecordWildCards
   build-depends:
       async
+    , attoparsec
     , base >=4.7 && <5
     , bytestring
+    , charset
     , clock
+    , hashable
+    , http-types
+    , memory
+    , mtl
     , mwc-random
     , random
+    , template-haskell
     , text
     , thread-utils-context
     , unordered-containers
@@ -78,12 +82,20 @@ test-suite otel-api-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       async
+    , attoparsec
     , base >=4.7 && <5
     , bytestring
+    , charset
     , clock
+    , hashable
+    , hspec
+    , http-types
+    , memory
+    , mtl
     , mwc-random
     , otel-api
     , random
+    , template-haskell
     , text
     , thread-utils-context
     , unordered-containers

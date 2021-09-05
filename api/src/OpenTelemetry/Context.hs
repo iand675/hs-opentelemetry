@@ -22,7 +22,7 @@ import qualified Data.Vault.Strict as V
 import OpenTelemetry.Baggage (Baggage)
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context.Types
-import OpenTelemetry.Trace.Types
+import OpenTelemetry.Internal.Trace.Types
 import Prelude hiding (lookup)
 import System.Mem.Weak
 import System.IO.Unsafe
@@ -62,10 +62,10 @@ baggageKey :: Key Baggage
 baggageKey = unsafePerformIO $ newKey "baggage"
 {-# NOINLINE baggageKey #-}
 
-lookupBaggage :: Context -> Baggage
-lookupBaggage c = fromMaybe Baggage.empty (lookup baggageKey c)
+lookupBaggage :: Context -> Maybe Baggage
+lookupBaggage c = lookup baggageKey c
 
-insertBaggage :: Context -> Baggage -> Context
-insertBaggage c b = case lookup baggageKey c of
+insertBaggage :: Baggage -> Context -> Context
+insertBaggage b c = case lookup baggageKey c of
   Nothing -> insert baggageKey b c
   Just b' -> insert baggageKey (b <> b') c

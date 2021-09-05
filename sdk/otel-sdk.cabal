@@ -25,12 +25,17 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Context
+      OpenTelemetry.Setup
+      OpenTelemetry.Trace
       OpenTelemetry.Trace.SpanProcessors.Batch
       OpenTelemetry.Trace.SpanProcessors.Simple
   other-modules:
       Paths_otel_sdk
   hs-source-dirs:
       src
+  default-extensions:
+      PackageImports
   build-depends:
       async
     , base >=4.7 && <5
@@ -47,10 +52,13 @@ test-suite otel-sdk-test
       Paths_otel_sdk
   hs-source-dirs:
       test
+  default-extensions:
+      PackageImports
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       async
     , base >=4.7 && <5
+    , hspec
     , otel-api
     , otel-sdk
     , stm

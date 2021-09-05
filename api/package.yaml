@@ -35,9 +35,20 @@ dependencies:
 - mwc-random
 - vector
 - clock
+- memory
+- mtl
+- http-types
+- attoparsec
+- template-haskell
+- hashable
+- charset
 
 library:
   source-dirs: src
+  other-modules:
+  - OpenTelemetry.Internal
+  - OpenTelemetry.Context.Types
+  - OpenTelemetry.Internal.Trace.Types
 
 tests:
   otel-api-test:
@@ -48,4 +59,5 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - hspec
     - otel-api

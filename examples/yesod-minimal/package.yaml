@@ -1,0 +1,28 @@
+name: yesod-minimal
+
+dependencies:
+# minimal example dependencies
+- base
+- yesod-core
+- yesod-form
+- http-conduit
+- wai
+- warp
+- text
+# opentelemetry dependencies
+- otel-sdk
+- otel-exporter-handle
+- otel-instrumentation-wai
+- otel-instrumentation-yesod
+- otel-instrumentation-http-client
+- otel-propagators-w3c
+
+executables:
+  yesod-minimal:
+    main: Minimal
+    source-dirs: src
+    dependencies:
+    - yesod-minimal
+
+library:
+    source-dirs: src

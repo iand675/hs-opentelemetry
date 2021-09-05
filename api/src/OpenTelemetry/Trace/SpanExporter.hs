@@ -3,4 +3,4 @@ module OpenTelemetry.Trace.SpanExporter
   , ExportResult (..)
   ) where
 import Control.Exception
-import OpenTelemetry.Trace.Types
+import OpenTelemetry.Internal.Trace.Types
