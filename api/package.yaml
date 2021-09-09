@@ -42,6 +42,9 @@ dependencies:
 - template-haskell
 - hashable
 - charset
+- ghc-prim
+- unliftio-core
+- microlens
 
 library:
   source-dirs: src

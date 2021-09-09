@@ -37,6 +37,7 @@ library
     , bytestring
     , http-types
     , otel-api
+    , text
   default-language: Haskell2010
 
 test-suite otel-propagators-w3c-test
@@ -54,4 +55,5 @@ test-suite otel-propagators-w3c-test
     , http-types
     , otel-api
     , otel-propagators-w3c
+    , text
   default-language: Haskell2010

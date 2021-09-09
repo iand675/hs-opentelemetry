@@ -33,8 +33,9 @@ newOpenTelemetryWaiMiddleware tp propagator = do
       requestSpan <- createSpan tracer (Just ctxt) "http.server" $ emptySpanArguments
         { startingKind = Server
         }
-      -- TODO, don't like attaching and also putting it in the request vault
-      attachContext $ Context.insertSpan requestSpan ctxt
+      -- TODO, don't like attaching and also putting it in the request vault, users can do
+      -- this or it can be a separate middleware
+      -- attachContext $ Context.insertSpan requestSpan ctxt
       let req' = req 
             { vault = Vault.insert 
                 contextKey 

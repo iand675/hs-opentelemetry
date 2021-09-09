@@ -1,4 +1,6 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
 module OpenTelemetry.Internal.Trace.Types where
@@ -6,12 +8,15 @@ module OpenTelemetry.Internal.Trace.Types where
 import Control.Concurrent.Async (Async)
 import Control.Exception (SomeException)
 import Data.ByteString (ByteString)
+import Data.ByteString.Short (ShortByteString)
 import Data.IORef (IORef)
 import Data.Word (Word8)
 import Data.Text (Text)
+import Data.Hashable (Hashable)
 import Data.Vector (Vector)
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Resource
+import OpenTelemetry.Internal.Trace.Id
 import OpenTelemetry.Trace.IdGenerator
 import System.Clock (TimeSpec)
 
@@ -76,7 +81,7 @@ data SpanStatus = Unset | Error Text | Ok
 
 data ImmutableSpan = ImmutableSpan
   { spanName :: Text
-  , spanParent :: (Maybe (Either Span SpanContext))
+  , spanParent :: Maybe Span
   , spanContext :: SpanContext
   , spanKind :: SpanKind
   , spanStart :: Timestamp
@@ -125,20 +130,12 @@ data SpanContext = SpanContext
   , isRemote :: Bool
   , traceId :: TraceId
   , spanId :: SpanId
-  , traceState :: [(Text, Text)] 
+  , traceState :: [(Text, Text)] -- TODO have to move TraceState impl from W3CTraceContext to here
   -- list of up to 32, remove rightmost if exceeded
   -- see w3c trace-context spec
   } deriving (Show, Eq)
 
 newtype NonRecordingSpan = NonRecordingSpan SpanContext
-
--- 16 bytes
-newtype TraceId = TraceId ByteString
-  deriving (Ord, Eq, Show)
-
--- 8 bytes
-newtype SpanId = SpanId ByteString
-  deriving (Ord, Eq, Show)
 
 data NewEvent = NewEvent
   { newEventName :: Text

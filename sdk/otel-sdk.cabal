@@ -26,8 +26,10 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Context
+      OpenTelemetry.Propagators
       OpenTelemetry.Setup
       OpenTelemetry.Trace
+      OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.SpanProcessors.Batch
       OpenTelemetry.Trace.SpanProcessors.Simple
   other-modules:

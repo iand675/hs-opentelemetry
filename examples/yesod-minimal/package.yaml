@@ -3,12 +3,16 @@ name: yesod-minimal
 dependencies:
 # minimal example dependencies
 - base
+- bytestring
 - yesod-core
 - yesod-form
-- http-conduit
+- http-client
+- http-types
 - wai
 - warp
 - text
+# convenience
+- microlens
 # opentelemetry dependencies
 - otel-sdk
 - otel-exporter-handle

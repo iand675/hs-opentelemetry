@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.HttpClient
+      OpenTelemetry.Instrumentation.HttpClient.Raw
   other-modules:
       Paths_otel_instrumentation_http_client
   hs-source-dirs:
@@ -34,6 +35,7 @@ library
       base >=4.7 && <5
     , http-client
     , http-client-tls
+    , http-types
     , otel-api
   default-language: Haskell2010
 
@@ -49,6 +51,7 @@ test-suite otel-instrumentation-http-client-test
       base >=4.7 && <5
     , http-client
     , http-client-tls
+    , http-types
     , otel-api
     , otel-instrumentation-http-client
   default-language: Haskell2010

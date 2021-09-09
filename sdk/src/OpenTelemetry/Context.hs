@@ -1,5 +1,7 @@
 module OpenTelemetry.Context 
-  ( empty
+  ( Context
+  , HasContext(..)
+  , empty
   , lookupSpan
   , insertSpan
   , lookupBaggage

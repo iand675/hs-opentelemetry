@@ -1,11 +1,13 @@
 module OpenTelemetry.Trace
   ( TracerProvider
+  , HasTracerProvider(..)
   , createTracerProvider
   , getGlobalTracerProvider
   , setGlobalTracerProvider
   , emptyTracerProviderOptions
   , TracerProviderOptions(..)
   , Tracer
+  , HasTracer(..)
   , getTracer
   , TracerOptions(..)
   , tracerOptions
@@ -14,6 +16,7 @@ module OpenTelemetry.Trace
   , ImmutableSpan(..)
   , SpanContext(..)
   , createSpan
+  , createRemoteSpan
   , emptySpanArguments
   , SpanKind(..)
   , endSpan
@@ -23,11 +26,12 @@ module OpenTelemetry.Trace
   , addLink
   , Event(..)
   , addEvent
+  , recordException
   , NewEvent(..)
   , updateName
   , setStatus
   , SpanStatus(..)
-  , OpenTelemetry.Trace.spanContext
+  , getSpanContext
   , insertAttribute
   , insertAttributes
   , isRecording
@@ -38,20 +42,27 @@ module OpenTelemetry.Trace
 
 import Control.Applicative
 import Control.Concurrent.Async
+import Control.Exception (Exception(..))
 import Control.Monad.IO.Class
 import qualified Data.ByteString as B
+import Data.ByteString.Short (toShort)
 import Data.IORef
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Vector as V
+import Lens.Micro (Lens')
 import OpenTelemetry.Context
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.SpanExporter
+import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.IdGenerator
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
 import System.Clock
 import System.IO.Unsafe
+
+class HasTracerProvider s where
+  tracerProviderL :: Lens' s TracerProvider
 
 globalTracer :: IORef TracerProvider
 globalTracer = unsafePerformIO $ do
@@ -89,6 +100,9 @@ data TracerOptions = TracerOptions
 tracerOptions :: TracerOptions
 tracerOptions = TracerOptions Nothing
 
+class HasTracer s where
+  tracerL :: Lens' s Tracer
+
 getTracer :: MonadIO m => TracerProvider -> TracerName -> TracerOptions -> m Tracer
 getTracer p n TracerOptions{..} = liftIO $ do
   pure $ Tracer (tracerProviderProcessors p) (tracerProviderIdGenerator p)
@@ -108,7 +122,7 @@ createSpan
   -> CreateSpanArguments 
   -> m Span
 createSpan t p n CreateSpanArguments{..} = liftIO $ do
-  sId <- SpanId <$> generateSpanIdBytes (tracerIdGenerator t)
+  sId <- newSpanId $ tracerIdGenerator t
   st <- case startingTimestamp of
     Nothing -> getTime Realtime
     Just t -> pure t
@@ -119,10 +133,10 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
         Nothing -> Nothing
         Just s -> Just s
   tId <- case parent of
-    Nothing -> 
-      TraceId <$> generateTraceIdBytes (tracerIdGenerator t)
+    Nothing -> newTraceId $ tracerIdGenerator t
     Just (Span s) ->
       traceId . Types.spanContext <$> readIORef s
+    Just (FrozenSpan s) -> pure $ traceId s
 
   let is = ImmutableSpan
         { spanName = n
@@ -134,7 +148,7 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
             , spanId = sId
             , traceId = tId
             }
-        , spanParent = Left <$> parent 
+        , spanParent = parent 
         , spanKind = startingKind
         , spanAttributes = []
         , spanLinks = []
@@ -148,13 +162,16 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
   mapM_ (\processor -> (onStart processor) s ctxt) $ tracerProcessors t
   pure $ Span s
 
+createRemoteSpan :: SpanContext -> Span
+createRemoteSpan = FrozenSpan
+
 -- TODO should this use the atomic variant
 addLink :: MonadIO m => Span -> Link -> m ()
 addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i { spanLinks = l : spanLinks i }
 
-spanContext :: MonadIO m => Span -> m SpanContext
-spanContext (Span s) = liftIO (Types.spanContext <$> readIORef s)
-spanContext (FrozenSpan c) = pure c
+getSpanContext :: MonadIO m => Span -> m SpanContext
+getSpanContext (Span s) = liftIO (Types.spanContext <$> readIORef s)
+getSpanContext (FrozenSpan c) = pure c
 
 isRecording :: MonadIO m => Span -> m Bool
 isRecording (Span s) = liftIO (isNothing . spanEnd <$> readIORef s)
@@ -217,17 +234,15 @@ endSpan (Span s) mts = liftIO $ do
   mapM_ (`onEnd` s) $ tracerProcessors $ spanTracer frozenS
 endSpan (FrozenSpan _) _ = pure ()
 
-recordException :: Span -> () -> IO ()
+recordException :: Exception e => Span -> e -> IO ()
 recordException = undefined
 
 wrapSpanContext :: SpanContext -> Span
 wrapSpanContext = FrozenSpan
 
 isValid :: SpanContext -> Bool
-isValid sc = not (B.all (== 0) tbs && B.all (== 0) sbs)
-  where
-    (TraceId tbs) = traceId sc
-    (SpanId sbs) = spanId sc
+isValid sc = not 
+  ( isEmptyTraceId (traceId sc) && isEmptySpanId (spanId sc))
 
 isRemote :: MonadIO m => Span -> m Bool
 isRemote (Span s) = liftIO $ do

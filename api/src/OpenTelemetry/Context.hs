@@ -3,9 +3,11 @@ module OpenTelemetry.Context
   ( Key(keyName)
   , newKey
   , Context
+  , HasContext(..)
   , empty
   , lookup
   , insert
+  -- , insertWith
   , adjust
   , delete
   , union
@@ -19,6 +21,7 @@ import Data.Maybe
 import Data.Text (Text)
 import Data.Unique.Really
 import qualified Data.Vault.Strict as V
+import Lens.Micro (Lens')
 import OpenTelemetry.Baggage (Baggage)
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context.Types
@@ -30,6 +33,9 @@ import System.IO.Unsafe
 newKey :: MonadIO m => Text -> m (Key a)
 newKey n = liftIO (Key n <$> V.newKey)
 
+class HasContext s where
+  contextL :: Lens' s Context
+
 empty :: Context
 empty = Context V.empty
 
@@ -38,6 +44,14 @@ lookup (Key _ k) (Context v) = V.lookup k v
 
 insert :: Key a -> a -> Context -> Context
 insert (Key _ k) x (Context v) = Context $ V.insert k x v
+
+-- insertWith 
+--   :: (a -> a -> a) 
+--   -- ^ new value -> old value -> result
+--   -> Key a -> a -> Context -> Context
+-- insertWith f (Key _ k) x (Context v) = Context $ case V.lookup k of
+--   Nothing -> V.insert k x v
+--   Just ox -> V.insert k (f x ox) v
 
 adjust :: (a -> a) -> Key a -> Context -> Context 
 adjust f (Key _ k) (Context v) = Context $ V.adjust f k v

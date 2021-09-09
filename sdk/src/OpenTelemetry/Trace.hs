@@ -2,6 +2,7 @@ module OpenTelemetry.Trace
   ( 
   -- * 'TracerProvider' operations
     TracerProvider
+  , HasTracerProvider(..)
   -- ** 'TracerProvider' initialization
   , createTracerProvider
   , TracerProviderOptions(..)
@@ -10,8 +11,11 @@ module OpenTelemetry.Trace
   , setGlobalTracerProvider
   -- * 'Tracer' operations
   , Tracer
+  , HasTracer(..)
   -- * 'Span' operations
   , Span
+  , createSpan
+  , emptySpanArguments
   , Link
   , Event
   ) where

@@ -30,13 +30,16 @@ library
       OpenTelemetry.Context.Class
       OpenTelemetry.Context.Propagators
       OpenTelemetry.Context.ThreadLocal
+      OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.Logs
       OpenTelemetry.Metrics
       OpenTelemetry.Propagators.B3
       OpenTelemetry.Propagators.Jaeger
       OpenTelemetry.Resource
       OpenTelemetry.Trace
+      OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.IdGenerator
+      OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.SpanExporter
       OpenTelemetry.Trace.SpanProcessor
   other-modules:
@@ -55,15 +58,18 @@ library
     , bytestring
     , charset
     , clock
+    , ghc-prim
     , hashable
     , http-types
     , memory
+    , microlens
     , mtl
     , mwc-random
     , random
     , template-haskell
     , text
     , thread-utils-context
+    , unliftio-core
     , unordered-containers
     , vault
     , vector
@@ -87,10 +93,12 @@ test-suite otel-api-test
     , bytestring
     , charset
     , clock
+    , ghc-prim
     , hashable
     , hspec
     , http-types
     , memory
+    , microlens
     , mtl
     , mwc-random
     , otel-api
@@ -98,6 +106,7 @@ test-suite otel-api-test
     , template-haskell
     , text
     , thread-utils-context
+    , unliftio-core
     , unordered-containers
     , vault
     , vector
