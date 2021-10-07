@@ -47,7 +47,7 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString as B
 import Data.ByteString.Short (toShort)
 import Data.IORef
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Vector as V
 import Lens.Micro (Lens')
@@ -73,7 +73,7 @@ globalTracer = unsafePerformIO $ do
 getTimestamp :: MonadIO m => m Timestamp
 getTimestamp = liftIO $ getTime Realtime
 
-newtype TracerProviderOptions = TracerProviderOptions 
+newtype TracerProviderOptions = TracerProviderOptions
   { tracerProviderOptionsIdGenerator :: Maybe IdGenerator
   }
 
@@ -82,9 +82,8 @@ emptyTracerProviderOptions = TracerProviderOptions Nothing
 
 createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
-  g <- case tracerProviderOptionsIdGenerator opts of
-    Nothing -> makeDefaultIdGenerator
-    Just g -> pure g
+  g <- maybe
+    makeDefaultIdGenerator pure (tracerProviderOptionsIdGenerator opts)
   pure $ TracerProvider (V.fromList ps) g
 
 getGlobalTracerProvider :: MonadIO m => m TracerProvider
@@ -93,7 +92,7 @@ getGlobalTracerProvider = liftIO $ readIORef globalTracer
 setGlobalTracerProvider :: MonadIO m => TracerProvider -> m ()
 setGlobalTracerProvider = liftIO . writeIORef globalTracer
 
-data TracerOptions = TracerOptions
+newtype TracerOptions = TracerOptions
   { tracerSchema :: Maybe Text
   }
 
@@ -114,24 +113,20 @@ emptySpanArguments = CreateSpanArguments
   , startingTimestamp = Nothing
   }
 
-createSpan 
-  :: MonadIO m 
-  => Tracer 
+createSpan
+  :: MonadIO m
+  => Tracer
   -> SpanParent
   -> Text
-  -> CreateSpanArguments 
+  -> CreateSpanArguments
   -> m Span
 createSpan t p n CreateSpanArguments{..} = liftIO $ do
   sId <- newSpanId $ tracerIdGenerator t
   st <- case startingTimestamp of
     Nothing -> getTime Realtime
     Just t -> pure t
-  let ctxt = case p of
-        Just c -> c
-        Nothing -> mempty
-  let parent = case lookupSpan ctxt of
-        Nothing -> Nothing
-        Just s -> Just s
+  let ctxt = fromMaybe mempty p
+  let parent = lookupSpan ctxt
   tId <- case parent of
     Nothing -> newTraceId $ tracerIdGenerator t
     Just (Span s) ->
@@ -148,7 +143,7 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
             , spanId = sId
             , traceId = tId
             }
-        , spanParent = parent 
+        , spanParent = parent
         , spanKind = startingKind
         , spanAttributes = []
         , spanLinks = []
@@ -158,7 +153,7 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
         , spanEnd = Nothing
         , spanTracer = t
         }
-  s <- newIORef is 
+  s <- newIORef is
   mapM_ (\processor -> (onStart processor) s ctxt) $ tracerProcessors t
   pure $ Span s
 
@@ -168,6 +163,7 @@ createRemoteSpan = FrozenSpan
 -- TODO should this use the atomic variant
 addLink :: MonadIO m => Span -> Link -> m ()
 addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i { spanLinks = l : spanLinks i }
+addLink (FrozenSpan _) _ = pure ()
 
 getSpanContext :: MonadIO m => Span -> m SpanContext
 getSpanContext (Span s) = liftIO (Types.spanContext <$> readIORef s)
@@ -201,18 +197,18 @@ addEvent (Span s) NewEvent{..} = liftIO $ do
     Nothing -> getTime Realtime
     Just t -> pure t
   modifyIORef s $ \i -> i
-    { spanEvents = 
-        Event 
+    { spanEvents =
+        Event
           { eventName = newEventName
           , eventAttributes = newEventAttributes
           , eventTimestamp = t
-          } 
+          }
         : spanEvents i
     }
 addEvent (FrozenSpan _) _ = pure ()
 
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
-setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i 
+setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i
   { spanStatus = if st > spanStatus i
       then st
       else spanStatus i
@@ -228,7 +224,7 @@ endSpan (Span s) mts = liftIO $ do
   ts <- case mts of
     Nothing -> getTime Realtime
     Just t -> pure t
-  frozenS <- atomicModifyIORef s $ \i -> 
+  frozenS <- atomicModifyIORef s $ \i ->
     let ref = i { spanEnd = spanEnd i <|> Just ts }
     in (ref, ref)
   mapM_ (`onEnd` s) $ tracerProcessors $ spanTracer frozenS
@@ -241,7 +237,7 @@ wrapSpanContext :: SpanContext -> Span
 wrapSpanContext = FrozenSpan
 
 isValid :: SpanContext -> Bool
-isValid sc = not 
+isValid sc = not
   ( isEmptyTraceId (traceId sc) && isEmptySpanId (spanId sc))
 
 isRemote :: MonadIO m => Span -> m Bool

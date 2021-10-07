@@ -2,9 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 module OpenTelemetry.Exporters.Handle
-  ( HandleExporter
-  , makeHandleExporter
-  , outputHandle
+  ( makeHandleExporter
   -- $ Typical handle exporters
   , stdoutExporter
   , stderrExporter
@@ -18,10 +16,6 @@ import OpenTelemetry.Trace.SpanExporter
 import OpenTelemetry.Trace
 import qualified Data.Text.Lazy.IO as L
 import System.IO (Handle, hFlush, stdout, stderr)
-
-newtype HandleExporter = HandleExporter
-  { outputHandle :: Handle
-  }
 
 makeHandleExporter :: Handle -> (ImmutableSpan -> L.Text) -> SpanExporter
 makeHandleExporter h f = SpanExporter

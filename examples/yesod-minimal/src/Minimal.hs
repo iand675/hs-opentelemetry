@@ -14,6 +14,7 @@ import Network.HTTP.Client
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Exporters.Handle
+import OpenTelemetry.Exporters.Honeycomb
 import OpenTelemetry.Context (Context, HasContext(..))
 import qualified OpenTelemetry.Context as Context
 import Lens.Micro (lens)
@@ -57,8 +58,8 @@ instance Yesod Minimal where
       provideRep (pure $ pack $ show err)
 
 instance HasTracerProvider Minimal where
-  tracerProviderL = lens 
-    minimalTracerProvider 
+  tracerProviderL = lens
+    minimalTracerProvider
     (\m tp -> m { minimalTracerProvider = tp })
 
 instance HasContext Minimal where
@@ -70,7 +71,7 @@ getRootR :: Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
   m <- liftIO $ newManager defaultManagerSettings
-  propagator <- minimalPropagator <$> getYesod 
+  propagator <- minimalPropagator <$> getYesod
   resp <- inSpan "http.request" emptySpanArguments $ \span -> do
     req <- parseUrl "http://localhost:3000/api"
     ctxt <- getContext
@@ -86,16 +87,17 @@ getApiR = do
 
 main :: IO ()
 main = do
+  client <- initializeHoneycomb $ config "0a3aa320cb317551021ec8abc221fbc7" "testing-client"
   processor <- simpleProcessor $ SimpleProcessorConfig
-    { exporter = stdoutExporter defaultFormatter
+    { exporter = makeHoneycombExporter client "minimal"
     }
 
-  tp <- createTracerProvider 
+  tp <- createTracerProvider
     [ processor
     ]
     (TracerProviderOptions Nothing)
 
-  let httpPropagators = mconcat 
+  let httpPropagators = mconcat
         [ w3cBaggagePropagator
         , w3cTraceContextPropagator
         ]

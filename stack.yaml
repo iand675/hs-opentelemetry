@@ -34,6 +34,7 @@ packages:
 - api
 - sdk
 - exporters/handle
+- exporters/honeycomb
 - exporters/in-memory
 - exporters/jaeger
 - exporters/otlp
@@ -55,6 +56,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
+- honeycomb-0.0.0.3
 - thread-utils-context-0.2.0.0
 - thread-utils-finalizers-0.1.0.0
 

@@ -7,7 +7,7 @@ import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
 import Data.Text (Text)
 import Lens.Micro
-import OpenTelemetry.Context (Context, lookupSpan)
+import OpenTelemetry.Context (Context, lookupSpan, insertSpan)
 import OpenTelemetry.Trace 
   ( TracerProvider
   , Tracer
@@ -71,4 +71,4 @@ inSpan n args f = do
       -- TODO, getting the timestamp is a bit of overhead that would be nice to avoid
       endSpan s Nothing
     )
-    f
+    (\s -> localContext (insertSpan s) $ f s)
