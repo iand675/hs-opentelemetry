@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: honeycomb-0.0.0.2@sha256:5269e098f445be82dde618cc7f0ee5723df94897c8713913e94708a48707d43f,2611
+    hackage: honeycomb-0.0.0.3@sha256:362c3d7c703677d044d601a2b7b9b99912434a9b730d271389e21593fd3cfb89,2611
     pantry-tree:
       size: 1255
-      sha256: 70e6cf61f1c1509cd309dfca0d7c7dfa01e62d3e0c561468772bfc081161631e
+      sha256: 5dc768276e48558321f57338bd2656213d04ffb1e67b8441a7f136010ff0d4c2
   original:
-    hackage: honeycomb-0.0.0.2
+    hackage: honeycomb-0.0.0.3
 - completed:
     hackage: thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
     pantry-tree:
