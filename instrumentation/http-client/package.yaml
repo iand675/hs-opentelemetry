@@ -25,6 +25,8 @@ dependencies:
 - http-client-tls
 - http-types
 - otel-api
+- text
+- bytestring
 
 library:
   source-dirs: src

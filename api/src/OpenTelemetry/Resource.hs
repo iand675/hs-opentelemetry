@@ -31,6 +31,9 @@ class ToAttribute a where
   default toAttribute :: ToPrimitiveAttribute a => a -> Attribute
   toAttribute = AttributeValue . toPrimitiveAttribute
 
+instance ToAttribute PrimitiveAttribute where
+  toAttribute = AttributeValue
+
 instance ToPrimitiveAttribute Text where
   toPrimitiveAttribute = TextAttribute
 instance ToAttribute Text
@@ -46,6 +49,10 @@ instance ToAttribute Double
 instance ToPrimitiveAttribute Int64 where
   toPrimitiveAttribute = IntAttribute
 instance ToAttribute Int64
+
+instance ToPrimitiveAttribute Int where
+  toPrimitiveAttribute = IntAttribute . fromIntegral
+instance ToAttribute Int
 
 instance ToPrimitiveAttribute a => ToAttribute [a] where
   toAttribute = AttributeArray . map toPrimitiveAttribute

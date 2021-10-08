@@ -13,6 +13,10 @@ import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Context.Propagators
 import OpenTelemetry.Trace
 import System.IO.Unsafe
+import qualified Data.Text.Encoding as T
+import qualified Data.ByteString.Char8 as B
+import qualified Data.Text as T
+import OpenTelemetry.Resource
 
 newOpenTelemetryWaiMiddleware 
   :: TracerProvider 
@@ -33,6 +37,26 @@ newOpenTelemetryWaiMiddleware tp propagator = do
       requestSpan <- createSpan tracer (Just ctxt) "http.server" $ emptySpanArguments
         { startingKind = Server
         }
+
+      insertAttributes requestSpan
+        [ ( "http.method", toAttribute $ T.decodeUtf8 $ requestMethod req)
+        -- , ( "http.url",
+        --     toAttribute $
+        --     T.decodeUtf8
+        --     ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
+        --   )
+        , ( "http.target", toAttribute $ T.decodeUtf8 (rawPathInfo req <> rawQueryString req))
+        -- , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
+        -- , ( "http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
+        , ( "http.flavor"
+          , toAttribute $ case httpVersion req of
+              (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
+          )
+        , ( "http.user_agent"
+          , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
+          )
+        ]
+
       -- TODO, don't like attaching and also putting it in the request vault, users can do
       -- this or it can be a separate middleware
       -- attachContext $ Context.insertSpan requestSpan ctxt
@@ -48,6 +72,9 @@ newOpenTelemetryWaiMiddleware tp propagator = do
         -- injecting the span here, but is that actually useful??
         let resp' = mapResponseHeaders (hs ++) resp
         -- TODO need to propagate baggage
+        insertAttributes requestSpan
+          [ ( "http.status_code", toAttribute $ statusCode $ responseStatus resp)
+          ]
         respReceived <- sendResp resp'
         ts <- getTimestamp
         -- TODO Annotate results here

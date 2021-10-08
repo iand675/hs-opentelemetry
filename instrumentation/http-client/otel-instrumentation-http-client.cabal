@@ -33,10 +33,12 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , http-client
     , http-client-tls
     , http-types
     , otel-api
+    , text
   default-language: Haskell2010
 
 test-suite otel-instrumentation-http-client-test
@@ -49,9 +51,11 @@ test-suite otel-instrumentation-http-client-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , http-client
     , http-client-tls
     , http-types
     , otel-api
     , otel-instrumentation-http-client
+    , text
   default-language: Haskell2010

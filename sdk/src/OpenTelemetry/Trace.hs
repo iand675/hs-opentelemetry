@@ -16,6 +16,8 @@ module OpenTelemetry.Trace
   , Span
   , createSpan
   , emptySpanArguments
+  , CreateSpanArguments(..)
+  , SpanKind(..)
   , Link
   , Event
   ) where

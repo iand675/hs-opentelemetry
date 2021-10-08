@@ -25,6 +25,8 @@ dependencies:
 - wai
 - otel-api
 - vault
+- text
+- bytestring
 
 library:
   source-dirs: src
