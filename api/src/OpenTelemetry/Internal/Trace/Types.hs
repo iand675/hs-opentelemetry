@@ -149,3 +149,6 @@ data Event = Event
   , eventTimestamp :: Timestamp
   }
   deriving (Show)
+
+class ToEvent a where
+  toEvent :: a -> Event
