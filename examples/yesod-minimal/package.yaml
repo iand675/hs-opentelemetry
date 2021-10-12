@@ -4,6 +4,7 @@ dependencies:
 # minimal example dependencies
 - base
 - bytestring
+- conduit
 - yesod-core
 - yesod-form
 - http-client
@@ -11,6 +12,14 @@ dependencies:
 - wai
 - warp
 - text
+- vault
+# database
+- yesod-persistent
+- monad-logger
+- persistent
+- persistent-postgresql
+- persistent-qq
+- resource-pool
 # convenience
 - microlens
 # opentelemetry dependencies
@@ -19,6 +28,7 @@ dependencies:
 - otel-instrumentation-wai
 - otel-instrumentation-yesod
 - otel-instrumentation-http-client
+- otel-instrumentation-persistent
 - otel-propagators-w3c
 - otel-exporter-honeycomb
 

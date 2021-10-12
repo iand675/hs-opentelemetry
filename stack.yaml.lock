@@ -25,6 +25,32 @@ packages:
       sha256: 7f708d158d5d0e32ffe77f6375a792ceb6f92e4d8dd8b32fc69e7de962e7e518
   original:
     hackage: thread-utils-finalizers-0.1.0.0
+- completed:
+    subdir: persistent
+    name: persistent
+    version: 2.14.0.0
+    git: https://github.com/iand675/persistent.git
+    pantry-tree:
+      size: 5935
+      sha256: 3fcc9cd4cccce8f11a9f1b537d7aa0fdf0bb9dc9db845868360cfe05281eba58
+    commit: 9123aa3405547d9204c43501c2ba253a93437021
+  original:
+    subdir: persistent
+    git: https://github.com/iand675/persistent.git
+    commit: 9123aa3405547d9204c43501c2ba253a93437021
+- completed:
+    subdir: persistent-postgresql
+    name: persistent-postgresql
+    version: 2.14.0.0
+    git: https://github.com/iand675/persistent.git
+    pantry-tree:
+      size: 1245
+      sha256: 4f90d86af8dbc0f0c1391ac4948b3f82da75944c0cf9faeac63596eeec7e8a90
+    commit: 9123aa3405547d9204c43501c2ba253a93437021
+  original:
+    subdir: persistent-postgresql
+    git: https://github.com/iand675/persistent.git
+    commit: 9123aa3405547d9204c43501c2ba253a93437021
 snapshots:
 - completed:
     size: 586923

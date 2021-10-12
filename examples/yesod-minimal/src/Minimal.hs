@@ -1,15 +1,25 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
 module Minimal where
 
 import qualified Data.ByteString.Lazy as L
+import Conduit
+import Data.Conduit.List as CL
 import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Data.Pool (Pool, withResource)
+import Database.Persist.Postgresql
+import Database.Persist.SqlBackend
+import Database.Persist.Sql
+import Database.Persist.Sql.Raw.QQ
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
+import qualified Data.Vault.Strict as Vault
 import Network.HTTP.Client
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
@@ -23,6 +33,7 @@ import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Trace.SpanProcessors.Simple
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Yesod
+import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Propagators
 import OpenTelemetry.Propagators.W3CBaggage
@@ -37,12 +48,14 @@ import Yesod.Core
   , getYesod
   )
 import Yesod.Core.Handler
+import Yesod.Persist
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
   { minimalTracerProvider :: TracerProvider
   , minimalContext :: Context
   , minimalPropagator :: Propagator Context RequestHeaders ResponseHeaders
+  , minimalConnectionPool :: Pool SqlBackend
   }
 
 mkYesod "Minimal" [parseRoutes|
@@ -56,6 +69,15 @@ instance Yesod Minimal where
   errorHandler err = do
     selectRep $ do
       provideRep (pure $ pack $ show err)
+
+instance YesodPersist Minimal where
+  type YesodPersistBackend Minimal = SqlBackend
+  runDB m = do
+    app <- getYesod
+    withRunInIO $ \runInIO -> withResource (minimalConnectionPool app) $ \c -> runInIO $ do
+      connWithHooks <- wrapSqlBackend (minimalTracerProvider app) c
+      let connWithContext = modifyConnVault (Vault.insert contextKey (minimalContext app)) connWithHooks
+      runSqlConn m connWithContext
 
 instance HasTracerProvider Minimal where
   tracerProviderL = lens
@@ -83,6 +105,10 @@ getRootR = do
 
 getApiR :: Handler Text
 getApiR = do
+  res <- runDB $ [sqlQQ|select 1|]
+  case res of
+    [] -> error "sad"
+    [Single (1 :: Int)] -> pure ()
   pure "Hello, world!"
 
 main :: IO ()
@@ -102,7 +128,8 @@ main = do
         , w3cTraceContextPropagator
         ]
 
-  waiApp <- toWaiApp $ Minimal tp Context.empty httpPropagators
-  openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware tp httpPropagators
+  runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
+    waiApp <- toWaiApp $ Minimal tp Context.empty httpPropagators pool
+    openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware tp httpPropagators
 
-  run 3000 $ openTelemetryWaiMiddleware waiApp
+    run 3000 $ openTelemetryWaiMiddleware waiApp

@@ -43,9 +43,11 @@ packages:
 - propagators/jaeger
 - propagators/w3c
 - instrumentation/http-client
+- instrumentation/persistent
 - instrumentation/yesod
 - instrumentation/wai
 - examples/yesod-minimal
+
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
@@ -59,6 +61,11 @@ extra-deps:
 - honeycomb-0.0.0.3
 - thread-utils-context-0.2.0.0
 - thread-utils-finalizers-0.1.0.0
+- git: https://github.com/iand675/persistent.git
+  commit: 9123aa3405547d9204c43501c2ba253a93437021
+  subdirs:
+  - persistent
+  - persistent-postgresql
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
