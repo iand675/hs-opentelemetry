@@ -19,7 +19,6 @@ import Database.Persist.Sql
 import Database.Persist.Sql.Raw.QQ
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
-import qualified Data.Vault.Strict as Vault
 import Network.HTTP.Client
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
@@ -73,11 +72,13 @@ instance Yesod Minimal where
 instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
-    app <- getYesod
-    withRunInIO $ \runInIO -> withResource (minimalConnectionPool app) $ \c -> runInIO $ do
-      connWithHooks <- wrapSqlBackend (minimalTracerProvider app) c
-      let connWithContext = modifyConnVault (Vault.insert contextKey (minimalContext app)) connWithHooks
-      runSqlConn m connWithContext
+    inSpan "yesod.runDB" emptySpanArguments $ \_ -> do
+      app <- getYesod
+      withRunInIO $ \runInIO -> withResource (minimalConnectionPool app) $ \c -> runInIO $ do
+        ctxt <- getContext
+        connWithHooks <- wrapSqlBackend (minimalTracerProvider app) ctxt c
+        let connWithContext = insertConnectionContext (minimalContext app) connWithHooks
+        runSqlConn m connWithContext
 
 instance HasTracerProvider Minimal where
   tracerProviderL = lens
@@ -105,10 +106,11 @@ getRootR = do
 
 getApiR :: Handler Text
 getApiR = do
-  res <- runDB $ [sqlQQ|select 1|]
-  case res of
-    [] -> error "sad"
-    [Single (1 :: Int)] -> pure ()
+  inSpan "annotatedFunction" emptySpanArguments $ \_ -> do
+    res <- runDB $ [sqlQQ|select 1|]
+    case res of
+      [] -> error "sad"
+      [Single (1 :: Int)] -> pure ()
   pure "Hello, world!"
 
 main :: IO ()

@@ -27,6 +27,7 @@ dependencies:
 - vault
 - resourcet
 - unliftio
+- mtl
 
 library:
   source-dirs: src

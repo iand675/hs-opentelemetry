@@ -21,21 +21,24 @@ import OpenTelemetry.Trace
 -- | This is a type class rather than coded against MonadIO because
 -- we need the ability to specialize behaviour against things like
 -- persistent's @ReaderT SqlBackend@ stack.
-class MonadTracerProvider m where
+class Monad m => MonadTracerProvider m where
   getTracerProvider :: m TracerProvider
 
 -- | This is generally scoped by Monad stack to do different things
-class MonadTracer m where
+class Monad m => MonadTracer m where
   getTracer :: m Tracer
 
-class MonadGetContext m where
+class Monad m => MonadGetContext m where
   getContext :: m Context
 
 class MonadGetContext m => MonadLocalContext m where
   localContext :: (Context -> Context) -> m a -> m a
 
-class MonadBracketError m where
+class Monad m => MonadBracketError m where
   bracketError :: m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+
+instance MonadBracketError IO where
+  bracketError = bracketErrorUnliftIO
 
 bracketErrorUnliftIO :: MonadUnliftIO m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 bracketErrorUnliftIO before after thing = withRunInIO $ \run -> EUnsafe.mask $ \restore -> do
