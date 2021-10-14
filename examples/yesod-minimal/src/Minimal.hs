@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE QuasiQuotes           #-}
@@ -117,13 +118,16 @@ main :: IO ()
 main = do
   client <- initializeHoneycomb $ config "0a3aa320cb317551021ec8abc221fbc7" "testing-client"
   processor <- simpleProcessor $ SimpleProcessorConfig
-    { exporter = makeHoneycombExporter client "minimal"
+    { exporter = makeHoneycombExporter client
     }
 
+  rs <- builtInResources
   tp <- createTracerProvider
     [ processor
     ]
-    (TracerProviderOptions Nothing)
+    ((emptyTracerProviderOptions :: TracerProviderOptions Nothing)
+      { tracerProviderOptionsResources = rs
+      })
 
   let httpPropagators = mconcat
         [ w3cBaggagePropagator

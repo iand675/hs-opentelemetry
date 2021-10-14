@@ -45,6 +45,7 @@ dependencies:
 - ghc-prim
 - unliftio-core
 - microlens
+- unix
 
 library:
   source-dirs: src

@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 module OpenTelemetry.Trace
   ( TracerProvider
   , HasTracerProvider(..)
@@ -11,6 +14,7 @@ module OpenTelemetry.Trace
   , getTracer
   , TracerOptions(..)
   , tracerOptions
+  , builtInResources
   -- * Span operations
   , Span
   , ImmutableSpan(..)
@@ -60,31 +64,58 @@ import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
 import System.Clock
 import System.IO.Unsafe
+import OpenTelemetry.Resource.Telemetry
+import OpenTelemetry.Resource.Process (currentProcessRuntime, getProcess)
+import OpenTelemetry.Resource.OperatingSystem (getOperatingSystem)
+import OpenTelemetry.Resource.Service
 
 class HasTracerProvider s where
   tracerProviderL :: Lens' s TracerProvider
 
+builtInResources :: IO (Resource Nothing)
+builtInResources = do
+  svc <- getService
+  processInfo <- getProcess
+  osInfo <- getOperatingSystem
+  let rs = 
+        toResource svc `mergeResources`
+        toResource telemetry `mergeResources`
+        toResource currentProcessRuntime `mergeResources`
+        toResource processInfo `mergeResources`
+        toResource osInfo
+  pure rs
+
 globalTracer :: IORef TracerProvider
 globalTracer = unsafePerformIO $ do
-  p <- createTracerProvider [] emptyTracerProviderOptions
+  rs <- builtInResources
+  p <- createTracerProvider
+    []
+    ((emptyTracerProviderOptions @Nothing)
+      { tracerProviderOptionsResources = rs
+      })
   newIORef p
 {-# NOINLINE globalTracer #-}
 
 getTimestamp :: MonadIO m => m Timestamp
 getTimestamp = liftIO $ getTime Realtime
 
-newtype TracerProviderOptions = TracerProviderOptions
+data TracerProviderOptions o = TracerProviderOptions
   { tracerProviderOptionsIdGenerator :: Maybe IdGenerator
+  , tracerProviderOptionsResources :: Resource o
   }
 
-emptyTracerProviderOptions :: TracerProviderOptions
-emptyTracerProviderOptions = TracerProviderOptions Nothing
+emptyTracerProviderOptions :: (o ~ ResourceMerge o o) => TracerProviderOptions o
+emptyTracerProviderOptions = TracerProviderOptions Nothing mempty
 
-createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions o -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
+  envVarResource <- getEnvVarResourceAttributes
   g <- maybe
     makeDefaultIdGenerator pure (tracerProviderOptionsIdGenerator opts)
-  pure $ TracerProvider (V.fromList ps) g
+  pure $ TracerProvider
+    (V.fromList ps)
+    g
+    (envVarResource `mergeResources` tracerProviderOptionsResources opts)
 
 getGlobalTracerProvider :: MonadIO m => m TracerProvider
 getGlobalTracerProvider = liftIO $ readIORef globalTracer
@@ -103,8 +134,11 @@ class HasTracer s where
   tracerL :: Lens' s Tracer
 
 getTracer :: MonadIO m => TracerProvider -> TracerName -> TracerOptions -> m Tracer
-getTracer p n TracerOptions{..} = liftIO $ do
-  pure $ Tracer (tracerProviderProcessors p) (tracerProviderIdGenerator p)
+getTracer TracerProvider{..} n TracerOptions{..} = liftIO $ do
+  pure $ Tracer
+    tracerProviderProcessors
+    tracerProviderIdGenerator
+    (resourceAttributes tracerProviderResources)
 
 emptySpanArguments :: CreateSpanArguments
 emptySpanArguments = CreateSpanArguments
@@ -145,7 +179,7 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
             }
         , spanParent = parent
         , spanKind = startingKind
-        , spanAttributes = []
+        , spanAttributes = tracerResources t
         , spanLinks = []
         , spanEvents = []
         , spanStatus = Unset
@@ -162,7 +196,9 @@ createRemoteSpan = FrozenSpan
 
 -- TODO should this use the atomic variant
 addLink :: MonadIO m => Span -> Link -> m ()
-addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i { spanLinks = l : spanLinks i }
+addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i 
+  { spanLinks = (l { linkAttributes = tracerResources (spanTracer i) <> linkAttributes l }) : spanLinks i 
+  }
 addLink (FrozenSpan _) _ = pure ()
 
 getSpanContext :: MonadIO m => Span -> m SpanContext
@@ -200,7 +236,7 @@ addEvent (Span s) NewEvent{..} = liftIO $ do
     { spanEvents =
         Event
           { eventName = newEventName
-          , eventAttributes = newEventAttributes
+          , eventAttributes = tracerResources (spanTracer i) <> newEventAttributes
           , eventTimestamp = t
           }
         : spanEvents i

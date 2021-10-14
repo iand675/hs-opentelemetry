@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module OpenTelemetry.Context 
+module OpenTelemetry.Context
   ( Key(keyName)
   , newKey
   , Context
@@ -53,7 +53,7 @@ insert (Key _ k) x (Context v) = Context $ V.insert k x v
 --   Nothing -> V.insert k x v
 --   Just ox -> V.insert k (f x ox) v
 
-adjust :: (a -> a) -> Key a -> Context -> Context 
+adjust :: (a -> a) -> Key a -> Context -> Context
 adjust f (Key _ k) (Context v) = Context $ V.adjust f k v
 
 delete :: Key a -> Context -> Context
@@ -77,7 +77,7 @@ baggageKey = unsafePerformIO $ newKey "baggage"
 {-# NOINLINE baggageKey #-}
 
 lookupBaggage :: Context -> Maybe Baggage
-lookupBaggage c = lookup baggageKey c
+lookupBaggage = lookup baggageKey
 
 insertBaggage :: Baggage -> Context -> Context
 insertBaggage b c = case lookup baggageKey c of

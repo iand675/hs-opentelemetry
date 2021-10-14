@@ -6,6 +6,8 @@ module OpenTelemetry.Trace
   -- ** 'TracerProvider' initialization
   , createTracerProvider
   , TracerProviderOptions(..)
+  , emptyTracerProviderOptions
+  , builtInResources
   -- ** Getting / setting the global 'TracerProvider'
   , getGlobalTracerProvider
   , setGlobalTracerProvider

@@ -5,6 +5,14 @@ module OpenTelemetry.Resource where
 import Data.Text (Text)
 import Data.Int
 import GHC.TypeLits
+import Control.Monad.IO.Class
+import System.Environment
+import OpenTelemetry.Baggage (decodeBaggageHeader)
+import qualified Data.ByteString.Char8 as B
+import qualified OpenTelemetry.Baggage as Baggage
+import qualified Data.HashMap.Strict as H
+import Data.Text.Encoding (decodeUtf8)
+import Data.Maybe (catMaybes)
 
 data AttributeLimits = AttributeLimits
   { attributeCountLimit :: Maybe Int
@@ -59,6 +67,17 @@ instance ToPrimitiveAttribute a => ToAttribute [a] where
 
 newtype Resource (schema :: Maybe Symbol) = Resource [(Text, Attribute)]
 
+resourceAttributes :: Resource s -> [(Text, Attribute)]
+resourceAttributes (Resource attrs) = attrs
+
+mkResource :: [Maybe (Text, Attribute)] -> Resource r
+mkResource = Resource . catMaybes
+
+(.=) :: ToAttribute a => Text -> a -> Maybe (Text, Attribute)
+k .= v = Just (k, toAttribute v)
+
+(.=?) :: ToAttribute a => Text -> Maybe a -> Maybe (Text, Attribute)
+k .=? mv = (\k v -> (k, toAttribute v)) k <$> mv
 instance (s ~ ResourceMerge s s) => Semigroup (Resource s) where
   (<>) = mergeResources
 
@@ -112,9 +131,29 @@ type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
 mergeResources :: Resource l -> Resource r -> Resource (ResourceMerge l r)
 mergeResources (Resource l) (Resource r) = Resource (l <> r)
 
--- TODO MUST implement
--- https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable
+class ToResource a where
+  type ResourceSchema a :: Maybe Symbol
+  toResource :: a -> Resource (ResourceSchema a)
+
 
 class ResourceDetector d where
   type DetectedResource d :: Maybe Symbol
   detect :: d -> IO (Resource (DetectedResource d))
+
+-- baggage format environment variables
+getEnvVarResourceAttributes :: MonadIO m => m (Resource Nothing)
+getEnvVarResourceAttributes = do
+  mEnv <- liftIO $ lookupEnv "OTEL_RESOURCE_ATTRIBUTES"
+  case mEnv of
+    Nothing -> pure $ Resource []
+    Just envVar -> case decodeBaggageHeader $ B.pack envVar of
+      Left err -> do
+        -- TODO logError
+        liftIO $ putStrLn err
+        pure $ Resource []
+      Right ok ->
+        pure
+          $ Resource
+          $ map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v))
+          $ H.toList
+          $ Baggage.values ok
