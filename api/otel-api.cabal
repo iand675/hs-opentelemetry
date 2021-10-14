@@ -36,6 +36,18 @@ library
       OpenTelemetry.Propagators.B3
       OpenTelemetry.Propagators.Jaeger
       OpenTelemetry.Resource
+      OpenTelemetry.Resource.Cloud
+      OpenTelemetry.Resource.Container
+      OpenTelemetry.Resource.DeploymentEnvironment
+      OpenTelemetry.Resource.Device
+      OpenTelemetry.Resource.FaaS
+      OpenTelemetry.Resource.Host
+      OpenTelemetry.Resource.Kubernetes
+      OpenTelemetry.Resource.OperatingSystem
+      OpenTelemetry.Resource.Process
+      OpenTelemetry.Resource.Service
+      OpenTelemetry.Resource.Telemetry
+      OpenTelemetry.Resource.Webengine
       OpenTelemetry.Trace
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.IdGenerator
@@ -69,6 +81,7 @@ library
     , template-haskell
     , text
     , thread-utils-context
+    , unix
     , unliftio-core
     , unordered-containers
     , vault
@@ -106,6 +119,7 @@ test-suite otel-api-test
     , template-haskell
     , text
     , thread-utils-context
+    , unix
     , unliftio-core
     , unordered-containers
     , vault

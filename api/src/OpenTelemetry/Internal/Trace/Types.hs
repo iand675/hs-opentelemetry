@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DataKinds #-}
 module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
@@ -38,9 +39,11 @@ data SpanProcessor = SpanProcessor
   , forceFlush :: IO ()
   }
 
-data TracerProvider = TracerProvider 
+data TracerProvider = forall s. TracerProvider 
   { tracerProviderProcessors :: Vector SpanProcessor
   , tracerProviderIdGenerator :: IdGenerator
+  , tracerProviderResources :: Resource s
+  -- ^ TODO schema support
   }
 
 type TracerName = Text
@@ -48,6 +51,7 @@ type TracerName = Text
 data Tracer = Tracer
   { tracerProcessors :: Vector SpanProcessor
   , tracerIdGenerator :: IdGenerator
+  , tracerResources :: [(Text, Attribute)]
   }
 
 type Time = TimeSpec
@@ -87,6 +91,7 @@ data ImmutableSpan = ImmutableSpan
   , spanStart :: Timestamp
   , spanEnd :: Maybe Timestamp
   , spanAttributes :: [(Text, Attribute)]
+  -- ^ TODO, this should probably be a DList
   -- | TODO Links SHOULD preserve the order in which they're set
   , spanLinks :: [Link]
   , spanEvents :: [Event]

@@ -96,11 +96,6 @@ wrapSqlBackend tp ctxt conn = do
                     "db.query"
                     (emptySpanArguments { startingKind = Client })
                     ) (`endSpan` Nothing)
-                  -- annotateBasics child conn
-                  -- insertAttributes child 
-                  --   [ (databaseQueryField, toAttribute t)
-                  --   , (databaseQueryParametersField, toAttribute t)
-                  --   ]
 
                   case stmtQuery stmt ps of
                     Acquire stmtQueryAcquireF -> Acquire $ \f ->
@@ -115,16 +110,6 @@ wrapSqlBackend tp ctxt conn = do
                         )
 
               , stmtExecute = \ps -> do
-                  -- Raw.spanning
-                  --   tcTracer
-                  --   (trace tcSpan)
-                  --   tcSvc
-                  --   (pure $ spanId tcSpan)
-                  --   "db.query"
-                  --   (\child -> do
-
-                  --     Raw.addSpanField child databaseQueryField t
-                  --     Raw.addSpanField child databaseQueryParametersField $ show ps
                   bracketErrorUnliftIO
                     (
                       createSpan
@@ -155,10 +140,8 @@ wrapSqlBackend tp ctxt conn = do
   pure $ (insertConnectionContext ctxt $ insertOriginalConnection conn' conn)
     { connHooks = hooks
     , connBegin = \f mIso -> do
-        putStrLn "begin"
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
-          putStrLn "span event"
           addEvent span $ NewEvent
             { newEventName = "db.sql.transaction.begin"
             , newEventAttributes = []
@@ -166,10 +149,8 @@ wrapSqlBackend tp ctxt conn = do
             }
         connBegin conn f mIso
     , connCommit = \f -> do
-        putStrLn "commit"
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
-          putStrLn "span event"
           addEvent span $ NewEvent
             { newEventName = "db.sql.transaction.commit"
             , newEventAttributes = []
@@ -177,10 +158,8 @@ wrapSqlBackend tp ctxt conn = do
             }
         connCommit conn f
     , connRollback = \f -> do
-        putStrLn "commit"
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
-          putStrLn "span event"
           addEvent span $ NewEvent
             { newEventName = "db.sql.transaction.rollback"
             , newEventAttributes = []
@@ -188,10 +167,8 @@ wrapSqlBackend tp ctxt conn = do
             }
         connRollback conn f
     , connClose = do
-        putStrLn "close"
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
-          putStrLn "span event"
           addEvent span $ NewEvent
             { newEventName = "db.connection.close"
             , newEventAttributes = []

@@ -132,8 +132,8 @@ Note: Support for environment variables is optional.
 
 |Feature                                       | Haskell |
 |----------------------------------------------|---|
-|OTEL_RESOURCE_ATTRIBUTES                      |   |
-|OTEL_SERVICE_NAME                             |   |
+|OTEL_RESOURCE_ATTRIBUTES                      | x |
+|OTEL_SERVICE_NAME                             | x |
 |OTEL_LOG_LEVEL                                |   |
 |OTEL_PROPAGATORS                              |   |
 |OTEL_BSP_*                                    |   |

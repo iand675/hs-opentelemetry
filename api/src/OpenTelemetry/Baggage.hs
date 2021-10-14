@@ -13,9 +13,9 @@ module OpenTelemetry.Baggage
   , Token
   , token
   , mkToken
-  , Element
+  , tokenValue
+  , Element(..)
   , element
-  , properties
   , InvalidBaggage(..)
   -- * Modifying 'Baggage'
   -- * Encoding and decoding 'Baggage'
@@ -51,6 +51,9 @@ import System.IO.Unsafe
 newtype Token = Token ByteString
   deriving stock (Show, Eq, Ord)
   deriving newtype (Hashable)
+
+tokenValue :: Token -> ByteString
+tokenValue (Token t) = t
 
 instance Lift Token where
   liftTyped (Token tok) = unsafeTExpCoerce $ bsToExp tok

@@ -23,10 +23,10 @@ import GHC.IO
 import System.Clock (TimeSpec(..))
 import Honeycomb.Config
 
-makeHoneycombExporter :: HoneycombClient -> Text {- ^ service name -} -> SpanExporter
-makeHoneycombExporter c t = SpanExporter
+makeHoneycombExporter :: HoneycombClient -> SpanExporter
+makeHoneycombExporter c = SpanExporter
   { export = \fs -> do
-      let events = concatMap (makeEvents c t) fs
+      let events = concatMap (makeEvents c) fs
       mapM_ (send c) events
       pure Success
   , shutdown = shutdownHoneycomb c
@@ -44,8 +44,8 @@ instance ToJSON HoneycombFormattedAttribute where
   toJSON (HoneycombFormattedAttribute (AttributeValue a)) = primitiveAttributeToJSON a
   toJSON (HoneycombFormattedAttribute (AttributeArray a)) = toJSON $ fmap primitiveAttributeToJSON a
 
-makeEvents :: HoneycombClient -> Text -> ImmutableSpan -> [Honeycomb.Event]
-makeEvents client svcName ImmutableSpan{..} =
+makeEvents :: HoneycombClient -> ImmutableSpan -> [Honeycomb.Event]
+makeEvents client ImmutableSpan{..} =
   concat [[spanEvent], eventEvents, linkEvents]
   where
     spanTime = Just $ clockTimeToChronosTime spanStart
@@ -63,7 +63,6 @@ makeEvents client svcName ImmutableSpan{..} =
 
     fields =
       H.insert "name" (toJSON spanName) $
-      H.insert "service_name" (toJSON svcName) $
       H.insert "trace.span_id" (toJSON encodedSpanId) $
       H.insert "trace.parent_id" (toJSON (spanIdBaseEncodedText Base16 <$> unsafeParentId)) $
       H.insert "trace.trace_id" (toJSON encodedTraceId) $
@@ -76,7 +75,6 @@ makeEvents client svcName ImmutableSpan{..} =
           { timestamp = Just $ clockTimeToChronosTime (eventTimestamp e)
           , fields = 
               H.insert "name" (toJSON $ eventName e) $
-              H.insert "service_name" (toJSON svcName) $
               H.insert "meta.annotation_type" (String "span_event") $
               H.insert "trace.parent_id" (toJSON encodedSpanId) $
               H.insert "trace.trace_id" (toJSON encodedTraceId) $
