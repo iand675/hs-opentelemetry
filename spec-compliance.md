@@ -157,11 +157,11 @@ Note: Support for environment variables is optional.
 
 | Feature                                                                        | Optional | Haskell |
 |--------------------------------------------------------------------------------|----------|----|
-| [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          |    |
+| [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          | x  |
 | [Exporter interface has `ForceFlush`](specification/trace/sdk.md#forceflush-2) |          |    |
 | Standard output (logging)                                                      |          |    |
 | In-memory (mock exporter)                                                      |          |    |
-| [OTLP](specification/protocol/otlp.md)                                         |          |    |
+| [OTLP](specification/protocol/otlp.md)                                         |          | x  |
 | OTLP/gRPC Exporter                                                             | *        |    |
 | OTLP/HTTP binary Protobuf Exporter                                             | *        | x  |
 | OTLP/HTTP JSON Protobuf Exporter                                               |          |    |
