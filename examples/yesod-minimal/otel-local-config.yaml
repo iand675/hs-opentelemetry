@@ -15,8 +15,8 @@ exporters:
   otlp:
     endpoint: "api.honeycomb.io:443"
     headers:
-      "x-honeycomb-team": "0a3aa320cb317551021ec8abc221fbc7"
-      "x-honeycomb-dataset": "testing-client"
+      "x-honeycomb-team": "${HONEYCOMB_API_KEY}"
+      "x-honeycomb-dataset": "${HONEYCOMB_DATASET}"
 
 service:
   pipelines:
