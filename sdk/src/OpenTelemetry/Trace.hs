@@ -13,7 +13,9 @@ module OpenTelemetry.Trace
   , setGlobalTracerProvider
   -- * 'Tracer' operations
   , Tracer
+  , tracerName
   , HasTracer(..)
+  , InstrumentationLibrary(..)
   -- * 'Span' operations
   , Span
   , createSpan

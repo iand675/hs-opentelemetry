@@ -22,6 +22,18 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 - otel-api
+- otel-otlp
+- text
+- bytestring
+- http-types
+- http-client
+- http-conduit
+- mtl
+- vector
+- proto-lens
+- microlens
+- clock
+- unordered-containers
 
 library:
   source-dirs: src

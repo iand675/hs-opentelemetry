@@ -51,6 +51,20 @@ packages:
     subdir: persistent-postgresql
     git: https://github.com/iand675/persistent.git
     commit: 9123aa3405547d9204c43501c2ba253a93437021
+- completed:
+    hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
+    pantry-tree:
+      size: 1857
+      sha256: 2f1199d04d0588805e06faa0bf9a75898584d76243d4f945acbcc0e93913732e
+  original:
+    hackage: proto-lens-0.7.1.0
+- completed:
+    hackage: proto-lens-runtime-0.7.0.1@sha256:703f327422b2e204f8ea13c5e178edd8ab42ccd01c7a5a89fcb1b37ab474c68a,3038
+    pantry-tree:
+      size: 168
+      sha256: 145cb9a15b73d45b07cb3f9f0716256b2ed9e27ac296268ce100a4f0e477e110
+  original:
+    hackage: proto-lens-runtime-0.7.0.1
 snapshots:
 - completed:
     size: 586923

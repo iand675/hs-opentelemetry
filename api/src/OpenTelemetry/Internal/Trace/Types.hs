@@ -4,6 +4,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
@@ -20,13 +21,25 @@ import OpenTelemetry.Resource
 import OpenTelemetry.Internal.Trace.Id
 import OpenTelemetry.Trace.IdGenerator
 import System.Clock (TimeSpec)
+import Data.HashMap.Strict (HashMap)
+import GHC.Generics
+import Data.String ( IsString(..) )
 
 data ExportResult
   = Success
   | Failure SomeException
 
+data InstrumentationLibrary = InstrumentationLibrary
+  { libraryName :: {-# UNPACK #-} !Text
+  , libraryVersion :: {-# UNPACK #-} !Text
+  } deriving (Ord, Eq, Generic, Show)
+
+instance Hashable InstrumentationLibrary
+instance IsString InstrumentationLibrary where
+  fromString str = InstrumentationLibrary (fromString str) ""
+
 data SpanExporter = SpanExporter
-  { export :: forall f. Foldable f => f ImmutableSpan -> IO ExportResult
+  { export :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
   , shutdown :: IO ()
   }
 
@@ -46,12 +59,11 @@ data TracerProvider = forall s. TracerProvider
   -- ^ TODO schema support
   }
 
-type TracerName = Text
-
 data Tracer = Tracer
-  { tracerProcessors :: Vector SpanProcessor
-  , tracerIdGenerator :: IdGenerator
-  , tracerResources :: [(Text, Attribute)]
+  { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
+  , tracerProcessors :: {-# UNPACK #-} !(Vector SpanProcessor)
+  , tracerIdGenerator :: {-# UNPACK #-} !IdGenerator
+  , tracerResources :: [(Text, Attribute)] -- TODO, this should be a deduplicated vector
   }
 
 type Time = TimeSpec
