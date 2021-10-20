@@ -111,8 +111,8 @@ loadExporterEnvironmentVariables = liftIO $ do
 protobufMimeType :: ByteString
 protobufMimeType = "application/x-protobuf"
 
-otlpExporter :: MonadIO m => OTLPExporterConfig -> m SpanExporter
-otlpExporter conf = do
+otlpExporter :: MonadIO m => Resource schema -> OTLPExporterConfig -> m SpanExporter
+otlpExporter resourceAttributes conf = do
   pure $ SpanExporter
     { export = \spans -> do
         req <- parseRequest "http://localhost:4318/v1/traces"
@@ -127,7 +127,7 @@ otlpExporter conf = do
               , requestBody =
                   RequestBodyBS $
                   encodeMessage $
-                  immutableSpansToProtobuf spans
+                  immutableSpansToProtobuf resourceAttributes spans
               }
         resp <- httpBS req'
         pure Success
@@ -151,14 +151,14 @@ attributesToProto = fmap attributeToKeyValue
       )
 
 
-immutableSpansToProtobuf :: HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> ExportTraceServiceRequest
-immutableSpansToProtobuf completedSpans = defMessage
+immutableSpansToProtobuf :: Resource sym -> HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> ExportTraceServiceRequest
+immutableSpansToProtobuf r completedSpans = defMessage
   & vec'resourceSpans .~
     Vector.singleton
       ( defMessage
           & resource .~
             ( defMessage
-                & attributes .~ []
+                & attributes .~ attributesToProto (resourceAttributes r)
                 & droppedAttributesCount .~ 0
             )
           -- TODO, seems like spans need to be emitted via an API
