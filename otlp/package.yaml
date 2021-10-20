@@ -1,6 +1,6 @@
-name:                otel-sdk
+name:                otel-otlp
 version:             0.1.0.0
-github:              "iand675/otel-sdk"
+github:              "iand675/otlp"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,25 +17,18 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-sdk#readme>
-
-default-extensions:
-- PackageImports
+description:         Please see the README on GitHub at <https://github.com/iand675/otlp#readme>
 
 dependencies:
 - base >= 4.7 && < 5
-- otel-api
-- async
-- vector
-- stm
-- unagi-chan
-- unordered-containers
+- proto-lens
+- proto-lens-runtime
 
 library:
   source-dirs: src
 
 tests:
-  otel-sdk-test:
+  otlp-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -43,5 +36,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hspec
-    - otel-sdk
+    - otlp

@@ -49,6 +49,8 @@ import Yesod.Core
   )
 import Yesod.Core.Handler
 import Yesod.Persist
+import OpenTelemetry.Exporters.OTLP
+import OpenTelemetry.Exporters.OTLP (loadExporterEnvironmentVariables)
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
@@ -97,7 +99,7 @@ getRootR = do
   m <- liftIO $ newManager defaultManagerSettings
   propagator <- minimalPropagator <$> getYesod
   resp <- inSpan "http.request" (emptySpanArguments { startingKind = Client }) $ \span -> do
-    req <- parseUrl "http://localhost:3000/api"
+    req <- parseUrlThrow "http://localhost:3000/api"
     ctxt <- getContext
     req' <- instrumentRequest propagator ctxt req
     realResponse <- liftIO $ httpLbs req' m
@@ -116,9 +118,11 @@ getApiR = do
 
 main :: IO ()
 main = do
-  client <- initializeHoneycomb $ config "0a3aa320cb317551021ec8abc221fbc7" "testing-client"
+  -- client <- initializeHoneycomb $ config "0a3aa320cb317551021ec8abc221fbc7" "testing-client"
+  otlpExporterConf <- loadExporterEnvironmentVariables
+  otlpExporter_ <- otlpExporter otlpExporterConf
   processor <- simpleProcessor $ SimpleProcessorConfig
-    { exporter = makeHoneycombExporter client
+    { exporter = otlpExporter_ -- makeHoneycombExporter client
     }
 
   rs <- builtInResources

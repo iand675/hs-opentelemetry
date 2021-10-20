@@ -22,11 +22,12 @@ import qualified Torsor
 import GHC.IO
 import System.Clock (TimeSpec(..))
 import Honeycomb.Config
+import Data.Foldable (toList)
 
 makeHoneycombExporter :: HoneycombClient -> SpanExporter
 makeHoneycombExporter c = SpanExporter
   { export = \fs -> do
-      let events = concatMap (makeEvents c) fs
+      let events = concatMap (makeEvents c) $ concatMap toList $ toList fs
       mapM_ (send c) events
       pure Success
   , shutdown = shutdownHoneycomb c

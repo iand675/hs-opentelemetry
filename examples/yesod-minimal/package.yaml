@@ -30,6 +30,7 @@ dependencies:
 - otel-instrumentation-http-client
 - otel-instrumentation-persistent
 - otel-propagators-w3c
+- otel-exporter-otlp
 - otel-exporter-honeycomb
 
 executables:

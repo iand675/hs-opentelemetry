@@ -10,8 +10,10 @@ module OpenTelemetry.Trace
   , emptyTracerProviderOptions
   , TracerProviderOptions(..)
   , Tracer
+  , tracerName
   , HasTracer(..)
   , getTracer
+  , InstrumentationLibrary(..)
   , TracerOptions(..)
   , tracerOptions
   , builtInResources
@@ -133,9 +135,10 @@ tracerOptions = TracerOptions Nothing
 class HasTracer s where
   tracerL :: Lens' s Tracer
 
-getTracer :: MonadIO m => TracerProvider -> TracerName -> TracerOptions -> m Tracer
+getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
 getTracer TracerProvider{..} n TracerOptions{..} = liftIO $ do
   pure $ Tracer
+    n
     tracerProviderProcessors
     tracerProviderIdGenerator
     (resourceAttributes tracerProviderResources)
@@ -179,7 +182,7 @@ createSpan t p n CreateSpanArguments{..} = liftIO $ do
             }
         , spanParent = parent
         , spanKind = startingKind
-        , spanAttributes = tracerResources t
+        , spanAttributes = []
         , spanLinks = []
         , spanEvents = []
         , spanStatus = Unset
@@ -197,7 +200,7 @@ createRemoteSpan = FrozenSpan
 -- TODO should this use the atomic variant
 addLink :: MonadIO m => Span -> Link -> m ()
 addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i 
-  { spanLinks = (l { linkAttributes = tracerResources (spanTracer i) <> linkAttributes l }) : spanLinks i 
+  { spanLinks = (l { linkAttributes = linkAttributes l }) : spanLinks i 
   }
 addLink (FrozenSpan _) _ = pure ()
 
@@ -236,7 +239,7 @@ addEvent (Span s) NewEvent{..} = liftIO $ do
     { spanEvents =
         Event
           { eventName = newEventName
-          , eventAttributes = tracerResources (spanTracer i) <> newEventAttributes
+          , eventAttributes = newEventAttributes
           , eventTimestamp = t
           }
         : spanEvents i

@@ -33,6 +33,7 @@ packages:
 - .
 - api
 - sdk
+- otlp
 - exporters/handle
 - exporters/honeycomb
 - exporters/in-memory
@@ -66,6 +67,8 @@ extra-deps:
   subdirs:
   - persistent
   - persistent-postgresql
+- proto-lens-0.7.1.0
+- proto-lens-runtime-0.7.0.1
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

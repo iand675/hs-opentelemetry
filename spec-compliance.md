@@ -17,29 +17,29 @@ formats is required. Implementing more than one format is optional.
 | Feature                                                                                          | Optional | Haskell |
 |--------------------------------------------------------------------------------------------------|----------|----|
 | [TracerProvider](specification/trace/api.md#tracerprovider-operations)                           |          |    |
-| Create TracerProvider                                                                            |          |    |
-| Get a Tracer                                                                                     |          |    |
+| Create TracerProvider                                                                            |          | +  |
+| Get a Tracer                                                                                     |          | +  |
 | Get a Tracer with schema_url                                                                     |          |    |
-| Safe for concurrent calls                                                                        |          |    |
+| Safe for concurrent calls                                                                        |          | +  |
 | Shutdown (SDK only required)                                                                     |          |    |
 | ForceFlush (SDK only required)                                                                   |          |    |
 | [Trace / Context interaction](specification/trace/api.md#context-interaction)                    |          |    |
 | Get active Span                                                                                  |          |    |
 | Set active Span                                                                                  |          |    |
 | [Tracer](specification/trace/api.md#tracer-operations)                                           |          |    |
-| Create a new Span                                                                                |          |    |
+| Create a new Span                                                                                |          | +  |
 | Get active Span                                                                                  |          |    |
 | Mark Span active                                                                                 |          |    |
-| Safe for concurrent calls                                                                        |          |    |
+| Safe for concurrent calls                                                                        |          | +  |
 | [SpanContext](specification/trace/api.md#spancontext)                                            |          |    |
 | IsValid                                                                                          |          |    |
 | IsRemote                                                                                         |          |    |
 | Conforms to the W3C TraceContext spec                                                            |          |    |
 | [Span](specification/trace/api.md#span)                                                          |          |    |
-| Create root span                                                                                 |          |    |
+| Create root span                                                                                 |          | +  |
 | Create with default parent (active span)                                                         |          |    |
-| Create with parent from Context                                                                  |          |    |
-| No explicit parent Span/SpanContext allowed                                                      |          |    |
+| Create with parent from Context                                                                  |          | +  |
+| No explicit parent Span/SpanContext allowed                                                      |          | +  |
 | SpanProcessor.OnStart receives parent Context                                                    |          |    |
 | UpdateName                                                                                       |          | +  |
 | User-defined start timestamp                                                                     |          | +  |
@@ -48,11 +48,11 @@ formats is required. Implementing more than one format is optional.
 | IsRecording                                                                                      |          | +  |
 | IsRecording becomes false after End                                                              |          | +  |
 | Set status with StatusCode (Unset, Ok, Error)                                                    |          | +  |
-| Safe for concurrent calls                                                                        |          |    |
+| Safe for concurrent calls                                                                        |          | +  |
 | events collection size limit                                                                     |          |    |
 | attribute collection size limit                                                                  |          |    |
 | links collection size limit                                                                      |          |    |
-| [Span attributes](specification/trace/api.md#set-attributes)                                     |          |    |
+| [Span attributes](specification/trace/api.md#set-attributes)                                     |          | +  |
 | SetAttribute                                                                                     |          |    |
 | Set order preserved                                                                              | X        |    |
 | String type                                                                                      |          | +  |
@@ -65,10 +65,10 @@ formats is required. Implementing more than one format is optional.
 | [Span linking](specification/trace/api.md#specifying-links)                                      |          |    |
 | Links can be recorded on span creation                                                           |          |    |
 | Links order is preserved                                                                         |          |    |
-| [Span events](specification/trace/api.md#add-events)                                             |          |    |
-| AddEvent                                                                                         |          |    |
+| [Span events](specification/trace/api.md#add-events)                                             |          | +  |
+| AddEvent                                                                                         |          | +  |
 | Add order preserved                                                                              |          |    |
-| Safe for concurrent calls                                                                        |          |    |
+| Safe for concurrent calls                                                                        |          | +  |
 | [Span exceptions](specification/trace/api.md#record-exception)                                   |          |    |
 | RecordException                                                                                  |          |    |
 | RecordException with extra parameters                                                            |          |    |
@@ -76,8 +76,8 @@ formats is required. Implementing more than one format is optional.
 | Allow samplers to modify tracestate                                                              |          |    |
 | ShouldSample gets full parent Context                                                            |          |    |
 | ShouldSample gets InstrumentationLibrary                                                         |          |    |
-| [New Span ID created also for non-recording Spans](specification/trace/sdk.md#sdk-span-creation) |          |    |
-| [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          |    |
+| [New Span ID created also for non-recording Spans](specification/trace/sdk.md#sdk-span-creation) |          | +  |
+| [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          | +  |
 | [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        |    |
 | [Built-in `SpanProcessor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1) |          |    |
 | [Attribute Limits](specification/common/common.md#attribute-limits)                              | X        |    |
@@ -86,8 +86,8 @@ formats is required. Implementing more than one format is optional.
 
 | Feature                            | Optional | Haskell |
 |------------------------------------|----------|----|
-| Basic support                      |          |    |
-| Use official header name `baggage` |          |    |
+| Basic support                      |          | +  |
+| Use official header name `baggage` |          | +  |
 
 ## Metrics
 
@@ -99,22 +99,22 @@ formats is required. Implementing more than one format is optional.
 
 | Feature                                                                                                                                     | Optional | Haskell |
 |---------------------------------------------------------------------------------------------------------------------------------------------|----------|----|
-| Create from Attributes                                                                                                                      |          | x  |
-| Create empty                                                                                                                                |          | x  |
-| [Merge (v2)](specification/resource/sdk.md#merge)                                                                                           |          | x  |
-| Retrieve attributes                                                                                                                         |          |    |
-| [Default value](specification/resource/semantic_conventions/README.md#semantic-attributes-with-sdk-provided-default-value) for service.name |          |    |
+| Create from Attributes                                                                                                                      |          | +  |
+| Create empty                                                                                                                                |          | +  |
+| [Merge (v2)](specification/resource/sdk.md#merge)                                                                                           |          | ?  |
+| Retrieve attributes                                                                                                                         |          | +  |
+| [Default value](specification/resource/semantic_conventions/README.md#semantic-attributes-with-sdk-provided-default-value) for service.name |          | +  |
 
 ## Context Propagation
 
 | Feature                                                                          | Optional | Haskell |
 |----------------------------------------------------------------------------------|----------|----|
-| Create Context Key                                                               |          | x   |
-| Get value from Context                                                           |          | x   |
-| Set value for Context                                                            |          | x   |
-| Attach Context                                                                   |          | N/A |
-| Detach Context                                                                   |          | N/A |
-| Get current Context                                                              |          |    |
+| Create Context Key                                                               |          | +  |
+| Get value from Context                                                           |          | +  |
+| Set value for Context                                                            |          | +  |
+| Attach Context                                                                   |          | +  |
+| Detach Context                                                                   |          | +  |
+| Get current Context                                                              |          | +  |
 | Composite Propagator                                                             |          |    |
 | Global Propagator                                                                |          |    |
 | TraceContext Propagator                                                          |          |    |
@@ -163,7 +163,7 @@ Note: Support for environment variables is optional.
 | In-memory (mock exporter)                                                      |          |    |
 | [OTLP](specification/protocol/otlp.md)                                         |          |    |
 | OTLP/gRPC Exporter                                                             | *        |    |
-| OTLP/HTTP binary Protobuf Exporter                                             | *        |    |
+| OTLP/HTTP binary Protobuf Exporter                                             | *        | x  |
 | OTLP/HTTP JSON Protobuf Exporter                                               |          |    |
 | OTLP/HTTP gzip Content-Encoding support                                        | X        |    |
 | Concurrent sending                                                             |          |    |
