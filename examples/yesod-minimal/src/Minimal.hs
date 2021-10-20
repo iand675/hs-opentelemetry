@@ -50,7 +50,6 @@ import Yesod.Core
 import Yesod.Core.Handler
 import Yesod.Persist
 import OpenTelemetry.Exporters.OTLP
-import OpenTelemetry.Exporters.OTLP (loadExporterEnvironmentVariables)
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
@@ -112,20 +111,20 @@ getApiR = do
   inSpan "annotatedFunction" emptySpanArguments $ \_ -> do
     res <- runDB $ [sqlQQ|select 1|]
     case res of
-      [] -> error "sad"
       [Single (1 :: Int)] -> pure ()
+      _ -> error "sad"
   pure "Hello, world!"
 
 main :: IO ()
 main = do
   -- client <- initializeHoneycomb $ config "0a3aa320cb317551021ec8abc221fbc7" "testing-client"
   otlpExporterConf <- loadExporterEnvironmentVariables
-  otlpExporter_ <- otlpExporter otlpExporterConf
+  rs <- builtInResources
+  otlpExporter_ <- otlpExporter rs otlpExporterConf
   processor <- simpleProcessor $ SimpleProcessorConfig
     { exporter = otlpExporter_ -- makeHoneycombExporter client
     }
 
-  rs <- builtInResources
   tp <- createTracerProvider
     [ processor
     ]
