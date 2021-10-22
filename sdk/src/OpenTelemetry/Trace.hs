@@ -24,6 +24,8 @@ module OpenTelemetry.Trace
   , SpanKind(..)
   , Link
   , Event
+  -- TODO, don't remember if this is okay with the spec or not
+  , ImmutableSpan(..)
   ) where
 
 import "otel-api" OpenTelemetry.Trace

@@ -30,6 +30,7 @@ dependencies:
 - stm
 - unagi-chan
 - unordered-containers
+- vector-builder
 
 library:
   source-dirs: src

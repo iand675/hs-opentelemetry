@@ -1,10 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
-module OpenTelemetry.Trace.SpanProcessors.Batch 
-  -- ( BatchTimeoutConfig(..)
-  -- , batchProcessor
+module OpenTelemetry.Trace.SpanProcessors.Batch
+  ( BatchTimeoutConfig(..)
+  , batchTimeoutConfig
+  , batchProcessor
   -- , BatchProcessorOperations
-  -- ) where
-  where
+  ) where
 import Control.Concurrent.STM
 import Control.Monad.IO.Class
 import Data.Bits
@@ -13,22 +13,46 @@ import qualified Data.Vector.Mutable as M
 import OpenTelemetry.Trace.SpanProcessor
 import OpenTelemetry.Trace.SpanExporter (SpanExporter)
 import qualified OpenTelemetry.Trace.SpanExporter as Exporter
+import VectorBuilder.Builder as Builder
+import VectorBuilder.Vector as Builder
+import Data.IORef (atomicModifyIORef', readIORef, newIORef)
+import Control.Concurrent.Async
+import Control.Concurrent.MVar (newEmptyMVar, takeMVar, tryPutMVar)
+import Control.Monad
+import System.Timeout
+import Control.Exception
+import Control.Concurrent (newEmptyMVar)
+import GHC.IORef (atomicModifyIORef')
+import Data.HashMap.Strict (HashMap)
+import OpenTelemetry.Trace
+import qualified Data.HashMap.Strict as HashMap
+import Data.Vector (Vector)
 
--- data BatchTimeoutConfig = BatchTimeoutConfig
-  -- { exporter :: SpanExporter 
-  --  The exporter where spans are pushed.
-  -- , maxQueueSize :: Int
-  --  The maximum queue size. After the size is reached, spans are dropped.
-  -- , scheduledDelayMilis :: Int 
-  --  The delay interval in milliseconds between two consective exports.
+data BatchTimeoutConfig = BatchTimeoutConfig
+  { exporter :: SpanExporter
+  -- The exporter where spans are pushed.
+  , maxQueueSize :: Int
+  -- The maximum queue size. After the size is reached, spans are dropped.
+  , scheduledDelayMillis :: Int
+  -- The delay interval in milliseconds between two consective exports.
   -- The default value is 5000.
-  -- , exportTimeoutMillis :: Int
-  --  How long the export can run before it is cancelled.
+  , exportTimeoutMillis :: Int
+  -- How long the export can run before it is cancelled.
   -- The default value is 30000.
-  -- , maxExportBatchSize :: Int
-  --  the maximum batch size of every export. It must be
+  , maxExportBatchSize :: Int
+  -- TODO, this isn't currently respected
+  -- the maximum batch size of every export. It must be
   -- smaller or equal to 'maxQueueSize'. The default value is 512.
-  -- }
+  }
+
+batchTimeoutConfig :: SpanExporter -> BatchTimeoutConfig
+batchTimeoutConfig e = BatchTimeoutConfig
+  { exporter = e
+  , maxQueueSize = 1024
+  , scheduledDelayMillis = 5000
+  , exportTimeoutMillis = 30000
+  , maxExportBatchSize = 512
+  }
 
 -- type BatchProcessorOperations = ()
 
@@ -123,14 +147,73 @@ will be incremented.
   --     setTVar gbPendingWrites 0
   --   -- TODO slice and freeze appropriate section
     -- M.slice (gbSectionSize * (r .&. gbSectionMask) 
-    
+
 
 
 -- TODO, graceful shutdown
 -- TODO, forceFlush
--- batchProcessor :: MonadIO m => BatchTimeoutConfig -> m SpanProcessor
--- batchProcessor BatchTimeoutConfig{..} = do
---   undefined
+-- TODO, counters for dropped spans, exported spans
+
+data BoundedSpanMap = BoundedSpanMap
+  { itemBounds :: !Int
+  , itemCount :: !Int
+  , itemMap :: HashMap InstrumentationLibrary (Builder.Builder ImmutableSpan)
+  }
+
+boundedSpanMap :: Int -> BoundedSpanMap
+boundedSpanMap bounds = BoundedSpanMap bounds 0 mempty
+
+pushSpan :: ImmutableSpan -> BoundedSpanMap -> Maybe BoundedSpanMap
+pushSpan s m = if itemCount m + 1 >= itemBounds m
+  then Nothing
+  else Just $! m 
+    { itemCount = itemCount m + 1
+    , itemMap = HashMap.insertWith 
+        (<>) 
+        (tracerName $ spanTracer s) 
+        (Builder.singleton s) $ 
+        itemMap m
+    }
+
+buildSpanExport :: BoundedSpanMap -> (BoundedSpanMap, HashMap InstrumentationLibrary (Vector ImmutableSpan))
+buildSpanExport m = 
+  ( m { itemCount = 0, itemMap = mempty }
+  , Builder.build <$> itemMap m
+  )
+
+batchProcessor :: MonadIO m => BatchTimeoutConfig -> m SpanProcessor
+batchProcessor BatchTimeoutConfig{..} = liftIO $ do
+  batch <- newIORef $ boundedSpanMap maxQueueSize
+  workSignal <- newEmptyMVar
+  shutdownSignal <- newEmptyMVar
+  worker <- async $ forever $ do
+    void $ timeout (millisToMicros scheduledDelayMillis) $ takeMVar workSignal
+    batchToProcess <- atomicModifyIORef' batch buildSpanExport
+    Exporter.export exporter batchToProcess
+
+
+  pure $ SpanProcessor
+    { onStart = \_ _ -> pure ()
+    , onEnd = \s -> do
+        span <- readIORef s
+        appendFailed <- atomicModifyIORef' batch $ \builder ->
+          case pushSpan span builder of
+            Nothing -> (builder, True)
+            Just b' -> (b', False)
+        when appendFailed $ void $ tryPutMVar workSignal ()
+
+    , forceFlush = void $ tryPutMVar workSignal ()
+    , shutdown = async $ mask $ \restore -> do
+        shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $ 
+          cancel worker 
+        -- TODO, not convinced we should shut down processor here
+
+        case shutdownResult of
+          Nothing -> pure ShutdownFailure
+          Just _ -> pure ShutdownSuccess
+    }
+  where
+    millisToMicros = (* 1000)
   {-
   buffer <- newGreenBlueBuffer _ _
   batchProcessorAction <- async $ forever $ do

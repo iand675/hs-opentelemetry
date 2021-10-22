@@ -30,7 +30,6 @@ import qualified OpenTelemetry.Context as Context
 import Lens.Micro (lens)
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Monad
-import OpenTelemetry.Trace.SpanProcessors.Simple
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Yesod
 import OpenTelemetry.Instrumentation.Persistent
@@ -50,6 +49,7 @@ import Yesod.Core
 import Yesod.Core.Handler
 import Yesod.Persist
 import OpenTelemetry.Exporters.OTLP
+import OpenTelemetry.Trace.SpanProcessors.Batch
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
@@ -117,13 +117,10 @@ getApiR = do
 
 main :: IO ()
 main = do
-  -- client <- initializeHoneycomb $ config "0a3aa320cb317551021ec8abc221fbc7" "testing-client"
   otlpExporterConf <- loadExporterEnvironmentVariables
   rs <- builtInResources
   otlpExporter_ <- otlpExporter rs otlpExporterConf
-  processor <- simpleProcessor $ SimpleProcessorConfig
-    { exporter = otlpExporter_ -- makeHoneycombExporter client
-    }
+  processor <- batchProcessor $ batchTimeoutConfig otlpExporter_
 
   tp <- createTracerProvider
     [ processor
