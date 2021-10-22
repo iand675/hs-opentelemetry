@@ -36,6 +36,7 @@ simpleProcessor SimpleProcessorConfig{..} = do
         cancel exportWorker
         -- TODO handle timeouts
         restore $ do
+          -- TODO, not convinced we should shut down processor here
           shutdownProcessor outChan `finally` Exporter.shutdown exporter
         pure ShutdownSuccess
     , forceFlush = pure ()

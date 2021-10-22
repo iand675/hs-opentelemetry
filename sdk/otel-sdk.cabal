@@ -46,6 +46,7 @@ library
     , unagi-chan
     , unordered-containers
     , vector
+    , vector-builder
   default-language: Haskell2010
 
 test-suite otel-sdk-test
@@ -68,4 +69,5 @@ test-suite otel-sdk-test
     , unagi-chan
     , unordered-containers
     , vector
+    , vector-builder
   default-language: Haskell2010
