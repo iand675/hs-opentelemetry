@@ -46,6 +46,8 @@ dependencies:
 - unliftio-core
 - microlens
 - unix
+# todo get rid of this when enough of the ecosystem has upgraded
+- random-bytestring
 
 library:
   source-dirs: src

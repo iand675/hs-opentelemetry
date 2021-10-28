@@ -53,7 +53,7 @@ test-suite otel-persistent-test
       base >=4.7 && <5
     , mtl
     , otel-api
-    , otel-persistent
+    , otel-instrumentation-persistent
     , persistent
     , resourcet
     , text

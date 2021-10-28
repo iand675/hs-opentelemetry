@@ -78,6 +78,7 @@ library
     , mtl
     , mwc-random
     , random
+    , random-bytestring
     , template-haskell
     , text
     , thread-utils-context
@@ -116,6 +117,7 @@ test-suite otel-api-test
     , mwc-random
     , otel-api
     , random
+    , random-bytestring
     , template-haskell
     , text
     , thread-utils-context

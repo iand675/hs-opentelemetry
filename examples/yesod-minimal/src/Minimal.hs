@@ -24,7 +24,6 @@ import Network.HTTP.Client
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Exporters.Handle
-import OpenTelemetry.Exporters.Honeycomb
 import OpenTelemetry.Context (Context, HasContext(..))
 import qualified OpenTelemetry.Context as Context
 import Lens.Micro (lens)
