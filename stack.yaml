@@ -69,6 +69,9 @@ extra-deps:
   - persistent-postgresql
 - proto-lens-0.7.1.0
 - proto-lens-runtime-0.7.0.1
+# just for testing
+# - mwc-random-0.14.0.0
+# - random-1.1
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
