@@ -97,6 +97,8 @@ wrapSqlBackend tp ctxt conn = do
                     (emptySpanArguments { startingKind = Client })
                     ) (`endSpan` Nothing)
 
+                  annotateBasics child conn
+                  insertAttribute child "db.statement" sql
                   case stmtQuery stmt ps of
                     Acquire stmtQueryAcquireF -> Acquire $ \f ->
                       handleAny
@@ -127,7 +129,9 @@ wrapSqlBackend tp ctxt conn = do
                             endSpan child Nothing
                             throwIO err
                     )
-                    (\_ -> do
+                    (\s -> do
+                      annotateBasics s conn
+                      insertAttribute s "db.statement" sql
                       stmtExecute stmt ps
                     )
 
