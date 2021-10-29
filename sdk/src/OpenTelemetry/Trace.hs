@@ -21,11 +21,22 @@ module OpenTelemetry.Trace
   , createSpan
   , emptySpanArguments
   , CreateSpanArguments(..)
+  , insertAttribute 
+  , insertAttributes
+  , ToAttribute(..)
+  , ToPrimitiveAttribute(..)
+  , Attribute(..)
+  , PrimitiveAttribute(..)
   , SpanKind(..)
-  , Link
+  , Link(..)
+  , addLink
   , Event
+  , NewEvent(..)
+  , addEvent
+  , recordException
   -- TODO, don't remember if this is okay with the spec or not
   , ImmutableSpan(..)
   ) where
 
 import "otel-api" OpenTelemetry.Trace
+import OpenTelemetry.Resource
