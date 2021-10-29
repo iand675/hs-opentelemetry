@@ -3,6 +3,7 @@ module OpenTelemetry.Trace.Monad
   , MonadTracerProvider(..)
   , MonadTracer(..)
   , MonadGetContext(..)
+  , MonadLocalContext(..)
   , MonadBracketError(..)
   , bracketErrorUnliftIO
   ) where
