@@ -14,6 +14,7 @@ module OpenTelemetry.Trace
   -- * 'Tracer' operations
   , Tracer
   , tracerName
+  , getTracer
   , HasTracer(..)
   , InstrumentationLibrary(..)
   -- * 'Span' operations
