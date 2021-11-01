@@ -17,6 +17,7 @@ import OpenTelemetry.Trace
   , endSpan
   , recordException
   )
+import Control.Monad.Reader (ReaderT)
 
 -- | This is a type class rather than coded against MonadIO because
 -- we need the ability to specialize behaviour against things like
@@ -38,6 +39,9 @@ class Monad m => MonadBracketError m where
   bracketError :: m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 
 instance MonadBracketError IO where
+  bracketError = bracketErrorUnliftIO
+
+instance MonadUnliftIO m => MonadBracketError (ReaderT r m) where
   bracketError = bracketErrorUnliftIO
 
 bracketErrorUnliftIO :: MonadUnliftIO m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
