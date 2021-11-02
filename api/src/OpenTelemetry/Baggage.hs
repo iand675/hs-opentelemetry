@@ -8,6 +8,7 @@ module OpenTelemetry.Baggage
   (
   -- * Constructing 'Baggage' structures
     Baggage
+  , empty
   , fromHashMap
   , values
   , Token
@@ -18,13 +19,15 @@ module OpenTelemetry.Baggage
   , element
   , InvalidBaggage(..)
   -- * Modifying 'Baggage'
+  , insert
+  , delete
   -- * Encoding and decoding 'Baggage'
   , encodeBaggageHeader
   , encodeBaggageHeaderB
   , decodeBaggageHeader 
   , decodeBaggageHeaderP
   ) where
-import Control.Applicative
+import Control.Applicative hiding (empty)
 import qualified Data.Attoparsec.ByteString.Char8 as P
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString as BS
