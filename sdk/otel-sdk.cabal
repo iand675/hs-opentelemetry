@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Baggage
       OpenTelemetry.Context
       OpenTelemetry.Propagators
       OpenTelemetry.Setup
