@@ -36,6 +36,8 @@ module OpenTelemetry.Trace
   , NewEvent(..)
   , addEvent
   , recordException
+  , setStatus
+  , SpanStatus(..)
   -- TODO, don't remember if this is okay with the spec or not
   , ImmutableSpan(..)
   ) where
