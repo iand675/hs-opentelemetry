@@ -34,6 +34,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , case-insensitive
     , http-client
     , http-client-tls
     , http-types
@@ -52,6 +53,7 @@ test-suite otel-instrumentation-http-client-test
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , case-insensitive
     , http-client
     , http-client-tls
     , http-types

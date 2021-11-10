@@ -18,6 +18,7 @@ import OpenTelemetry.Trace
   , recordException
   )
 import Control.Monad.Reader (ReaderT)
+import GHC.Stack.Types (HasCallStack)
 
 -- | This is a type class rather than coded against MonadIO because
 -- we need the ability to specialize behaviour against things like
@@ -63,7 +64,7 @@ bracketErrorUnliftIO before after thing = withRunInIO $ \run -> EUnsafe.mask $ \
       return y
 
 inSpan 
-  :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) 
+  :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack) 
   => Text 
   -> CreateSpanArguments 
   -> (Span -> m a) 
