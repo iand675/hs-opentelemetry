@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE LambdaCase #-}
 module OpenTelemetry.Trace
   ( TracerProvider
   , HasTracerProvider(..)
@@ -44,6 +45,7 @@ module OpenTelemetry.Trace
   , isValid
   -- $ Utilities
   , getTimestamp
+  , unsafeReadSpan
   ) where
 
 import Control.Applicative
@@ -70,6 +72,9 @@ import OpenTelemetry.Resource.Telemetry
 import OpenTelemetry.Resource.Process (currentProcessRuntime, getProcess)
 import OpenTelemetry.Resource.OperatingSystem (getOperatingSystem)
 import OpenTelemetry.Resource.Service
+import qualified Data.Text as T
+import GHC.Stack.CCS (whoCreated)
+import Data.Typeable (typeOf)
 
 class HasTracerProvider s where
   tracerProviderL :: Lens' s TracerProvider
@@ -270,7 +275,15 @@ endSpan (Span s) mts = liftIO $ do
 endSpan (FrozenSpan _) _ = pure ()
 
 recordException :: Exception e => Span -> e -> IO ()
-recordException = undefined
+recordException s e = do
+  cs <- whoCreated e
+  let message = T.pack $ show e
+  setStatus s $ Error message
+  insertAttributes s
+    [ ("exception.type", toAttribute $ T.pack $ show $ typeOf e)
+    , ("exception.message", toAttribute message)
+    , ("exception.stacktrace", toAttribute $ T.unlines $ map T.pack cs)
+    ]
 
 wrapSpanContext :: SpanContext -> Span
 wrapSpanContext = FrozenSpan
@@ -284,3 +297,10 @@ isRemote (Span s) = liftIO $ do
   i <- readIORef s
   pure $ Types.isRemote $ Types.spanContext i
 isRemote (FrozenSpan c) = pure $ Types.isRemote c
+
+-- | Really only intended for tests, this function does not conform
+-- to semantic versioning .
+unsafeReadSpan :: MonadIO m => Span -> m ImmutableSpan
+unsafeReadSpan = \case
+  Span ref -> liftIO $ readIORef ref
+  FrozenSpan s -> error "This span is from another process"

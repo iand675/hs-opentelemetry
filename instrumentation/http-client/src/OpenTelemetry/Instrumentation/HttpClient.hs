@@ -18,15 +18,41 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import OpenTelemetry.Resource
+import Data.Foldable (Foldable(toList))
+import Data.CaseInsensitive (foldedCase)
+import Data.Semigroup (Semigroup)
 -- TODO, Manager really needs proper hooks for this.
+
+data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
+  { httpClientPropagator :: Propagator Context RequestHeaders ResponseHeaders
+  , requestHeadersToRecord :: [HeaderName]
+  , responseHeadersToRecord :: [HeaderName]
+  }
+
+instance Semigroup HttpClientInstrumentationConfig where
+  l <> r = HttpClientInstrumentationConfig
+    { httpClientPropagator = httpClientPropagator l <> httpClientPropagator r
+    , requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
+    , responseHeadersToRecord = responseHeadersToRecord l <> responseHeadersToRecord r
+    }
+
+instance Monoid HttpClientInstrumentationConfig where
+  mempty = HttpClientInstrumentationConfig
+    { httpClientPropagator = mempty
+    , requestHeadersToRecord = mempty
+    , responseHeadersToRecord = mempty
+    }
+
+httpClientInstrumentationConfig :: HttpClientInstrumentationConfig
+httpClientInstrumentationConfig = mempty
 
 instrumentRequest
   :: MonadIO m
-  => Propagator Context RequestHeaders ResponseHeaders
+  => HttpClientInstrumentationConfig
   -> Context
   -> Request
   -> m Request
-instrumentRequest p ctxt req = do
+instrumentRequest conf ctxt req = do
   forM_ (lookupSpan ctxt) $ \s -> do
     insertAttributes s
       [ ( "http.method", toAttribute $ T.decodeUtf8 $ method req)
@@ -46,8 +72,12 @@ instrumentRequest p ctxt req = do
         , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
         )
       ]
+    insertAttributes s $
+      concatMap
+        (\h -> toList $ (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) $
+        requestHeadersToRecord conf
 
-  hdrs <- inject p ctxt $ requestHeaders req
+  hdrs <- inject (httpClientPropagator conf) ctxt $ requestHeaders req
   pure $ req
     { requestHeaders = hdrs
     }
@@ -55,12 +85,12 @@ instrumentRequest p ctxt req = do
 
 instrumentResponse
   :: MonadIO m
-  => Propagator Context RequestHeaders ResponseHeaders
+  => HttpClientInstrumentationConfig
   -> Context
   -> Response a
   -> m Context
-instrumentResponse p ctxt resp = do
-  ctxt <- extract p (responseHeaders resp) ctxt
+instrumentResponse conf ctxt resp = do
+  ctxt <- extract (httpClientPropagator conf) (responseHeaders resp) ctxt
   forM_ (lookupSpan ctxt) $ \s -> do
     insertAttributes s
       [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
@@ -73,9 +103,9 @@ instrumentResponse p ctxt resp = do
       -- , ("net.peer.name")
       -- , ("net.peer.ip")
       -- , ("net.peer.port")
-      --, ("http.user_agent", _)
-      -- Must be configured by user
-      -- , ("http.request.header.<key>", _)
-      -- , ("http.response.header.<key>", _)
       ]
+    insertAttributes s $
+      concatMap
+        (\h -> toList $ (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp)) $
+        responseHeadersToRecord conf
   pure ctxt
