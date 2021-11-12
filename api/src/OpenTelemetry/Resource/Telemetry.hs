@@ -49,7 +49,7 @@ telemetry = Telemetry
   }
 
 instance ToResource Telemetry where  
-  type ResourceSchema Telemetry = Nothing
+  type ResourceSchema Telemetry = 'Nothing
   toResource Telemetry{..} = mkResource
     [ "telemetry.sdk.name" .= telemetrySdkName
     , "telemetry.sdk.language" .=? telemetrySdkLanguage

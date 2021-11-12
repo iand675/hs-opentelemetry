@@ -96,12 +96,15 @@ getRootR = do
   -- Wouldn't put this here in a real app
   m <- liftIO $ newManager defaultManagerSettings
   propagator <- minimalPropagator <$> getYesod
+  let httpConfig = httpClientInstrumentationConfig
+        { httpClientPropagator = propagator
+        }
   resp <- inSpan "http.request" (emptySpanArguments { startingKind = Client }) $ \span -> do
     req <- parseUrlThrow "http://localhost:3000/api"
     ctxt <- getContext
-    req' <- instrumentRequest propagator ctxt req
+    req' <- instrumentRequest httpConfig ctxt req
     realResponse <- liftIO $ httpLbs req' m
-    _ <- instrumentResponse propagator ctxt realResponse
+    _ <- instrumentResponse httpConfig ctxt realResponse
     pure realResponse
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 

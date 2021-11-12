@@ -77,7 +77,7 @@ mkResource = Resource . catMaybes
 k .= v = Just (k, toAttribute v)
 
 (.=?) :: ToAttribute a => Text -> Maybe a -> Maybe (Text, Attribute)
-k .=? mv = (\k v -> (k, toAttribute v)) k <$> mv
+k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
 instance (s ~ ResourceMerge s s) => Semigroup (Resource s) where
   (<>) = mergeResources
 
@@ -89,7 +89,7 @@ data ResourceCreationParameters = ResourceCreationParameters
   }
 
 createResource :: [(Text, Attribute)] -> ResourceCreationParameters -> Resource s
-createResource attrs params = Resource attrs
+createResource attrs _params = Resource attrs
 
 -- | Static checks to prevent invalid resources from being merged.
 --
@@ -141,7 +141,7 @@ class ResourceDetector d where
   detect :: d -> IO (Resource (DetectedResource d))
 
 -- baggage format environment variables
-getEnvVarResourceAttributes :: MonadIO m => m (Resource Nothing)
+getEnvVarResourceAttributes :: MonadIO m => m (Resource 'Nothing)
 getEnvVarResourceAttributes = do
   mEnv <- liftIO $ lookupEnv "OTEL_RESOURCE_ATTRIBUTES"
   case mEnv of

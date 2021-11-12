@@ -11,7 +11,6 @@
 module OpenTelemetry.Internal.Trace.Id where
 import OpenTelemetry.Trace.IdGenerator
 import Control.Monad.IO.Class
-import Data.Bits
 import Data.ByteArray.Encoding
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -81,7 +80,7 @@ convertByte :: Word# -> (# Word#, Word# #)
 convertByte b = (# r tableHi b, r tableLo b #)
   where
         r :: Addr# -> Word# -> Word#
-        r table index = indexWord8OffAddr# table (word2Int# index)
+        r table ix = indexWord8OffAddr# table (word2Int# ix)
 
         !tableLo =
             "0123456789abcdef0123456789abcdef\
@@ -129,8 +128,8 @@ fromHexadecimal src@(SBS sbs)
               case writeWord8Array# dst di (or# a b) s of 
                 s1 -> loop dst (di +# 1#) (i +# 2#) s1
 
-    rLo index = indexWord8OffAddr# tableLo (word2Int# index)
-    rHi index = indexWord8OffAddr# tableHi (word2Int# index)
+    rLo ix = indexWord8OffAddr# tableLo (word2Int# ix)
+    rHi ix = indexWord8OffAddr# tableHi (word2Int# ix)
 
     !tableLo =
             "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\

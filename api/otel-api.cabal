@@ -49,11 +49,14 @@ library
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
       OpenTelemetry.Trace
+      OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.IdGenerator
       OpenTelemetry.Trace.Monad
+      OpenTelemetry.Trace.Sampler
       OpenTelemetry.Trace.SpanExporter
       OpenTelemetry.Trace.SpanProcessor
+      OpenTelemetry.Trace.TraceState
   other-modules:
       OpenTelemetry.Internal
       OpenTelemetry.Context.Types
@@ -63,10 +66,12 @@ library
   default-extensions:
       OverloadedStrings
       RecordWildCards
+  ghc-options: -Wall
   build-depends:
       async
     , attoparsec
     , base >=4.7 && <5
+    , binary
     , bytestring
     , charset
     , clock
@@ -93,6 +98,8 @@ test-suite otel-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.Trace.SamplerSpec
+      OpenTelemetry.Trace.TraceFlagsSpec
       Paths_otel_api
   hs-source-dirs:
       test
@@ -104,6 +111,7 @@ test-suite otel-api-test
       async
     , attoparsec
     , base >=4.7 && <5
+    , binary
     , bytestring
     , charset
     , clock

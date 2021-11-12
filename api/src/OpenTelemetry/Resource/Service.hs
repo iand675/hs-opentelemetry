@@ -14,7 +14,7 @@ data Service = Service
   }
 
 instance ToResource Service where
-  type ResourceSchema Service = Nothing
+  type ResourceSchema Service = 'Nothing
   toResource Service{..} = mkResource
     [ "service.name" .= serviceName
     , "service.namespace" .=? serviceNamespace

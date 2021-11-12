@@ -47,10 +47,10 @@ module OpenTelemetry.Context.ThreadLocal
   ) where
 import OpenTelemetry.Context.Types (Context)
 import Control.Concurrent
-import Control.Concurrent.Async
+-- import Control.Concurrent.Async
 import Control.Concurrent.Thread.Storage
 import Control.Monad.IO.Class
-import Control.Monad
+-- import Control.Monad
 import System.IO.Unsafe
 import Prelude hiding (lookup)
 

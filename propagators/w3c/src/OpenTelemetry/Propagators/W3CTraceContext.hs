@@ -15,44 +15,15 @@ import OpenTelemetry.Context.Propagators
 import OpenTelemetry.Trace
 import qualified OpenTelemetry.Trace as Trace
 import OpenTelemetry.Trace.Id (TraceId, SpanId, Base(..), spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder, baseEncodedToTraceId, baseEncodedToSpanId)
+import OpenTelemetry.Trace.TraceState
 import Prelude hiding (takeWhile)
 
 data TraceParent = TraceParent
   { version :: {-# UNPACK #-} !Word8
   , traceId :: {-# UNPACK #-} !TraceId
   , parentId :: {-# UNPACK #-} !SpanId
-  , traceFlags :: {-# UNPACK #-} !Word8
+  , traceFlags :: {-# UNPACK #-} !TraceFlags
   } deriving (Show)
-
-newtype Key = Key Text
-  deriving (Eq)
-
-newtype Value = Value Text
-  deriving (Eq)
-
-newtype TraceState = TraceState [(Key, Value)]
-
-empty :: TraceState
-empty = TraceState []
-
--- | O(n)
-insert :: Key -> Value -> TraceState -> TraceState
-insert k v ts = case delete k ts of
-  (TraceState l) -> TraceState ((k, v) : l)
-
--- | O(n)
-update :: Key -> (Value -> Value) -> TraceState -> TraceState
-update k f (TraceState ts) = case break (\(k', v) -> k == k') ts of
-  (before, []) -> TraceState before
-  (before, (_, v) : kvs) -> TraceState ((k, f v) : (before ++ kvs))
-
--- | O(n)
-delete :: Key -> TraceState -> TraceState
-delete k (TraceState ts) = TraceState $ filter (\(k', _) -> k' /= k) ts
-
--- | O(1)
-toList :: TraceState -> [(Key, Value)]
-toList (TraceState ts) = ts
 
 decodeSpanContext :: Maybe ByteString -> Maybe ByteString -> Maybe SpanContext
 -- W3C spec says:
@@ -69,7 +40,7 @@ decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
     , Trace.isRemote = True
     , Trace.traceId = traceId
     , Trace.spanId = parentId
-    , Trace.traceState = [] -- TODO
+    , Trace.traceState = ts
     }
   where
     decodeTraceparentHeader :: ByteString -> Maybe TraceParent
@@ -94,7 +65,7 @@ traceparentParser = do
     Left err -> fail err
     Right ok -> pure ok
   _ <- string "-"
-  traceFlags <- hexadecimal
+  traceFlags <- traceFlagsFromWord8 <$> hexadecimal
   -- Intentionally not consuming end of input in case of version > 0
   pure $ TraceParent {..}
 
@@ -112,9 +83,7 @@ encodeSpanContext s = do
       B.char7 '-' <>
       spanIdBaseEncodedBuilder Base16 spanId <>
       B.char7 '-' <>
-      B.word8HexFixed traceFlags
-
-      
+      B.word8HexFixed (traceFlagsValue traceFlags)
 
 w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders ResponseHeaders
 w3cTraceContextPropagator = Propagator{..}
@@ -127,7 +96,7 @@ w3cTraceContextPropagator = Propagator{..}
           mspanContext = decodeSpanContext traceParentHeader traceStateHeader
       pure $! case mspanContext of
         Nothing -> c
-        Just s -> Ctxt.insertSpan (createRemoteSpan s) c
+        Just s -> Ctxt.insertSpan (wrapSpanContext (s { isRemote = True })) c
 
     injector c hs = case Ctxt.lookupSpan c of
       Nothing -> pure hs

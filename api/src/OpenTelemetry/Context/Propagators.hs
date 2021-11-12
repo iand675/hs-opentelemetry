@@ -3,7 +3,6 @@ module OpenTelemetry.Context.Propagators where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Semigroup
 import Data.Text
 
 data Propagator context inboundPropagator outboundPropagator = Propagator

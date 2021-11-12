@@ -23,7 +23,7 @@ data Process = Process
   }
 
 instance ToResource Process where
-  type ResourceSchema Process = Nothing
+  type ResourceSchema Process = 'Nothing
   toResource Process{..} = mkResource
     [ "process.pid" .=? processPid
     , "process.executable.name" .=? processExecutableName
@@ -41,7 +41,7 @@ data ProcessRuntime = ProcessRuntime
   }
 
 instance ToResource ProcessRuntime where
-  type ResourceSchema ProcessRuntime = Nothing
+  type ResourceSchema ProcessRuntime = 'Nothing
   toResource ProcessRuntime{..} = mkResource
     [ "process.runtime.name" .=? processRuntimeName
     , "process.runtime.version" .=? processRuntimeVersion

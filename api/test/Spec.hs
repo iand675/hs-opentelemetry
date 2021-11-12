@@ -10,6 +10,9 @@ import qualified Data.Bifunctor
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.IORef
 import Data.Maybe (isJust)
+-- Specs
+import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
+import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 
 newtype TestTraceMonad a = TestTraceMonad (ReaderT (Tracer, Context) IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO)
@@ -58,3 +61,5 @@ main = hspec $ do
   describe "inSpan" $ do
     it "records exceptions" $ do
       exceptionTest
+  Sampler.spec
+  TraceFlags.spec

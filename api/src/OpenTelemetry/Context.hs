@@ -19,15 +19,12 @@ module OpenTelemetry.Context
 import Control.Monad.IO.Class
 import Data.Maybe
 import Data.Text (Text)
-import Data.Unique.Really
 import qualified Data.Vault.Strict as V
 import Lens.Micro (Lens')
 import OpenTelemetry.Baggage (Baggage)
-import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Internal.Trace.Types
 import Prelude hiding (lookup)
-import System.Mem.Weak
 import System.IO.Unsafe
 
 newKey :: MonadIO m => Text -> m (Key a)
