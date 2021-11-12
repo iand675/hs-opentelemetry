@@ -26,6 +26,7 @@ default-extensions:
 dependencies:
 - base >= 4.7 && < 5
 - async
+- binary
 - bytestring
 - text
 - unordered-containers
@@ -51,6 +52,7 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options: -Wall
   other-modules:
   - OpenTelemetry.Internal
   - OpenTelemetry.Context.Types

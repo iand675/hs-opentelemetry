@@ -9,8 +9,7 @@ module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
 import Control.Exception (SomeException)
-import Data.ByteString (ByteString)
-import Data.ByteString.Short (ShortByteString)
+import Data.Bits
 import Data.IORef (IORef)
 import Data.Word (Word8)
 import Data.Text (Text)
@@ -20,6 +19,7 @@ import OpenTelemetry.Context.Types
 import OpenTelemetry.Resource
 import OpenTelemetry.Internal.Trace.Id
 import OpenTelemetry.Trace.IdGenerator
+import OpenTelemetry.Trace.TraceState
 import System.Clock (TimeSpec)
 import Data.HashMap.Strict (HashMap)
 import GHC.Generics
@@ -55,22 +55,19 @@ data SpanProcessor = SpanProcessor
 data TracerProvider = forall s. TracerProvider 
   { tracerProviderProcessors :: Vector SpanProcessor
   , tracerProviderIdGenerator :: IdGenerator
+  , tracerProviderSampler :: Sampler
   , tracerProviderResources :: Resource s
   -- ^ TODO schema support
   }
 
 data Tracer = Tracer
   { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
-  , tracerProcessors :: {-# UNPACK #-} !(Vector SpanProcessor)
-  , tracerIdGenerator :: {-# UNPACK #-} !IdGenerator
-  , tracerResources :: [(Text, Attribute)] -- TODO, this should be a deduplicated vector
+  , tracerProvider :: {-# UNPACK #-} !TracerProvider
   }
 
 type Time = TimeSpec
 type Timestamp = TimeSpec
 type Duration = TimeSpec
-
-type SpanParent = Maybe Context
 
 data Link = Link
   { linkContext :: SpanContext
@@ -80,6 +77,7 @@ data Link = Link
 
 data CreateSpanArguments = CreateSpanArguments
   { startingKind :: SpanKind
+  , startingAttributes :: [(Text, Attribute)]
   , startingLinks :: [Link]
   , startingTimestamp :: Maybe Timestamp
   }
@@ -88,8 +86,6 @@ data FlushResult = FlushTimeout | FlushSuccess
   deriving (Show)
 
 data SpanKind = Server | Client | Producer | Consumer | Internal
-  deriving (Show)
-data TraceFlags = TraceFlags
   deriving (Show)
 
 data SpanStatus = Unset | Error Text | Ok
@@ -115,6 +111,28 @@ data ImmutableSpan = ImmutableSpan
 data Span 
   = Span (IORef ImmutableSpan)
   | FrozenSpan SpanContext
+  | Dropped SpanContext
+
+newtype TraceFlags = TraceFlags Word8
+  deriving (Show, Eq, Ord)
+
+defaultTraceFlags :: TraceFlags
+defaultTraceFlags = TraceFlags 0
+
+isSampled :: TraceFlags -> Bool
+isSampled (TraceFlags flags) = flags `testBit` 0
+
+setSampled :: TraceFlags -> TraceFlags
+setSampled (TraceFlags flags) = TraceFlags (flags `setBit` 0)
+
+unsetSampled :: TraceFlags -> TraceFlags
+unsetSampled (TraceFlags flags) = TraceFlags (flags `clearBit` 0)
+
+traceFlagsValue :: TraceFlags -> Word8
+traceFlagsValue (TraceFlags flags) = flags
+
+traceFlagsFromWord8 :: Word8 -> TraceFlags
+traceFlagsFromWord8 = TraceFlags
 
 -- | A `SpanContext` represents the portion of a `Span` which must be serialized and
 -- propagated along side of a distributed context. `SpanContext`s are immutable.
@@ -143,11 +161,11 @@ data Span
 -- create a `SpanContext`. This functionality MUST be fully implemented in the API, and SHOULD NOT be
 -- overridable.
 data SpanContext = SpanContext
-  { traceFlags :: Word8
+  { traceFlags :: TraceFlags
   , isRemote :: Bool
   , traceId :: TraceId
   , spanId :: SpanId
-  , traceState :: [(Text, Text)] -- TODO have to move TraceState impl from W3CTraceContext to here
+  , traceState :: TraceState -- TODO have to move TraceState impl from W3CTraceContext to here
   -- list of up to 32, remove rightmost if exceeded
   -- see w3c trace-context spec
   } deriving (Show, Eq)
@@ -169,3 +187,17 @@ data Event = Event
 
 class ToEvent a where
   toEvent :: a -> Event
+
+data SamplingResult
+  = Drop 
+  -- ^ isRecording == false. Span will not be recorded and all events and attributes will be dropped.
+  | RecordOnly 
+  -- ^ isRecording == true, but Sampled flag MUST NOT be set.
+  | RecordAndSample
+  -- ^ isRecording == true, AND Sampled flag MUST be set.
+  deriving (Show, Eq)
+
+data Sampler = Sampler
+  { getDescription :: Text
+  , shouldSample :: Context -> TraceId -> Text -> CreateSpanArguments -> IO (SamplingResult, [(Text, Attribute)], TraceState)
+  }

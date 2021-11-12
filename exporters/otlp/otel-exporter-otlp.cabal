@@ -33,6 +33,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , case-insensitive
     , clock
     , http-client
     , http-conduit
@@ -58,6 +59,7 @@ test-suite otel-exporter-otlp-test
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , case-insensitive
     , clock
     , http-client
     , http-conduit

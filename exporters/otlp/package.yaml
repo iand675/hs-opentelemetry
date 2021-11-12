@@ -25,6 +25,7 @@ dependencies:
 - otel-otlp
 - text
 - bytestring
+- case-insensitive
 - http-types
 - http-client
 - http-conduit

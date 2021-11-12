@@ -9,6 +9,7 @@ module OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Trace
 import OpenTelemetry.Context
 import Data.Acquire.Internal
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Database.Persist.Sql
 import Database.Persist.SqlBackend (setConnHooks, SqlBackendHooks (hookGetStatement), emptySqlBackendHooks, MkSqlBackendArgs (connRDBMS), getRDBMS, getConnVault, modifyConnVault)
@@ -92,7 +93,7 @@ wrapSqlBackend tp ctxt conn = do
               { stmtQuery = \ps -> do
                   child <- mkAcquire (createSpan
                     t
-                    (lookupConnectionContext conn)
+                    (fromMaybe OpenTelemetry.Context.empty $ lookupConnectionContext conn)
                     "db.query"
                     (emptySpanArguments { startingKind = Client })
                     ) (`endSpan` Nothing)
@@ -116,7 +117,7 @@ wrapSqlBackend tp ctxt conn = do
                     (
                       createSpan
                         t
-                        (lookupConnectionContext conn)
+                        (fromMaybe OpenTelemetry.Context.empty $ lookupConnectionContext conn)
                         "db.execute"
                         (emptySpanArguments { startingKind = Client })
                     )

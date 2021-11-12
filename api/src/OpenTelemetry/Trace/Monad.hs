@@ -2,12 +2,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module OpenTelemetry.Trace.Monad where
 
-import Control.Exception (Exception(..), SomeException(..))
+import Control.Exception (SomeException(..))
 import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
 import Data.Text (Text)
-import Lens.Micro
-import OpenTelemetry.Context (Context, lookupSpan, insertSpan)
+import OpenTelemetry.Context (Context, insertSpan)
 import OpenTelemetry.Trace 
   ( TracerProvider
   , Tracer
@@ -73,7 +72,7 @@ inSpan n args f = do
   t <- getTracer
   ctx <- getContext
   bracketError 
-    (liftIO $ createSpan t (Just ctx) n args)
+    (liftIO $ createSpan t ctx n args)
     (\e s -> liftIO $ do
       mapM_ (recordException s) e
       -- TODO, getting the timestamp is a bit of overhead that would be nice to avoid

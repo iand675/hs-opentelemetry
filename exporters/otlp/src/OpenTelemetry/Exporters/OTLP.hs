@@ -5,12 +5,15 @@
 {-# LANGUAGE RecordWildCards #-}
 module OpenTelemetry.Exporters.OTLP where
 
-import Data.ByteString.Char8
+import qualified Data.ByteString.Char8 as C
+import qualified Data.CaseInsensitive as CI
 import Data.Text (Text)
+import qualified Data.Text.Encoding as T
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
 import qualified OpenTelemetry.Trace.SpanExporter
 import System.Environment
+import qualified OpenTelemetry.Baggage as Baggage
 import qualified OpenTelemetry.Trace as OT
 import Proto.Opentelemetry.Proto.Trace.V1.Trace (InstrumentationLibrarySpans, ResourceSpans, Span'SpanKind (Span'SPAN_KIND_SERVER, Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL), Status'StatusCode (Status'STATUS_CODE_OK, Status'STATUS_CODE_ERROR, Status'STATUS_CODE_UNSET))
 import Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
@@ -39,10 +42,10 @@ data Protocol = {- GRpc | HttpJson | -} HttpProtobuf
   -- ^ Note: grpc and http/json will likely be supported eventually,
   -- but not yet.
 
-otlpExporterHttpEndpoint :: ByteString
+otlpExporterHttpEndpoint :: C.ByteString
 otlpExporterHttpEndpoint = "http://localhost:4318"
 
-otlpExporterGRpcEndpoint :: ByteString
+otlpExporterGRpcEndpoint :: C.ByteString
 otlpExporterGRpcEndpoint = "http://localhost:4317"
 
 
@@ -83,8 +86,7 @@ loadExporterEnvironmentVariables = liftIO $ do
     lookupEnv "OTEL_EXPORTER_OTLP_CERTIFICATE" <*>
     lookupEnv "OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE" <*>
     lookupEnv "OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE" <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_HEADERS" <*>
-    pure Nothing <*>
+    (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_HEADERS") <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_TRACES_HEADERS" <*>
     pure Nothing <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_HEADERS" <*>
@@ -107,15 +109,21 @@ loadExporterEnvironmentVariables = liftIO $ do
     pure Nothing <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"
     pure Nothing
+  where
+    decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
+      Left _ -> mempty
+      Right baggageFmt -> 
+        fmap (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) $ H.toList (Baggage.values baggageFmt)
 
-protobufMimeType :: ByteString
+protobufMimeType :: C.ByteString
 protobufMimeType = "application/x-protobuf"
 
 otlpExporter :: MonadIO m => Resource schema -> OTLPExporterConfig -> m SpanExporter
 otlpExporter resourceAttributes conf = do
   pure $ SpanExporter
     { export = \spans -> do
-        req <- parseRequest "http://localhost:4318/v1/traces"
+        -- TODO, this is janky
+        req <- parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
         let req' = req
               { method = "POST"
               , requestHeaders =

@@ -17,6 +17,7 @@ module OpenTelemetry.Baggage
   , tokenValue
   , Element(..)
   , element
+  , property
   , InvalidBaggage(..)
   -- * Modifying 'Baggage'
   , insert
@@ -32,7 +33,6 @@ import qualified Data.Attoparsec.ByteString.Char8 as P
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BS
-import Data.ByteString.Internal (ByteString(..) )
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Builder.Extra as BS
 import Data.ByteString.Unsafe (unsafePackAddressLen)
@@ -179,7 +179,7 @@ decodeBaggageHeaderP = do
     memberP = do
       tok <- tokenP 
       owsP
-      P.char8 '='
+      _ <- P.char8 '='
       owsP
       val <- valP
       props <- many (owsP >> P.char8 ';' >> owsP >> propertyP)
@@ -200,7 +200,7 @@ decodeBaggageHeaderP = do
       key <- tokenP
       owsP
       val <- P.option Nothing $ do
-        P.char8 '='
+        _ <- P.char8 '='
         owsP
         Just <$> valP
       pure $ Property key val

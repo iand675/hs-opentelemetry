@@ -34,7 +34,7 @@ newOpenTelemetryWaiMiddleware tp propagator = do
     middleware tracer app req sendResp = do
       -- TODO baggage, span context
       ctxt <- extract propagator (requestHeaders req) Context.empty
-      requestSpan <- createSpan tracer (Just ctxt) "http.server" $ emptySpanArguments
+      requestSpan <- createSpan tracer ctxt "http.server" $ emptySpanArguments
         { startingKind = Server
         }
 

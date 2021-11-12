@@ -40,7 +40,7 @@ getOperatingSystem = pure $ OperatingSystem
   }
 
 instance ToResource OperatingSystem where
-  type ResourceSchema OperatingSystem = Nothing
+  type ResourceSchema OperatingSystem = 'Nothing
   -- TODO ^ schema
   toResource OperatingSystem{..} = mkResource
     [ "os.type" .= osType
