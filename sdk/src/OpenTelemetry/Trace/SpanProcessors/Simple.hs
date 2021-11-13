@@ -27,19 +27,19 @@ simpleProcessor SimpleProcessorConfig{..} = do
     -- TODO, masking vs bracket here, not sure what's the right choice
     spanRef <- readChanOnException outChan (>>= writeChan inChan)
     span <- readIORef spanRef
-    mask_ (exporter `Exporter.export` HashMap.singleton (tracerName $ spanTracer span) (pure span))
+    mask_ (exporter `Exporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span) (pure span))
 
   pure $ SpanProcessor
-    { onStart = \_ _ -> pure ()
-    , onEnd = writeChan inChan 
-    , shutdown = async $ mask $ \restore -> do
+    { spanProcessorOnStart = \_ _ -> pure ()
+    , spanProcessorOnEnd = writeChan inChan 
+    , spanProcessorShutdown = async $ mask $ \restore -> do
         cancel exportWorker
         -- TODO handle timeouts
         restore $ do
           -- TODO, not convinced we should shut down processor here
-          shutdownProcessor outChan `finally` Exporter.shutdown exporter
+          shutdownProcessor outChan `finally` Exporter.spanExporterShutdown exporter
         pure ShutdownSuccess
-    , forceFlush = pure ()
+    , spanProcessorForceFlush = pure ()
     }
 
   where
@@ -51,6 +51,6 @@ simpleProcessor SimpleProcessorConfig{..} = do
         Nothing -> pure ()
         Just spanRef -> do
           span <- readIORef spanRef
-          exporter `Exporter.export` HashMap.singleton (tracerName $ spanTracer span) (pure span)
+          exporter `Exporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span) (pure span)
           shutdownProcessor outChan
 

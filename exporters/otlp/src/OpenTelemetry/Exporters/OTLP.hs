@@ -112,8 +112,8 @@ loadExporterEnvironmentVariables = liftIO $ do
   where
     decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
       Left _ -> mempty
-      Right baggageFmt -> 
-        fmap (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) $ H.toList (Baggage.values baggageFmt)
+      Right baggageFmt ->
+        (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
 
 protobufMimeType :: C.ByteString
 protobufMimeType = "application/x-protobuf"
@@ -121,7 +121,7 @@ protobufMimeType = "application/x-protobuf"
 otlpExporter :: MonadIO m => Resource schema -> OTLPExporterConfig -> m SpanExporter
 otlpExporter resourceAttributes conf = do
   pure $ SpanExporter
-    { export = \spans -> do
+    { spanExporterExport = \spans -> do
         -- TODO, this is janky
         req <- parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
         let req' = req
@@ -139,7 +139,7 @@ otlpExporter resourceAttributes conf = do
               }
         resp <- httpBS req'
         pure Success
-    , shutdown = pure ()
+    , spanExporterShutdown = pure ()
     }
 
 attributesToProto :: Functor f => f (Text, Attribute) -> f KeyValue
@@ -177,7 +177,7 @@ immutableSpansToProtobuf r completedSpans = defMessage
   where
     makeInstrumentationLibrarySpans (library, completedSpans) = defMessage
       & instrumentationLibrary .~ (
-          defMessage 
+          defMessage
             & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.libraryName library
             & version .~ OT.libraryVersion library
         )

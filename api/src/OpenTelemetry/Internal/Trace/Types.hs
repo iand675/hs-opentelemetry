@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
@@ -39,17 +38,17 @@ instance IsString InstrumentationLibrary where
   fromString str = InstrumentationLibrary (fromString str) ""
 
 data SpanExporter = SpanExporter
-  { export :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
-  , shutdown :: IO ()
+  { spanExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+  , spanExporterShutdown :: IO ()
   }
 
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
 
 data SpanProcessor = SpanProcessor
-  { onStart :: IORef ImmutableSpan -> Context -> IO ()
-  , onEnd :: IORef ImmutableSpan -> IO ()
-  , shutdown :: IO (Async ShutdownResult)
-  , forceFlush :: IO ()
+  { spanProcessorOnStart :: IORef ImmutableSpan -> Context -> IO ()
+  , spanProcessorOnEnd :: IORef ImmutableSpan -> IO ()
+  , spanProcessorShutdown :: IO (Async ShutdownResult)
+  , spanProcessorForceFlush :: IO ()
   }
 
 data TracerProvider = forall s. TracerProvider 
