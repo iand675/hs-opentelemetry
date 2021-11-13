@@ -57,7 +57,7 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
         , spanId = sId
         , traceId = tId
         }
-  
+
       mkRecordingSpan = do
         st <- case startingTimestamp of
           Nothing -> getTime Realtime
@@ -77,9 +77,9 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
               , spanTracer = t
               }
         s <- newIORef is
-        mapM_ (\processor -> (onStart processor) s ctxt) $ tracerProviderProcessors $ tracerProvider t
+        mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
         pure $ Span s
-    
+
   case samplingOutcome of
     Drop -> pure $ Dropped ctxtForSpan
     RecordOnly -> mkRecordingSpan
@@ -87,8 +87,8 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
 
 -- TODO should this use the atomic variant
 addLink :: MonadIO m => Span -> Link -> m ()
-addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i 
-  { spanLinks = (l { linkAttributes = linkAttributes l }) : spanLinks i 
+addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i
+  { spanLinks = (l { linkAttributes = linkAttributes l }) : spanLinks i
   }
 addLink (FrozenSpan _) _ = pure ()
 addLink (Dropped _) _ = pure ()
@@ -156,7 +156,7 @@ endSpan (Span s) mts = liftIO $ do
   frozenS <- atomicModifyIORef s $ \i ->
     let ref = i { spanEnd = spanEnd i <|> Just ts }
     in (ref, ref)
-  mapM_ (`onEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+  mapM_ (`spanProcessorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
 endSpan (FrozenSpan _) _ = pure ()
 endSpan (Dropped _) _ = pure ()
 

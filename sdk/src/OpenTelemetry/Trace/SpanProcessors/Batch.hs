@@ -189,12 +189,12 @@ batchProcessor BatchTimeoutConfig{..} = liftIO $ do
   worker <- async $ forever $ do
     void $ timeout (millisToMicros scheduledDelayMillis) $ takeMVar workSignal
     batchToProcess <- atomicModifyIORef' batch buildSpanExport
-    Exporter.export exporter batchToProcess
+    Exporter.spanExporterExport exporter batchToProcess
 
 
   pure $ SpanProcessor
-    { onStart = \_ _ -> pure ()
-    , onEnd = \s -> do
+    { spanProcessorOnStart = \_ _ -> pure ()
+    , spanProcessorOnEnd = \s -> do
         span <- readIORef s
         appendFailed <- atomicModifyIORef' batch $ \builder ->
           case pushSpan span builder of
@@ -202,8 +202,8 @@ batchProcessor BatchTimeoutConfig{..} = liftIO $ do
             Just b' -> (b', False)
         when appendFailed $ void $ tryPutMVar workSignal ()
 
-    , forceFlush = void $ tryPutMVar workSignal ()
-    , shutdown = async $ mask $ \restore -> do
+    , spanProcessorForceFlush = void $ tryPutMVar workSignal ()
+    , spanProcessorShutdown = async $ mask $ \restore -> do
         shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $ 
           cancel worker 
         -- TODO, not convinced we should shut down processor here

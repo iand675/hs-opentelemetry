@@ -19,10 +19,10 @@ import System.IO (Handle, hFlush, stdout, stderr)
 
 makeHandleExporter :: Handle -> (ImmutableSpan -> L.Text) -> SpanExporter
 makeHandleExporter h f = SpanExporter
-  { export = \fs -> do
+  { spanExporterExport = \fs -> do
       mapM_ (mapM_ (\s -> L.hPutStrLn h (f s) >> hFlush h)) fs 
       pure Success
-  , shutdown = hFlush h
+  , spanExporterShutdown = hFlush h
   }
 
 stdoutExporter :: (ImmutableSpan -> L.Text) -> SpanExporter

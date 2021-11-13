@@ -6,6 +6,8 @@ module OpenTelemetry.Trace
   ( TracerProvider
   , HasTracerProvider(..)
   , createTracerProvider
+  , shutdownTracerProvider
+  , forceFlushTracerProvider
   , getGlobalTracerProvider
   , setGlobalTracerProvider
   , emptyTracerProviderOptions
@@ -59,33 +61,27 @@ module OpenTelemetry.Trace
 
 import Control.Concurrent.Async
 import Control.Monad.IO.Class
-import qualified Data.ByteString as B
 import Data.IORef
-import Data.Maybe (isNothing, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Vector as V
 import Lens.Micro (Lens')
-import OpenTelemetry.Context
 import OpenTelemetry.Resource
-import qualified OpenTelemetry.Trace.TraceState as TraceState
-import OpenTelemetry.Trace.SpanExporter
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.IdGenerator
 import OpenTelemetry.Trace.Sampler
 import OpenTelemetry.Internal.Trace.Types
-import qualified OpenTelemetry.Internal.Trace.Types as Types
 import System.Clock
 import System.IO.Unsafe
 import OpenTelemetry.Resource.Telemetry
 import OpenTelemetry.Resource.Process (currentProcessRuntime, getProcess)
 import OpenTelemetry.Resource.OperatingSystem (getOperatingSystem)
 import OpenTelemetry.Resource.Service
-import qualified Data.Text as T
+import Control.Monad
 
 class HasTracerProvider s where
   tracerProviderL :: Lens' s TracerProvider
 
-builtInResources :: IO (Resource Nothing)
+builtInResources :: IO (Resource 'Nothing)
 builtInResources = do
   svc <- getService
   processInfo <- getProcess
@@ -103,7 +99,7 @@ globalTracer = unsafePerformIO $ do
   rs <- builtInResources
   p <- createTracerProvider
     []
-    ((emptyTracerProviderOptions @Nothing)
+    ((emptyTracerProviderOptions @'Nothing)
       { tracerProviderOptionsResources = rs
       })
   newIORef p
@@ -161,8 +157,11 @@ emptySpanArguments = CreateSpanArguments
   }
 
 
-shutdownTracer :: MonadIO m => Tracer -> m ()
-shutdownTracer = undefined
+shutdownTracerProvider :: MonadIO m => TracerProvider -> m ()
+shutdownTracerProvider TracerProvider{..} = liftIO $ do
+  asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
+    spanProcessorShutdown processor
+  mapM_ wait asyncShutdownResults
 
-forceFlushTracer :: MonadIO m => Tracer -> Int -> m (Async FlushResult)
-forceFlushTracer = undefined
+forceFlushTracerProvider :: MonadIO m => TracerProvider -> Maybe Int -> m (Async FlushResult)
+forceFlushTracerProvider = undefined

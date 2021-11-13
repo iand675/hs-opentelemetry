@@ -26,11 +26,11 @@ import Data.Foldable (toList)
 
 makeHoneycombExporter :: HoneycombClient -> SpanExporter
 makeHoneycombExporter c = SpanExporter
-  { export = \fs -> do
+  { spanExporterExport = \fs -> do
       let events = concatMap (makeEvents c) $ concatMap toList $ toList fs
       mapM_ (send c) events
       pure Success
-  , shutdown = shutdownHoneycomb c
+  , spanExporterShutdown = shutdownHoneycomb c
   }
 
 newtype HoneycombFormattedAttribute = HoneycombFormattedAttribute Attribute
