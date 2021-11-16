@@ -61,7 +61,7 @@ data TracerProvider = forall s. TracerProvider
 
 data Tracer = Tracer
   { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
-  , tracerProvider :: {-# UNPACK #-} !TracerProvider
+  , tracerProvider :: !TracerProvider
   }
 
 type Time = TimeSpec
