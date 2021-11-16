@@ -13,7 +13,7 @@ import OpenTelemetry.Context.Propagators
 import OpenTelemetry.Trace
 import Network.HTTP.Client
 import Network.HTTP.Types
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -92,6 +92,8 @@ instrumentResponse
 instrumentResponse conf ctxt resp = do
   ctxt <- extract (httpClientPropagator conf) (responseHeaders resp) ctxt
   forM_ (lookupSpan ctxt) $ \s -> do
+    when (statusCode (responseStatus resp) >= 400) $ do
+      setStatus s (Error "")
     insertAttributes s
       [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
       -- TODO

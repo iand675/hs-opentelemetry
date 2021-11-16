@@ -17,6 +17,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import OpenTelemetry.Resource
+import Control.Monad
 
 newOpenTelemetryWaiMiddleware 
   :: TracerProvider 
@@ -75,9 +76,10 @@ newOpenTelemetryWaiMiddleware tp propagator = do
         insertAttributes requestSpan
           [ ( "http.status_code", toAttribute $ statusCode $ responseStatus resp)
           ]
+        when (statusCode (responseStatus resp) >= 500) $ do
+          setStatus requestSpan (Error "")
         respReceived <- sendResp resp'
         ts <- getTimestamp
-        -- TODO Annotate results here
         endSpan requestSpan (Just ts)
         pure respReceived
 
