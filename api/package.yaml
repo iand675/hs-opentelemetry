@@ -52,7 +52,7 @@ dependencies:
 
 library:
   source-dirs: src
-  ghc-options: -Wall
+  ghc-options: -Wall -Werror
   other-modules:
   - OpenTelemetry.Internal
   - OpenTelemetry.Context.Types
