@@ -6,108 +6,130 @@
 - Provide a middleware to pull from the thread-local state (okay)
 - Modify the global manager to pull from the thread-local state (least good, can't be helped sometimes)
 -}
-module OpenTelemetry.Instrumentation.HttpClient where
-import Control.Monad.IO.Class
+module OpenTelemetry.Instrumentation.HttpClient 
+  ( withResponse
+  , httpLbs
+  , httpNoBody
+  , responseOpen
+  , httpClientInstrumentationConfig
+  , HttpClientInstrumentationConfig(..)
+  , module X
+  ) where
+import qualified Data.ByteString.Lazy as L
+import Control.Monad.IO.Class ( MonadIO(..) )
 import OpenTelemetry.Context (Context, lookupSpan)
-import OpenTelemetry.Context.Propagators
 import OpenTelemetry.Trace
-import Network.HTTP.Client
-import Network.HTTP.Types
+    ( emptySpanArguments,
+      CreateSpanArguments(startingKind),
+      SpanKind(Client) )
+import OpenTelemetry.Trace.Monad
+    ( inSpan,
+      MonadBracketError,
+      MonadGetContext(getContext),
+      MonadLocalContext,
+      MonadTracer )
+import Network.HTTP.Client as X hiding (withResponse, httpLbs, httpNoBody, responseOpen)
+import qualified Network.HTTP.Client as Client
 import Control.Monad (forM_, when)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import OpenTelemetry.Resource
 import Data.Foldable (Foldable(toList))
 import Data.CaseInsensitive (foldedCase)
 import Data.Semigroup (Semigroup)
--- TODO, Manager really needs proper hooks for this.
+import OpenTelemetry.Instrumentation.HttpClient.Raw
+    ( HttpClientInstrumentationConfig(..),
+      instrumentRequest,
+      instrumentResponse, httpClientInstrumentationConfig )
+import UnliftIO ( MonadUnliftIO, askRunInIO )
 
-data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
-  { httpClientPropagator :: Propagator Context RequestHeaders ResponseHeaders
-  , requestHeadersToRecord :: [HeaderName]
-  , responseHeadersToRecord :: [HeaderName]
-  }
+spanArgs :: CreateSpanArguments
+spanArgs = emptySpanArguments { startingKind = Client }
 
-instance Semigroup HttpClientInstrumentationConfig where
-  l <> r = HttpClientInstrumentationConfig
-    { httpClientPropagator = httpClientPropagator l <> httpClientPropagator r
-    , requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
-    , responseHeadersToRecord = responseHeadersToRecord l <> responseHeadersToRecord r
-    }
+-- | Instrumented variant of @Network.HTTP.Client.withResponse@
+--
+-- Perform a @Request@ using a connection acquired from the given @Manager@,
+-- and then provide the @Response@ to the given function. This function is
+-- fully exception safe, guaranteeing that the response will be closed when the
+-- inner function exits. It is defined as:
+--
+-- > withResponse req man f = bracket (responseOpen req man) responseClose f
+--
+-- It is recommended that you use this function in place of explicit calls to
+-- 'responseOpen' and 'responseClose'.
+--
+-- You will need to use functions such as 'brRead' to consume the response
+-- body.
+withResponse :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig
+             -> Client.Request
+             -> Client.Manager
+             -> (Client.Response Client.BodyReader -> m a)
+             -> m a
+withResponse httpConf req man f = inSpan "withResponse" spanArgs $ \wrSpan -> do
+  ctxt <- getContext
+  -- TODO would like to capture the req/resp time specifically
+  -- inSpan "http.request" (emptySpanArguments { startingKind = Client }) $ \httpReqSpan -> do
+  req <- instrumentRequest httpConf ctxt req
+  runInIO <- askRunInIO
+  liftIO $ Client.withResponse req man $ \resp -> do
+    instrumentResponse httpConf ctxt resp
+    runInIO $ f resp
 
-instance Monoid HttpClientInstrumentationConfig where
-  mempty = HttpClientInstrumentationConfig
-    { httpClientPropagator = mempty
-    , requestHeadersToRecord = mempty
-    , responseHeadersToRecord = mempty
-    }
-
-httpClientInstrumentationConfig :: HttpClientInstrumentationConfig
-httpClientInstrumentationConfig = mempty
-
-instrumentRequest
-  :: MonadIO m
-  => HttpClientInstrumentationConfig
-  -> Context
-  -> Request
-  -> m Request
-instrumentRequest conf ctxt req = do
-  forM_ (lookupSpan ctxt) $ \s -> do
-    insertAttributes s
-      [ ( "http.method", toAttribute $ T.decodeUtf8 $ method req)
-      , ( "http.url",
-          toAttribute $
-          T.decodeUtf8
-          ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
-        )
-      , ( "http.target", toAttribute $ T.decodeUtf8 (path req <> queryString req))
-      , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
-      , ( "http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
-      , ( "http.flavor"
-        , toAttribute $ case requestVersion req of
-            (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
-        )
-      , ( "http.user_agent"
-        , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
-        )
-      ]
-    insertAttributes s $
-      concatMap
-        (\h -> toList $ (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) $
-        requestHeadersToRecord conf
-
-  hdrs <- inject (httpClientPropagator conf) ctxt $ requestHeaders req
-  pure $ req
-    { requestHeaders = hdrs
-    }
+-- | A convenience wrapper around 'withResponse' which reads in the entire
+-- response body and immediately closes the connection. Note that this function
+-- performs fully strict I\/O, and only uses a lazy ByteString in its response
+-- for memory efficiency. If you are anticipating a large response body, you
+-- are encouraged to use 'withResponse' and 'brRead' instead.
+httpLbs :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
+httpLbs httpConf req man = inSpan "httpLbs" spanArgs $ \_ -> do
+  ctxt <- getContext
+  req <- instrumentRequest httpConf ctxt req
+  resp <- liftIO $ Client.httpLbs req man
+  instrumentResponse httpConf ctxt resp
+  pure resp
 
 
-instrumentResponse
-  :: MonadIO m
-  => HttpClientInstrumentationConfig
-  -> Context
-  -> Response a
-  -> m Context
-instrumentResponse conf ctxt resp = do
-  ctxt <- extract (httpClientPropagator conf) (responseHeaders resp) ctxt
-  forM_ (lookupSpan ctxt) $ \s -> do
-    when (statusCode (responseStatus resp) >= 400) $ do
-      setStatus s (Error "")
-    insertAttributes s
-      [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
-      -- TODO
-      -- , ("http.request_content_length",	_)
-      -- , ("http.request_content_length_uncompressed",	_)
-      -- , ("http.response_content_length", _)
-      -- , ("http.response_content_length_uncompressed", _)
-      -- , ("net.transport")
-      -- , ("net.peer.name")
-      -- , ("net.peer.ip")
-      -- , ("net.peer.port")
-      ]
-    insertAttributes s $
-      concatMap
-        (\h -> toList $ (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp)) $
-        responseHeadersToRecord conf
-  pure ctxt
+-- | A convenient wrapper around 'withResponse' which ignores the response
+-- body. This is useful, for example, when performing a HEAD request.
+httpNoBody :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
+httpNoBody httpConf req man = inSpan "httpNoBody" spanArgs $ \_ -> do
+  ctxt <- getContext
+  req <- instrumentRequest httpConf ctxt req
+  resp <- liftIO $ Client.httpNoBody req man
+  instrumentResponse httpConf ctxt resp
+  pure resp
+
+-- | The most low-level function for initiating an HTTP request.
+--
+-- The first argument to this function gives a full specification
+-- on the request: the host to connect to, whether to use SSL,
+-- headers, etc. Please see 'Request' for full details.  The
+-- second argument specifies which 'Manager' should be used.
+--
+-- This function then returns a 'Response' with a
+-- 'BodyReader'.  The 'Response' contains the status code
+-- and headers that were sent back to us, and the
+-- 'BodyReader' contains the body of the request.  Note
+-- that this 'BodyReader' allows you to have fully
+-- interleaved IO actions during your HTTP download, making it
+-- possible to download very large responses in constant memory.
+--
+-- An important note: the response body returned by this function represents a
+-- live HTTP connection. As such, if you do not use the response body, an open
+-- socket will be retained indefinitely. You must be certain to call
+-- 'responseClose' on this response to free up resources.
+--
+-- This function automatically performs any necessary redirects, as specified
+-- by the 'redirectCount' setting.
+--
+-- When implementing a (reverse) proxy using this function or relating
+-- functions, it's wise to remove Transfer-Encoding:, Content-Length:,
+-- Content-Encoding: and Accept-Encoding: from request and response
+-- headers to be relayed.
+responseOpen :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
+responseOpen httpConf req man = inSpan "responseOpen" spanArgs $ \_ -> do
+  ctxt <- getContext
+  req <- instrumentRequest httpConf ctxt req
+  resp <- liftIO $ Client.responseOpen req man
+  instrumentResponse httpConf ctxt resp
+  pure resp
