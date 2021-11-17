@@ -11,6 +11,7 @@ import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Instrumentation.Wai
 import Yesod.Core
 import Yesod.Core.Types
+import UnliftIO.Exception
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)
 handlerEnvL = lens handlerEnv (\h e -> h { handlerEnv = e })
@@ -62,7 +63,15 @@ openTelemetryYesodMiddleware m = do
     let args = emptySpanArguments
           { startingKind = maybe Server (const Internal) mctxt
           }
-    inSpan "yesod.handler" args $ \s -> do
+    eResult <- inSpan "yesod.handler" args $ \s -> do
       localContext 
         (\c -> Context.insertSpan s (c <> fromMaybe Context.empty mctxt))
-        m
+        (catch (Right <$> m) $ \e -> do
+          -- We want to mark the span as an error if it's an HCError
+          case e of
+            HCError _ -> throwIO e
+            _ -> pure ()
+          pure (Left (e :: HandlerContents)))
+    case eResult of
+      Left hc -> throwIO hc
+      Right normal -> pure normal
