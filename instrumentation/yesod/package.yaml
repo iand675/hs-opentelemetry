@@ -26,6 +26,7 @@ dependencies:
 - yesod-core
 - otel-api
 - otel-instrumentation-wai
+- unliftio
 
 library:
   source-dirs: src
