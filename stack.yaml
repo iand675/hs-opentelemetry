@@ -43,6 +43,7 @@ packages:
 - propagators/b3
 - propagators/jaeger
 - propagators/w3c
+- instrumentation/conduit
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/yesod

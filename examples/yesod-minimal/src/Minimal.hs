@@ -20,7 +20,6 @@ import Database.Persist.Sql
 import Database.Persist.Sql.Raw.QQ
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
-import Network.HTTP.Client
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Exporters.Handle
@@ -99,13 +98,8 @@ getRootR = do
   let httpConfig = httpClientInstrumentationConfig
         { httpClientPropagator = propagator
         }
-  resp <- inSpan "http.request" (emptySpanArguments { startingKind = Client }) $ \span -> do
-    req <- parseUrlThrow "http://localhost:3000/api"
-    ctxt <- getContext
-    req' <- instrumentRequest httpConfig ctxt req
-    realResponse <- liftIO $ httpLbs req' m
-    _ <- instrumentResponse httpConfig ctxt realResponse
-    pure realResponse
+  req <- parseUrlThrow "http://localhost:3000/api"
+  resp <- httpLbs httpConfig req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 getApiR :: Handler Text

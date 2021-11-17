@@ -1,6 +1,6 @@
-name:                otel-instrumentation-http-client
+name:                otel-instrumentation-conduit
 version:             0.1.0.0
-github:              "iand675/otel-instrumentation-http-client"
+github:              "iand675/otel-instrumentation-conduit"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,28 +17,19 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-instrumentation-http-client#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/otel-instrumentation-conduit#readme>
 
 dependencies:
 - base >= 4.7 && < 5
-- case-insensitive
 - conduit
-- http-client
-- http-client-tls
-- http-conduit
-- http-types
-- otel-api
 - text
-- bytestring
-- unliftio
-- aeson
-- otel-instrumentation-conduit
+- otel-api
 
 library:
   source-dirs: src
 
 tests:
-  otel-instrumentation-http-client-test:
+  otel-instrumentation-conduit-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -46,4 +37,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - otel-instrumentation-http-client
+    - otel-instrumentation-conduit
