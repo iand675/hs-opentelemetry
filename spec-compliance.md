@@ -23,18 +23,18 @@ formats is required. Implementing more than one format is optional.
 | Safe for concurrent calls                                                                        |          | +  |
 | Shutdown (SDK only required)                                                                     |          |    |
 | ForceFlush (SDK only required)                                                                   |          |    |
-| [Trace / Context interaction](specification/trace/api.md#context-interaction)                    |          |    |
-| Get active Span                                                                                  |          |    |
-| Set active Span                                                                                  |          |    |
+| [Trace / Context interaction](specification/trace/api.md#context-interaction)                    |          | +  |
+| Get active Span                                                                                  |          | +  |
+| Set active Span                                                                                  |          | +  |
 | [Tracer](specification/trace/api.md#tracer-operations)                                           |          |    |
 | Create a new Span                                                                                |          | +  |
 | Get active Span                                                                                  |          |    |
 | Mark Span active                                                                                 |          |    |
 | Safe for concurrent calls                                                                        |          | +  |
 | [SpanContext](specification/trace/api.md#spancontext)                                            |          |    |
-| IsValid                                                                                          |          |    |
-| IsRemote                                                                                         |          |    |
-| Conforms to the W3C TraceContext spec                                                            |          |    |
+| IsValid                                                                                          |          | +  |
+| IsRemote                                                                                         |          | +  |
+| Conforms to the W3C TraceContext spec                                                            |          | +  |
 | [Span](specification/trace/api.md#span)                                                          |          |    |
 | Create root span                                                                                 |          | +  |
 | Create with default parent (active span)                                                         |          |    |
@@ -63,19 +63,19 @@ formats is required. Implementing more than one format is optional.
 | `null` values documented as invalid/undefined                                                    |          | N/A |
 | Unicode support for keys and string values                                                       |          | +  |
 | [Span linking](specification/trace/api.md#specifying-links)                                      |          |    |
-| Links can be recorded on span creation                                                           |          |    |
+| Links can be recorded on span creation                                                           |          | +  |
 | Links order is preserved                                                                         |          |    |
 | [Span events](specification/trace/api.md#add-events)                                             |          | +  |
 | AddEvent                                                                                         |          | +  |
 | Add order preserved                                                                              |          |    |
 | Safe for concurrent calls                                                                        |          | +  |
 | [Span exceptions](specification/trace/api.md#record-exception)                                   |          |    |
-| RecordException                                                                                  |          |    |
+| RecordException                                                                                  |          | +  |
 | RecordException with extra parameters                                                            |          |    |
 | [Sampling](specification/trace/sdk.md#sampling)                                                  |          |    |
 | Allow samplers to modify tracestate                                                              |          |    |
-| ShouldSample gets full parent Context                                                            |          |    |
-| ShouldSample gets InstrumentationLibrary                                                         |          |    |
+| ShouldSample gets full parent Context                                                            |          | +  |
+| ShouldSample gets InstrumentationLibrary                                                         |          | +  |
 | [New Span ID created also for non-recording Spans](specification/trace/sdk.md#sdk-span-creation) |          | +  |
 | [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          | +  |
 | [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        |    |
@@ -120,7 +120,7 @@ formats is required. Implementing more than one format is optional.
 | TraceContext Propagator                                                          |          |    |
 | B3 Propagator                                                                    |          |    |
 | Jaeger Propagator                                                                |          |    |
-| [TextMapPropagator](specification/context/api-propagators.md#textmap-propagator) |          |    |
+| [TextMapPropagator](specification/context/api-propagators.md#textmap-propagator) |          | +  |
 | Fields                                                                           |          |    |
 | Setter argument                                                                  | X        |    |
 | Getter argument                                                                  | X        |    |
