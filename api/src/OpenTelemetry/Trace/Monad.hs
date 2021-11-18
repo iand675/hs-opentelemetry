@@ -12,7 +12,6 @@ import OpenTelemetry.Trace
   , Tracer
   , Span
   , CreateSpanArguments(..)
-  , NewEvent(..)
   , createSpan
   , endSpan
   , recordException
@@ -75,7 +74,7 @@ inSpan n args f = do
   bracketError 
     (liftIO $ createSpan t ctx n args)
     (\e s -> liftIO $ do
-      mapM_ (recordException s (NewEvent "exception" [] Nothing)) e
+      mapM_ (recordException s [] Nothing) e
       -- TODO, getting the timestamp is a bit of overhead that would be nice to avoid
       endSpan s Nothing
     )

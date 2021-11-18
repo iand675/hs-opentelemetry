@@ -104,7 +104,7 @@ wrapSqlBackend tp ctxt conn = do
                     Acquire stmtQueryAcquireF -> Acquire $ \f ->
                       handleAny
                         (\err -> do
-                          recordException child err
+                          recordException child [] Nothing err
                           endSpan child Nothing
                           throwIO err
                         )
@@ -126,7 +126,7 @@ wrapSqlBackend tp ctxt conn = do
                         case mErr of
                           Nothing -> endSpan child Nothing
                           Just err -> do
-                            recordException child err
+                            recordException child [] Nothing err
                             endSpan child Nothing
                             throwIO err
                     )

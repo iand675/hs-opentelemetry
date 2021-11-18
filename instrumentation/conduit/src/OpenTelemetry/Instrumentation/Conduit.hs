@@ -18,5 +18,5 @@ inSpan n args f = do
     (`endSpan` Nothing) $ \span -> do
       catchC (f span) $ \e -> do
         liftIO $ do
-          recordException span (e :: SomeException)
+          recordException span [] Nothing (e :: SomeException)
           throwIO e

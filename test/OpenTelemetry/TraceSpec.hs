@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 module OpenTelemetry.TraceSpec where
 
 import Control.Monad
@@ -6,8 +8,9 @@ import Data.IORef
 import Data.Text (Text)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Trace
-import OpenTelemetry.Trace.Types (TracerProvider, SpanContext(..), TraceId(..), SpanId(..))
-import qualified OpenTelemetry.Trace.Types as Types
+import OpenTelemetry.Trace.Id
+import OpenTelemetry.Trace.IdGenerator
+import qualified OpenTelemetry.Trace.TraceState as TraceState
 import Test.Hspec
 import System.Clock
 
@@ -19,7 +22,7 @@ spec = describe "Trace" $ do
 
   describe "TracerProvider" $ do
     specify "Create TracerProvider" $ do
-      void (createTracerProvider [] emptyTracerProviderOptions :: IO TracerProvider)
+      void (createTracerProvider [] (emptyTracerProviderOptions :: TracerProviderOptions 'Nothing) :: IO TracerProvider)
     specify "Get a Tracer" $ asIO $ do
       p <- getGlobalTracerProvider
       void $ getTracer p "woo" tracerOptions
@@ -34,39 +37,46 @@ spec = describe "Trace" $ do
     specify "Set active span, Get active span" $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
-      spanContext1 <- spanContext s
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
+      spanContext1 <- spanContext <$> unsafeReadSpan s
       let ctxt = Context.insertSpan s mempty
       let Just s' = Context.lookupSpan ctxt
-      spanContext2 <- spanContext s'
+      spanContext2 <- spanContext <$> unsafeReadSpan s'
       spanContext1 `shouldBe` spanContext2
 
   describe "Tracer" $ do
     specify "Create a new span" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      void $ createSpan t Nothing "create_root_span" emptySpanArguments
+      void $ createSpan t Context.empty "create_root_span" emptySpanArguments
     specify "Get active new span" pending
     specify "Mark Span active" pending
     specify "Safe for concurrent calls" pending
   describe "SpanContext" $ do
     specify "IsValid" $ do
-      let validSpan = SpanContext
-            { traceFlags = 0
+      idGen <- makeDefaultIdGenerator
+      t <- newTraceId idGen
+      s <- newSpanId idGen
+      let (Right goodSpan) = bytesToSpanId "\1\0\0\0\0\0\0\1"
+          (Right goodTrace) = bytesToTraceId "\1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1"
+          (Right badSpan) = bytesToSpanId "\0\0\0\0\0\0\0\0"
+          (Right badTrace) = bytesToTraceId "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          validSpan = SpanContext
+            { traceFlags = defaultTraceFlags
             , isRemote = False
-            , traceState = []
-            , spanId = SpanId "1"
-            , traceId = TraceId "1"
+            , traceState = TraceState.empty
+            , spanId = goodSpan
+            , traceId = goodTrace
             }
       validSpan `shouldSatisfy` isValid
-      (validSpan { spanId = SpanId "\0", traceId = TraceId "\0" }) `shouldSatisfy` (not . isValid)
+      (validSpan { spanId = badSpan, traceId = badTrace }) `shouldSatisfy` (not . isValid)
     specify "IsRemote" pending
     specify "Conforms to the W3C TraceContext spec" pending
   describe "Span" $ do
     specify "Create root span" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      void $ createSpan t Nothing "create_root_span" emptySpanArguments
+      void $ createSpan t Context.empty "create_root_span" emptySpanArguments
     specify "Create with default parent (active span)" pending
     specify "Create with parent from Context" pending
     -- specify "No explict parent from Span/SpanContext allowed" pending
@@ -74,25 +84,25 @@ spec = describe "Trace" $ do
     specify "UpdateName" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       updateName s "renamed_span"
     specify "User-defined start timestamp" pending
     specify "End" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       endSpan s Nothing
     specify "End with timestamp" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       ts <- getTime Realtime
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       endSpan s (Just ts)
     specify "IsRecording" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       ts <- getTime Realtime
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       recording <- isRecording s
       recording `shouldBe` True
 
@@ -100,7 +110,7 @@ spec = describe "Trace" $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       ts <- getTime Realtime
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       endSpan s Nothing
       recording <- isRecording s
       recording `shouldBe` False
@@ -109,19 +119,20 @@ spec = describe "Trace" $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       ts <- getTime Realtime
-      s@(Types.Span r) <- createSpan t Nothing "create_root_span" emptySpanArguments
-      setStatus s $ Types.Error "woo"
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
+
+      setStatus s $ Error "woo"
       do
-        i <- readIORef r
-        Types.spanStatus i `shouldBe` Types.Error "woo"
-      setStatus s $ Types.Ok
+        i <- unsafeReadSpan s
+        spanStatus i `shouldBe` Error "woo"
+      setStatus s $ Ok
       do
-        i <- readIORef r
-        Types.spanStatus i `shouldBe` Types.Ok
-      setStatus s $ Types.Error "woo"
+        i <- unsafeReadSpan s
+        spanStatus i `shouldBe` Ok
+      setStatus s $ Error "woo"
       do
-        i <- readIORef r
-        Types.spanStatus i `shouldBe` Types.Ok
+        i <- unsafeReadSpan s
+        spanStatus i `shouldBe` Ok
 
 
     specify "Safe for concurrent calls" pending
@@ -133,53 +144,53 @@ spec = describe "Trace" $ do
     specify "SetAttribute" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "attr" (1.0 :: Double)
       
     specify "Set order preserved" pending
     specify "String type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "string_type" ("" :: Text)
 
     specify "Boolean type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "bool_type" True
 
     specify "Double floating-point type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "attr" (1.0 :: Double)
 
     specify "Signed int64 type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "attr" (1 :: Int64)
 
     specify "Array of primitives (homegeneous)" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "attr" [(1 :: Int64)..10]
 
     specify "Unicode support for keys and string values" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       insertAttribute s "🚀" ("🚀" :: Text)
       -- TODO actually get attributes out
 
 
   describe "Span events" $ do
-    specify "AddEvent" $ do
+    specify "AddEvent" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
-      s <- createSpan t Nothing "create_root_span" emptySpanArguments
+      s <- createSpan t Context.empty "create_root_span" emptySpanArguments
       addEvent s $ NewEvent
         { newEventName = "EVENT"
         , newEventAttributes = []

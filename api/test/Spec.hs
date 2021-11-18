@@ -1,7 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 import Test.Hspec
-import OpenTelemetry.Trace (getGlobalTracerProvider, tracerOptions, emptySpanArguments, Tracer, getTracer, ImmutableSpan (spanAttributes, spanStatus), unsafeReadSpan, SpanStatus (Error))
+import OpenTelemetry.Trace (getGlobalTracerProvider, tracerOptions, emptySpanArguments, Tracer, getTracer, ImmutableSpan (spanAttributes, spanStatus), unsafeReadSpan, SpanStatus (Error), spanEvents, Event (eventAttributes, eventName))
 import Control.Monad.Reader
 import OpenTelemetry.Context
 import Control.Exception
@@ -50,8 +50,8 @@ exceptionTest = do
         throw $ TestException "wow"
         pure ()
   spanState <- unsafeReadSpan =<< readIORef spanToCheck
-  print $ spanAttributes spanState
-  spanAttributes spanState `shouldSatisfy` \attrs -> 
+  eventName (head (spanEvents spanState)) `shouldBe` "exception"
+  eventAttributes (head (spanEvents spanState)) `shouldSatisfy` \attrs -> 
     isJust (Prelude.lookup "exception.type" attrs) &&
     isJust (Prelude.lookup "exception.message" attrs) &&
     isJust (Prelude.lookup "exception.stacktrace" attrs)

@@ -178,16 +178,18 @@ endSpan (Dropped _) _ = pure ()
 -- | A specialized variant of @addEvent@ that records attributes conforming to
 -- the OpenTelemetry specification's 
 -- <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>
-recordException :: (MonadIO m, Exception e) => Span -> NewEvent -> e -> m ()
-recordException s ev e = liftIO $ do
+recordException :: (MonadIO m, Exception e) => Span -> [(Text, Attribute)] -> Maybe Timestamp -> e -> m ()
+recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
-  addEvent s $ ev
-    { newEventAttributes = 
+  addEvent s $ NewEvent
+    { newEventName = "exception"
+    , newEventAttributes = 
         [ ("exception.type", toAttribute $ T.pack $ show $ typeOf e)
         , ("exception.message", toAttribute message)
         , ("exception.stacktrace", toAttribute $ T.unlines $ map T.pack cs)
-        ] ++ newEventAttributes ev
+        ] ++ attrs
+    , newEventTimestamp = ts
     }
 
 -- | Returns @True@ if the @SpanContext@ has a non-zero @TraceID@ and a non-zero @SpanID@
