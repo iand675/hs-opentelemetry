@@ -85,14 +85,6 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
     RecordOnly -> mkRecordingSpan
     RecordAndSample -> mkRecordingSpan
 
--- TODO should this use the atomic variant
-addLink :: MonadIO m => Span -> Link -> m ()
-addLink (Span s) l = liftIO $ modifyIORef s $ \i -> i
-  { spanLinks = (l { linkAttributes = linkAttributes l }) : spanLinks i
-  }
-addLink (FrozenSpan _) _ = pure ()
-addLink (Dropped _) _ = pure ()
-
 getSpanContext :: MonadIO m => Span -> m SpanContext
 getSpanContext (Span s) = liftIO (Types.spanContext <$> readIORef s)
 getSpanContext (FrozenSpan c) = pure c
@@ -143,12 +135,35 @@ setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i
 setStatus (FrozenSpan _) _ = pure ()
 setStatus (Dropped _) _ = pure ()
 
-updateName :: MonadIO m => Span -> Text -> m ()
+{- |
+Updates the Span name. Upon this update, any sampling behavior based on Span name will depend on the implementation.
+
+Note that @Sampler@s can only consider information already present during span creation. Any changes done later, including updated span name, cannot change their decisions.
+
+Alternatives for the name update may be late Span creation, when Span is started with the explicit timestamp from the past at the moment where the final Span name is known, or reporting a Span with the desired name as a child Span.
+-}
+updateName :: MonadIO m => 
+     Span 
+  -> Text 
+  -- ^ The new span name, which supersedes whatever was passed in when the Span was started
+  -> m ()
 updateName (Span s) n = liftIO $ modifyIORef s $ \i -> i { spanName = n }
 updateName (FrozenSpan _) _ = pure ()
 updateName (Dropped _) _ = pure ()
 
-endSpan :: MonadIO m => Span -> Maybe Timestamp -> m ()
+{- |
+Signals that the operation described by this span has now (or at the time optionally specified) ended.
+
+This does have any effects on child spans. Those may still be running and can be ended later.
+
+This also does not inactivate the Span in any Context it is active in. It is still possible to use an ended span as 
+parent via a Context it is contained in. Also, putting the Span into a Context will still work after the Span was ended.
+-}
+endSpan :: MonadIO m 
+  => Span 
+  -> Maybe Timestamp
+  -- ^ Optional @Timestamp@ signalling the end time of the span. If not provided, the current time will be used.
+  -> m ()
 endSpan (Span s) mts = liftIO $ do
   ts <- case mts of
     Nothing -> getTime Realtime
@@ -160,21 +175,32 @@ endSpan (Span s) mts = liftIO $ do
 endSpan (FrozenSpan _) _ = pure ()
 endSpan (Dropped _) _ = pure ()
 
-recordException :: Exception e => Span -> e -> IO ()
-recordException s e = do
+-- | A specialized variant of @addEvent@ that records attributes conforming to
+-- the OpenTelemetry specification's 
+-- <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>
+recordException :: (MonadIO m, Exception e) => Span -> NewEvent -> e -> m ()
+recordException s ev e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
-  setStatus s $ Error message
-  insertAttributes s
-    [ ("exception.type", toAttribute $ T.pack $ show $ typeOf e)
-    , ("exception.message", toAttribute message)
-    , ("exception.stacktrace", toAttribute $ T.unlines $ map T.pack cs)
-    ]
+  addEvent s $ ev
+    { newEventAttributes = 
+        [ ("exception.type", toAttribute $ T.pack $ show $ typeOf e)
+        , ("exception.message", toAttribute message)
+        , ("exception.stacktrace", toAttribute $ T.unlines $ map T.pack cs)
+        ] ++ newEventAttributes ev
+    }
 
+-- | Returns @True@ if the @SpanContext@ has a non-zero @TraceID@ and a non-zero @SpanID@
 isValid :: SpanContext -> Bool
 isValid sc = not
   (isEmptyTraceId (traceId sc) && isEmptySpanId (spanId sc))
 
+{- |
+Returns @True@ if the @SpanContext@ was propagated from a remote parent, 
+
+When extracting a SpanContext through the Propagators API, isRemote MUST return @True@,
+whereas for the SpanContext of any child spans it MUST return @False@.
+-}
 isRemote :: MonadIO m => Span -> m Bool
 isRemote (Span s) = liftIO $ do
   i <- readIORef s
