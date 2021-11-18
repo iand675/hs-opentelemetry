@@ -57,14 +57,21 @@ data Minimal = Minimal
   , minimalConnectionPool :: Pool SqlBackend
   }
 
-mkYesod "Minimal" [parseRoutes|
-    / RootR GET
-    /api ApiR GET
-|]
+$( do
+    let routes = [parseRoutes|
+          / RootR GET
+          /api ApiR GET
+        |]
+    Prelude.concat <$> Prelude.sequence 
+      [ mkRouteToRenderer ''Minimal routes
+      , mkRouteToPattern ''Minimal routes
+      , mkYesod "Minimal" routes
+      ]
+ )
 
 instance Yesod Minimal where
   yesodMiddleware m = do
-    openTelemetryYesodMiddleware $ defaultYesodMiddleware m
+    openTelemetryYesodMiddleware (RouteRenderer routeToRenderer routeToPattern) $ defaultYesodMiddleware m
   errorHandler err = do
     selectRep $ do
       provideRep (pure $ pack $ show err)

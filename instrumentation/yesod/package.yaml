@@ -27,6 +27,9 @@ dependencies:
 - otel-api
 - otel-instrumentation-wai
 - unliftio
+- text
+- template-haskell
+- wai
 
 library:
   source-dirs: src

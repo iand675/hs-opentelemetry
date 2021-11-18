@@ -21,7 +21,6 @@ import Control.Monad
 
 newOpenTelemetryWaiMiddleware 
   :: TracerProvider 
-  -- TODO propagator parameter 
   -> Propagator Context.Context RequestHeaders ResponseHeaders
   -> IO Middleware
 newOpenTelemetryWaiMiddleware tp propagator = do
@@ -35,7 +34,7 @@ newOpenTelemetryWaiMiddleware tp propagator = do
     middleware tracer app req sendResp = do
       -- TODO baggage, span context
       ctxt <- extract propagator (requestHeaders req) Context.empty
-      requestSpan <- createSpan tracer ctxt "http.server" $ emptySpanArguments
+      requestSpan <- createSpan tracer ctxt "warp.wai" $ emptySpanArguments
         { startingKind = Server
         }
 
