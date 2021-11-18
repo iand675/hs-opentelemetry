@@ -57,6 +57,7 @@ library
       OpenTelemetry.Trace.SpanExporter
       OpenTelemetry.Trace.SpanProcessor
       OpenTelemetry.Trace.TraceState
+      OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Internal
       OpenTelemetry.Context.Types
