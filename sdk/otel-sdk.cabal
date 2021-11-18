@@ -33,6 +33,7 @@ library
       OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.SpanProcessors.Batch
       OpenTelemetry.Trace.SpanProcessors.Simple
+      OpenTelemetry.Util
   other-modules:
       Paths_otel_sdk
   hs-source-dirs:
