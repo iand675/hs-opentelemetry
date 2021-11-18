@@ -15,8 +15,6 @@ data IdGenerator = IdGenerator
     -- ^ Should generate 16 bytes
   }
 
-newtype DefaultIdGenerator = DefaultIdGenerator GenIO
-
 makeDefaultIdGenerator :: IO IdGenerator
 makeDefaultIdGenerator = do
   g <- createSystemRandom
