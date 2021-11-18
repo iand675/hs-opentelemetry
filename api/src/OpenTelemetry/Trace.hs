@@ -41,7 +41,6 @@ module OpenTelemetry.Trace
   , endSpan
   , CreateSpanArguments(..)
   , Link(..)
-  , addLink
   , Event(..)
   , addEvent
   , recordException
@@ -156,12 +155,22 @@ emptySpanArguments = CreateSpanArguments
   , startingTimestamp = Nothing
   }
 
-
+-- This method provides a way for provider to do any cleanup required.
+--
+-- This will also trigger shutdowns on all internal processors.
 shutdownTracerProvider :: MonadIO m => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider{..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
     spanProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
-forceFlushTracerProvider :: MonadIO m => TracerProvider -> Maybe Int -> m (Async FlushResult)
+-- | This method provides a way for provider to immediately export all spans that have not yet 
+-- been exported for all the internal processors.
+forceFlushTracerProvider 
+  :: MonadIO m 
+  => TracerProvider 
+  -> Maybe Int
+  -- ^ Optional timeout
+  -> m (Async FlushResult)
+  -- ^ Async result that denotes whether the flush action succeeded, failed, or timed out.
 forceFlushTracerProvider = undefined

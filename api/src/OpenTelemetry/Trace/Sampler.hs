@@ -21,6 +21,9 @@ import OpenTelemetry.Internal.Trace.Types
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.TraceState as TraceState
 
+-- | Returns @RecordAndSample@ always.
+--
+-- Description returns AlwaysOnSampler.
 alwaysOn :: Sampler
 alwaysOn = Sampler
   { getDescription = "AlwaysOnSampler"
@@ -28,6 +31,10 @@ alwaysOn = Sampler
       mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
       pure (RecordAndSample, [], maybe TraceState.empty traceState mspanCtxt)
   }
+
+-- | Returns @RecordAndSample@ always.
+--
+-- Description returns AlwaysOffSampler.
 alwaysOff :: Sampler
 alwaysOff = Sampler
   { getDescription = "AlwaysOffSampler"
@@ -36,6 +43,11 @@ alwaysOff = Sampler
       pure (Drop, [], maybe TraceState.empty traceState mspanCtxt)
   }
 
+-- | The TraceIdRatioBased ignores the parent SampledFlag. To respect the parent SampledFlag, 
+-- the TraceIdRatioBased should be used as a delegate of the @parentBased@ sampler specified below.
+-- 
+-- Description returns a string of the form "TraceIdRatioBased{RATIO}" with RATIO replaced with the Sampler 
+-- instance's trace sampling ratio represented as a decimal number.
 traceIdRatioBased :: Double -> Sampler
 traceIdRatioBased fraction = if fraction >= 1
   then alwaysOn
@@ -59,7 +71,17 @@ traceIdRatioBased fraction = if fraction >= 1
             pure (Drop, startingAttributes csa, maybe TraceState.empty traceState mspanCtxt)
       }
 
-
+-- | This is a composite sampler. ParentBased helps distinguish between the following cases:
+--
+-- No parent (root span).
+--
+-- Remote parent (SpanContext.IsRemote() == true) with SampledFlag equals true
+-- 
+-- Remote parent (SpanContext.IsRemote() == true) with SampledFlag equals false
+--
+-- Local parent (SpanContext.IsRemote() == false) with SampledFlag equals true
+--
+-- Local parent (SpanContext.IsRemote() == false) with SampledFlag equals false
 data ParentBasedOptions = ParentBasedOptions 
   { rootSampler :: Sampler
   -- ^ Sampler called for spans with no parent (root spans)

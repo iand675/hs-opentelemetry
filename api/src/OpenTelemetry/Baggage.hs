@@ -79,6 +79,9 @@ data Property = Property
 property :: Token -> Maybe Text -> Property
 property = Property
 
+-- | Baggage is used to annotate telemetry, adding context and information to metrics, traces, and logs. 
+-- It is a set of name/value pairs describing user-defined properties. 
+-- Each name in Baggage is associated with exactly one value.
 newtype Baggage = Baggage (H.HashMap Token Element)
   deriving stock (Show, Eq)
   deriving newtype (Semigroup)
