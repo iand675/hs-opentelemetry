@@ -31,6 +31,7 @@ library
       OpenTelemetry.Setup
       OpenTelemetry.Trace
       OpenTelemetry.Trace.Monad
+      OpenTelemetry.Trace.Sampler
       OpenTelemetry.Trace.SpanProcessors.Batch
       OpenTelemetry.Trace.SpanProcessors.Simple
       OpenTelemetry.Util
