@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NumericUnderscores #-}
 module OpenTelemetry.Trace
   ( TracerProvider
   , HasTracerProvider(..)
@@ -62,6 +63,7 @@ import Control.Concurrent.Async
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Text (Text)
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 import Lens.Micro (Lens')
 import OpenTelemetry.Resource
@@ -76,6 +78,7 @@ import OpenTelemetry.Resource.Process (currentProcessRuntime, getProcess)
 import OpenTelemetry.Resource.OperatingSystem (getOperatingSystem)
 import OpenTelemetry.Resource.Service
 import Control.Monad
+import System.Timeout (timeout)
 
 class HasTracerProvider s where
   tracerProviderL :: Lens' s TracerProvider
@@ -166,11 +169,26 @@ shutdownTracerProvider TracerProvider{..} = liftIO $ do
 
 -- | This method provides a way for provider to immediately export all spans that have not yet 
 -- been exported for all the internal processors.
-forceFlushTracerProvider 
-  :: MonadIO m 
-  => TracerProvider 
+forceFlushTracerProvider
+  :: MonadIO m
+  => TracerProvider
   -> Maybe Int
-  -- ^ Optional timeout
-  -> m (Async FlushResult)
-  -- ^ Async result that denotes whether the flush action succeeded, failed, or timed out.
-forceFlushTracerProvider = undefined
+  -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  -> m FlushResult
+  -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
+forceFlushTracerProvider TracerProvider{..} mtimeout = liftIO $ do
+  jobs <- forM tracerProviderProcessors $ \processor -> async $ do
+    spanProcessorForceFlush processor
+  mresult <- timeout (fromMaybe 5_000_000 mtimeout) $
+    foldM
+      (\status action -> do
+        res <- waitCatch action
+        pure $! case res of
+          Left _err -> FlushError
+          Right _ok -> status
+      )
+      FlushSuccess
+      jobs
+  case mresult of
+    Nothing -> pure FlushTimeout
+    Just res -> pure res
