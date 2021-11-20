@@ -27,7 +27,10 @@ here](spec-compliance.md)
 
 ## Examples
 
-A small, fully instrumented Yesod application is available in the examples folder.
+Fully instrumented application examples are available in the [examples](examples/) folder. 
+
+- [Yesod application](examples/yesod-minimal)
+
 ## Provided Instrumentation Libraries
 
 | Package           | OpenTelemetry Instrumentation          |
@@ -41,12 +44,12 @@ A small, fully instrumented Yesod application is available in the examples folde
 
 ## Provided Exporters
 
-| Exporter  | OpenTelemetry Package | Module | Support         |
-|-----------|-----------------------|--------|-----------------|
-| OTLP      |                       |        | :green_check:   |
-| Jaeger    |                       |        | Not Implemented |
-| Zipkin    |                       |        | Not Implemented |
-| Honeycomb |                       |        | :green_check:   |
+| Exporter  | OpenTelemetry Package    | Module                       | Support            |
+|-----------|--------------------------|------------------------------|--------------------|
+| OTLP      | otel-exporter-otlp       | OpenTelemetry.Exporters.OTLP | :white_check_mark: |
+| Jaeger    |                          |                              | Not Implemented.   |
+| Zipkin    |                          |                              | Not Implemented    |
+| Honeycomb | (use otel-exporter-otlp) |                              | :white_check_mark: |
 
 ## Contributing
 
@@ -65,18 +68,3 @@ PRs will be automatically associated with the reviewers based on
 [CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
 maintainers or approvers for facilitation.
 
-## TODOs
-
-- Sampling
-  - Rate-limited
-  - Deterministic
-  - Constant
-  - Ratio
-
-- Add underlying connections to the vault for these:
-  - persistent-postgresql
-  - persistent-mysql
-  - persistent-sqlite
-- Add instrumentation for the underlying network info for these ^
-
-- hedis instrumentation
