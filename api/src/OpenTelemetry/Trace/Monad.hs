@@ -2,21 +2,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module OpenTelemetry.Trace.Monad where
 
-import Control.Exception (SomeException(..))
+import Control.Exception (SomeException(..), Exception (displayException))
 import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import OpenTelemetry.Context (Context, insertSpan)
 import OpenTelemetry.Trace 
   ( TracerProvider
   , Tracer
   , Span
+  , SpanStatus(Error)
   , CreateSpanArguments(..)
   , createSpan
   , endSpan
   , recordException
+  , setStatus
   )
-import Control.Monad.Reader (ReaderT)
+import Control.Monad.Reader (ReaderT, forM_)
 import GHC.Stack.Types (HasCallStack)
 
 -- | This is a type class rather than coded against MonadIO because
@@ -74,7 +76,9 @@ inSpan n args f = do
   bracketError 
     (liftIO $ createSpan t ctx n args)
     (\e s -> liftIO $ do
-      mapM_ (recordException s [] Nothing) e
+      forM_ e $ \(SomeException inner) -> do
+        setStatus s $ Error $ pack $ displayException inner
+        recordException s [] Nothing inner
       -- TODO, getting the timestamp is a bit of overhead that would be nice to avoid
       endSpan s Nothing
     )
