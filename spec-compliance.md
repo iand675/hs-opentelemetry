@@ -16,17 +16,17 @@ formats is required. Implementing more than one format is optional.
 
 | Feature                                                                                          | Optional | Haskell |
 |--------------------------------------------------------------------------------------------------|----------|----|
-| [TracerProvider](specification/trace/api.md#tracerprovider-operations)                           |          |    |
+| [TracerProvider](specification/trace/api.md#tracerprovider-operations)                           |          | +  |
 | Create TracerProvider                                                                            |          | +  |
 | Get a Tracer                                                                                     |          | +  |
 | Get a Tracer with schema_url                                                                     |          |    |
 | Safe for concurrent calls                                                                        |          | +  |
-| Shutdown (SDK only required)                                                                     |          |    |
-| ForceFlush (SDK only required)                                                                   |          |    |
+| Shutdown (SDK only required)                                                                     |          | +  |
+| ForceFlush (SDK only required)                                                                   |          | +  |
 | [Trace / Context interaction](specification/trace/api.md#context-interaction)                    |          | +  |
 | Get active Span                                                                                  |          | +  |
 | Set active Span                                                                                  |          | +  |
-| [Tracer](specification/trace/api.md#tracer-operations)                                           |          |    |
+| [Tracer](specification/trace/api.md#tracer-operations)                                           |          | +  |
 | Create a new Span                                                                                |          | +  |
 | Get active Span                                                                                  |          |    |
 | Mark Span active                                                                                 |          |    |
@@ -69,9 +69,9 @@ formats is required. Implementing more than one format is optional.
 | AddEvent                                                                                         |          | +  |
 | Add order preserved                                                                              |          |    |
 | Safe for concurrent calls                                                                        |          | +  |
-| [Span exceptions](specification/trace/api.md#record-exception)                                   |          |    |
+| [Span exceptions](specification/trace/api.md#record-exception)                                   |          | +  |
 | RecordException                                                                                  |          | +  |
-| RecordException with extra parameters                                                            |          |    |
+| RecordException with extra parameters                                                            |          | +  |
 | [Sampling](specification/trace/sdk.md#sampling)                                                  |          |    |
 | Allow samplers to modify tracestate                                                              |          |    |
 | ShouldSample gets full parent Context                                                            |          | +  |
@@ -79,7 +79,7 @@ formats is required. Implementing more than one format is optional.
 | [New Span ID created also for non-recording Spans](specification/trace/sdk.md#sdk-span-creation) |          | +  |
 | [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          | +  |
 | [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        |    |
-| [Built-in `SpanProcessor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1) |          |    |
+| [Built-in `SpanProcessor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1) |          | +  |
 | [Attribute Limits](specification/common/common.md#attribute-limits)                              | X        |    |
 
 ## Baggage
@@ -167,8 +167,8 @@ Note: Support for environment variables is optional.
 | OTLP/HTTP JSON Protobuf Exporter                                               |          |    |
 | OTLP/HTTP gzip Content-Encoding support                                        | X        |    |
 | Concurrent sending                                                             |          |    |
-| Honors retryable responses with backoff                                        | X        |    |
-| Honors non-retryable responses                                                 | X        |    |
+| Honors retryable responses with backoff                                        | X        | +  |
+| Honors non-retryable responses                                                 | X        | +  |
 | Honors throttling response                                                     | X        |    |
 | Multi-destination spec compliance                                              | X        |    |
 | [Zipkin](specification/trace/sdk_exporters/zipkin.md)                          |          |    |
