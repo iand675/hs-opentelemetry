@@ -24,6 +24,11 @@ the breadth of the OpenTelemetry specification. The core aspects of the tracing
 system are implemented, but you may view the detailed conformance [checklist
 here](spec-compliance.md)
 
+## Usage
+
+If you're instrumenting a library directly, or as a wrapper, use the [otel-api](api/) package.
+
+If you're instrumenting an application, use the [otel-sdk](sdk/) package.
 
 ## Examples
 
