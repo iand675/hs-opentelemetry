@@ -31,7 +31,6 @@ dependencies:
 - otel-instrumentation-persistent
 - otel-propagators-w3c
 - otel-exporter-otlp
-- otel-exporter-honeycomb
 
 executables:
   yesod-minimal:
