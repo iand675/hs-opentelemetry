@@ -148,10 +148,6 @@ will be incremented.
   --   -- TODO slice and freeze appropriate section
     -- M.slice (gbSectionSize * (r .&. gbSectionMask) 
 
-
-
--- TODO, graceful shutdown
--- TODO, forceFlush
 -- TODO, counters for dropped spans, exported spans
 
 data BoundedSpanMap = BoundedSpanMap
