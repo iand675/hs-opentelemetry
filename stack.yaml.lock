@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: honeycomb-0.0.0.3@sha256:362c3d7c703677d044d601a2b7b9b99912434a9b730d271389e21593fd3cfb89,2611
-    pantry-tree:
-      size: 1255
-      sha256: 5dc768276e48558321f57338bd2656213d04ffb1e67b8441a7f136010ff0d4c2
-  original:
-    hackage: honeycomb-0.0.0.3
-- completed:
     hackage: thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
     pantry-tree:
       size: 450
@@ -32,12 +25,12 @@ packages:
     git: https://github.com/iand675/persistent.git
     pantry-tree:
       size: 5935
-      sha256: 3fcc9cd4cccce8f11a9f1b537d7aa0fdf0bb9dc9db845868360cfe05281eba58
-    commit: 9123aa3405547d9204c43501c2ba253a93437021
+      sha256: e0d7ad59bda5677009e08ab420f1002ea4ceb62edb5848bebc765ac014775286
+    commit: b266e894bca1cc459204f06c9b87a138acd87b54
   original:
     subdir: persistent
     git: https://github.com/iand675/persistent.git
-    commit: 9123aa3405547d9204c43501c2ba253a93437021
+    commit: b266e894bca1cc459204f06c9b87a138acd87b54
 - completed:
     subdir: persistent-postgresql
     name: persistent-postgresql
@@ -45,12 +38,12 @@ packages:
     git: https://github.com/iand675/persistent.git
     pantry-tree:
       size: 1245
-      sha256: 4f90d86af8dbc0f0c1391ac4948b3f82da75944c0cf9faeac63596eeec7e8a90
-    commit: 9123aa3405547d9204c43501c2ba253a93437021
+      sha256: b3b911db80ec39b71b26299356730eee7faee41b65f124af094868d5c8b78050
+    commit: b266e894bca1cc459204f06c9b87a138acd87b54
   original:
     subdir: persistent-postgresql
     git: https://github.com/iand675/persistent.git
-    commit: 9123aa3405547d9204c43501c2ba253a93437021
+    commit: b266e894bca1cc459204f06c9b87a138acd87b54
 - completed:
     hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
     pantry-tree:
