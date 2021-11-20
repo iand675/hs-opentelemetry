@@ -5,7 +5,11 @@
 {-# LANGUAGE RecordWildCards #-}
 module OpenTelemetry.Exporters.OTLP where
 
+import Control.Concurrent (threadDelay)
+import Control.Exception (SomeException(..), try)
+import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as C
+import Data.Bits (shiftL)
 import qualified Data.CaseInsensitive as CI
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
@@ -20,8 +24,8 @@ import Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
 import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
+import Network.HTTP.Types.Status
 import OpenTelemetry.Trace.SpanExporter
-import Control.Monad.IO.Class
 import Data.Vector (Vector)
 import Data.Maybe
 import Lens.Micro
@@ -32,6 +36,7 @@ import OpenTelemetry.Resource
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import Proto.Opentelemetry.Proto.Common.V1.Common_Fields
 import System.Clock
+import Text.Read (readMaybe)
 import Data.Word
 import GHC.IO (unsafeDupablePerformIO)
 import Data.HashMap.Strict (HashMap)
@@ -118,29 +123,73 @@ loadExporterEnvironmentVariables = liftIO $ do
 protobufMimeType :: C.ByteString
 protobufMimeType = "application/x-protobuf"
 
-otlpExporter :: MonadIO m => Resource schema -> OTLPExporterConfig -> m SpanExporter
+-- TODO configurable retryDelay, maximum retry counts
+otlpExporter :: (MonadIO m) => Resource schema -> OTLPExporterConfig -> m SpanExporter
 otlpExporter resourceAttributes conf = do
+  -- TODO, url parsing is janky
+  req <- liftIO $ parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
+  let baseReq = req
+        { method = "POST"
+        , requestHeaders =
+            (hContentType, protobufMimeType) :
+            (hAcceptEncoding, protobufMimeType) :
+            fromMaybe [] (otlpHeaders conf) ++
+            fromMaybe [] (otlpTracesHeaders conf) ++
+            requestHeaders req
+        }
   pure $ SpanExporter
-    { spanExporterExport = \spans -> do
-        -- TODO, this is janky
-        req <- parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
-        let req' = req
-              { method = "POST"
-              , requestHeaders =
-                  (hContentType, protobufMimeType) :
-                  (hAcceptEncoding, protobufMimeType) :
-                  fromMaybe [] (otlpHeaders conf) ++
-                  fromMaybe [] (otlpTracesHeaders conf) ++
-                  requestHeaders req
-              , requestBody =
-                  RequestBodyBS $
-                  encodeMessage $
-                  immutableSpansToProtobuf resourceAttributes spans
-              }
-        resp <- httpBS req'
-        pure Success
+    { spanExporterExport = spanExporterExportCall baseReq
     , spanExporterShutdown = pure ()
     }
+  where
+    retryDelay = 100_000 -- 100ms
+    maxRetryCount = 5
+    isRetryableStatusCode status = status == status429 || status == status503
+    isRetryableException = \case
+      ResponseTimeout -> True
+      ConnectionTimeout -> True
+      ConnectionFailure _ -> True
+      ConnectionClosed -> True
+      _ -> False
+
+    spanExporterExportCall baseReq spans = do
+      -- TODO handle server disconnect
+      let req = baseReq
+            { requestBody =
+                RequestBodyBS $
+                encodeMessage $
+                immutableSpansToProtobuf resourceAttributes spans
+            }
+      sendReq req 0 -- TODO =<< getTime for maximum cutoff
+
+    sendReq req backoffCount = do
+      eResp <- try $ httpBS req
+
+      let exponentialBackoff = if backoffCount == maxRetryCount
+            then pure $ Failure Nothing
+            else do
+              threadDelay (retryDelay `shiftL` backoffCount)
+              sendReq req (backoffCount + 1)
+
+      case eResp of
+        Left err@(HttpExceptionRequest _ e) -> if isRetryableException e
+          then exponentialBackoff
+          else pure $ Failure $ Just $ SomeException err
+        Left err -> pure $ Failure $ Just $ SomeException err
+        Right resp -> if isRetryableStatusCode (responseStatus resp)  
+          then case lookup hRetryAfter $ responseHeaders resp of
+            Nothing -> exponentialBackoff
+            Just retryAfter -> do
+              -- TODO support date in retry-after header
+              case readMaybe $ C.unpack retryAfter of
+                Nothing -> exponentialBackoff
+                Just seconds -> do
+                  threadDelay (seconds * 1_000_000)
+                  sendReq req (backoffCount + 1)
+
+          else pure $! if statusCode (responseStatus resp) >= 300
+            then Failure Nothing
+            else Success
 
 attributesToProto :: Functor f => f (Text, Attribute) -> f KeyValue
 attributesToProto = fmap attributeToKeyValue
@@ -227,9 +276,3 @@ immutableSpansToProtobuf r completedSpans = defMessage
 
 clockTimeToNanoSeconds :: TimeSpec -> Word64
 clockTimeToNanoSeconds TimeSpec{..} = fromIntegral (sec * 1_000_000_000) + fromIntegral nsec
--- TODO Retry-After, or exponential backoff if receive 429, 503
---  "Content-Type: application/x-protobuf"
-
--- ExportTraceServiceRequest -> ExportTraceServiceResponse
--- ExportMetricsServiceRequest -> ExportMetricsServiceResponse
--- ExportLogsServiceRequest -> ExportLogsServiceResponse
