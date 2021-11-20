@@ -35,7 +35,6 @@ packages:
 - sdk
 - otlp
 - exporters/handle
-- exporters/honeycomb
 - exporters/in-memory
 - exporters/jaeger
 - exporters/otlp
