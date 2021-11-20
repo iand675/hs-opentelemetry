@@ -88,7 +88,7 @@ builtInResources = do
   svc <- getService
   processInfo <- getProcess
   osInfo <- getOperatingSystem
-  let rs = 
+  let rs =
         toResource svc `mergeResources`
         toResource telemetry `mergeResources`
         toResource currentProcessRuntime `mergeResources`
@@ -117,7 +117,7 @@ data TracerProviderOptions o = TracerProviderOptions
   }
 
 emptyTracerProviderOptions :: (o ~ ResourceMerge o o) => TracerProviderOptions o
-emptyTracerProviderOptions = TracerProviderOptions Nothing (parentBased $ parentBasedOptions alwaysOn) mempty 
+emptyTracerProviderOptions = TracerProviderOptions Nothing (parentBased $ parentBasedOptions alwaysOn) mempty
 
 createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions o -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
