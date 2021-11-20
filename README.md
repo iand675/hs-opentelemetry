@@ -35,12 +35,14 @@ Fully instrumented application examples are available in the [examples](examples
 
 | Package           | OpenTelemetry Instrumentation          |
 |-------------------|----------------------------------------|
-| wai               | otel-instrumentation-wai               |
-| yesod-core        | otel-instrumentation-yesod             |
-| persistent        | otel-instrumentation-persistent        |
-| esqueleto         | otel-instrumentation-persistent        |
+| wai               | [otel-instrumentation-wai](instrumentation/wai)                 |
+| yesod-core        | [otel-instrumentation-yesod](instrumentation/yesod)             |
+| persistent        | [otel-instrumentation-persistent](instrumentation/persistent)   |
+| esqueleto         | [otel-instrumentation-persistent](instrumentation/persistent)   |
 | postgresql-simple | otel-instrumentation-postgresql-simple |
-| http-client       | otel-instrumentation-http-client       |
+| http-client       | [otel-instrumentation-http-client](instrumentation/http-client) |
+| http-conduit      | [otel-instrumentation-http-client](instrumentation/http-client) |
+| conduit           | [otel-instrumentation-conduit](instrumentation/conduit)         |
 
 ## Provided Exporters
 
