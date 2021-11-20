@@ -26,7 +26,7 @@ import Data.String ( IsString(..) )
 
 data ExportResult
   = Success
-  | Failure SomeException
+  | Failure (Maybe SomeException)
 
 data InstrumentationLibrary = InstrumentationLibrary
   { libraryName :: {-# UNPACK #-} !Text
@@ -106,7 +106,7 @@ data CreateSpanArguments = CreateSpanArguments
   , startingTimestamp :: Maybe Timestamp
   }
 
-data FlushResult = FlushTimeout | FlushSuccess
+data FlushResult = FlushTimeout | FlushSuccess | FlushError
   deriving (Show)
 
 {- |
