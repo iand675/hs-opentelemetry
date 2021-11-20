@@ -59,11 +59,10 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- honeycomb-0.0.0.3
 - thread-utils-context-0.2.0.0
 - thread-utils-finalizers-0.1.0.0
 - git: https://github.com/iand675/persistent.git
-  commit: 9123aa3405547d9204c43501c2ba253a93437021
+  commit: b266e894bca1cc459204f06c9b87a138acd87b54
   subdirs:
   - persistent
   - persistent-postgresql
