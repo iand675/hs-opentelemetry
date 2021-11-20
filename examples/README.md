@@ -10,5 +10,5 @@ These programs demonstrate how to instrument a wide variety of things to provide
   - [x] Simple
   - [x] PostgreSQL
   - [x] Microservices
-- [] Servant
-- [] Conduit
+- [ ] Servant
+- [ ] Conduit
