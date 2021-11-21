@@ -10,6 +10,8 @@ import qualified Data.Bifunctor
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.IORef
 import Data.Maybe (isJust)
+import qualified Data.Vector as V
+import qualified VectorBuilder.Vector as Builder
 -- Specs
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
@@ -50,8 +52,9 @@ exceptionTest = do
         throw $ TestException "wow"
         pure ()
   spanState <- unsafeReadSpan =<< readIORef spanToCheck
-  eventName (head (spanEvents spanState)) `shouldBe` "exception"
-  eventAttributes (head (spanEvents spanState)) `shouldSatisfy` \attrs -> 
+  let ev = V.head $ Builder.build $ spanEvents spanState
+  eventName ev `shouldBe` "exception"
+  eventAttributes ev `shouldSatisfy` \attrs -> 
     isJust (Prelude.lookup "exception.type" attrs) &&
     isJust (Prelude.lookup "exception.message" attrs) &&
     isJust (Prelude.lookup "exception.stacktrace" attrs)

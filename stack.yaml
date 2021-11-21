@@ -30,7 +30,8 @@ resolver:
 #   - auto-update
 #   - wai
 packages:
-- .
+# TODO: move test suite
+# - .
 - api
 - sdk
 - otlp

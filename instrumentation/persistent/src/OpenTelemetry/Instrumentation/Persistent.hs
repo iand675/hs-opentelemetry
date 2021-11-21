@@ -22,7 +22,6 @@ import OpenTelemetry.Resource
 import UnliftIO.Exception
 import OpenTelemetry.Trace.Monad (bracketErrorUnliftIO, MonadGetContext(..), MonadLocalContext(..), MonadTracerProvider(..), MonadTracer(..))
 import Control.Monad.Reader
-import qualified Data.Maybe
 
 instance {-# OVERLAPS #-} MonadTracerProvider m => MonadTracerProvider (ReaderT SqlBackend m) where
   getTracerProvider = lift getTracerProvider

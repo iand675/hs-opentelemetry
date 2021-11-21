@@ -75,3 +75,5 @@ tests:
     dependencies:
     - hspec
     - hs-opentelemetry-api
+    - vector
+    - vector-builder
