@@ -1,5 +1,7 @@
 # OpenTelemetry API for Haskell
 
+The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call the OpenTelemetry API directly. Until that happens, there is a need for a separate library which can inject this information. A library that enables observability for another library is called an instrumentation library. In the case of Haskell, instrumentation is currently entirely manual.
+
 This package provides everything needed to interact with the OpenTelemetry API.
 
 The methods in this package can be safely called by library or end-user application regardless of

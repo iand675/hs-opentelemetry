@@ -1,6 +1,23 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DefaultSignatures #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Resource
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- A Resource is an immutable representation of the entity producing
+-- telemetry. For example, a process producing telemetry that is running in
+-- a container on Kubernetes has a Pod name, it is in a namespace and
+-- possibly is part of a Deployment which also has a name. All three of
+-- these attributes can be included in the Resource.
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Resource where
 import Data.Text (Text)
 import Data.Int

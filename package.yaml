@@ -45,8 +45,6 @@ dependencies:
 - thread-utils-context
 # used for simple span processor
 - unagi-chan
-library:
-  source-dirs: src
 
 tests:
   opentelemetry-haskell-test:
@@ -59,4 +57,4 @@ tests:
     dependencies:
     - hspec
     - opentelemetry-haskell
-    - otel-api
+    - hs-opentelemetry-api

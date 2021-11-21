@@ -23,37 +23,6 @@ source-repository head
   type: git
   location: https://github.com/githubuser/opentelemetry-haskell
 
-library
-  other-modules:
-      Paths_opentelemetry_haskell
-  hs-source-dirs:
-      src
-  default-extensions:
-      OverloadedStrings
-      RecordWildCards
-  build-depends:
-      aeson
-    , async
-    , atomic-primops
-    , base >=4.7 && <5
-    , bytestring
-    , clock
-    , containers
-    , ghc-prim
-    , mtl
-    , mwc-random
-    , primitive
-    , random
-    , stm
-    , text
-    , thread-utils-context
-    , unagi-chan
-    , unliftio
-    , unordered-containers
-    , vault
-    , vector
-  default-language: Haskell2010
-
 test-suite opentelemetry-haskell-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
@@ -78,11 +47,11 @@ test-suite opentelemetry-haskell-test
     , clock
     , containers
     , ghc-prim
+    , hs-opentelemetry-api
     , hspec
     , mtl
     , mwc-random
     , opentelemetry-haskell
-    , otel-api
     , primitive
     , random
     , stm

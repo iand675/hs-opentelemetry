@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-propagators-w3c
+name:           hs-opentelemetry-instrumentation-wai
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/otel-propagators-w3c#readme>
-homepage:       https://github.com/iand675/otel-propagators-w3c#readme
-bug-reports:    https://github.com/iand675/otel-propagators-w3c/issues
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-instrumentation-wai#readme>
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
 maintainer:     ian@iankduncan.com
 copyright:      2021 Ian Duncan
@@ -21,39 +21,41 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/iand675/otel-propagators-w3c
+  location: https://github.com/iand675/hs-opentelemetry
 
 library
   exposed-modules:
-      OpenTelemetry.Propagators.W3CBaggage
-      OpenTelemetry.Propagators.W3CTraceContext
+      OpenTelemetry.Instrumentation.Wai
   other-modules:
-      Paths_otel_propagators_w3c
+      Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:
       src
+  ghc-options: -Wall -Werror
   build-depends:
-      attoparsec
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , bytestring
+    , hs-opentelemetry-api
     , http-types
-    , otel-api
     , text
+    , vault
+    , wai
   default-language: Haskell2010
 
-test-suite otel-propagators-w3c-test
+test-suite hs-opentelemetry-instrumentation-wai-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_otel_propagators_w3c
+      Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      attoparsec
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , bytestring
+    , hs-opentelemetry-api
+    , hs-opentelemetry-instrumentation-wai
     , http-types
-    , otel-api
-    , otel-propagators-w3c
     , text
+    , vault
+    , wai
   default-language: Haskell2010

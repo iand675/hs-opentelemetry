@@ -1,6 +1,6 @@
-name:                otel-api
+name:                hs-opentelemetry-api
 version:             0.1.0.0
-github:              "iand675/otel-api"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-api#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-api#readme>
 
 default-extensions:
 - OverloadedStrings
@@ -49,6 +49,7 @@ dependencies:
 - unix
 # todo get rid of this when enough of the ecosystem has upgraded
 - random-bytestring
+- vector-builder
 
 library:
   source-dirs: src
@@ -56,10 +57,15 @@ library:
   other-modules:
   - OpenTelemetry.Internal
   - OpenTelemetry.Context.Types
+  - OpenTelemetry.Internal.Trace.Id
   - OpenTelemetry.Internal.Trace.Types
+  - OpenTelemetry.Trace.Core
+  # TODO
+  - OpenTelemetry.Propagators.B3
+  - OpenTelemetry.Propagators.Jaeger
 
 tests:
-  otel-api-test:
+  hs-opentelemetry-api-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -68,4 +74,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hspec
-    - otel-api
+    - hs-opentelemetry-api

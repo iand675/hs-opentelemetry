@@ -1,6 +1,6 @@
-name:                otel-otlp
+name:                hs-opentelemetry-otlp
 version:             0.1.0.0
-github:              "iand675/otlp"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"

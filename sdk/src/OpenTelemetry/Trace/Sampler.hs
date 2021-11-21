@@ -9,4 +9,4 @@ module OpenTelemetry.Trace.Sampler
   , traceIdRatioBased
   ) where
 
-import "otel-api" OpenTelemetry.Trace.Sampler
+import "hs-opentelemetry-api" OpenTelemetry.Trace.Sampler

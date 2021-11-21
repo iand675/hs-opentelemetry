@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-sdk
+name:           hs-opentelemetry-sdk
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/otel-sdk#readme>
-homepage:       https://github.com/iand675/otel-sdk#readme
-bug-reports:    https://github.com/iand675/otel-sdk/issues
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-sdk#readme>
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
 maintainer:     ian@iankduncan.com
 copyright:      2021 Ian Duncan
@@ -21,7 +21,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/iand675/otel-sdk
+  location: https://github.com/iand675/hs-opentelemetry
 
 library
   exposed-modules:
@@ -36,15 +36,16 @@ library
       OpenTelemetry.Trace.SpanProcessors.Simple
       OpenTelemetry.Util
   other-modules:
-      Paths_otel_sdk
+      Paths_hs_opentelemetry_sdk
   hs-source-dirs:
       src
   default-extensions:
       PackageImports
+  ghc-options: -Wall -Werror
   build-depends:
       async
     , base >=4.7 && <5
-    , otel-api
+    , hs-opentelemetry-api
     , stm
     , unagi-chan
     , unordered-containers
@@ -52,11 +53,11 @@ library
     , vector-builder
   default-language: Haskell2010
 
-test-suite otel-sdk-test
+test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_otel_sdk
+      Paths_hs_opentelemetry_sdk
   hs-source-dirs:
       test
   default-extensions:
@@ -65,9 +66,9 @@ test-suite otel-sdk-test
   build-depends:
       async
     , base >=4.7 && <5
+    , hs-opentelemetry-api
+    , hs-opentelemetry-sdk
     , hspec
-    , otel-api
-    , otel-sdk
     , stm
     , unagi-chan
     , unordered-containers

@@ -3,8 +3,6 @@
 module OpenTelemetry.Propagators.W3CBaggage where
 
 import Data.ByteString
-import Data.Maybe
-import Data.Semigroup
 import Network.HTTP.Types
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (Context, insertBaggage, lookupBaggage)

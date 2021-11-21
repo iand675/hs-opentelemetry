@@ -1,6 +1,17 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Resource.Telemetry
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Resource.Telemetry where
 import Data.Text ( Text )
 import OpenTelemetry.Resource

@@ -5,7 +5,6 @@ module OpenTelemetry.Propagators.W3CTraceContext where
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString (ByteString)
 import Data.Char (isHexDigit)
-import Data.Text (Text)
 import Data.Word (Word8)
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as L
@@ -13,7 +12,7 @@ import Network.HTTP.Types
 import qualified OpenTelemetry.Context as Ctxt
 import OpenTelemetry.Context.Propagators
 import OpenTelemetry.Trace
-import qualified OpenTelemetry.Trace as Trace
+-- import qualified OpenTelemetry.Trace as Trace
 import OpenTelemetry.Trace.Id (TraceId, SpanId, Base(..), spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder, baseEncodedToTraceId, baseEncodedToSpanId)
 import OpenTelemetry.Trace.TraceState
 import Prelude hiding (takeWhile)
@@ -40,11 +39,11 @@ decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
     Nothing -> pure empty
     Just tracestateHeader -> pure $ decodeTracestateHeader tracestateHeader
   pure $ SpanContext
-    { Trace.traceFlags = traceFlags
-    , Trace.isRemote = True
-    , Trace.traceId = traceId
-    , Trace.spanId = parentId
-    , Trace.traceState = ts
+    { traceFlags = traceFlags
+    , isRemote = True
+    , traceId = traceId
+    , spanId = parentId
+    , traceState = ts
     }
   where
     decodeTraceparentHeader :: ByteString -> Maybe TraceParent

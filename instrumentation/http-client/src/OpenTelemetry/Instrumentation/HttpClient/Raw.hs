@@ -13,7 +13,6 @@ import qualified Data.Text.Encoding as T
 import OpenTelemetry.Resource
 import Data.Foldable (Foldable(toList))
 import Data.CaseInsensitive (foldedCase)
-import Data.Semigroup (Semigroup)
 
 data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
   { httpClientPropagator :: Propagator Context RequestHeaders ResponseHeaders
@@ -82,8 +81,8 @@ instrumentResponse
   -> Response a
   -> m Context
 instrumentResponse conf ctxt resp = do
-  ctxt <- extract (httpClientPropagator conf) (responseHeaders resp) ctxt
-  forM_ (lookupSpan ctxt) $ \s -> do
+  ctxt' <- extract (httpClientPropagator conf) (responseHeaders resp) ctxt
+  forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")
     insertAttributes s
@@ -102,4 +101,4 @@ instrumentResponse conf ctxt resp = do
       concatMap
         (\h -> toList $ (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp)) $
         responseHeadersToRecord conf
-  pure ctxt
+  pure ctxt'

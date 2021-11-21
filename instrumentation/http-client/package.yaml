@@ -1,6 +1,6 @@
-name:                otel-instrumentation-http-client
+name:                hs-opentelemetry-instrumentation-http-client
 version:             0.1.0.0
-github:              "iand675/otel-instrumentation-http-client"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-instrumentation-http-client#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-instrumentation-http-client#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -27,18 +27,19 @@ dependencies:
 - http-client-tls
 - http-conduit
 - http-types
-- otel-api
+- hs-opentelemetry-api
 - text
 - bytestring
 - unliftio
 - aeson
-- otel-instrumentation-conduit
+- hs-opentelemetry-instrumentation-conduit
 
 library:
+  ghc-options: -Wall -Werror
   source-dirs: src
 
 tests:
-  otel-instrumentation-http-client-test:
+  hs-opentelemetry-instrumentation-http-client-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -46,4 +47,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - otel-instrumentation-http-client
+    - hs-opentelemetry-instrumentation-http-client

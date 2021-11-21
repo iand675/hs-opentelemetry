@@ -8,4 +8,4 @@ module OpenTelemetry.Context
   , insertBaggage
   ) where
 
-import "otel-api" OpenTelemetry.Context
+import "hs-opentelemetry-api" OpenTelemetry.Context

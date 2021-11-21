@@ -1,6 +1,6 @@
-name:                otel-instrumentation-yesod
+name:                hs-opentelemetry-instrumentation-yesod
 version:             0.1.0.0
-github:              "iand675/otel-instrumentation-yesod"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,25 +17,26 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-instrumentation-yesod#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-instrumentation-yesod#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - mtl
 - microlens
 - yesod-core
-- otel-api
-- otel-instrumentation-wai
+- hs-opentelemetry-api
+- hs-opentelemetry-instrumentation-wai
 - unliftio
 - text
 - template-haskell
 - wai
 
 library:
+  ghc-options: -Wall -Werror
   source-dirs: src
 
 tests:
-  otel-instrumentation-yesod-test:
+  hs-opentelemetry-instrumentation-yesod-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -43,4 +44,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - otel-instrumentation-yesod
+    - hs-opentelemetry-instrumentation-yesod

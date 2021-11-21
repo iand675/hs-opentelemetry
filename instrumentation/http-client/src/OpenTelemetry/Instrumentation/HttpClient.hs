@@ -17,7 +17,6 @@ module OpenTelemetry.Instrumentation.HttpClient
   ) where
 import qualified Data.ByteString.Lazy as L
 import Control.Monad.IO.Class ( MonadIO(..) )
-import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Trace
     ( emptySpanArguments,
       CreateSpanArguments(startingKind),
@@ -30,13 +29,6 @@ import OpenTelemetry.Trace.Monad
       MonadTracer )
 import Network.HTTP.Client as X hiding (withResponse, httpLbs, httpNoBody, responseOpen)
 import qualified Network.HTTP.Client as Client
-import Control.Monad (forM_, when)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import Data.Foldable (Foldable(toList))
-import Data.CaseInsensitive (foldedCase)
-import Data.Semigroup (Semigroup)
 import OpenTelemetry.Instrumentation.HttpClient.Raw
     ( HttpClientInstrumentationConfig(..),
       instrumentRequest,
@@ -65,14 +57,14 @@ withResponse :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, Mona
              -> Client.Manager
              -> (Client.Response Client.BodyReader -> m a)
              -> m a
-withResponse httpConf req man f = inSpan "withResponse" spanArgs $ \wrSpan -> do
+withResponse httpConf req man f = inSpan "withResponse" spanArgs $ \_wrSpan -> do
   ctxt <- getContext
   -- TODO would like to capture the req/resp time specifically
   -- inSpan "http.request" (emptySpanArguments { startingKind = Client }) $ \httpReqSpan -> do
-  req <- instrumentRequest httpConf ctxt req
+  req' <- instrumentRequest httpConf ctxt req
   runInIO <- askRunInIO
-  liftIO $ Client.withResponse req man $ \resp -> do
-    instrumentResponse httpConf ctxt resp
+  liftIO $ Client.withResponse req' man $ \resp -> do
+    _ <- instrumentResponse httpConf ctxt resp
     runInIO $ f resp
 
 -- | A convenience wrapper around 'withResponse' which reads in the entire
@@ -83,9 +75,9 @@ withResponse httpConf req man f = inSpan "withResponse" spanArgs $ \wrSpan -> do
 httpLbs :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = inSpan "httpLbs" spanArgs $ \_ -> do
   ctxt <- getContext
-  req <- instrumentRequest httpConf ctxt req
-  resp <- liftIO $ Client.httpLbs req man
-  instrumentResponse httpConf ctxt resp
+  req' <- instrumentRequest httpConf ctxt req
+  resp <- liftIO $ Client.httpLbs req' man
+  _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
 
@@ -94,9 +86,9 @@ httpLbs httpConf req man = inSpan "httpLbs" spanArgs $ \_ -> do
 httpNoBody :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = inSpan "httpNoBody" spanArgs $ \_ -> do
   ctxt <- getContext
-  req <- instrumentRequest httpConf ctxt req
-  resp <- liftIO $ Client.httpNoBody req man
-  instrumentResponse httpConf ctxt resp
+  req' <- instrumentRequest httpConf ctxt req
+  resp <- liftIO $ Client.httpNoBody req' man
+  _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
 -- | The most low-level function for initiating an HTTP request.
@@ -129,7 +121,7 @@ httpNoBody httpConf req man = inSpan "httpNoBody" spanArgs $ \_ -> do
 responseOpen :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = inSpan "responseOpen" spanArgs $ \_ -> do
   ctxt <- getContext
-  req <- instrumentRequest httpConf ctxt req
-  resp <- liftIO $ Client.responseOpen req man
-  instrumentResponse httpConf ctxt resp
+  req' <- instrumentRequest httpConf ctxt req
+  resp <- liftIO $ Client.responseOpen req' man
+  _ <-instrumentResponse httpConf ctxt resp
   pure resp

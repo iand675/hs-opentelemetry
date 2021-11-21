@@ -15,8 +15,8 @@ inSpan n args f = do
   ctx <- lift getContext
   bracketP
     (createSpan t ctx n args)
-    (`endSpan` Nothing) $ \span -> do
-      catchC (f span) $ \e -> do
+    (`endSpan` Nothing) $ \span_ -> do
+      catchC (f span_) $ \e -> do
         liftIO $ do
-          recordException span [] Nothing (e :: SomeException)
+          recordException span_ [] Nothing (e :: SomeException)
           throwIO e

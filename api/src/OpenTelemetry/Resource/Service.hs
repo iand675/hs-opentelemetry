@@ -1,5 +1,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Resource.Service
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Resource.Service where
 import Data.Text
 import OpenTelemetry.Resource

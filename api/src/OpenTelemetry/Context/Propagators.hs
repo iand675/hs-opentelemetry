@@ -1,4 +1,15 @@
 {-# LANGUAGE RankNTypes #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Context.Propagators
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Context.Propagators where
 
 import Control.Monad

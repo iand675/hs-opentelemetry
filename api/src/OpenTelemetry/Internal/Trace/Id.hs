@@ -28,12 +28,12 @@ import Prelude hiding (length)
 -- TODO faster encoding decoding via something like
 -- https://github.com/lemire/Code-used-on-Daniel-Lemire-s-blog/blob/03fc2e82fdef2c6fd25721203e1654428fee123d/2019/04/17/hexparse.cpp#L390
 
--- 16 bytes
+-- | A valid trace identifier is a 16-byte array with at least one non-zero byte.
 newtype TraceId = TraceId ShortByteString
   deriving stock (Ord, Eq)
   deriving newtype (Hashable)
 
--- 8 bytes
+-- | A valid span identifier is an 8-byte array with at least one non-zero byte.
 newtype SpanId = SpanId ShortByteString
   deriving stock (Ord, Eq)
   deriving newtype (Hashable)

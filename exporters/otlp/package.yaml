@@ -1,6 +1,6 @@
-name:                otel-exporter-otlp
+name:                hs-opentelemetry-exporter-otlp
 version:             0.1.0.0
-github:              "iand675/otel-exporter-otlp"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,12 +17,12 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-exporter-otlp#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-exporter-otlp#readme>
 
 dependencies:
 - base >= 4.7 && < 5
-- otel-api
-- otel-otlp
+- hs-opentelemetry-api
+- hs-opentelemetry-otlp
 - text
 - bytestring
 - case-insensitive
@@ -31,16 +31,18 @@ dependencies:
 - http-conduit
 - mtl
 - vector
+- vector-builder
 - proto-lens
 - microlens
 - clock
 - unordered-containers
 
 library:
+  ghc-options: -Wall -Werror
   source-dirs: src
 
 tests:
-  otel-exporter-otlp-test:
+  hs-opentelemetry-exporter-otlp-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -48,4 +50,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - otel-exporter-otlp
+    - hs-opentelemetry-exporter-otlp

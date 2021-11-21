@@ -1,6 +1,17 @@
 {-# LANGUAGE  CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Resource.Process
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Resource.Process where
 import Data.Text (Text)
 import qualified Data.Text as T
