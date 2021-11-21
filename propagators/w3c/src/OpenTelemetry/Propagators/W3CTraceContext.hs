@@ -18,6 +18,10 @@ import OpenTelemetry.Trace.Id (TraceId, SpanId, Base(..), spanIdBaseEncodedBuild
 import OpenTelemetry.Trace.TraceState
 import Prelude hiding (takeWhile)
 
+{-
+TODO: test against the conformance spec:
+https://github.com/w3c/trace-context
+-}
 data TraceParent = TraceParent
   { version :: {-# UNPACK #-} !Word8
   , traceId :: {-# UNPACK #-} !TraceId
