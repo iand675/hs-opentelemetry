@@ -1,5 +1,21 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Trace.Monad
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+-- Description :  Higher-level tracing API
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- The recommended tracing interface for application developers
+--
+-- See OpenTelemetry.Trace for an interface that's
+-- more lower-level, but more flexible.
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Trace.Monad where
 
 import Control.Exception (SomeException(..), Exception (displayException))

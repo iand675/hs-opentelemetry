@@ -43,5 +43,5 @@ module OpenTelemetry.Trace
   , ImmutableSpan(..)
   ) where
 
-import "otel-api" OpenTelemetry.Trace
+import "hs-opentelemetry-api" OpenTelemetry.Trace
 import OpenTelemetry.Resource

@@ -2,7 +2,20 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnliftedFFITypes #-}
--- | A perilous implementation of thread-local storage for Haskell.
+
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Context.Propagators
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- Thread-local contexts may be attached as implicit state at a per-Haskell-thread
+-- level.
+--
 -- This module uses a fair amount of GHC internals to enable performing
 -- lookups of context for any threads that are alive. Caution should be
 -- taken for consumers of this module to not retain ThreadId references
@@ -30,8 +43,11 @@
 -- interface.
 --
 -- The rule of thumb:
--- - Where possible, use OpenTelemetry.Context.Class
+-- - Where possible, use OpenTelemetry.Context in a reader-esque monad, or
+--   pass it around directly.
 -- - When all else fails, use this instead.
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Context.ThreadLocal 
   ( 
   -- $ Thread-local context

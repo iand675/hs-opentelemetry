@@ -23,14 +23,14 @@ dependencies:
 # convenience
 - microlens
 # opentelemetry dependencies
-- otel-sdk
-- otel-exporter-handle
-- otel-instrumentation-wai
-- otel-instrumentation-yesod
-- otel-instrumentation-http-client
-- otel-instrumentation-persistent
-- otel-propagators-w3c
-- otel-exporter-otlp
+- hs-opentelemetry-sdk
+- hs-opentelemetry-exporter-handle
+- hs-opentelemetry-instrumentation-wai
+- hs-opentelemetry-instrumentation-yesod
+- hs-opentelemetry-instrumentation-http-client
+- hs-opentelemetry-instrumentation-persistent
+- hs-opentelemetry-propagators-w3c
+- hs-opentelemetry-exporter-otlp
 
 executables:
   yesod-minimal:

@@ -5,11 +5,7 @@ module OpenTelemetry.Trace.SpanProcessors.Batch
   , batchProcessor
   -- , BatchProcessorOperations
   ) where
-import Control.Concurrent.STM
 import Control.Monad.IO.Class
-import Data.Bits
-import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as M
 import OpenTelemetry.Trace.SpanProcessor
 import OpenTelemetry.Trace.SpanExporter (SpanExporter)
 import qualified OpenTelemetry.Trace.SpanExporter as Exporter
@@ -21,8 +17,7 @@ import Control.Concurrent.MVar (newEmptyMVar, takeMVar, tryPutMVar)
 import Control.Monad
 import System.Timeout
 import Control.Exception
-import Control.Concurrent (newEmptyMVar)
-import GHC.IORef (atomicModifyIORef')
+-- import Control.Concurrent (newEmptyMVar)
 import Data.HashMap.Strict (HashMap)
 import OpenTelemetry.Trace
 import qualified Data.HashMap.Strict as HashMap
@@ -181,7 +176,6 @@ batchProcessor :: MonadIO m => BatchTimeoutConfig -> m SpanProcessor
 batchProcessor BatchTimeoutConfig{..} = liftIO $ do
   batch <- newIORef $ boundedSpanMap maxQueueSize
   workSignal <- newEmptyMVar
-  shutdownSignal <- newEmptyMVar
   worker <- async $ forever $ do
     void $ timeout (millisToMicros scheduledDelayMillis) $ takeMVar workSignal
     batchToProcess <- atomicModifyIORef' batch buildSpanExport
@@ -191,15 +185,16 @@ batchProcessor BatchTimeoutConfig{..} = liftIO $ do
   pure $ SpanProcessor
     { spanProcessorOnStart = \_ _ -> pure ()
     , spanProcessorOnEnd = \s -> do
-        span <- readIORef s
+        span_ <- readIORef s
         appendFailed <- atomicModifyIORef' batch $ \builder ->
-          case pushSpan span builder of
+          case pushSpan span_ builder of
             Nothing -> (builder, True)
             Just b' -> (b', False)
         when appendFailed $ void $ tryPutMVar workSignal ()
 
     , spanProcessorForceFlush = void $ tryPutMVar workSignal ()
-    , spanProcessorShutdown = async $ mask $ \restore -> do
+    -- TODO where to call restore, if anywhere?
+    , spanProcessorShutdown = async $ mask $ \_restore -> do
         shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $ 
           cancel worker 
         -- TODO, not convinced we should shut down processor here

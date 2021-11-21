@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-api
+name:           hs-opentelemetry-api
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/otel-api#readme>
-homepage:       https://github.com/iand675/otel-api#readme
-bug-reports:    https://github.com/iand675/otel-api/issues
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-api#readme>
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
 maintainer:     ian@iankduncan.com
 copyright:      2021 Ian Duncan
@@ -21,20 +21,14 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/iand675/otel-api
+  location: https://github.com/iand675/hs-opentelemetry
 
 library
   exposed-modules:
       OpenTelemetry.Baggage
       OpenTelemetry.Context
-      OpenTelemetry.Context.Class
       OpenTelemetry.Context.Propagators
       OpenTelemetry.Context.ThreadLocal
-      OpenTelemetry.Internal.Trace.Id
-      OpenTelemetry.Logs
-      OpenTelemetry.Metrics
-      OpenTelemetry.Propagators.B3
-      OpenTelemetry.Propagators.Jaeger
       OpenTelemetry.Resource
       OpenTelemetry.Resource.Cloud
       OpenTelemetry.Resource.Container
@@ -49,7 +43,6 @@ library
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
       OpenTelemetry.Trace
-      OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.IdGenerator
       OpenTelemetry.Trace.Monad
@@ -61,7 +54,11 @@ library
   other-modules:
       OpenTelemetry.Internal
       OpenTelemetry.Context.Types
+      OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.Internal.Trace.Types
+      OpenTelemetry.Trace.Core
+      OpenTelemetry.Propagators.B3
+      OpenTelemetry.Propagators.Jaeger
   hs-source-dirs:
       src
   default-extensions:
@@ -93,15 +90,16 @@ library
     , unordered-containers
     , vault
     , vector
+    , vector-builder
   default-language: Haskell2010
 
-test-suite otel-api-test
+test-suite hs-opentelemetry-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
-      Paths_otel_api
+      Paths_hs_opentelemetry_api
   hs-source-dirs:
       test
   default-extensions:
@@ -118,13 +116,13 @@ test-suite otel-api-test
     , clock
     , ghc-prim
     , hashable
+    , hs-opentelemetry-api
     , hspec
     , http-types
     , memory
     , microlens
     , mtl
     , mwc-random
-    , otel-api
     , random
     , random-bytestring
     , template-haskell
@@ -135,4 +133,5 @@ test-suite otel-api-test
     , unordered-containers
     , vault
     , vector
+    , vector-builder
   default-language: Haskell2010

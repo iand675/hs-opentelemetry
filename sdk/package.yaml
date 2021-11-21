@@ -1,6 +1,6 @@
-name:                otel-sdk
+name:                hs-opentelemetry-sdk
 version:             0.1.0.0
-github:              "iand675/otel-sdk"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,14 +17,14 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-sdk#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-sdk#readme>
 
 default-extensions:
 - PackageImports
 
 dependencies:
 - base >= 4.7 && < 5
-- otel-api
+- hs-opentelemetry-api
 - async
 - vector
 - stm
@@ -33,10 +33,11 @@ dependencies:
 - vector-builder
 
 library:
+  ghc-options: -Wall -Werror
   source-dirs: src
 
 tests:
-  otel-sdk-test:
+  hs-opentelemetry-sdk-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -45,4 +46,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hspec
-    - otel-sdk
+    - hs-opentelemetry-sdk

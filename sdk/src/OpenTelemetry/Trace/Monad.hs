@@ -8,4 +8,4 @@ module OpenTelemetry.Trace.Monad
   , bracketErrorUnliftIO
   ) where
 
-import "otel-api" OpenTelemetry.Trace.Monad
+import "hs-opentelemetry-api" OpenTelemetry.Trace.Monad

@@ -1,4 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Context
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- The ability to correlate events across service boundaries is one of the principle concepts behind distributed tracing. To find these correlations, components in a distributed system need to be able to collect, store, and transfer metadata referred to as context.
+--
+-- A context will often have information identifying the current span and trace, and can contain arbitrary correlations as key-value pairs.
+--
+-- Propagation is the means by which context is bundled and transferred in and across services, often via HTTP headers.
+--
+-- Together, context and propagation represent the engine behind distributed tracing.
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Context
   ( Key(keyName)
   , newKey

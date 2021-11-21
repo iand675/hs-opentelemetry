@@ -22,4 +22,4 @@ module OpenTelemetry.Baggage
   , decodeBaggageHeaderP
   ) where
 
-import "otel-api" OpenTelemetry.Baggage
+import "hs-opentelemetry-api" OpenTelemetry.Baggage

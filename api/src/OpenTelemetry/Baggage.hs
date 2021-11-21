@@ -4,6 +4,20 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Baggage
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+--
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- Baggage is used to annotate telemetry, adding context and information to metrics, traces, and logs. 
+-- It is a set of name/value pairs describing user-defined properties.
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Baggage 
   (
   -- * Constructing 'Baggage' structures

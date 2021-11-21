@@ -15,11 +15,10 @@ import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
-import qualified OpenTelemetry.Trace.SpanExporter
 import System.Environment
 import qualified OpenTelemetry.Baggage as Baggage
 import qualified OpenTelemetry.Trace as OT
-import Proto.Opentelemetry.Proto.Trace.V1.Trace (InstrumentationLibrarySpans, ResourceSpans, Span'SpanKind (Span'SPAN_KIND_SERVER, Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL), Status'StatusCode (Status'STATUS_CODE_OK, Status'STATUS_CODE_ERROR, Status'STATUS_CODE_UNSET))
+import Proto.Opentelemetry.Proto.Trace.V1.Trace (Span'SpanKind (Span'SPAN_KIND_SERVER, Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL), Status'StatusCode (Status'STATUS_CODE_OK, Status'STATUS_CODE_ERROR, Status'STATUS_CODE_UNSET))
 import Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
 import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
@@ -41,6 +40,7 @@ import Data.Word
 import GHC.IO (unsafeDupablePerformIO)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
+import qualified VectorBuilder.Vector as VectorBuilder
 
 data CompressionFormat = None | GZip
 data Protocol = {- GRpc | HttpJson | -} HttpProtobuf
@@ -125,7 +125,7 @@ protobufMimeType = "application/x-protobuf"
 
 -- TODO configurable retryDelay, maximum retry counts
 otlpExporter :: (MonadIO m) => Resource schema -> OTLPExporterConfig -> m SpanExporter
-otlpExporter resourceAttributes conf = do
+otlpExporter resourceAttrs conf = do
   -- TODO, url parsing is janky
   req <- liftIO $ parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
   let baseReq = req
@@ -144,7 +144,7 @@ otlpExporter resourceAttributes conf = do
   where
     retryDelay = 100_000 -- 100ms
     maxRetryCount = 5
-    isRetryableStatusCode status = status == status429 || status == status503
+    isRetryableStatusCode status_ = status_ == status429 || status_ == status503
     isRetryableException = \case
       ResponseTimeout -> True
       ConnectionTimeout -> True
@@ -152,13 +152,13 @@ otlpExporter resourceAttributes conf = do
       ConnectionClosed -> True
       _ -> False
 
-    spanExporterExportCall baseReq spans = do
+    spanExporterExportCall baseReq spans_ = do
       -- TODO handle server disconnect
       let req = baseReq
             { requestBody =
                 RequestBodyBS $
                 encodeMessage $
-                immutableSpansToProtobuf resourceAttributes spans
+                immutableSpansToProtobuf resourceAttrs spans_
             }
       sendReq req 0 -- TODO =<< getTime for maximum cutoff
 
@@ -224,13 +224,13 @@ immutableSpansToProtobuf r completedSpans = defMessage
               fmap makeInstrumentationLibrarySpans ( H.toList completedSpans )
       )
   where
-    makeInstrumentationLibrarySpans (library, completedSpans) = defMessage
+    makeInstrumentationLibrarySpans (library, completedSpans_) = defMessage
       & instrumentationLibrary .~ (
           defMessage
             & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.libraryName library
             & version .~ OT.libraryVersion library
         )
-      & vec'spans .~ fmap makeSpan completedSpans
+      & vec'spans .~ fmap makeSpan completedSpans_
       -- & schemaUrl .~ "" -- TODO
     makeSpan completedSpan = let startTime = clockTimeToNanoSeconds (OT.spanStart completedSpan) in defMessage
       & traceId .~ traceIdBytes (OT.traceId $ OT.spanContext completedSpan)
@@ -247,7 +247,7 @@ immutableSpansToProtobuf r completedSpans = defMessage
       & endTimeUnixNano .~ maybe startTime clockTimeToNanoSeconds (OT.spanEnd completedSpan)
       & attributes .~ attributesToProto (OT.spanAttributes completedSpan)
       & droppedAttributesCount .~ 0 -- TODO
-      & events .~ fmap makeEvent (OT.spanEvents completedSpan)
+      & vec'events .~ fmap makeEvent (VectorBuilder.build $ OT.spanEvents completedSpan)
       & droppedEventsCount .~ 0 -- TODO
       & links .~ fmap makeLink (OT.spanLinks completedSpan) -- TODO
       & droppedLinksCount .~ 0 -- TODO

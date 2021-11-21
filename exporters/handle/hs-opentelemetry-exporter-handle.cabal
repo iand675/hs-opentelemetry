@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           otel-instrumentation-persistent
+name:           hs-opentelemetry-exporter-handle
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/otel-persistent#readme>
-homepage:       https://github.com/iand675/otel-persistent#readme
-bug-reports:    https://github.com/iand675/otel-persistent/issues
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-exporter-handle#readme>
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
 maintainer:     ian@iankduncan.com
 copyright:      2021 Ian Duncan
@@ -21,42 +21,32 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/iand675/otel-persistent
+  location: https://github.com/iand675/hs-opentelemetry
 
 library
   exposed-modules:
-      OpenTelemetry.Instrumentation.Persistent
+      OpenTelemetry.Exporters.Handle
   other-modules:
-      Paths_otel_instrumentation_persistent
+      Paths_hs_opentelemetry_exporter_handle
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
-    , mtl
-    , otel-api
-    , persistent
-    , resourcet
+    , hs-opentelemetry-api
     , text
-    , unliftio
-    , vault
   default-language: Haskell2010
 
-test-suite otel-persistent-test
+test-suite hs-opentelemetry-exporter-handle-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_otel_instrumentation_persistent
+      Paths_hs_opentelemetry_exporter_handle
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , mtl
-    , otel-api
-    , otel-instrumentation-persistent
-    , persistent
-    , resourcet
+    , hs-opentelemetry-api
+    , hs-opentelemetry-exporter-handle
     , text
-    , unliftio
-    , vault
   default-language: Haskell2010

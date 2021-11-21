@@ -9,10 +9,9 @@ import Control.Exception
 import Control.Concurrent.Async
 import Control.Concurrent.Chan.Unagi
 import Control.Monad
-import Data.Functor.Identity
 import Data.IORef
 import OpenTelemetry.Trace.SpanProcessor
-import "otel-api" OpenTelemetry.Trace (Span, ImmutableSpan, spanTracer, tracerName)
+import "hs-opentelemetry-api" OpenTelemetry.Trace (ImmutableSpan, spanTracer, tracerName)
 import qualified OpenTelemetry.Trace.SpanExporter as Exporter
 import qualified Data.HashMap.Strict as HashMap
 
@@ -26,8 +25,8 @@ simpleProcessor SimpleProcessorConfig{..} = do
   exportWorker <- async $ forever $ do
     -- TODO, masking vs bracket here, not sure what's the right choice
     spanRef <- readChanOnException outChan (>>= writeChan inChan)
-    span <- readIORef spanRef
-    mask_ (exporter `Exporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span) (pure span))
+    span_ <- readIORef spanRef
+    mask_ (exporter `Exporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_))
 
   pure $ SpanProcessor
     { spanProcessorOnStart = \_ _ -> pure ()
@@ -50,7 +49,7 @@ simpleProcessor SimpleProcessorConfig{..} = do
       case mSpan of 
         Nothing -> pure ()
         Just spanRef -> do
-          span <- readIORef spanRef
-          exporter `Exporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span) (pure span)
+          span_ <- readIORef spanRef
+          _ <- exporter `Exporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
           shutdownProcessor outChan
 

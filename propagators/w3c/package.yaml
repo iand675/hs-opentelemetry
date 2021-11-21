@@ -1,6 +1,6 @@
-name:                otel-propagators-w3c
+name:                hs-opentelemetry-propagators-w3c
 version:             0.1.0.0
-github:              "iand675/otel-propagators-w3c"
+github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,21 +17,22 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/otel-propagators-w3c#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-propagators-w3c#readme>
 
 dependencies:
 - base >= 4.7 && < 5
 - bytestring
 - text
-- otel-api
+- hs-opentelemetry-api
 - http-types
 - attoparsec
 
 library:
+  ghc-options: -Wall -Werror
   source-dirs: src
 
 tests:
-  otel-propagators-w3c-test:
+  hs-opentelemetry-propagators-w3c-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -39,4 +40,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - otel-propagators-w3c
+    - hs-opentelemetry-propagators-w3c

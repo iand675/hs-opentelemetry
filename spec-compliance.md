@@ -160,7 +160,7 @@ Note: Support for environment variables is optional.
 | [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          | x  |
 | [Exporter interface has `ForceFlush`](specification/trace/sdk.md#forceflush-2) |          |    |
 | Standard output (logging)                                                      |          |    |
-| In-memory (mock exporter)                                                      |          |    |
+| In-memory (mock exporter)                                                      |          | x  |
 | [OTLP](specification/protocol/otlp.md)                                         |          | x  |
 | OTLP/gRPC Exporter                                                             | *        |    |
 | OTLP/HTTP binary Protobuf Exporter                                             | *        | x  |
@@ -169,7 +169,7 @@ Note: Support for environment variables is optional.
 | Concurrent sending                                                             |          |    |
 | Honors retryable responses with backoff                                        | X        | +  |
 | Honors non-retryable responses                                                 | X        | +  |
-| Honors throttling response                                                     | X        |    |
+| Honors throttling response                                                     | X        | (partial support) |
 | Multi-destination spec compliance                                              | X        |    |
 | [Zipkin](specification/trace/sdk_exporters/zipkin.md)                          |          |    |
 | Zipkin V1 JSON                                                                 | X        |    |

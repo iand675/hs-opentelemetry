@@ -23,6 +23,7 @@ import System.Clock (TimeSpec)
 import Data.HashMap.Strict (HashMap)
 import GHC.Generics
 import Data.String ( IsString(..) )
+import VectorBuilder.Builder (Builder)
 
 data ExportResult
   = Success
@@ -137,6 +138,11 @@ data SpanKind
   -- as opposed to an operations with remote parents or children.
   deriving (Show)
 
+-- | The status of a @Span@. This may be used to indicate the successful completion of a span.
+--
+-- The default is @Unset@
+--
+-- These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
 data SpanStatus 
   = Unset
   -- ^ The default status.
@@ -157,7 +163,7 @@ data ImmutableSpan = ImmutableSpan
   -- ^ TODO, this should probably be a DList
   -- | TODO Links SHOULD preserve the order in which they're set
   , spanLinks :: [Link]
-  , spanEvents :: [Event]
+  , spanEvents :: Builder Event
   , spanStatus :: SpanStatus
   , spanTracer :: Tracer
   -- ^ Creator of the span
@@ -168,24 +174,35 @@ data Span
   | FrozenSpan SpanContext
   | Dropped SpanContext
 
+-- |  contain details about the trace. Unlike TraceState values, TraceFlags are present in all traces. The current version of the specification only supports a single flag called sampled.
 newtype TraceFlags = TraceFlags Word8
   deriving (Show, Eq, Ord)
 
+-- | TraceFlags with the 'sampled' not set. This means that it is up to the
+-- sampling configuration to decide whether or not to sample the trace.
 defaultTraceFlags :: TraceFlags
 defaultTraceFlags = TraceFlags 0
 
+-- | Will the trace associated with this @TraceFlags@ value be sampled?
 isSampled :: TraceFlags -> Bool
 isSampled (TraceFlags flags) = flags `testBit` 0
 
+-- | Set the 'sampled' flag on the @TraceFlags@
 setSampled :: TraceFlags -> TraceFlags
 setSampled (TraceFlags flags) = TraceFlags (flags `setBit` 0)
 
+-- | Unset the 'sampled' flag on the @TraceFlags@. This means that the
+-- application may choose whether or not to emit this Trace.
 unsetSampled :: TraceFlags -> TraceFlags
 unsetSampled (TraceFlags flags) = TraceFlags (flags `clearBit` 0)
 
+-- | Get the current bitmask for the @TraceFlags@, useful for serialization purposes.
 traceFlagsValue :: TraceFlags -> Word8
 traceFlagsValue (TraceFlags flags) = flags
 
+-- | Create a @TraceFlags@, from an arbitrary @Word8@. Note that for backwards-compatibility
+-- reasons, no checking is performed to determine whether the @TraceFlags@ bitmask provided
+-- is valid.
 traceFlagsFromWord8 :: Word8 -> TraceFlags
 traceFlagsFromWord8 = TraceFlags
 

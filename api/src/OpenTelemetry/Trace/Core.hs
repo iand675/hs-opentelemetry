@@ -19,6 +19,7 @@ import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
 import qualified OpenTelemetry.Trace.TraceState as TraceState
 import System.Clock
+import qualified VectorBuilder.Builder as Builder
 
 createSpan
   :: MonadIO m
@@ -70,7 +71,7 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
               , spanKind = startingKind
               , spanAttributes = startingAttributes ++ additionalAttrs
               , spanLinks = startingLinks
-              , spanEvents = []
+              , spanEvents = Builder.empty
               , spanStatus = Unset
               , spanStart = st
               , spanEnd = Nothing
@@ -85,16 +86,40 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
     RecordOnly -> mkRecordingSpan
     RecordAndSample -> mkRecordingSpan
 
+-- | When sending tracing information across process boundaries,
+-- the @SpanContext@ is used to serialize the relevant information.
 getSpanContext :: MonadIO m => Span -> m SpanContext
 getSpanContext (Span s) = liftIO (Types.spanContext <$> readIORef s)
 getSpanContext (FrozenSpan c) = pure c
 getSpanContext (Dropped c) = pure c
 
+-- | Returns whether the the @Span@ is currently recording. If a span
+-- is dropped, this will always return False. If a span is from an
+-- external process, this will return True, and if the span was 
+-- created by this process, the span will return True until endSpan
+-- is called.
 isRecording :: MonadIO m => Span -> m Bool
 isRecording (Span s) = liftIO (isNothing . spanEnd <$> readIORef s)
 isRecording (FrozenSpan _) = pure True
 isRecording (Dropped _) = pure False
 
+{- |
+As an application developer when you need to record an attribute first consult existing semantic conventions for Resources, Spans, and Metrics. If an appropriate name does not exists you will need to come up with a new name. To do that consider a few options:
+
+The name is specific to your company and may be possibly used outside the company as well. To avoid clashes with names introduced by other companies (in a distributed system that uses applications from multiple vendors) it is recommended to prefix the new name by your company’s reverse domain name, e.g. 'com.acme.shopname'.
+
+The name is specific to your application that will be used internally only. If you already have an internal company process that helps you to ensure no name clashes happen then feel free to follow it. Otherwise it is recommended to prefix the attribute name by your application name, provided that the application name is reasonably unique within your organization (e.g. 'myuniquemapapp.longitude' is likely fine). Make sure the application name does not clash with an existing semantic convention namespace.
+
+The name may be generally applicable to applications in the industry. In that case consider submitting a proposal to this specification to add a new name to the semantic conventions, and if necessary also to add a new namespace.
+
+It is recommended to limit names to printable Basic Latin characters (more precisely to 'U+0021' .. 'U+007E' subset of Unicode code points), although the Haskell OpenTelemetry specification DOES provide full Unicode support.
+
+Attribute names that start with 'otel.' are reserved to be defined by OpenTelemetry specification. These are typically used to express OpenTelemetry concepts in formats that don’t have a corresponding concept.
+
+For example, the 'otel.library.name' attribute is used to record the instrumentation library name, which is an OpenTelemetry concept that is natively represented in OTLP, but does not have an equivalent in other telemetry formats and protocols.
+
+Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetry specification.
+-}
 insertAttribute :: MonadIO m => ToAttribute a => Span -> Text -> a -> m ()
 insertAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes = (k, toAttribute v) : spanAttributes i
@@ -115,17 +140,20 @@ addEvent (Span s) NewEvent{..} = liftIO $ do
     Nothing -> getTime Realtime
     Just t -> pure t
   modifyIORef s $ \i -> i
-    { spanEvents =
-        Event
+    { spanEvents = spanEvents i <> Builder.singleton
+        (Event
           { eventName = newEventName
           , eventAttributes = newEventAttributes
           , eventTimestamp = t
           }
-        : spanEvents i
+        ) 
     }
 addEvent (FrozenSpan _) _ = pure ()
 addEvent (Dropped _) _ = pure ()
 
+-- | Sets the Status of the Span. If used, this will override the default @Span@ status, which is @Unset@.
+--
+-- These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
 setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i
   { spanStatus = if st > spanStatus i

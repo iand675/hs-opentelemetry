@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module OpenTelemetry.Instrumentation.Yesod 
   (
   -- * Middleware functionality
@@ -28,11 +29,10 @@ import Yesod.Core
 import Yesod.Core.Types
 import Language.Haskell.TH.Syntax
 import Network.Wai (requestHeaders)
-import Yesod.Core (Route (..))
 import Yesod.Routes.TH.Types
 import UnliftIO.Exception
 import Data.Text (Text)
-import Data.List (intercalate, intersperse)
+import Data.List (intercalate)
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)
 handlerEnvL = lens handlerEnv (\h e -> h { handlerEnv = e })
@@ -149,6 +149,7 @@ renderPattern FlatResource{..} = concat $ concat
             Nothing -> []
             Just t -> ["/+", t]
         ]
+      Subsite{} -> []
   ]
   where
     routePortionSection :: Piece String -> [String]
@@ -157,7 +158,7 @@ renderPattern FlatResource{..} = concat $ concat
 
     formattedParentPieces :: [String]
     formattedParentPieces = do
-      (parentName, pieces) <- frParentPieces
+      (_parentName, pieces) <- frParentPieces
       piece <- pieces
       routePortionSection piece
 
@@ -172,7 +173,7 @@ openTelemetryYesodMiddleware
   -> HandlerFor site res
   -> HandlerFor site res
 openTelemetryYesodMiddleware rr m = do
-  tracer <- OpenTelemetry.Trace.Monad.getTracer
+  -- tracer <- OpenTelemetry.Trace.Monad.getTracer
   req <- waiRequest
   let mctxt = requestContext req
   localContext (<> fromMaybe Context.empty mctxt) $ do
@@ -191,7 +192,7 @@ openTelemetryYesodMiddleware rr m = do
           , startingAttributes = sharedAttributes
           }
     mapM_ (\s -> insertAttributes s sharedAttributes) mspan
-    eResult <- inSpan (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \s -> do
+    eResult <- inSpan (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
       (catch (Right <$> m) $ \e -> do
         -- We want to mark the span as an error if it's an HCError
         case e of

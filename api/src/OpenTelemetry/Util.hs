@@ -3,6 +3,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Util
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+-- Description :  Convenience functions to simplify common instrumentation needs.
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Util
   ( constructorName
   ) where
