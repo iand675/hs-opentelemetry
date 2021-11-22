@@ -81,11 +81,12 @@ instance YesodPersist Minimal where
   runDB m = do
     inSpan "yesod.runDB" emptySpanArguments $ \_ -> do
       app <- getYesod
-      withRunInIO $ \runInIO -> withResource (minimalConnectionPool app) $ \c -> runInIO $ do
-        ctxt <- getContext
-        connWithHooks <- wrapSqlBackend (minimalTracerProvider app) ctxt c
-        let connWithContext = insertConnectionContext (minimalContext app) connWithHooks
-        runSqlConn m connWithContext
+      runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
+        { alterBackend = \conn -> do
+            ctxt <- getContext
+            connWithHooks <- wrapSqlBackend (minimalTracerProvider app) ctxt conn
+            pure $ insertConnectionContext (minimalContext app) connWithHooks
+        }
 
 instance HasTracerProvider Minimal where
   tracerProviderL = lens
