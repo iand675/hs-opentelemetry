@@ -88,7 +88,7 @@ wrapSqlBackend tp ctxt conn = do
                     t
                     (fromMaybe OpenTelemetry.Context.empty $ lookupConnectionContext conn)
                     "db.query"
-                    (emptySpanArguments { startingKind = Client })
+                    (defaultSpanArguments { kind = Client })
                     ) (`endSpan` Nothing)
 
                   annotateBasics child conn
@@ -112,7 +112,7 @@ wrapSqlBackend tp ctxt conn = do
                         t
                         (fromMaybe OpenTelemetry.Context.empty $ lookupConnectionContext conn)
                         "db.execute"
-                        (emptySpanArguments { startingKind = Client })
+                        (defaultSpanArguments { kind = Client })
                     )
                     (
                       \mErr child -> do

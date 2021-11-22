@@ -79,7 +79,7 @@ instance Yesod Minimal where
 instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
-    inSpan "yesod.runDB" emptySpanArguments $ \_ -> do
+    inSpan "yesod.runDB" defaultSpanArguments $ \_ -> do
       app <- getYesod
       runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
         { alterBackend = \conn -> do
@@ -107,7 +107,7 @@ getRootR = do
 
 getApiR :: Handler Text
 getApiR = do
-  inSpan "annotatedFunction" emptySpanArguments $ \_ -> do
+  inSpan "annotatedFunction" defaultSpanArguments $ \_ -> do
     res <- runDB $ [sqlQQ|select 1|]
     case res of
       [Single (1 :: Int)] -> pure ()

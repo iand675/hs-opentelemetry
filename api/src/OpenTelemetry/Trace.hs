@@ -74,8 +74,8 @@ module OpenTelemetry.Trace
   , createSpan
   , wrapSpanContext
   , SpanKind(..)
-  , emptySpanArguments
-  , CreateSpanArguments(..)
+  , defaultSpanArguments
+  , SpanArguments(..)
   , Link(..)
   -- ** Recording @Event@s
   , Event(..)
@@ -195,12 +195,12 @@ getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOpti
 getTracer tp n TracerOptions{} = liftIO $ do
   pure $ Tracer n tp
 
-emptySpanArguments :: CreateSpanArguments
-emptySpanArguments = CreateSpanArguments
-  { startingKind = Internal
-  , startingAttributes = []
-  , startingLinks = []
-  , startingTimestamp = Nothing
+defaultSpanArguments :: SpanArguments
+defaultSpanArguments = SpanArguments
+  { kind = Internal
+  , attributes = []
+  , links = []
+  , startTime = Nothing
   }
 
 -- This method provides a way for provider to do any cleanup required.

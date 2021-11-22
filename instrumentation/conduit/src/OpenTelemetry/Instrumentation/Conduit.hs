@@ -7,7 +7,7 @@ import Control.Exception (throwIO, SomeException)
 
 inSpan
   :: (MonadTracer m, MonadGetContext m, MonadResource m, MonadUnliftIO m) => Text
-  -> CreateSpanArguments
+  -> SpanArguments
   -> (Span -> ConduitM i o m a)
   -> ConduitM i o m a
 inSpan n args f = do

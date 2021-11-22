@@ -25,8 +25,8 @@ import UnliftIO
 import Data.Aeson (FromJSON)
 import Conduit (MonadResource, lift)
 
-spanArgs :: CreateSpanArguments
-spanArgs = emptySpanArguments { startingKind = Client }
+spanArgs :: SpanArguments
+spanArgs = defaultSpanArguments { kind = Client }
 
 httpBS :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response B.ByteString)
 httpBS httpConf req = inSpan "httpBS" spanArgs $ \_s -> do

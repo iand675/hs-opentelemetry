@@ -26,9 +26,9 @@ createSpan
   => Tracer
   -> Context
   -> Text
-  -> CreateSpanArguments
+  -> SpanArguments
   -> m Span
-createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
+createSpan t ctxt n args@SpanArguments{..} = liftIO $ do
   sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
   let parent = lookupSpan ctxt
   tId <- case parent of
@@ -60,7 +60,7 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
         }
 
       mkRecordingSpan = do
-        st <- case startingTimestamp of
+        st <- case startTime of
           Nothing -> getTime Realtime
           Just time -> pure time
 
@@ -68,9 +68,9 @@ createSpan t ctxt n args@CreateSpanArguments{..} = liftIO $ do
               { spanName = n
               , spanContext = ctxtForSpan
               , spanParent = parent
-              , spanKind = startingKind
-              , spanAttributes = startingAttributes ++ additionalAttrs
-              , spanLinks = startingLinks
+              , spanKind = kind
+              , spanAttributes = attributes ++ additionalAttrs
+              , spanLinks = links
               , spanEvents = Builder.empty
               , spanStatus = Unset
               , spanStart = st

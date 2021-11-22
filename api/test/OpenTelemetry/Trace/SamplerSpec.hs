@@ -32,7 +32,7 @@ spec = describe "Sampler" $ do
               }
             traceParent = wrapSpanContext remoteSpan
             parentContext = Context.insertSpan traceParent Context.empty
-        (_, _, ts) <- shouldSample sampler parentContext aTraceId "test" emptySpanArguments
+        (_, _, ts) <- shouldSample sampler parentContext aTraceId "test" defaultSpanArguments
         ts `shouldBe` traceState remoteSpan
 
 
@@ -49,7 +49,7 @@ spec = describe "Sampler" $ do
             }
           traceParent = wrapSpanContext remoteSpan
           parentContext = Context.insertSpan traceParent Context.empty
-      (res, _, _) <- shouldSample alwaysOff parentContext aTraceId "test" emptySpanArguments
+      (res, _, _) <- shouldSample alwaysOff parentContext aTraceId "test" defaultSpanArguments
       res `shouldBe` Drop
 
   describe "alwaysOn" $ do
@@ -65,7 +65,7 @@ spec = describe "Sampler" $ do
             }
           traceParent = wrapSpanContext remoteSpan
           parentContext = Context.insertSpan traceParent Context.empty
-      (res, _, _) <- shouldSample alwaysOn parentContext aTraceId "test" emptySpanArguments
+      (res, _, _) <- shouldSample alwaysOn parentContext aTraceId "test" defaultSpanArguments
       res `shouldBe` RecordAndSample
 
   describe "traceIdRatioBased" $ do
@@ -82,7 +82,7 @@ spec = describe "Sampler" $ do
             }
           traceParent = wrapSpanContext remoteSpan
           parentContext = Context.insertSpan traceParent Context.empty
-      (res, _, _) <- shouldSample sampler parentContext aTraceId "test" emptySpanArguments
+      (res, _, _) <- shouldSample sampler parentContext aTraceId "test" defaultSpanArguments
       res `shouldBe` Drop
     it "samples spans that are within the sample ratio" $ do
       let sampler = traceIdRatioBased 0.5
@@ -97,7 +97,7 @@ spec = describe "Sampler" $ do
             }
           traceParent = wrapSpanContext remoteSpan
           parentContext = Context.insertSpan traceParent Context.empty
-      (res, _, _) <- shouldSample sampler parentContext aTraceId "test" emptySpanArguments
+      (res, _, _) <- shouldSample sampler parentContext aTraceId "test" defaultSpanArguments
       res `shouldBe` RecordAndSample
     it "higher sample ratios sample spans that are also by lower ratios" $ do
       let conservativeSampler = traceIdRatioBased 0.5
@@ -114,8 +114,8 @@ spec = describe "Sampler" $ do
           traceParent = wrapSpanContext remoteSpan
           parentContext = Context.insertSpan traceParent Context.empty
       do
-        (resConservative, _, _) <- shouldSample permissiveSampler parentContext aTraceId "test" emptySpanArguments
-        (resPermissive, _, _) <- shouldSample conservativeSampler parentContext aTraceId "test" emptySpanArguments
+        (resConservative, _, _) <- shouldSample permissiveSampler parentContext aTraceId "test" defaultSpanArguments
+        (resPermissive, _, _) <- shouldSample conservativeSampler parentContext aTraceId "test" defaultSpanArguments
         resConservative `shouldBe` RecordAndSample
         resPermissive `shouldBe` RecordAndSample
     

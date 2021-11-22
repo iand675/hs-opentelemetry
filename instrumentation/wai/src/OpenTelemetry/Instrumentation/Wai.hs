@@ -33,8 +33,8 @@ newOpenTelemetryWaiMiddleware tp propagator = do
     middleware tracer app req sendResp = do
       -- TODO baggage, span context
       ctxt <- extract propagator (requestHeaders req) Context.empty
-      requestSpan <- createSpan tracer ctxt "warp.wai" $ emptySpanArguments
-        { startingKind = Server
+      requestSpan <- createSpan tracer ctxt "warp.wai" $ defaultSpanArguments
+        { kind = Server
         }
 
       insertAttributes requestSpan

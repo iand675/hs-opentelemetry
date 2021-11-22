@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module OpenTelemetry.Instrumentation.Yesod 
+module OpenTelemetry.Instrumentation.Yesod
   (
   -- * Middleware functionality
   openTelemetryYesodMiddleware,
@@ -112,7 +112,7 @@ mkRouteToPattern appName ress = do
     [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
     , FunD fnName clauses
     ]
-  
+
   where
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
     isDynamic Dynamic {} = True
@@ -158,7 +158,7 @@ data RouteRenderer site = RouteRenderer
   , pathRender :: Route site -> T.Text
   }
 
-openTelemetryYesodMiddleware 
+openTelemetryYesodMiddleware
   :: (HasContext site, ToTypedContent res)
   => RouteRenderer site
   -> HandlerFor site res
@@ -178,18 +178,18 @@ openTelemetryYesodMiddleware rr m = do
               ff <- lookup "X-Forwarded-For" $ requestHeaders req
               pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
           ]
-        args = emptySpanArguments
-          { startingKind = maybe Server (const Internal) mspan
-          , startingAttributes = sharedAttributes
+        args = defaultSpanArguments
+          { kind = maybe Server (const Internal) mspan
+          , attributes = sharedAttributes
           }
-    mapM_ (\s -> insertAttributes s sharedAttributes) mspan
+    mapM_ (`insertAttributes` sharedAttributes) mspan
     eResult <- inSpan (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
-      (catch (Right <$> m) $ \e -> do
+      catch (Right <$> m) $ \e -> do
         -- We want to mark the span as an error if it's an HCError
         case e of
           HCError _ -> throwIO e
           _ -> pure ()
-        pure (Left (e :: HandlerContents)))
+        pure (Left (e :: HandlerContents))
     case eResult of
       Left hc -> throwIO hc
       Right normal -> pure normal

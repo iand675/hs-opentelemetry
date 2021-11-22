@@ -18,8 +18,8 @@ module OpenTelemetry.Instrumentation.HttpClient
 import qualified Data.ByteString.Lazy as L
 import Control.Monad.IO.Class ( MonadIO(..) )
 import OpenTelemetry.Trace
-    ( emptySpanArguments,
-      CreateSpanArguments(startingKind),
+    ( defaultSpanArguments,
+      SpanArguments(kind),
       SpanKind(Client) )
 import OpenTelemetry.Trace.Monad
     ( inSpan,
@@ -35,8 +35,8 @@ import OpenTelemetry.Instrumentation.HttpClient.Raw
       instrumentResponse, httpClientInstrumentationConfig )
 import UnliftIO ( MonadUnliftIO, askRunInIO )
 
-spanArgs :: CreateSpanArguments
-spanArgs = emptySpanArguments { startingKind = Client }
+spanArgs :: SpanArguments
+spanArgs = defaultSpanArguments { kind = Client }
 
 -- | Instrumented variant of @Network.HTTP.Client.withResponse@
 --
@@ -60,7 +60,7 @@ withResponse :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, Mona
 withResponse httpConf req man f = inSpan "withResponse" spanArgs $ \_wrSpan -> do
   ctxt <- getContext
   -- TODO would like to capture the req/resp time specifically
-  -- inSpan "http.request" (emptySpanArguments { startingKind = Client }) $ \httpReqSpan -> do
+  -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
   req' <- instrumentRequest httpConf ctxt req
   runInIO <- askRunInIO
   liftIO $ Client.withResponse req' man $ \resp -> do
