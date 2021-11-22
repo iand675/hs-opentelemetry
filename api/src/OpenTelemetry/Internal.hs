@@ -1,1 +1,0 @@
-module OpenTelemetry.Internal where
