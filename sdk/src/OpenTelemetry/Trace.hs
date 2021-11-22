@@ -20,8 +20,8 @@ module OpenTelemetry.Trace
   -- * 'Span' operations
   , Span
   , createSpan
-  , emptySpanArguments
-  , CreateSpanArguments(..)
+  , defaultSpanArguments
+  , SpanArguments(..)
   , updateName
   , insertAttribute 
   , insertAttributes

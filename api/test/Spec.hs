@@ -1,7 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 import Test.Hspec
-import OpenTelemetry.Trace (getGlobalTracerProvider, tracerOptions, emptySpanArguments, Tracer, getTracer, ImmutableSpan (spanAttributes, spanStatus), unsafeReadSpan, SpanStatus (Error), spanEvents, Event (eventAttributes, eventName))
+import OpenTelemetry.Trace (getGlobalTracerProvider, tracerOptions, defaultSpanArguments, Tracer, getTracer, ImmutableSpan (spanAttributes, spanStatus), unsafeReadSpan, SpanStatus (Error), spanEvents, Event (eventAttributes, eventName))
 import Control.Monad.Reader
 import OpenTelemetry.Context
 import Control.Exception
@@ -47,7 +47,7 @@ exceptionTest = do
   spanToCheck <- newIORef undefined
   handle (\(TestException _) -> pure ()) $ do
     runTestTraceMonad t empty $ do
-      inSpan "test" emptySpanArguments $ \span -> do
+      inSpan "test" defaultSpanArguments $ \span -> do
         liftIO $ writeIORef spanToCheck span
         throw $ TestException "wow"
         pure ()

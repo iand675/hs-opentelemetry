@@ -100,11 +100,11 @@ data Link = Link
   }
   deriving (Show)
 
-data CreateSpanArguments = CreateSpanArguments
-  { startingKind :: SpanKind
-  , startingAttributes :: [(Text, Attribute)]
-  , startingLinks :: [Link]
-  , startingTimestamp :: Maybe Timestamp
+data SpanArguments = SpanArguments
+  { kind :: SpanKind
+  , attributes :: [(Text, Attribute)]
+  , links :: [Link]
+  , startTime :: Maybe Timestamp
   }
 
 data FlushResult = FlushTimeout | FlushSuccess | FlushError
@@ -276,5 +276,5 @@ data SamplingResult
 data Sampler = Sampler
   { getDescription :: Text
   -- ^ Returns the sampler name or short description with the configuration. This may be displayed on debug pages or in the logs.
-  , shouldSample :: Context -> TraceId -> Text -> CreateSpanArguments -> IO (SamplingResult, [(Text, Attribute)], TraceState)
+  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, [(Text, Attribute)], TraceState)
   }

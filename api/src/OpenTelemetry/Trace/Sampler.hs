@@ -89,14 +89,14 @@ traceIdRatioBased fraction = if fraction >= 1
     traceIdUpperBound = floor (fraction * fromIntegral ((1 :: Word64) `shiftL` 63)) :: Word64
     sampler = Sampler
       { getDescription = "TraceIdRatioBased{" <> pack (show fraction) <> "}"
-      , shouldSample = \ctxt tid _ csa -> do
+      , shouldSample = \ctxt tid _ _ -> do
         mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
         let x = runGet getWord64be (L.fromStrict $ B.take 8 $ traceIdBytes tid) `shiftR` 1
         if x < traceIdUpperBound
           then do
             pure (RecordAndSample, [("sampleRate", sampleRate)], maybe TraceState.empty traceState mspanCtxt)
           else
-            pure (Drop, startingAttributes csa, maybe TraceState.empty traceState mspanCtxt)
+            pure (Drop, [], maybe TraceState.empty traceState mspanCtxt)
       }
 
 -- | This is a composite sampler. ParentBased helps distinguish between the following cases:

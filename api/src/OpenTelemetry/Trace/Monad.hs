@@ -19,8 +19,8 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Trace.Monad 
   ( inSpan
-  , emptySpanArguments
-  , CreateSpanArguments(..)
+  , defaultSpanArguments
+  , SpanArguments(..)
   , SpanKind(..)
   , Link (..)
   , MonadLocalContext(..)
@@ -40,13 +40,13 @@ import OpenTelemetry.Trace
   , Span
   , SpanStatus(Error)
   , SpanKind(..)
-  , CreateSpanArguments(..)
+  , SpanArguments(..)
   , Link (..)
   , createSpan
   , endSpan
   , recordException
   , setStatus
-  , emptySpanArguments
+  , defaultSpanArguments
   )
 import Control.Monad.Reader (ReaderT, forM_)
 import GHC.Stack.Types (HasCallStack)
@@ -102,7 +102,7 @@ bracketErrorUnliftIO before after thing = withRunInIO $ \run -> EUnsafe.mask $ \
 inSpan 
   :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack) 
   => Text 
-  -> CreateSpanArguments 
+  -> SpanArguments 
   -> (Span -> m a) 
   -> m a
 inSpan n args f = do 
