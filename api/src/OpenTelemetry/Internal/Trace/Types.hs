@@ -260,6 +260,8 @@ data Event = Event
 class ToEvent a where
   toEvent :: a -> Event
 
+-- | The outcome of a call to 'Sampler' indicating
+-- whether the 'Tracer' should sample a 'Span'.
 data SamplingResult
   = Drop 
   -- ^ isRecording == false. Span will not be recorded and all events and attributes will be dropped.
