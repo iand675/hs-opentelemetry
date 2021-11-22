@@ -67,6 +67,7 @@ extra-deps:
   subdirs:
   - persistent
   - persistent-postgresql
+  - persistent-qq
 - proto-lens-0.7.1.0
 - proto-lens-runtime-0.7.0.1
 # just for testing

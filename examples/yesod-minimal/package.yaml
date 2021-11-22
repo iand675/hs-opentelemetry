@@ -16,7 +16,7 @@ dependencies:
 # database
 - yesod-persistent
 - monad-logger
-- persistent
+- persistent >= 2.14
 - persistent-postgresql
 - persistent-qq
 - resource-pool

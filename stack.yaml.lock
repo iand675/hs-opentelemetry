@@ -45,6 +45,19 @@ packages:
     git: https://github.com/iand675/persistent.git
     commit: b266e894bca1cc459204f06c9b87a138acd87b54
 - completed:
+    subdir: persistent-qq
+    name: persistent-qq
+    version: 2.12.0.1
+    git: https://github.com/iand675/persistent.git
+    pantry-tree:
+      size: 642
+      sha256: cb8c27dde49ab59d71c540ce2a08b8201ed148aa3fe7e7dd8129442fa0ec8b65
+    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+  original:
+    subdir: persistent-qq
+    git: https://github.com/iand675/persistent.git
+    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+- completed:
     hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
     pantry-tree:
       size: 1857
