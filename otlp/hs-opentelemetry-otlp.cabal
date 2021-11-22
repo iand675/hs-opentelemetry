@@ -25,7 +25,6 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
       Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService
       Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields
       Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService

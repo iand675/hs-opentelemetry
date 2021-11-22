@@ -6,7 +6,7 @@
 -- Module      :  OpenTelemetry.Resource
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Facilities for attaching metadata attributes to all spans in a trace
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
