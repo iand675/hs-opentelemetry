@@ -42,24 +42,15 @@ rheSiteL :: Lens' (RunHandlerEnv child site) site
 rheSiteL = lens rheSite (\rhe new -> rhe { rheSite = new })
 {-# INLINE rheSiteL #-}
 
-instance HasTracerProvider site => HasTracerProvider (RunHandlerEnv child site) where
-  tracerProviderL = rheSiteL . tracerProviderL
-
-instance HasTracerProvider site => HasTracerProvider (HandlerData child site) where
-  tracerProviderL = handlerEnvL . tracerProviderL
-
 instance HasContext site => HasContext (RunHandlerEnv child site) where
   contextL = rheSiteL . contextL
 
 instance HasContext site => HasContext (HandlerData child site) where
   contextL = handlerEnvL . contextL
 
-instance HasTracerProvider site => MonadTracerProvider (HandlerFor site) where
-  getTracerProvider = asks (^. tracerProviderL)
-
-instance (HasTracerProvider site) => MonadTracer (HandlerFor site) where
+instance MonadTracer (HandlerFor site) where
   getTracer = do
-    tp <- getTracerProvider
+    tp <- getGlobalTracerProvider
     OpenTelemetry.Trace.getTracer tp "otel-instrumentation-yesod" tracerOptions
 
 instance HasContext site => MonadGetContext (HandlerFor site) where
@@ -168,7 +159,7 @@ data RouteRenderer site = RouteRenderer
   }
 
 openTelemetryYesodMiddleware 
-  :: (HasTracerProvider site, HasContext site, ToTypedContent res)
+  :: (HasContext site, ToTypedContent res)
   => RouteRenderer site
   -> HandlerFor site res
   -> HandlerFor site res

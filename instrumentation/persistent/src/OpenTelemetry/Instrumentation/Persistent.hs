@@ -20,15 +20,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Vault.Strict as Vault
 import OpenTelemetry.Resource
 import UnliftIO.Exception
-import OpenTelemetry.Trace.Monad (bracketErrorUnliftIO, MonadGetContext(..), MonadLocalContext(..), MonadTracerProvider(..), MonadTracer(..))
+import OpenTelemetry.Trace.Monad (bracketErrorUnliftIO, MonadGetContext(..), MonadLocalContext(..), MonadTracer(..))
 import Control.Monad.Reader
-
-instance {-# OVERLAPS #-} MonadTracerProvider m => MonadTracerProvider (ReaderT SqlBackend m) where
-  getTracerProvider = lift getTracerProvider
-instance {-# OVERLAPS #-} MonadTracerProvider m => MonadTracerProvider (ReaderT SqlReadBackend m) where
-  getTracerProvider = lift getTracerProvider
-instance {-# OVERLAPS #-} MonadTracerProvider m => MonadTracerProvider (ReaderT SqlWriteBackend m) where
-  getTracerProvider = lift getTracerProvider
 
 instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer

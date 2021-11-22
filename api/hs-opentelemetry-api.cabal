@@ -52,7 +52,6 @@ library
       OpenTelemetry.Trace.TraceState
       OpenTelemetry.Util
   other-modules:
-      OpenTelemetry.Internal
       OpenTelemetry.Context.Types
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.Internal.Trace.Types
