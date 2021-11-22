@@ -16,6 +16,7 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Util
   ( constructorName
+  , HasConstructor
   ) where
 
 import Data.Kind
@@ -27,6 +28,7 @@ import GHC.Generics
 constructorName :: (HasConstructor (Rep a), Generic a) => a -> String
 constructorName = genericConstrName . from
 
+-- | Detect a constructor from any datatype which derives 'Generic'
 class HasConstructor (f :: Type -> Type) where
   genericConstrName :: f x -> String
 

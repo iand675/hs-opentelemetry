@@ -88,11 +88,6 @@ instance YesodPersist Minimal where
             pure $ insertConnectionContext (minimalContext app) connWithHooks
         }
 
-instance HasTracerProvider Minimal where
-  tracerProviderL = lens
-    minimalTracerProvider
-    (\m tp -> m { minimalTracerProvider = tp })
-
 instance HasContext Minimal where
   contextL = lens
     minimalContext

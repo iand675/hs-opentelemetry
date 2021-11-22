@@ -28,7 +28,6 @@ module OpenTelemetry.Trace.Monad
   , MonadBracketError(..)
   , bracketErrorUnliftIO
   , MonadTracer(..)
-  , MonadTracerProvider(..)
   ) where
 
 import Control.Exception (SomeException(..), Exception (displayException))
@@ -37,8 +36,7 @@ import Control.Monad.IO.Unlift
 import Data.Text (Text, pack)
 import OpenTelemetry.Context (Context, insertSpan)
 import OpenTelemetry.Trace
-  ( TracerProvider
-  , Tracer
+  ( Tracer
   , Span
   , SpanStatus(Error)
   , SpanKind(..)
@@ -52,12 +50,6 @@ import OpenTelemetry.Trace
   )
 import Control.Monad.Reader (ReaderT, forM_)
 import GHC.Stack.Types (HasCallStack)
-
--- | This is a type class rather than coded against MonadIO because
--- we need the ability to specialize behaviour against things like
--- persistent's @ReaderT SqlBackend@ stack.
-class Monad m => MonadTracerProvider m where
-  getTracerProvider :: m TracerProvider
 
 -- | This is generally scoped by Monad stack to do different things
 class Monad m => MonadTracer m where

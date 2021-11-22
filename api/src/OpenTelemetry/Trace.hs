@@ -40,7 +40,6 @@ module OpenTelemetry.Trace
   ( 
   -- * @TracerProvider@ operations
     TracerProvider
-  , HasTracerProvider(..)
   , createTracerProvider
   , shutdownTracerProvider
   , forceFlushTracerProvider
@@ -123,9 +122,6 @@ import OpenTelemetry.Resource.Service
 import Control.Monad
 import System.Timeout (timeout)
 
-class HasTracerProvider s where
-  tracerProviderL :: Lens' s TracerProvider
-
 builtInResources :: IO (Resource 'Nothing)
 builtInResources = do
   svc <- getService
@@ -168,6 +164,7 @@ data TracerProviderOptions o = TracerProviderOptions
 emptyTracerProviderOptions :: (o ~ ResourceMerge o o) => TracerProviderOptions o
 emptyTracerProviderOptions = TracerProviderOptions Nothing (parentBased $ parentBasedOptions alwaysOn) mempty
 
+-- | Initialize a new tracer provider
 createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions o -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   envVarResource <- getEnvVarResourceAttributes
