@@ -171,8 +171,7 @@ emptyTracerProviderOptions = TracerProviderOptions Nothing (parentBased $ parent
 createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions o -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   envVarResource <- getEnvVarResourceAttributes
-  g <- maybe
-    makeDefaultIdGenerator pure (tracerProviderOptionsIdGenerator opts)
+  let g = fromMaybe defaultIdGenerator (tracerProviderOptionsIdGenerator opts)
   pure $ TracerProvider
     (V.fromList ps)
     g
