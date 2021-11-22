@@ -55,7 +55,6 @@ library:
   source-dirs: src
   ghc-options: -Wall -Werror
   other-modules:
-  - OpenTelemetry.Internal
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Id
   - OpenTelemetry.Internal.Trace.Types
