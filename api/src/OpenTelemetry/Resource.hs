@@ -152,11 +152,6 @@ class ToResource a where
   type ResourceSchema a :: Maybe Symbol
   toResource :: a -> Resource (ResourceSchema a)
 
-
-class ResourceDetector d where
-  type DetectedResource d :: Maybe Symbol
-  detect :: d -> IO (Resource (DetectedResource d))
-
 -- baggage format environment variables
 getEnvVarResourceAttributes :: MonadIO m => m (Resource 'Nothing)
 getEnvVarResourceAttributes = do

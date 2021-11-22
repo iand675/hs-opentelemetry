@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DefaultSignatures #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Trace.Monad
@@ -16,23 +17,38 @@
 -- more lower-level, but more flexible.
 --
 -----------------------------------------------------------------------------
-module OpenTelemetry.Trace.Monad where
+module OpenTelemetry.Trace.Monad 
+  ( inSpan
+  , emptySpanArguments
+  , CreateSpanArguments(..)
+  , SpanKind(..)
+  , Link (..)
+  , MonadLocalContext(..)
+  , MonadGetContext(..)
+  , MonadBracketError(..)
+  , bracketErrorUnliftIO
+  , MonadTracer(..)
+  , MonadTracerProvider(..)
+  ) where
 
 import Control.Exception (SomeException(..), Exception (displayException))
 import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
 import Data.Text (Text, pack)
 import OpenTelemetry.Context (Context, insertSpan)
-import OpenTelemetry.Trace 
+import OpenTelemetry.Trace
   ( TracerProvider
   , Tracer
   , Span
   , SpanStatus(Error)
+  , SpanKind(..)
   , CreateSpanArguments(..)
+  , Link (..)
   , createSpan
   , endSpan
   , recordException
   , setStatus
+  , emptySpanArguments
   )
 import Control.Monad.Reader (ReaderT, forM_)
 import GHC.Stack.Types (HasCallStack)
@@ -47,7 +63,15 @@ class Monad m => MonadTracerProvider m where
 class Monad m => MonadTracer m where
   getTracer :: m Tracer
 
+-- | Get the current OpenTelemetry 'Context'.
+--
+-- This type class is distinct from 'MonadLocalContext' to accomodate
+-- cases where `getContext` needs to be called from a non-reader-like
+-- 'Monad' instance.
 class Monad m => MonadGetContext m where
+  -- | Get the current OpenTelemetry 'Context'.
+  --
+  -- @since 0.1.0.0
   getContext :: m Context
 
 class MonadGetContext m => MonadLocalContext m where
@@ -55,13 +79,15 @@ class MonadGetContext m => MonadLocalContext m where
 
 class Monad m => MonadBracketError m where
   bracketError :: m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+  default bracketError :: MonadUnliftIO m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+  bracketError = bracketErrorUnliftIO
 
 instance MonadBracketError IO where
-  bracketError = bracketErrorUnliftIO
-
 instance MonadUnliftIO m => MonadBracketError (ReaderT r m) where
-  bracketError = bracketErrorUnliftIO
 
+-- | The standard implementation of 'bracketError'
+--
+-- @since 0.1.0.0
 bracketErrorUnliftIO :: MonadUnliftIO m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 bracketErrorUnliftIO before after thing = withRunInIO $ \run -> EUnsafe.mask $ \restore -> do
   x <- run before
@@ -80,6 +106,7 @@ bracketErrorUnliftIO before after thing = withRunInIO $ \run -> EUnsafe.mask $ \
       _ <- EUnsafe.uninterruptibleMask_ $ run $ after Nothing x
       return y
 
+-- | The primary convenience
 inSpan 
   :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack) 
   => Text 
