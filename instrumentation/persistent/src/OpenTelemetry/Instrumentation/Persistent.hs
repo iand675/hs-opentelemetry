@@ -74,8 +74,9 @@ connectionLevelAttributesKey :: Vault.Key [(Text, Attribute)]
 connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {-# NOINLINE connectionLevelAttributesKey #-}
 
-wrapSqlBackend :: MonadIO m => TracerProvider -> Context -> SqlBackend -> m SqlBackend
-wrapSqlBackend tp ctxt conn = do
+wrapSqlBackend :: MonadIO m => Context -> SqlBackend -> m SqlBackend
+wrapSqlBackend ctxt conn = do
+  tp <- getGlobalTracerProvider
   let conn' = Data.Maybe.fromMaybe conn (lookupOriginalConnection conn)
 
   -- TODO add schema to tracerOptions?
