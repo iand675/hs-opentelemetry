@@ -51,8 +51,7 @@ import OpenTelemetry.Trace.SpanProcessors.Batch
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
-  { minimalTracerProvider :: TracerProvider
-  , minimalContext :: Context
+  { minimalContext :: Context
   , minimalPropagator :: Propagator Context RequestHeaders ResponseHeaders
   , minimalConnectionPool :: Pool SqlBackend
   }
@@ -84,7 +83,7 @@ instance YesodPersist Minimal where
       runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
         { alterBackend = \conn -> do
             ctxt <- getContext
-            connWithHooks <- wrapSqlBackend (minimalTracerProvider app) ctxt conn
+            connWithHooks <- wrapSqlBackend ctxt conn
             pure $ insertConnectionContext (minimalContext app) connWithHooks
         }
 
@@ -128,13 +127,15 @@ main = do
       { tracerProviderOptionsResources = rs
       })
 
+  setGlobalTracerProvider tp
+
   let httpPropagators = mconcat
         [ w3cBaggagePropagator
         , w3cTraceContextPropagator
         ]
 
   runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
-    waiApp <- toWaiApp $ Minimal tp Context.empty httpPropagators pool
+    waiApp <- toWaiApp $ Minimal Context.empty httpPropagators pool
     openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware tp httpPropagators
 
     run 3000 $ openTelemetryWaiMiddleware waiApp
