@@ -85,6 +85,7 @@ module OpenTelemetry.Trace
   , updateName
   , insertAttribute
   , insertAttributes
+  , getAttributes
   -- ** Recording error information 
   , recordException
   , setStatus
