@@ -16,7 +16,6 @@ import OpenTelemetry.Trace
 import System.IO.Unsafe
 import qualified Data.Text.Encoding as T
 import qualified Data.Text as T
-import OpenTelemetry.Resource
 import Control.Monad
 
 newOpenTelemetryWaiMiddleware 

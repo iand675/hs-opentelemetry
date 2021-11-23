@@ -86,6 +86,12 @@ module OpenTelemetry.Trace
   , insertAttribute
   , insertAttributes
   , getAttributes
+  , (.=)
+  , (.=?)
+  , Attribute(..)
+  , ToAttribute(..)
+  , PrimitiveAttribute(..)
+  , ToPrimitiveAttribute(..)
   -- ** Recording error information 
   , recordException
   , setStatus

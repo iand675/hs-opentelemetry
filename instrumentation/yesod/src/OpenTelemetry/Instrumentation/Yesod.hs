@@ -23,7 +23,6 @@ import OpenTelemetry.Context (HasContext(..))
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Monad
-import OpenTelemetry.Resource (toAttribute)
 import OpenTelemetry.Instrumentation.Wai
 import Yesod.Core
 import Yesod.Core.Types
