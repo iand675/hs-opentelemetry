@@ -25,10 +25,13 @@ module OpenTelemetry.Trace
   , updateName
   , insertAttribute 
   , insertAttributes
+  , getAttributes
   , ToAttribute(..)
   , ToPrimitiveAttribute(..)
   , Attribute(..)
   , PrimitiveAttribute(..)
+  , (.=)
+  , (.=?)
   , SpanKind(..)
   , Link(..)
   , Event
@@ -43,4 +46,3 @@ module OpenTelemetry.Trace
   ) where
 
 import "hs-opentelemetry-api" OpenTelemetry.Trace
-import OpenTelemetry.Resource

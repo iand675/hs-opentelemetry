@@ -10,7 +10,6 @@ import Control.Monad (forM_, when)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import OpenTelemetry.Resource
 import Data.Foldable (Foldable(toList))
 import Data.CaseInsensitive (foldedCase)
 
