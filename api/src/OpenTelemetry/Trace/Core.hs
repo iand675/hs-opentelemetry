@@ -248,3 +248,14 @@ unsafeReadSpan = \case
 
 wrapSpanContext :: SpanContext -> Span
 wrapSpanContext = FrozenSpan
+
+-- | This can be useful for pulling data for attributes and
+-- using it to copy / otherwise use the data to further enrich
+-- instrumentation.
+getAttributes :: MonadIO m => Span -> m [(Text, Attribute)]
+getAttributes = \case
+  Span ref -> do
+    s <- liftIO $ readIORef ref
+    pure $ spanAttributes s
+  FrozenSpan _ -> pure []
+  Dropped _ -> pure []

@@ -185,9 +185,11 @@ openTelemetryYesodMiddleware rr m = do
     mapM_ (`insertAttributes` sharedAttributes) mspan
     eResult <- inSpan (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
       catch (Right <$> m) $ \e -> do
-        -- We want to mark the span as an error if it's an HCError
+        -- We want to mark the span as an error if it's an InternalError,
+        -- the other HCError values are 4xx status codes which don't
+        -- really count as a server error in OpenTelemetry spec parlance.
         case e of
-          HCError _ -> throwIO e
+          HCError (InternalError _) -> throwIO e
           _ -> pure ()
         pure (Left (e :: HandlerContents))
     case eResult of

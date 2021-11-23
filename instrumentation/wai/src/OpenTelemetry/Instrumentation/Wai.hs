@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 module OpenTelemetry.Instrumentation.Wai 
   ( newOpenTelemetryWaiMiddleware
   , requestContext
@@ -33,7 +34,8 @@ newOpenTelemetryWaiMiddleware tp propagator = do
     middleware tracer app req sendResp = do
       -- TODO baggage, span context
       ctxt <- extract propagator (requestHeaders req) Context.empty
-      requestSpan <- createSpan tracer ctxt "warp.wai" $ defaultSpanArguments
+      let path_ = T.decodeUtf8 $ rawPathInfo req
+      requestSpan <- createSpan tracer ctxt path_ $ defaultSpanArguments
         { kind = Server
         }
 
@@ -71,6 +73,11 @@ newOpenTelemetryWaiMiddleware tp propagator = do
         -- injecting the span here, but is that actually useful??
         let resp' = mapResponseHeaders (hs ++) resp
         -- TODO need to propagate baggage
+        attrs <- getAttributes requestSpan
+        forM_ (lookup "http.route" attrs) $ \case
+          AttributeValue (TextAttribute route) -> updateName requestSpan route 
+          _ -> pure ()
+
         insertAttributes requestSpan
           [ ( "http.status_code", toAttribute $ statusCode $ responseStatus resp)
           ]
