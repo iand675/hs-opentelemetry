@@ -48,6 +48,7 @@ import Yesod.Core.Handler
 import Yesod.Persist
 import OpenTelemetry.Exporters.OTLP
 import OpenTelemetry.Trace.SpanProcessors.Batch
+import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
@@ -78,12 +79,16 @@ instance Yesod Minimal where
 instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
-    inSpan "yesod.runDB" defaultSpanArguments $ \_ -> do
+    inSpan "yesod.runDB" defaultSpanArguments $ do
       app <- getYesod
       runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
         { alterBackend = \conn -> do
             ctxt <- getContext
-            connWithHooks <- wrapSqlBackend ctxt conn
+            -- TODO, could probably not do this on each runDB call.
+            staticAttrs <- case getSimpleConn conn of
+              Nothing -> pure []
+              Just pgConn -> staticConnectionAttributes pgConn
+            connWithHooks <- wrapSqlBackend ctxt staticAttrs conn
             pure $ insertConnectionContext (minimalContext app) connWithHooks
         }
 
@@ -106,7 +111,7 @@ getRootR = do
 
 getApiR :: Handler Text
 getApiR = do
-  inSpan "annotatedFunction" defaultSpanArguments $ \_ -> do
+  inSpan "annotatedFunction" defaultSpanArguments $ do
     res <- runDB $ [sqlQQ|select 1|]
     case res of
       [Single (1 :: Int)] -> pure ()

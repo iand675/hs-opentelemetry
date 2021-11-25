@@ -17,12 +17,22 @@
 -- more lower-level, but more flexible.
 --
 -----------------------------------------------------------------------------
-module OpenTelemetry.Trace.Monad 
+module OpenTelemetry.Trace.Monad
   ( inSpan
+  , inSpan'
   , defaultSpanArguments
   , SpanArguments(..)
   , SpanKind(..)
   , Link (..)
+  -- Interacting with the span in the current context
+  -- , getSpan
+  -- , updateName
+  -- , addAttribute
+  -- , addAttributes
+  -- , getAttributes
+  -- , addEvent
+  -- , NewEvent (..)
+  -- Fundamental monad instances
   , MonadLocalContext(..)
   , MonadGetContext(..)
   , MonadBracketError(..)
@@ -46,10 +56,13 @@ import OpenTelemetry.Trace
   , endSpan
   , recordException
   , setStatus
-  , defaultSpanArguments
+  , defaultSpanArguments, whenSpanIsRecording, insertAttributes, ToAttribute (toAttribute)
   )
 import Control.Monad.Reader (ReaderT, forM_)
-import GHC.Stack.Types (HasCallStack)
+import Control.Concurrent (myThreadId)
+import OpenTelemetry.Util (getThreadId)
+import GHC.Stack
+import qualified Data.Text as T
 
 -- | This is generally scoped by Monad stack to do different things
 class Monad m => MonadTracer m where
@@ -98,19 +111,50 @@ bracketErrorUnliftIO before after thing = withRunInIO $ \run -> EUnsafe.mask $ \
       _ <- EUnsafe.uninterruptibleMask_ $ run $ after Nothing x
       return y
 
--- | The primary convenience
-inSpan 
-  :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack) 
-  => Text 
-  -> SpanArguments 
-  -> (Span -> m a) 
+inSpan
+  :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack)
+  => Text
+  -> SpanArguments
   -> m a
-inSpan n args f = do 
+  -> m a
+inSpan n args m = inSpan'' callStack n args (const m)
+
+inSpan'
+  :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack)
+  => Text
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan' = inSpan'' callStack
+
+inSpan''
+  :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, HasCallStack)
+  => CallStack
+  -> Text
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan'' cs n args f = do
   t <- getTracer
   ctx <- getContext
-  bracketError 
+  bracketError
     (liftIO $ createSpan t ctx n args)
     (\e s -> liftIO $ do
+      whenSpanIsRecording s $ do
+        tid <- myThreadId
+        insertAttributes s
+          [ ("thread.id", toAttribute $ getThreadId tid)
+          ]
+        case getCallStack cs of
+          [] -> pure ()
+          (fn, loc):_ -> do
+            insertAttributes s
+              [ ("code.function", toAttribute $ T.pack fn)
+              , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+              , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+              , ("code.lineno", toAttribute $ srcLocStartLine loc)
+              , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+              ]
       forM_ e $ \(SomeException inner) -> do
         setStatus s $ Error $ pack $ displayException inner
         recordException s [] Nothing inner
@@ -118,3 +162,24 @@ inSpan n args f = do
       endSpan s Nothing
     )
     (\s -> localContext (insertSpan s) $ f s)
+
+-- getSpan :: MonadGetContext m => m (Maybe Span)
+-- getSpan = lookupSpan <$> getContext
+
+-- updateName :: (MonadGetContext m) => Text -> m ()
+-- updateName = _
+
+-- addAttribute :: (MonadGetContext m, ToAttribute attr) => Text -> attr -> m ()
+-- addAttribute = _
+
+-- addAttributes :: (MonadGetContext m) => [(Text, Attribute)] -> m ()
+-- addAttributes = _
+
+-- askAttributes :: (MonadGetContext m) => m [(Text, Attribute)]
+-- askAttributes = _
+
+-- setStatus :: (MonadGetContext m) => SpanStatus -> m ()
+-- setStatus = _
+
+-- addEvent :: (MonadGetContext m) => NewEvent -> m ()
+-- addEvent = _

@@ -3,6 +3,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE UnliftedFFITypes #-}
+{-# LANGUAGE UnboxedTuples #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Util
@@ -17,10 +20,14 @@
 module OpenTelemetry.Util
   ( constructorName
   , HasConstructor
+  , getThreadId
   ) where
 
 import Data.Kind
 import GHC.Generics
+import GHC.Conc (ThreadId(ThreadId))
+import GHC.Base (ThreadId#)
+import Foreign.C (CInt(..))
 
 -- | Useful for annotating which constructor in an ADT was chosen
 --
@@ -41,3 +48,10 @@ instance (HasConstructor x, HasConstructor y) => HasConstructor (x :+: y) where
 
 instance Constructor c => HasConstructor (C1 c f) where
   genericConstrName x = conName x
+
+foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: ThreadId# -> CInt
+
+-- | Get an int representation of a thread id
+getThreadId :: ThreadId -> Int
+getThreadId (ThreadId tid#) = fromIntegral (c_getThreadId tid#)
+{-# INLINE getThreadId #-}

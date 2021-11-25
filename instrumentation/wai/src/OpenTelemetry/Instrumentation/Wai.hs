@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 module OpenTelemetry.Instrumentation.Wai 
   ( newOpenTelemetryWaiMiddleware
+  , newOpenTelemetryWaiMiddleware'
   , requestContext
   ) where
 
@@ -17,12 +18,21 @@ import System.IO.Unsafe
 import qualified Data.Text.Encoding as T
 import qualified Data.Text as T
 import Control.Monad
+import Network.Socket
+import Data.IP (fromHostAddress, fromHostAddress6)
 
-newOpenTelemetryWaiMiddleware 
+newOpenTelemetryWaiMiddleware
   :: TracerProvider 
   -> Propagator Context.Context RequestHeaders ResponseHeaders
   -> IO Middleware
-newOpenTelemetryWaiMiddleware tp propagator = do
+newOpenTelemetryWaiMiddleware tp = newOpenTelemetryWaiMiddleware' tp Context.empty
+
+newOpenTelemetryWaiMiddleware'
+  :: TracerProvider 
+  -> Context.Context
+  -> Propagator Context.Context RequestHeaders ResponseHeaders
+  -> IO Middleware
+newOpenTelemetryWaiMiddleware' tp ctx propagator = do
   waiTracer <- getTracer 
     tp
     "opentelemetry-instrumentation-wai" 
@@ -32,8 +42,9 @@ newOpenTelemetryWaiMiddleware tp propagator = do
     middleware :: Tracer -> Middleware
     middleware tracer app req sendResp = do
       -- TODO baggage, span context
-      ctxt <- extract propagator (requestHeaders req) Context.empty
+      ctxt <- extract propagator (requestHeaders req) ctx
       let path_ = T.decodeUtf8 $ rawPathInfo req
+          -- peer = remoteHost req
       requestSpan <- createSpan tracer ctxt path_ $ defaultSpanArguments
         { kind = Server
         }
@@ -55,11 +66,26 @@ newOpenTelemetryWaiMiddleware tp propagator = do
         , ( "http.user_agent"
           , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
           )
+        -- TODO HTTP/3 will require detecting this dynamically
+        , ( "net.transport", toAttribute ("ip_tcp" :: T.Text))
         ]
 
-      -- TODO, don't like attaching and also putting it in the request vault, users can do
-      -- this or it can be a separate middleware
-      -- attachContext $ Context.insertSpan requestSpan ctxt
+      -- TODO this is warp dependent, probably.
+      -- , ( "net.host.ip")
+      -- , ( "net.host.port")
+      -- , ( "net.host.name")
+      insertAttributes requestSpan $ case remoteHost req of
+        SockAddrInet port addr ->
+          [ ("net.peer.port", toAttribute (fromIntegral port :: Int))
+          , ("net.peer.ip", toAttribute $ T.pack $ show $ fromHostAddress addr)
+          ]
+        SockAddrInet6 port _ addr _ ->
+          [ ("net.peer.port", toAttribute (fromIntegral port :: Int))
+          , ("net.peer.ip", toAttribute $ T.pack $ show $ fromHostAddress6 addr)
+          ]
+        SockAddrUnix path ->
+          [ ("net.peer.name", toAttribute $ T.pack path)
+          ]
       let req' = req 
             { vault = Vault.insert 
                 contextKey 

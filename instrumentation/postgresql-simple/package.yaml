@@ -1,6 +1,6 @@
-name:                hs-opentelemetry-instrumentation-wai
+name:                hs-opentelemetry-instrumentation-postgresql-simple
 version:             0.1.0.0
-github:              "iand675/hs-opentelemetry"
+github:              "iand675/hs-opentelemetry-instrumentation-postgresql-simple"
 license:             BSD3
 author:              "Ian Duncan"
 maintainer:          "ian@iankduncan.com"
@@ -17,25 +17,24 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-instrumentation-wai#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-instrumentation-postgresql-simple#readme>
 
 dependencies:
 - base >= 4.7 && < 5
-- http-types
-- wai
 - hs-opentelemetry-api
-- vault
-- text
-- bytestring
 - network
 - iproute
+- postgresql-simple
+- postgresql-libpq
+- text
+- bytestring
+- unliftio
 
 library:
-  ghc-options: -Wall -Werror
   source-dirs: src
 
 tests:
-  hs-opentelemetry-instrumentation-wai-test:
+  hs-opentelemetry-instrumentation-postgresql-simple-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -43,4 +42,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-wai
+    - hs-opentelemetry-instrumentation-postgresql-simple

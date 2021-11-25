@@ -22,6 +22,7 @@ import OpenTelemetry.Resource
 import UnliftIO.Exception
 import OpenTelemetry.Trace.Monad (bracketErrorUnliftIO, MonadGetContext(..), MonadLocalContext(..), MonadTracer(..))
 import Control.Monad.Reader
+import qualified Data.Text as T
 
 instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
@@ -74,8 +75,16 @@ connectionLevelAttributesKey :: Vault.Key [(Text, Attribute)]
 connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {-# NOINLINE connectionLevelAttributesKey #-}
 
-wrapSqlBackend :: MonadIO m => Context -> SqlBackend -> m SqlBackend
-wrapSqlBackend ctxt conn = do
+-- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
+-- so that queries are tracked appropriately in the tracing hierarchy.
+wrapSqlBackend
+  :: MonadIO m 
+  => Context 
+  -> [(Text, Attribute)] 
+  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  -> SqlBackend 
+  -> m SqlBackend
+wrapSqlBackend ctxt attrs conn = do
   tp <- getGlobalTracerProvider
   let conn' = Data.Maybe.fromMaybe conn (lookupOriginalConnection conn)
 
@@ -88,8 +97,8 @@ wrapSqlBackend ctxt conn = do
                   child <- mkAcquire (createSpan
                     t
                     (fromMaybe OpenTelemetry.Context.empty $ lookupConnectionContext conn)
-                    "db.query"
-                    (defaultSpanArguments { kind = Client })
+                    sql
+                    (defaultSpanArguments { kind = Client, attributes = attrs })
                     ) (`endSpan` Nothing)
 
                   annotateBasics child conn
@@ -112,8 +121,8 @@ wrapSqlBackend ctxt conn = do
                       createSpan
                         t
                         (fromMaybe OpenTelemetry.Context.empty $ lookupConnectionContext conn)
-                        "db.execute"
-                        (defaultSpanArguments { kind = Client })
+                        sql
+                        (defaultSpanArguments { kind = Client, attributes = attrs })
                     )
                     (
                       \mErr child -> do
@@ -142,8 +151,10 @@ wrapSqlBackend ctxt conn = do
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
           addEvent span $ NewEvent
-            { newEventName = "db.sql.transaction.begin"
-            , newEventAttributes = []
+            { newEventName = "transaction begin"
+            , newEventAttributes = case mIso of
+                Nothing -> []
+                Just iso -> [("db.sql.transaction.isolation_level", toAttribute $ T.pack $ show iso)]
             , newEventTimestamp = Nothing
             }
         connBegin conn f mIso
@@ -151,7 +162,7 @@ wrapSqlBackend ctxt conn = do
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
           addEvent span $ NewEvent
-            { newEventName = "db.sql.transaction.commit"
+            { newEventName = "transaction commit"
             , newEventAttributes = []
             , newEventTimestamp = Nothing
             }
@@ -160,7 +171,7 @@ wrapSqlBackend ctxt conn = do
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
           addEvent span $ NewEvent
-            { newEventName = "db.sql.transaction.rollback"
+            { newEventName = "transaction rollback"
             , newEventAttributes = []
             , newEventTimestamp = Nothing
             }
@@ -169,7 +180,7 @@ wrapSqlBackend ctxt conn = do
         let mSpan = lookupSpan ctxt
         forM_ mSpan $ \span -> do
           addEvent span $ NewEvent
-            { newEventName = "db.connection.close"
+            { newEventName = "connection close"
             , newEventAttributes = []
             , newEventTimestamp = Nothing
             }
@@ -180,16 +191,4 @@ annotateBasics :: MonadIO m => Span -> SqlBackend -> m ()
 annotateBasics span conn = do
   insertAttributes span
     [ ("db.system", toAttribute $ getRDBMS conn)
-    -- , ("db.connection_string", _)
-    -- , ("db.user", _)
-    -- , ("net.peer.ip", _)
-    -- , ("net.peer.name", _)
-    -- , ("net.peer.port", _)
-    -- , ("net.transport", _)
-    -- -- per action attributes
-    -- , ("db.name", _)
-    -- , ("db.statement", _)
-    -- , ("db.operation", _)
-    -- -- if possible
-    -- , ("db.sql.table", _)
     ]

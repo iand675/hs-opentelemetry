@@ -55,7 +55,7 @@ telemetry :: Telemetry
 telemetry = Telemetry
   { telemetrySdkName = "hs-opentelemetry"
   , telemetrySdkLanguage = Just "haskell"
-  , telemetrySdkVersion = Just "CURRENT_PACKAGE_VERSION"
+  , telemetrySdkVersion = Just "#CURRENT_PACKAGE_VERSION"
   , telemetryAutoVersion = Nothing
   }
 
