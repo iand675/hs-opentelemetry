@@ -5,7 +5,7 @@ import OpenTelemetry.Trace (getGlobalTracerProvider, tracerOptions, defaultSpanA
 import Control.Monad.Reader
 import OpenTelemetry.Context
 import Control.Exception
-import OpenTelemetry.Trace.Monad (inSpan, MonadGetContext (..), MonadTracer (..), MonadLocalContext (..), MonadBracketError, bracketError, bracketErrorUnliftIO)
+import OpenTelemetry.Trace.Monad (inSpan, MonadGetContext (..), MonadTracer (..), MonadLocalContext (..), MonadBracketError, bracketError, bracketErrorUnliftIO, inSpan')
 import qualified Data.Bifunctor
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.IORef
