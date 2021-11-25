@@ -25,12 +25,12 @@ packages:
     git: https://github.com/iand675/persistent.git
     pantry-tree:
       size: 5935
-      sha256: e0d7ad59bda5677009e08ab420f1002ea4ceb62edb5848bebc765ac014775286
-    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+      sha256: 8f3ed4b97de80db688df8cf17bec8c0f6799728da3d19e1b384840fa5e2922fc
+    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
   original:
     subdir: persistent
     git: https://github.com/iand675/persistent.git
-    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
 - completed:
     subdir: persistent-postgresql
     name: persistent-postgresql
@@ -38,12 +38,12 @@ packages:
     git: https://github.com/iand675/persistent.git
     pantry-tree:
       size: 1245
-      sha256: b3b911db80ec39b71b26299356730eee7faee41b65f124af094868d5c8b78050
-    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+      sha256: 01c2495b9095476f6bae8c14d2e08ba00d175cbb6b2c12280d6df36269a17647
+    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
   original:
     subdir: persistent-postgresql
     git: https://github.com/iand675/persistent.git
-    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
 - completed:
     subdir: persistent-qq
     name: persistent-qq
@@ -52,11 +52,11 @@ packages:
     pantry-tree:
       size: 642
       sha256: cb8c27dde49ab59d71c540ce2a08b8201ed148aa3fe7e7dd8129442fa0ec8b65
-    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
   original:
     subdir: persistent-qq
     git: https://github.com/iand675/persistent.git
-    commit: b266e894bca1cc459204f06c9b87a138acd87b54
+    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
 - completed:
     hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
     pantry-tree:

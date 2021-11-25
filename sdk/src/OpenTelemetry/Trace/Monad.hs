@@ -1,5 +1,6 @@
 module OpenTelemetry.Trace.Monad 
   ( inSpan
+  , inSpan'
   , MonadTracer(..)
   , MonadGetContext(..)
   , MonadLocalContext(..)

@@ -182,7 +182,7 @@ openTelemetryYesodMiddleware rr m = do
           , attributes = sharedAttributes
           }
     mapM_ (`insertAttributes` sharedAttributes) mspan
-    eResult <- inSpan (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
+    eResult <- inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
       catch (Right <$> m) $ \e -> do
         -- We want to mark the span as an error if it's an InternalError,
         -- the other HCError values are 4xx status codes which don't

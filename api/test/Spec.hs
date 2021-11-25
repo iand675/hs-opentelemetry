@@ -47,7 +47,7 @@ exceptionTest = do
   spanToCheck <- newIORef undefined
   handle (\(TestException _) -> pure ()) $ do
     runTestTraceMonad t empty $ do
-      inSpan "test" defaultSpanArguments $ \span -> do
+      inSpan' "test" defaultSpanArguments $ \span -> do
         liftIO $ writeIORef spanToCheck span
         throw $ TestException "wow"
         pure ()

@@ -106,6 +106,7 @@ module OpenTelemetry.Trace
   , Timestamp
   , getTimestamp
   , unsafeReadSpan
+  , whenSpanIsRecording
   ) where
 
 import Control.Concurrent.Async
@@ -244,3 +245,14 @@ forceFlushTracerProvider TracerProvider{..} mtimeout = liftIO $ do
   case mresult of
     Nothing -> pure FlushTimeout
     Just res -> pure res
+
+-- | Utility function to only perform costly attribute annotations
+-- for spans that are actually 
+whenSpanIsRecording :: MonadIO m => Span -> m () -> m ()
+whenSpanIsRecording (Span ref) m = do
+  span_ <- liftIO $ readIORef ref
+  case spanEnd span_ of
+    Nothing -> m
+    Just _ -> pure ()
+whenSpanIsRecording (FrozenSpan _) _ = pure ()
+whenSpanIsRecording (Dropped _) _ = pure ()
