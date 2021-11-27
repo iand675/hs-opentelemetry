@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Resource.FaaS
@@ -11,6 +13,7 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Resource.FaaS where
 import Data.Text (Text)
+import OpenTelemetry.Resource
 
 -- | A "function as a service" aka "serverless function" instance.
 data FaaS = FaaS
@@ -54,3 +57,13 @@ data FaaS = FaaS
   --
   -- Examples: '128'
   }
+
+instance ToResource FaaS where
+  type ResourceSchema FaaS = 'Nothing
+  toResource FaaS{..} = mkResource
+    [ "faas.name" .= faasName
+    , "faas.id" .=? faasId
+    , "faas.version" .=? faasVersion
+    , "faas.instance" .=? faasInstance
+    , "faas.max_memory" .=? faasMaxMemory
+    ]

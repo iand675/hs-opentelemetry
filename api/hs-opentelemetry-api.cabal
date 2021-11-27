@@ -79,6 +79,7 @@ library
     , microlens
     , mtl
     , mwc-random
+    , network-bsd
     , random
     , random-bytestring
     , template-haskell
@@ -122,6 +123,7 @@ test-suite hs-opentelemetry-api-test
     , microlens
     , mtl
     , mwc-random
+    , network-bsd
     , random
     , random-bytestring
     , template-haskell

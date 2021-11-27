@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Resource.Container
@@ -11,10 +13,14 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Resource.Container where
 import Data.Text (Text)
+import OpenTelemetry.Resource
 
+-- | A container instance.
 data Container = Container
   { containerName :: Maybe Text
-  -- ^ Container name.
+  -- ^ Container name used by container runtime.
+  --
+  -- Examples: 'opentelemetry-autoconf'
   , containerId :: Maybe Text
   -- ^ Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated.
   , containerRuntime :: Maybe Text
@@ -24,3 +30,13 @@ data Container = Container
   , containerImageTag :: Maybe Text
   -- ^ Container image tag.
   }
+
+instance ToResource Container where
+  type ResourceSchema Container = 'Nothing
+  toResource Container{..} = mkResource 
+    [ "container.name" .=? containerName
+    , "container.id" .=? containerId
+    , "container.runtime" .=? containerRuntime
+    , "container.image.name" .=? containerImageName
+    , "container.image.tag" .=? containerImageTag
+    ]

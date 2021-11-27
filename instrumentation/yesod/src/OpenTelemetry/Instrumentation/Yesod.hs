@@ -181,7 +181,7 @@ openTelemetryYesodMiddleware rr m = do
           { kind = maybe Server (const Internal) mspan
           , attributes = sharedAttributes
           }
-    mapM_ (`insertAttributes` sharedAttributes) mspan
+    mapM_ (`addAttributes` sharedAttributes) mspan
     eResult <- inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
       catch (Right <$> m) $ \e -> do
         -- We want to mark the span as an error if it's an InternalError,

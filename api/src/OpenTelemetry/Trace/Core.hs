@@ -21,13 +21,29 @@ import qualified OpenTelemetry.Trace.TraceState as TraceState
 import System.Clock
 import qualified VectorBuilder.Builder as Builder
 
+-- | Create a 'Span'. 
+--
+-- If the provided 'Context' has a span in it (inserted via 'OpenTelemetry.Context.insertSpan'),
+-- that 'Span' will be used as the parent of the 'Span' created via this API.
+--
+-- Note: if the @hs-opentelemetry-sdk@ or another SDK is not installed, all actions that use the created
+-- 'Span's produced will be no-ops.
+--
+-- @since 0.0.1.0
 createSpan
   :: MonadIO m
   => Tracer
+  -- ^ 'Tracer' to create the span from. Associated 'SpanProcessor's and 'SpanExporter's will be
+  -- used for the lifecycle of the created 'Span'
   -> Context
+  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
+  -- you can use 'OpenTelemetry.Context.empty'.
   -> Text
+  -- ^ Span name
   -> SpanArguments
+  -- ^ Additional span information
   -> m Span
+  -- ^ The created span..
 createSpan t ctxt n args@SpanArguments{..} = liftIO $ do
   sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
   let parent = lookupSpan ctxt
@@ -120,19 +136,19 @@ For example, the 'otel.library.name' attribute is used to record the instrumenta
 
 Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetry specification.
 -}
-insertAttribute :: MonadIO m => ToAttribute a => Span -> Text -> a -> m ()
-insertAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
+addAttribute :: MonadIO m => ToAttribute a => Span -> Text -> a -> m ()
+addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes = (k, toAttribute v) : spanAttributes i
   }
-insertAttribute (FrozenSpan _) _ _ = pure ()
-insertAttribute (Dropped _) _ _ = pure ()
+addAttribute (FrozenSpan _) _ _ = pure ()
+addAttribute (Dropped _) _ _ = pure ()
 
-insertAttributes :: MonadIO m => Span -> [(Text, Attribute)] -> m ()
-insertAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
+addAttributes :: MonadIO m => Span -> [(Text, Attribute)] -> m ()
+addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes = attrs ++ spanAttributes i
   }
-insertAttributes (FrozenSpan _) _ = pure ()
-insertAttributes (Dropped _) _ = pure ()
+addAttributes (FrozenSpan _) _ = pure ()
+addAttributes (Dropped _) _ = pure ()
 
 addEvent :: MonadIO m => Span -> NewEvent -> m ()
 addEvent (Span s) NewEvent{..} = liftIO $ do

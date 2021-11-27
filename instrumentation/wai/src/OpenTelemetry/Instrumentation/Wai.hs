@@ -49,7 +49,7 @@ newOpenTelemetryWaiMiddleware' tp ctx propagator = do
         { kind = Server
         }
 
-      insertAttributes requestSpan
+      addAttributes requestSpan
         [ ( "http.method", toAttribute $ T.decodeUtf8 $ requestMethod req)
         -- , ( "http.url",
         --     toAttribute $
@@ -74,7 +74,7 @@ newOpenTelemetryWaiMiddleware' tp ctx propagator = do
       -- , ( "net.host.ip")
       -- , ( "net.host.port")
       -- , ( "net.host.name")
-      insertAttributes requestSpan $ case remoteHost req of
+      addAttributes requestSpan $ case remoteHost req of
         SockAddrInet port addr ->
           [ ("net.peer.port", toAttribute (fromIntegral port :: Int))
           , ("net.peer.ip", toAttribute $ T.pack $ show $ fromHostAddress addr)
@@ -103,7 +103,7 @@ newOpenTelemetryWaiMiddleware' tp ctx propagator = do
           AttributeValue (TextAttribute route) -> updateName requestSpan route 
           _ -> pure ()
 
-        insertAttributes requestSpan
+        addAttributes requestSpan
           [ ( "http.status_code", toAttribute $ statusCode $ responseStatus resp)
           ]
         when (statusCode (responseStatus resp) >= 500) $ do

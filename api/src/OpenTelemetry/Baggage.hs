@@ -9,13 +9,16 @@
 -- Module      :  OpenTelemetry.Baggage
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Serializable annotations to add user-defined values to telemetry
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
 --
 -- Baggage is used to annotate telemetry, adding context and information to metrics, traces, and logs. 
 -- It is a set of name/value pairs describing user-defined properties.
+--
+-- Note: if you are trying to add data annotations specific to a single trace span, you should use
+-- 'OpenTelemetry.Trace.addAttribute' and 'OpenTelemetry.Trace.addAttributes'
 --
 -----------------------------------------------------------------------------
 module OpenTelemetry.Baggage 

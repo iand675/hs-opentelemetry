@@ -56,7 +56,7 @@ import OpenTelemetry.Trace
   , endSpan
   , recordException
   , setStatus
-  , defaultSpanArguments, whenSpanIsRecording, insertAttributes, ToAttribute (toAttribute)
+  , defaultSpanArguments, whenSpanIsRecording, addAttributes, ToAttribute (toAttribute)
   )
 import Control.Monad.Reader (ReaderT, forM_)
 import Control.Concurrent (myThreadId)
@@ -142,13 +142,13 @@ inSpan'' cs n args f = do
     (\e s -> liftIO $ do
       whenSpanIsRecording s $ do
         tid <- myThreadId
-        insertAttributes s
+        addAttributes s
           [ ("thread.id", toAttribute $ getThreadId tid)
           ]
         case getCallStack cs of
           [] -> pure ()
           (fn, loc):_ -> do
-            insertAttributes s
+            addAttributes s
               [ ("code.function", toAttribute $ T.pack fn)
               , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
               , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)

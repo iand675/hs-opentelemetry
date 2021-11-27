@@ -4,7 +4,7 @@
 -- Module      :  OpenTelemetry.Context
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Carrier for execution-scoped values across API boundaries
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
