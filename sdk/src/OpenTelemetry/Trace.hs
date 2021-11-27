@@ -23,8 +23,8 @@ module OpenTelemetry.Trace
   , defaultSpanArguments
   , SpanArguments(..)
   , updateName
-  , insertAttribute 
-  , insertAttributes
+  , addAttribute 
+  , addAttributes
   , getAttributes
   , ToAttribute(..)
   , ToPrimitiveAttribute(..)

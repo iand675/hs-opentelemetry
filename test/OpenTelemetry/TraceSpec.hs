@@ -145,44 +145,44 @@ spec = describe "Trace" $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "attr" (1.0 :: Double)
+      addAttribute s "attr" (1.0 :: Double)
       
     specify "Set order preserved" pending
     specify "String type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "string_type" ("" :: Text)
+      addAttribute s "string_type" ("" :: Text)
 
     specify "Boolean type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "bool_type" True
+      addAttribute s "bool_type" True
 
     specify "Double floating-point type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "attr" (1.0 :: Double)
+      addAttribute s "attr" (1.0 :: Double)
 
     specify "Signed int64 type" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "attr" (1 :: Int64)
+      addAttribute s "attr" (1 :: Int64)
 
     specify "Array of primitives (homegeneous)" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "attr" [(1 :: Int64)..10]
+      addAttribute s "attr" [(1 :: Int64)..10]
 
     specify "Unicode support for keys and string values" $ asIO $ do
       p <- getGlobalTracerProvider
       t <- getTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
-      insertAttribute s "🚀" ("🚀" :: Text)
+      addAttribute s "🚀" ("🚀" :: Text)
       -- TODO actually get attributes out
 
 

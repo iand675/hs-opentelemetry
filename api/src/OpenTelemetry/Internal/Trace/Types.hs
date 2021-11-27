@@ -53,7 +53,7 @@ data SpanProcessor = SpanProcessor
   }
 
 {- | 
-Tracers can be accessed with a TracerProvider.
+'Tracer's can be create from a 'TracerProvider'.
 -}
 data TracerProvider = forall s. TracerProvider 
   { tracerProviderProcessors :: Vector SpanProcessor
@@ -63,7 +63,10 @@ data TracerProvider = forall s. TracerProvider
   -- ^ TODO schema support
   }
 
--- | The @Tracer@ is responsible for creating @Span@s.
+-- | The 'Tracer' is responsible for creating 'Span's.
+-- 
+-- Each 'Tracer' should be associated with the library or application that
+-- it instruments.
 data Tracer = Tracer
   { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
   , tracerProvider :: !TracerProvider
@@ -118,6 +121,23 @@ The first property described by @SpanKind@ reflects whether the @Span@ is a remo
 The second property described by @SpanKind@ reflects whether a child @Span@ represents a synchronous call. When a child span is synchronous, the parent is expected to wait for it to complete under ordinary circumstances. It can be useful for tracing systems to know this property, since synchronous @Span@s may contribute to the overall trace latency. Asynchronous scenarios can be remote or local.
 
 In order for @SpanKind@ to be meaningful, callers SHOULD arrange that a single @Span@ does not serve more than one purpose. For example, a server-side span SHOULD NOT be used directly as the parent of another remote span. As a simple guideline, instrumentation should create a new @Span@ prior to extracting and serializing the @SpanContext@ for a remote call.
+
+To summarize the interpretation of these kinds
+
++-------------+--------------+---------------+------------------+------------------+
+| `SpanKind`  | Synchronous  | Asynchronous  | Remote Incoming  | Remote Outgoing  |
++=============+==============+===============+==================+==================+
+| `Client`    | yes          |               |                  | yes              |
++-------------+--------------+---------------+------------------+------------------+
+| `Server`    | yes          |               | yes              |                  |
++-------------+--------------+---------------+------------------+------------------+
+| `Producer`  |              | yes           |                  | maybe            |
++-------------+--------------+---------------+------------------+------------------+
+| `Consumer`  |              | yes           | maybe            |                  |
++-------------+--------------+---------------+------------------+------------------+
+| `Internal`  |              |               |                  |                  |
++-------------+--------------+---------------+------------------+------------------+
+
 -}
 data SpanKind 
   = Server

@@ -8,7 +8,7 @@
 -- Module      :  OpenTelemetry.Context.Propagators
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  State management for 'OpenTelemetry.Context.Context' on a per-thread basis.
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
@@ -50,12 +50,12 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Context.ThreadLocal 
   ( 
-  -- $ Thread-local context
+  -- * Thread-local context
     lookupContext
   , attachContext
   , detachContext
   , adjustContext
-  -- $$ Generalized thread-local context functions
+  -- ** Generalized thread-local context functions
   , lookupContextOnThread
   , attachContextOnThread
   , detachContextFromThread
@@ -76,27 +76,35 @@ threadContextMap :: ThreadContextMap
 threadContextMap = unsafePerformIO newThreadStorageMap
 {-# NOINLINE threadContextMap #-}
 
+-- | Retrieve a stored 'Context' for the current thread, if it exists.
 lookupContext :: MonadIO m => m (Maybe Context)
 lookupContext = lookup threadContextMap
 
+-- | Retrieve a stored 'Context' for the provided 'ThreadId', if it exists.
 lookupContextOnThread :: MonadIO m => ThreadId -> m (Maybe Context)
 lookupContextOnThread = lookupOnThread threadContextMap
 
+-- | Store a given 'Context' for the current thread, returning any context previously stored.
 attachContext :: MonadIO m => Context -> m (Maybe Context)
 attachContext = attach threadContextMap
 
+-- | Store a given 'Context' for the provided 'ThreadId', returning any context previously stored.
 attachContextOnThread :: MonadIO m => ThreadId -> Context -> m (Maybe Context)
 attachContextOnThread = attachOnThread threadContextMap
 
+-- | Remove a stored 'Context' for the current thread, returning any context previously stored.
 detachContext :: MonadIO m => m (Maybe Context)
 detachContext = detach threadContextMap
 
+-- | Remove a stored 'Context' for the provided 'ThreadId', returning any context previously stored.
 detachContextFromThread :: MonadIO m => ThreadId -> m (Maybe Context)
 detachContextFromThread = detachFromThread threadContextMap
 
+-- | Alter the context on the current thread using the provided function
 adjustContext :: MonadIO m => (Context -> Context) -> m ()
 adjustContext = adjust threadContextMap
 
+-- | Alter the context
 adjustContextOnThread :: MonadIO m => ThreadId -> (Context -> Context) -> m ()
 adjustContextOnThread = adjustOnThread threadContextMap
 

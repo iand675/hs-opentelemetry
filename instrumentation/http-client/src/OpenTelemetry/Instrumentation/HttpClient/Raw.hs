@@ -44,7 +44,7 @@ instrumentRequest
   -> m Request
 instrumentRequest conf ctxt req = do
   forM_ (lookupSpan ctxt) $ \s -> do
-    insertAttributes s
+    addAttributes s
       [ ( "http.method", toAttribute $ T.decodeUtf8 $ method req)
       , ( "http.url",
           toAttribute $
@@ -62,7 +62,7 @@ instrumentRequest conf ctxt req = do
         , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
         )
       ]
-    insertAttributes s $
+    addAttributes s $
       concatMap
         (\h -> toList $ (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) $
         requestHeadersToRecord conf
@@ -84,7 +84,7 @@ instrumentResponse conf ctxt resp = do
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")
-    insertAttributes s
+    addAttributes s
       [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
       -- TODO
       -- , ("http.request_content_length",	_)
@@ -96,7 +96,7 @@ instrumentResponse conf ctxt resp = do
       -- , ("net.peer.ip")
       -- , ("net.peer.port")
       ]
-    insertAttributes s $
+    addAttributes s $
       concatMap
         (\h -> toList $ (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp)) $
         responseHeadersToRecord conf

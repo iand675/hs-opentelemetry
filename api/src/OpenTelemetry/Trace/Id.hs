@@ -15,30 +15,30 @@
 --
 -----------------------------------------------------------------------------
 module OpenTelemetry.Trace.Id 
-  ( -- $ Working with 'TraceId's
+  ( -- * Working with 'TraceId's
     TraceId
-    -- $$ Creating 'TraceId's
+    -- ** Creating 'TraceId's
   , newTraceId
-    -- $$ Checking 'TraceId's for validity
+    -- ** Checking 'TraceId's for validity
   , isEmptyTraceId
-    -- $$ Encoding / decoding 'TraceId' from bytes
+    -- ** Encoding / decoding 'TraceId' from bytes
   , traceIdBytes
   , bytesToTraceId
-    -- $$ Encoding / decoding 'TraceId' from a given 'Base' encoding
+    -- ** Encoding / decoding 'TraceId' from a given 'Base' encoding
   , baseEncodedToTraceId
   , traceIdBaseEncodedBuilder
   , traceIdBaseEncodedByteString
   , traceIdBaseEncodedText
-    -- $ Working with 'SpanId's
+    -- * Working with 'SpanId's
   , SpanId
-    -- $$ Creating 'SpanId's
+    -- ** Creating 'SpanId's
   , newSpanId
-    -- $$ Checking 'SpanId's for validity
+    -- ** Checking 'SpanId's for validity
   , isEmptySpanId
-    -- $$ Encoding / decoding 'SpanId' from bytes
+    -- ** Encoding / decoding 'SpanId' from bytes
   , spanIdBytes
   , bytesToSpanId
-    -- $$ Encoding / decoding 'SpanId' from a given 'Base' encoding
+    -- ** Encoding / decoding 'SpanId' from a given 'Base' encoding
   , Base(..)
   , baseEncodedToSpanId
   , spanIdBaseEncodedBuilder

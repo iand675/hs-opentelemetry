@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Resource.DeploymentEnvironment
@@ -11,6 +13,7 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Resource.DeploymentEnvironment where
 import Data.Text (Text)
+import OpenTelemetry.Resource
 
 newtype DeploymentEnvironment = DeploymentEnvironment
   { deploymentEnvironment :: Maybe Text
@@ -18,3 +21,9 @@ newtype DeploymentEnvironment = DeploymentEnvironment
   --
   -- Examples: 'staging', 'production'
   }
+
+instance ToResource DeploymentEnvironment where
+  type ResourceSchema DeploymentEnvironment = 'Nothing
+  toResource DeploymentEnvironment{..} = mkResource
+    [ "deployment.environment" .=? deploymentEnvironment
+    ]

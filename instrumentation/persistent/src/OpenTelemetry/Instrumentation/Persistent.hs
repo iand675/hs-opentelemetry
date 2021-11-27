@@ -102,7 +102,7 @@ wrapSqlBackend ctxt attrs conn = do
                     ) (`endSpan` Nothing)
 
                   annotateBasics child conn
-                  insertAttribute child "db.statement" sql
+                  addAttribute child "db.statement" sql
                   case stmtQuery stmt ps of
                     Acquire stmtQueryAcquireF -> Acquire $ \f ->
                       handleAny
@@ -135,7 +135,7 @@ wrapSqlBackend ctxt attrs conn = do
                     )
                     (\s -> do
                       annotateBasics s conn
-                      insertAttribute s "db.statement" sql
+                      addAttribute s "db.statement" sql
                       stmtExecute stmt ps
                     )
 
@@ -189,6 +189,6 @@ wrapSqlBackend ctxt attrs conn = do
 
 annotateBasics :: MonadIO m => Span -> SqlBackend -> m ()
 annotateBasics span conn = do
-  insertAttributes span
+  addAttributes span
     [ ("db.system", toAttribute $ getRDBMS conn)
     ]

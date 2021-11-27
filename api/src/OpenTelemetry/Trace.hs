@@ -83,8 +83,8 @@ module OpenTelemetry.Trace
   , addEvent
   -- ** Enriching @Span@s with additional information
   , updateName
-  , insertAttribute
-  , insertAttributes
+  , addAttribute
+  , addAttributes
   , getAttributes
   , (.=)
   , (.=?)
@@ -129,18 +129,21 @@ import OpenTelemetry.Resource.OperatingSystem (getOperatingSystem)
 import OpenTelemetry.Resource.Service
 import Control.Monad
 import System.Timeout (timeout)
+import OpenTelemetry.Resource.Host (getHost)
 
 builtInResources :: IO (Resource 'Nothing)
 builtInResources = do
   svc <- getService
   processInfo <- getProcess
   osInfo <- getOperatingSystem
+  host <- getHost
   let rs =
         toResource svc `mergeResources`
         toResource telemetry `mergeResources`
         toResource currentProcessRuntime `mergeResources`
         toResource processInfo `mergeResources`
-        toResource osInfo
+        toResource osInfo `mergeResources`
+        toResource host
   pure rs
 
 globalTracer :: IORef TracerProvider
@@ -173,6 +176,8 @@ emptyTracerProviderOptions :: (o ~ ResourceMerge o o) => TracerProviderOptions o
 emptyTracerProviderOptions = TracerProviderOptions Nothing (parentBased $ parentBasedOptions alwaysOn) mempty
 
 -- | Initialize a new tracer provider
+--
+-- You should generally use 'getGlobalTracerProvider' for most applications.
 createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions o -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   envVarResource <- getEnvVarResourceAttributes
@@ -211,9 +216,11 @@ defaultSpanArguments = SpanArguments
   , startTime = Nothing
   }
 
--- This method provides a way for provider to do any cleanup required.
+-- | This method provides a way for provider to do any cleanup required.
 --
 -- This will also trigger shutdowns on all internal processors.
+--
+-- @since 0.0.1.0
 shutdownTracerProvider :: MonadIO m => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider{..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
