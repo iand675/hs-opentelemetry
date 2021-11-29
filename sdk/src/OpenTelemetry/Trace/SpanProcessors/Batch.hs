@@ -7,8 +7,8 @@ module OpenTelemetry.Trace.SpanProcessors.Batch
   ) where
 import Control.Monad.IO.Class
 import OpenTelemetry.Trace.SpanProcessor
-import OpenTelemetry.Trace.SpanExporter (SpanExporter)
-import qualified OpenTelemetry.Trace.SpanExporter as Exporter
+import OpenTelemetry.Trace.TraceExporter (TraceExporter)
+import qualified OpenTelemetry.Trace.TraceExporter as Exporter
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder
 import Data.IORef (atomicModifyIORef', readIORef, newIORef)
@@ -169,14 +169,14 @@ buildSpanExport m =
   , Builder.build <$> itemMap m
   )
 
-batchProcessor :: MonadIO m => BatchTimeoutConfig -> SpanExporter -> m SpanProcessor
+batchProcessor :: MonadIO m => BatchTimeoutConfig -> TraceExporter -> m SpanProcessor
 batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
   batch <- newIORef $ boundedSpanMap maxQueueSize
   workSignal <- newEmptyMVar
   worker <- async $ forever $ do
     void $ timeout (millisToMicros scheduledDelayMillis) $ takeMVar workSignal
     batchToProcess <- atomicModifyIORef' batch buildSpanExport
-    Exporter.spanExporterExport exporter batchToProcess
+    Exporter.traceExporterExport exporter batchToProcess
 
 
   pure $ SpanProcessor

@@ -12,23 +12,23 @@ module OpenTelemetry.Exporters.Handle
 
 import Data.IORef
 import qualified Data.Text.Lazy as L
-import OpenTelemetry.Trace.SpanExporter
+import OpenTelemetry.Trace.TraceExporter
 import OpenTelemetry.Trace
 import qualified Data.Text.Lazy.IO as L
 import System.IO (Handle, hFlush, stdout, stderr)
 
-makeHandleExporter :: Handle -> (ImmutableSpan -> L.Text) -> SpanExporter
-makeHandleExporter h f = SpanExporter
-  { spanExporterExport = \fs -> do
+makeHandleExporter :: Handle -> (ImmutableSpan -> L.Text) -> TraceExporter
+makeHandleExporter h f = TraceExporter
+  { traceExporterExport = \fs -> do
       mapM_ (mapM_ (\s -> L.hPutStrLn h (f s) >> hFlush h)) fs 
       pure Success
-  , spanExporterShutdown = hFlush h
+  , traceExporterShutdown = hFlush h
   }
 
-stdoutExporter :: (ImmutableSpan -> L.Text) -> SpanExporter
+stdoutExporter :: (ImmutableSpan -> L.Text) -> TraceExporter
 stdoutExporter = makeHandleExporter stdout
 
-stderrExporter :: (ImmutableSpan -> L.Text) -> SpanExporter
+stderrExporter :: (ImmutableSpan -> L.Text) -> TraceExporter
 stderrExporter = makeHandleExporter stderr
 
 defaultFormatter :: ImmutableSpan -> L.Text

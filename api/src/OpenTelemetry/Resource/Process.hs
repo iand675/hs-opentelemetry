@@ -14,13 +14,6 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Resource.Process where
 import Data.Text (Text)
-import qualified Data.Text as T
-import System.Environment
-    ( getArgs, getProgName, getExecutablePath )
-import System.Posix.Process ( getProcessID )
-import System.Posix.User (getEffectiveUserName)
-import System.Info
-import Data.Version
 import OpenTelemetry.Resource
 
 -- |  An operating system process.
@@ -90,29 +83,3 @@ instance ToResource ProcessRuntime where
     , "process.runtime.version" .=? processRuntimeVersion
     , "process.runtime.description" .=? processRuntimeDescription
     ]
-
--- | Create a 'Process' 'Resource' based off of the current process' knowledge
--- of itself.
---
--- @since 0.1.0.0
-getProcess :: IO Process
-getProcess = do
-  Process <$>
-    (Just . fromIntegral <$> getProcessID) <*>
-    (Just . T.pack <$> getProgName) <*>
-    (Just . T.pack <$> getExecutablePath) <*>
-    pure Nothing <*>
-    pure Nothing <*>
-    (Just . map T.pack <$> getArgs) <*>
-    (Just . T.pack <$> getEffectiveUserName)
-
--- | A 'ProcessRuntime' 'Resource' populated with the current process' knoweldge
--- of itself.
---
--- @since 0.0.1.0
-currentProcessRuntime :: ProcessRuntime
-currentProcessRuntime = ProcessRuntime
-  { processRuntimeName = Just $ T.pack compilerName
-  , processRuntimeVersion = Just $ T.pack $ showVersion compilerVersion
-  , processRuntimeDescription = Nothing
-  }

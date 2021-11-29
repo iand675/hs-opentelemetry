@@ -34,8 +34,6 @@ dependencies:
 - thread-utils-context
 - unordered-containers
 - binary
-- random
-- mwc-random
 - vector
 - clock
 - memory
@@ -46,12 +44,7 @@ dependencies:
 - charset
 - ghc-prim
 - unliftio-core
-- microlens
-- unix
-# todo get rid of this when enough of the ecosystem has upgraded
-- random-bytestring
 - vector-builder
-- network-bsd
 
 library:
   source-dirs: src

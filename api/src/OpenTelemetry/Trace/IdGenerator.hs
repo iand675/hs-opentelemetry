@@ -12,19 +12,15 @@
 -- Stateful random number generation interface for creating Trace and Span ID
 -- bytes.
 --
--- In most cases, using the 'defaultIdGenerator' will be sufficient, but the
--- interface is exposed for more exotic needs. 
+-- In most cases, the built-in generator in the hs-opentelemetry-sdk will be sufficient, but the
+-- interface is exposed for more exotic needs.
 --
 -----------------------------------------------------------------------------
-module OpenTelemetry.Trace.IdGenerator where
+module OpenTelemetry.Trace.IdGenerator 
+  ( IdGenerator(..)
+  , dummyIdGenerator
+  ) where
 import Data.ByteString (ByteString)
-import System.Random.MWC
-#if MIN_VERSION_random(1,2,0)
-import System.Random.Stateful
-#else
-import Data.ByteString.Random
-#endif
-import System.IO.Unsafe (unsafePerformIO)
 
 -- | An interface for generating the underlying bytes for
 -- trace and span ids.
@@ -35,21 +31,9 @@ data IdGenerator = IdGenerator
     -- ^ MUST generate exactly 16 bytes
   }
 
--- | The default generator for trace and span ids.
---
--- @since 0.1.0.0
-defaultIdGenerator :: IdGenerator
-defaultIdGenerator = unsafePerformIO $ do
-  g <- createSystemRandom
-#if MIN_VERSION_random(1,2,0)
-  pure $ IdGenerator
-    { generateSpanIdBytes = uniformByteStringM 8 g
-    , generateTraceIdBytes = uniformByteStringM 16 g
-    }
-#else
-  pure $ IdGenerator
-    { generateSpanIdBytes = randomGen g 8
-    , generateTraceIdBytes = randomGen g 16
-    }
-#endif
-{-# NOINLINE defaultIdGenerator #-}
+-- | A non-functioning id generator for use when an SDK is not installed
+dummyIdGenerator :: IdGenerator
+dummyIdGenerator = IdGenerator
+  { generateSpanIdBytes = pure "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
+  , generateTraceIdBytes = pure "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
+  }

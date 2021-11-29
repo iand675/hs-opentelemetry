@@ -35,7 +35,7 @@ import qualified Data.Vector as V
 createSpan
   :: MonadIO m
   => Tracer
-  -- ^ 'Tracer' to create the span from. Associated 'SpanProcessor's and 'SpanExporter's will be
+  -- ^ 'Tracer' to create the span from. Associated 'SpanProcessor's and 'TraceExporter's will be
   -- used for the lifecycle of the created 'Span'
   -> Context
   -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,

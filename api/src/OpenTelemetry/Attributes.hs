@@ -64,18 +64,19 @@ defaultAttributeLimits = AttributeLimits
 data Attributes = Attributes
   { attributes :: !(H.HashMap Text Attribute)
   , attributesCount :: {-# UNPACK #-} !Int
+  , attributesDropped :: {-# UNPACK #-} !Int
   }
   deriving stock (Show, Eq)
 
 emptyAttributes :: Attributes
-emptyAttributes = Attributes mempty 0
+emptyAttributes = Attributes mempty 0 0
 
 addAttribute :: ToAttribute a => AttributeLimits -> Attributes -> Text -> a -> Attributes
-addAttribute AttributeLimits{..} attrs@Attributes{..} k v = case attributeCountLimit of
-  Nothing -> Attributes newAttrs newCount
+addAttribute AttributeLimits{..} Attributes{..} k v = case attributeCountLimit of
+  Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ -> if newCount > limit_
-    then attrs
-    else Attributes newAttrs newCount
+    then Attributes attributes attributesCount (attributesDropped + 1)
+    else Attributes newAttrs newCount attributesDropped
   where
     newAttrs = H.insert k (limitLengths $ toAttribute v) attributes
     newCount = if H.member k attributes
@@ -107,8 +108,6 @@ lookupAttribute Attributes{..} k = H.lookup k attributes
 -- | It is possible when adding attributes that a programming error might cause too many
 -- attributes to be added to an event. Thus, 'Attributes' use the limits set here as a safeguard
 -- against excessive memory consumption.
---
--- See 'getAttributeLimits' and 'setAttributeLimits' to alter these.
 data AttributeLimits = AttributeLimits
   { attributeCountLimit :: Maybe Int
   -- ^ The number of unique attributes that may be added to an 'Attributes' structure before they are dropped.
@@ -175,10 +174,10 @@ instance ToPrimitiveAttribute a => ToAttribute [a] where
   toAttribute = AttributeArray . map toPrimitiveAttribute
 
 unsafeMergeAttributesIgnoringLimits :: Attributes -> Attributes -> Attributes
-unsafeMergeAttributesIgnoringLimits (Attributes l lc) (Attributes r rc) = Attributes (l <> r) (lc + rc)
+unsafeMergeAttributesIgnoringLimits (Attributes l lc ld) (Attributes r rc rd) = Attributes (l <> r) (lc + rc) (ld + rd)
 
 unsafeAttributesFromListIgnoringLimits :: [(Text, Attribute)] -> Attributes
-unsafeAttributesFromListIgnoringLimits l = Attributes hm c
+unsafeAttributesFromListIgnoringLimits l = Attributes hm c 0
   where
     hm = H.fromList l
     c = H.size hm

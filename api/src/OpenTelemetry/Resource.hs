@@ -21,15 +21,18 @@
 --
 -----------------------------------------------------------------------------
 module OpenTelemetry.Resource 
-  ( mkResource
+  ( 
+  -- * Creating resources directly
+    mkResource
   , Resource
   , (.=)
   , (.=?)
   , ResourceMerge
   , mergeResources
+  -- * Creating resources from data structures
   , ToResource(..)
-  , MaterializeResource
   , materializeResources
+  -- * Using resources with a 'OpenTelemetry.Trace.TracerProvider'
   , MaterializedResources
   , emptyMaterializedResources
   , getMaterializedResourcesSchema
@@ -42,12 +45,23 @@ import GHC.TypeLits
 import Data.Maybe (catMaybes)
 import OpenTelemetry.Attributes
 
+-- | A set of attributes created from one or more resources.
+--
+-- A Resource is an immutable representation of the entity producing telemetry as Attributes. 
+-- For example, a process producing telemetry that is running in a container on Kubernetes has a Pod name, 
+-- it is in a namespace and possibly is part of a Deployment which also has a name. 
+-- 
+-- All three of these attributes can be included in the Resource. 
+--
+-- Note that there are certain <https://github.com/open-telemetry/opentelemetry-specification/blob/34144d02baaa39f7aa97ee914539089e1481166c/specification/resource/semantic_conventions/README.md "standard attributes"> that have prescribed meanings.
+--
+-- A number of these standard resources may be found in the @OpenTelemetry.Resource.*@ modules.
+--
+-- The primary purpose of resources as a first-class concept in the SDK is decoupling of discovery of resource information from exporters. 
+-- This allows for independent development and easy customization for users that need to integrate with closed source environments. 
 newtype Resource (schema :: Maybe Symbol) = Resource Attributes
 
--- resourceAttributes :: Resource s -> Attributes
--- resourceAttributes (Resource attrs) = attrs
-
--- Utility function to create a resource from a list
+-- | Utility function to create a resource from a list
 -- of fields and attributes. See the '.=' and '.=?' functions.
 --
 -- @since 0.0.1.0
@@ -69,28 +83,15 @@ instance Semigroup (Resource s) where
 instance Monoid (Resource s) where
   mempty = Resource emptyAttributes
 
--- data ResourceCreationParameters = ResourceCreationParameters
---   {
---   }
-
--- Create a resource from list of attributes.
--- createResource :: Attributes -> ResourceCreationParameters -> Resource s
--- createResource attrs _params = Resource attrs
-
 -- | Static checks to prevent invalid resources from being merged.
---
--- According to the OpenTelemetry specification:
---
--- The interface MUST provide a way for an old resource and an
--- updating resource to be merged into a new resource.
 --
 -- Note: This is intended to be utilized for merging of resources whose attributes
 -- come from different sources,
 -- such as environment variables, or metadata extracted from the host or container.
 --
--- The resulting resource MUST have all attributes that are on any of the two input resources.
+-- The resulting resource will have all attributes that are on any of the two input resources.
 -- If a key exists on both the old and updating resource, the value of the updating
--- resource MUST be picked (even if the updated value is empty).
+-- resource will be picked (even if the updated value is "empty").
 --
 -- The resulting resource will have the Schema URL calculated as follows:
 --
@@ -102,27 +103,40 @@ instance Monoid (Resource s) where
 --   that will be the Schema URL of the resulting resource,
 -- - Else this is a merging error (this is the case when the Schema URL of the old
 --   and updating resources are not empty and are different). The resulting resource is
---   undefined, and its contents are implementation-specific.
+--   therefore statically prohibited by this type-level function.
 --
--- Required parameters:
---
--- - the old resource
--- - the updating resource whose attributes take precedence
 type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
   ResourceMerge 'Nothing 'Nothing = 'Nothing
   ResourceMerge 'Nothing ('Just s) = 'Just s
   ResourceMerge ('Just s) 'Nothing = 'Just s
   ResourceMerge ('Just s) ('Just s) = 'Just s
 
-mergeResources :: Resource l -> Resource r -> Resource (ResourceMerge l r)
+-- | Combine two 'Resource' values into a new 'Resource' that contains the
+-- attributes of the two inputs.
+--
+-- See the 'ResourceMerge' documentation about the additional semantics of merging two resources.
+--
+-- @since 0.0.1.0
+mergeResources :: 
+     Resource old 
+  -- ^ the old resource
+  -> Resource new
+  -- ^ the updating resource whose attributes take precedence
+  -> Resource (ResourceMerge old new)
 mergeResources (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
+-- | A convenience class for converting arbitrary data into resources.
 class ToResource a where
+  -- | Resource schema (if any) associated with the defined resource
   type ResourceSchema a :: Maybe Symbol
+  type ResourceSchema a = 'Nothing
+  -- | Convert the input value to a 'Resource'
   toResource :: a -> Resource (ResourceSchema a)
 
-class MaterializeResource o where
-  materializeResources :: Resource o -> MaterializedResources
+class MaterializeResource schema where
+  -- | Convert resource fields into a version that discharges the schema from the
+  -- type level to the runtime level.
+  materializeResources :: Resource schema -> MaterializedResources
 
 instance MaterializeResource 'Nothing where
   materializeResources (Resource attrs) = MaterializedResources Nothing attrs
@@ -130,16 +144,27 @@ instance MaterializeResource 'Nothing where
 instance KnownSymbol s => MaterializeResource ('Just s) where
   materializeResources (Resource attrs) = MaterializedResources (Just $ symbolVal (Proxy @s)) attrs
 
+-- | A read-only resource attribute collection with an associated schema.
 data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
   , materializedResourcesAttributes :: Attributes
   }
 
+-- | A placeholder for 'MaterializedResources' when no resource information is
+-- available, needed, or required.
+--
+-- @since 0.0.1.0
 emptyMaterializedResources :: MaterializedResources
 emptyMaterializedResources = MaterializedResources Nothing emptyAttributes
 
+-- | Access the schema for a 'MaterializedResources' value.
+--
+-- @since 0.0.1.0
 getMaterializedResourcesSchema :: MaterializedResources -> Maybe String
 getMaterializedResourcesSchema = materializedResourcesSchema
 
+-- | Access the attributes for a 'MaterializedResources' value.
+--
+-- @since 0.0.1.0
 getMaterializedResourcesAttributes :: MaterializedResources -> Attributes
 getMaterializedResourcesAttributes = materializedResourcesAttributes

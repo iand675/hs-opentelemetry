@@ -46,11 +46,11 @@ library
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
       OpenTelemetry.Trace
+      OpenTelemetry.Trace.Exporter
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.IdGenerator
       OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.Sampler
-      OpenTelemetry.Trace.SpanExporter
       OpenTelemetry.Trace.SpanProcessor
       OpenTelemetry.Trace.TraceState
       OpenTelemetry.Util
@@ -80,16 +80,10 @@ library
     , hashable
     , http-types
     , memory
-    , microlens
     , mtl
-    , mwc-random
-    , network-bsd
-    , random
-    , random-bytestring
     , template-haskell
     , text
     , thread-utils-context
-    , unix
     , unliftio-core
     , unordered-containers
     , vault
@@ -125,16 +119,10 @@ test-suite hs-opentelemetry-api-test
     , hspec
     , http-types
     , memory
-    , microlens
     , mtl
-    , mwc-random
-    , network-bsd
-    , random
-    , random-bytestring
     , template-haskell
     , text
     , thread-utils-context
-    , unix
     , unliftio-core
     , unordered-containers
     , vault
