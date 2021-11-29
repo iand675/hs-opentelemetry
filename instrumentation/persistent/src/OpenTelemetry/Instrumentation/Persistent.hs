@@ -18,6 +18,7 @@ import Database.Persist.SqlBackend.Internal
 import Control.Monad.IO.Class
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Vault.Strict as Vault
+import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Resource
 import UnliftIO.Exception
 import OpenTelemetry.Trace.Monad (bracketErrorUnliftIO, MonadGetContext(..), MonadLocalContext(..), MonadTracer(..))
@@ -80,7 +81,7 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 wrapSqlBackend
   :: MonadIO m 
   => Context 
-  -> [(Text, Attribute)] 
+  -> [(Text, Attribute)]
   -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
   -> SqlBackend 
   -> m SqlBackend

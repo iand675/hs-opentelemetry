@@ -19,14 +19,12 @@ import System.Timeout
 import Control.Exception
 -- import Control.Concurrent (newEmptyMVar)
 import Data.HashMap.Strict (HashMap)
-import OpenTelemetry.Trace
+import "hs-opentelemetry-api" OpenTelemetry.Trace
 import qualified Data.HashMap.Strict as HashMap
 import Data.Vector (Vector)
 
 data BatchTimeoutConfig = BatchTimeoutConfig
-  { exporter :: SpanExporter
-  -- The exporter where spans are pushed.
-  , maxQueueSize :: Int
+  { maxQueueSize :: Int
   -- The maximum queue size. After the size is reached, spans are dropped.
   , scheduledDelayMillis :: Int
   -- The delay interval in milliseconds between two consective exports.
@@ -38,12 +36,11 @@ data BatchTimeoutConfig = BatchTimeoutConfig
   -- TODO, this isn't currently respected
   -- the maximum batch size of every export. It must be
   -- smaller or equal to 'maxQueueSize'. The default value is 512.
-  }
+  } deriving (Show)
 
-batchTimeoutConfig :: SpanExporter -> BatchTimeoutConfig
-batchTimeoutConfig e = BatchTimeoutConfig
-  { exporter = e
-  , maxQueueSize = 1024
+batchTimeoutConfig :: BatchTimeoutConfig
+batchTimeoutConfig = BatchTimeoutConfig
+  { maxQueueSize = 1024
   , scheduledDelayMillis = 5000
   , exportTimeoutMillis = 30000
   , maxExportBatchSize = 512
@@ -157,23 +154,23 @@ boundedSpanMap bounds = BoundedSpanMap bounds 0 mempty
 pushSpan :: ImmutableSpan -> BoundedSpanMap -> Maybe BoundedSpanMap
 pushSpan s m = if itemCount m + 1 >= itemBounds m
   then Nothing
-  else Just $! m 
+  else Just $! m
     { itemCount = itemCount m + 1
-    , itemMap = HashMap.insertWith 
-        (<>) 
-        (tracerName $ spanTracer s) 
-        (Builder.singleton s) $ 
+    , itemMap = HashMap.insertWith
+        (<>)
+        (tracerName $ spanTracer s)
+        (Builder.singleton s) $
         itemMap m
     }
 
 buildSpanExport :: BoundedSpanMap -> (BoundedSpanMap, HashMap InstrumentationLibrary (Vector ImmutableSpan))
-buildSpanExport m = 
+buildSpanExport m =
   ( m { itemCount = 0, itemMap = mempty }
   , Builder.build <$> itemMap m
   )
 
-batchProcessor :: MonadIO m => BatchTimeoutConfig -> m SpanProcessor
-batchProcessor BatchTimeoutConfig{..} = liftIO $ do
+batchProcessor :: MonadIO m => BatchTimeoutConfig -> SpanExporter -> m SpanProcessor
+batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
   batch <- newIORef $ boundedSpanMap maxQueueSize
   workSignal <- newEmptyMVar
   worker <- async $ forever $ do
@@ -195,8 +192,8 @@ batchProcessor BatchTimeoutConfig{..} = liftIO $ do
     , spanProcessorForceFlush = void $ tryPutMVar workSignal ()
     -- TODO where to call restore, if anywhere?
     , spanProcessorShutdown = async $ mask $ \_restore -> do
-        shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $ 
-          cancel worker 
+        shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $
+          cancel worker
         -- TODO, not convinced we should shut down processor here
 
         case shutdownResult of

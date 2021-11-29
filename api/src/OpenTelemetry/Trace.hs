@@ -37,12 +37,14 @@
 --
 -----------------------------------------------------------------------------
 module OpenTelemetry.Trace
-  ( 
+  (
   -- * @TracerProvider@ operations
     TracerProvider
   , createTracerProvider
   , shutdownTracerProvider
   , forceFlushTracerProvider
+  , getTracerProviderResources
+  , getTracerProviderPropagators
   , getGlobalTracerProvider
   , setGlobalTracerProvider
   , emptyTracerProviderOptions
@@ -52,6 +54,8 @@ module OpenTelemetry.Trace
   , tracerName
   , HasTracer(..)
   , getTracer
+  , getImmutableSpanTracer
+  , getTracerTracerProvider
   , InstrumentationLibrary(..)
   , TracerOptions(..)
   , tracerOptions
@@ -86,8 +90,6 @@ module OpenTelemetry.Trace
   , addAttribute
   , addAttributes
   , getAttributes
-  , (.=)
-  , (.=?)
   , Attribute(..)
   , ToAttribute(..)
   , PrimitiveAttribute(..)
@@ -105,8 +107,15 @@ module OpenTelemetry.Trace
   -- * Utilities
   , Timestamp
   , getTimestamp
+  , timestampNanoseconds
   , unsafeReadSpan
   , whenSpanIsRecording
+  , AppendOnlySequence
+  , append
+  , sequenceValues
+  -- * Limits
+  , SpanLimits(..)
+  , defaultSpanLimits
   ) where
 
 import Control.Concurrent.Async
@@ -121,7 +130,6 @@ import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.IdGenerator
 import OpenTelemetry.Trace.Sampler
 import OpenTelemetry.Internal.Trace.Types
-import System.Clock
 import System.IO.Unsafe
 import OpenTelemetry.Resource.Telemetry
 import OpenTelemetry.Resource.Process (currentProcessRuntime, getProcess)
@@ -130,6 +138,12 @@ import OpenTelemetry.Resource.Service
 import Control.Monad
 import System.Timeout (timeout)
 import OpenTelemetry.Resource.Host (getHost)
+import OpenTelemetry.Attributes (Attribute(..), PrimitiveAttribute(..), ToAttribute(..), ToPrimitiveAttribute(..), AttributeLimits, defaultAttributeLimits)
+import System.Clock
+import Data.Word (Word64)
+import Network.HTTP.Types
+import OpenTelemetry.Context.Propagators (Propagator)
+import OpenTelemetry.Context (Context)
 
 builtInResources :: IO (Resource 'Nothing)
 builtInResources = do
@@ -148,51 +162,56 @@ builtInResources = do
 
 globalTracer :: IORef TracerProvider
 globalTracer = unsafePerformIO $ do
-  rs <- builtInResources
   p <- createTracerProvider
     []
-    ((emptyTracerProviderOptions @'Nothing)
-      { tracerProviderOptionsResources = rs
-      })
+    emptyTracerProviderOptions
   newIORef p
 {-# NOINLINE globalTracer #-}
 
--- | Sometimes, you may have a more accurate notion of when a traced
--- operation has ended. In this case you may call 'getTimestamp', and then
--- supply 'endSpan' with the more accurate timestamp you have acquired.
---
--- When using the monadic interface, (such as 'OpenTelemetry.Trace.Monad.inSpan', you may call
--- 'endSpan' early to record the information, and the first call to 'endSpan' will be honored.
-getTimestamp :: MonadIO m => m Timestamp
-getTimestamp = liftIO $ getTime Realtime
-
-data TracerProviderOptions o = TracerProviderOptions
+data TracerProviderOptions = TracerProviderOptions
   { tracerProviderOptionsIdGenerator :: Maybe IdGenerator
   , tracerProviderOptionsSampler :: Sampler
-  , tracerProviderOptionsResources :: Resource o
+  , tracerProviderOptionsResources :: MaterializedResources
+  , tracerProviderOptionsAttributeLimits :: AttributeLimits
+  , tracerProviderOptionsSpanLimits :: SpanLimits
+  , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
   }
 
-emptyTracerProviderOptions :: (o ~ ResourceMerge o o) => TracerProviderOptions o
-emptyTracerProviderOptions = TracerProviderOptions Nothing (parentBased $ parentBasedOptions alwaysOn) mempty
+emptyTracerProviderOptions :: TracerProviderOptions
+emptyTracerProviderOptions = TracerProviderOptions 
+  Nothing 
+  (parentBased $ parentBasedOptions alwaysOn) 
+  emptyMaterializedResources 
+  defaultAttributeLimits 
+  defaultSpanLimits
+  mempty
 
 -- | Initialize a new tracer provider
 --
 -- You should generally use 'getGlobalTracerProvider' for most applications.
-createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions o -> m TracerProvider
+createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
-  envVarResource <- getEnvVarResourceAttributes
   let g = fromMaybe defaultIdGenerator (tracerProviderOptionsIdGenerator opts)
   pure $ TracerProvider
     (V.fromList ps)
     g
     (tracerProviderOptionsSampler opts)
-    (envVarResource `mergeResources` tracerProviderOptionsResources opts)
+    (tracerProviderOptionsResources opts)
+    (tracerProviderOptionsAttributeLimits opts)
+    (tracerProviderOptionsSpanLimits opts)
+    (tracerProviderOptionsPropagators opts)
 
 getGlobalTracerProvider :: MonadIO m => m TracerProvider
 getGlobalTracerProvider = liftIO $ readIORef globalTracer
 
 setGlobalTracerProvider :: MonadIO m => TracerProvider -> m ()
 setGlobalTracerProvider = liftIO . writeIORef globalTracer
+
+getTracerProviderResources :: TracerProvider -> MaterializedResources
+getTracerProviderResources = tracerProviderResources
+
+getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders ResponseHeaders
+getTracerProviderPropagators = tracerProviderPropagators
 
 newtype TracerOptions = TracerOptions
   { tracerSchema :: Maybe Text
@@ -208,6 +227,21 @@ getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOpti
 getTracer tp n TracerOptions{} = liftIO $ do
   pure $ Tracer n tp
 
+getImmutableSpanTracer :: ImmutableSpan -> Tracer
+getImmutableSpanTracer = spanTracer
+
+getTracerTracerProvider :: Tracer -> TracerProvider
+getTracerTracerProvider = tracerProvider
+
+-- | Smart constructor for 'SpanArguments' providing reasonable values for most 'Span's created
+-- that are internal to an application.
+--
+-- Defaults:
+--
+-- - `kind`: `Internal`
+-- - `attributes`: @[]@
+-- - `links`: @[]@
+-- - `startTime`: `Nothing` (`getTimestamp` will be called upon `Span` creation)
 defaultSpanArguments :: SpanArguments
 defaultSpanArguments = SpanArguments
   { kind = Internal
@@ -263,3 +297,6 @@ whenSpanIsRecording (Span ref) m = do
     Just _ -> pure ()
 whenSpanIsRecording (FrozenSpan _) _ = pure ()
 whenSpanIsRecording (Dropped _) _ = pure ()
+
+timestampNanoseconds :: Timestamp -> Word64
+timestampNanoseconds (Timestamp TimeSpec{..}) = fromIntegral (sec * 1_000_000_000) + fromIntegral nsec

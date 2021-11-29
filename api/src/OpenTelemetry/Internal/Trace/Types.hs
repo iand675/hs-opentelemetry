@@ -24,6 +24,23 @@ import Data.HashMap.Strict (HashMap)
 import GHC.Generics
 import Data.String ( IsString(..) )
 import VectorBuilder.Builder (Builder)
+import OpenTelemetry.Attributes
+import qualified VectorBuilder.Vector as Builder
+import qualified VectorBuilder.Builder as Builder
+import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
+import OpenTelemetry.Context.Propagators (Propagator)
+
+newtype AppendOnlySequence a = AppendOnlySequence (Builder a)
+  deriving (Semigroup, Monoid)
+
+sequenceValues :: AppendOnlySequence a -> Vector a
+sequenceValues (AppendOnlySequence a) = Builder.build a
+
+append :: AppendOnlySequence a -> a -> AppendOnlySequence a
+append (AppendOnlySequence b) x = AppendOnlySequence (b <> Builder.singleton x)
+
+sequenceSize :: AppendOnlySequence a -> Int
+sequenceSize (AppendOnlySequence b) = Builder.size b 
 
 data ExportResult
   = Success
@@ -55,12 +72,14 @@ data SpanProcessor = SpanProcessor
 {- | 
 'Tracer's can be create from a 'TracerProvider'.
 -}
-data TracerProvider = forall s. TracerProvider 
-  { tracerProviderProcessors :: Vector SpanProcessor
-  , tracerProviderIdGenerator :: IdGenerator
-  , tracerProviderSampler :: Sampler
-  , tracerProviderResources :: Resource s
-  -- ^ TODO schema support
+data TracerProvider = TracerProvider 
+  { tracerProviderProcessors :: !(Vector SpanProcessor)
+  , tracerProviderIdGenerator :: !IdGenerator
+  , tracerProviderSampler :: !Sampler
+  , tracerProviderResources :: !MaterializedResources
+  , tracerProviderAttributeLimits :: !AttributeLimits
+  , tracerProviderSpanLimits :: !SpanLimits
+  , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
   }
 
 -- | The 'Tracer' is responsible for creating 'Span's.
@@ -72,9 +91,8 @@ data Tracer = Tracer
   , tracerProvider :: !TracerProvider
   }
 
-type Time = TimeSpec
-type Timestamp = TimeSpec
-type Duration = TimeSpec
+newtype Timestamp = Timestamp TimeSpec
+  deriving (Show, Eq, Ord)
 
 {- |
 A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related. 
@@ -96,21 +114,38 @@ represents a single parent scenario, in many cases the parent Span fully enclose
 This is not the case in scatter/gather and batch scenarios.
 -}
 data Link = Link
-  { linkContext :: SpanContext
+  { linkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , linkAttributes :: [(Text, Attribute)]
+  , linkAttributes :: Attributes
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
 
+-- | Non-name fields that may be set on initial creation of a 'Span'.
 data SpanArguments = SpanArguments
   { kind :: SpanKind
+  -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
+  -- of the various values that may be specified.
   , attributes :: [(Text, Attribute)]
+  -- ^ An initial set of attributes that may be set on initial 'Span' creation.
+  -- These attributes are provided to 'SpanProcessor's, so they may be useful in some
+  -- scenarios where calling `addAttribute` or `addAttributes` is too late.
   , links :: [Link]
+  -- ^ A collection of `Link`s that point to causally related 'Span's.
   , startTime :: Maybe Timestamp
+  -- ^ An explicit start time, if the span has already begun.
   }
 
-data FlushResult = FlushTimeout | FlushSuccess | FlushError
+-- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
+data FlushResult 
+  = FlushTimeout 
+  -- ^ One or more spans did not export from all associated exporters
+  -- within the alotted timeframe.
+  | FlushSuccess 
+  -- ^ Flushing spans to all associated exporters succeeded.
+  | FlushError
+  -- ^ One or more exporters failed to successfully export one or more 
+  -- unexported spans.
   deriving (Show)
 
 {- |
@@ -179,11 +214,9 @@ data ImmutableSpan = ImmutableSpan
   , spanKind :: SpanKind
   , spanStart :: Timestamp
   , spanEnd :: Maybe Timestamp
-  , spanAttributes :: [(Text, Attribute)]
-  -- ^ TODO, this should probably be a DList
-  -- | TODO Links SHOULD preserve the order in which they're set
-  , spanLinks :: [Link]
-  , spanEvents :: Builder Event
+  , spanAttributes :: Attributes
+  , spanLinks :: Vector Link
+  , spanEvents :: AppendOnlySequence Event
   , spanStatus :: SpanStatus
   , spanTracer :: Tracer
   -- ^ Creator of the span
@@ -266,18 +299,33 @@ newtype NonRecordingSpan = NonRecordingSpan SpanContext
 
 data NewEvent = NewEvent
   { newEventName :: Text
+  -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
   , newEventAttributes :: [(Text, Attribute)]
+  -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
+  -- ^ The time that the event occurred.
+  --
+  -- If not specified, 'OpenTelemetry.Trace.getTimestamp' will be used to get a timestamp.
   }
 
+-- | A “log” that happens as part of a span. An operation that is too fast for its own span, but too unique to roll up into its parent span.
+--
+-- Events contain a name, a timestamp, and an optional set of Attributes, along with a timestamp. Events represent an event that occurred at a specific time within a span’s workload.
 data Event = Event
   { eventName :: Text
-  , eventAttributes :: [(Text, Attribute)]
+  -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
+  , eventAttributes :: Attributes
+  -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , eventTimestamp :: Timestamp
+  -- ^ The time that the event occurred.
   }
   deriving (Show)
 
+-- | Utility class to format arbitrary values to events.
 class ToEvent a where
+  -- | Convert a value to an 'Event'
+  --
+  -- @since 0.0.1.0
   toEvent :: a -> Event
 
 -- | The outcome of a call to 'Sampler' indicating
@@ -298,3 +346,21 @@ data Sampler = Sampler
   -- ^ Returns the sampler name or short description with the configuration. This may be displayed on debug pages or in the logs.
   , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, [(Text, Attribute)], TraceState)
   }
+
+data SpanLimits = SpanLimits
+  { spanAttributeValueLengthLimit :: Maybe Int
+  , spanAttributeCountLimit :: Maybe Int
+  , eventCountLimit :: Maybe Int
+  , eventAttributeCountLimit :: Maybe Int
+  , linkCountLimit :: Maybe Int
+  , linkAttributeCountLimit :: Maybe Int
+  } deriving (Show, Eq)
+
+defaultSpanLimits :: SpanLimits
+defaultSpanLimits = SpanLimits
+  Nothing
+  Nothing
+  Nothing
+  Nothing
+  Nothing
+  Nothing

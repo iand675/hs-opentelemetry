@@ -24,13 +24,21 @@ default-extensions:
 
 dependencies:
 - base >= 4.7 && < 5
+- bytestring
+- text
+# These are "distribution" packages
 - hs-opentelemetry-api
+- hs-opentelemetry-propagators-w3c
+- hs-opentelemetry-exporter-otlp
+
+
 - async
 - vector
 - stm
 - unagi-chan
 - unordered-containers
 - vector-builder
+- http-types
 
 library:
   ghc-options: -Wall
