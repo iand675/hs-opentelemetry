@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-api
 version:        0.1.0.0
+synopsis:       OpenTelemetry API. Intended for use by libraries for direct instrumentation or wrapper packages.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-api#readme>
+category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
@@ -63,7 +65,7 @@ library
   default-extensions:
       OverloadedStrings
       RecordWildCards
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   build-depends:
       async
     , attoparsec

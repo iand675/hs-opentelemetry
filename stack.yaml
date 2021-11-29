@@ -37,11 +37,11 @@ packages:
 - otlp
 - exporters/handle
 - exporters/in-memory
-- exporters/jaeger
+# - exporters/jaeger
 - exporters/otlp
-- exporters/prometheus
-- propagators/b3
-- propagators/jaeger
+# - exporters/prometheus
+# - propagators/b3
+# - propagators/jaeger
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/http-client

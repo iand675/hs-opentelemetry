@@ -28,7 +28,7 @@ dependencies:
 - attoparsec
 
 library:
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   source-dirs: src
 
 tests:
