@@ -5,7 +5,7 @@
 -- Module      :  OpenTelemetry.Resource.Kubernetes
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Information about how and where a process is running in a k8s cluster
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
@@ -65,6 +65,7 @@ instance ToResource Pod where
     , "k8s.pod.uid" .=? podUid
     ]
 
+-- | A container in a PodTemplate.
 data Container = Container
   { containerName :: Maybe Text
   -- ^ The name of the Container from Pod specification, must be unique within a Pod. Container runtime usually uses different globally unique name (container.name).	

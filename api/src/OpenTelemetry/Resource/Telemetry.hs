@@ -6,7 +6,8 @@
 -- Module      :  OpenTelemetry.Resource.Telemetry
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Information about the telemetry SDK used to capture data recorded 
+-- by the instrumentation libraries.
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
