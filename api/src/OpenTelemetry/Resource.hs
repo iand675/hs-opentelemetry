@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DefaultSignatures #-}
 -----------------------------------------------------------------------------
@@ -18,95 +20,62 @@
 -- these attributes can be included in the Resource.
 --
 -----------------------------------------------------------------------------
-module OpenTelemetry.Resource where
+module OpenTelemetry.Resource 
+  ( mkResource
+  , Resource
+  , (.=)
+  , (.=?)
+  , ResourceMerge
+  , mergeResources
+  , ToResource(..)
+  , MaterializeResource
+  , materializeResources
+  , MaterializedResources
+  , emptyMaterializedResources
+  , getMaterializedResourcesSchema
+  , getMaterializedResourcesAttributes
+  ) where
+
+import Data.Proxy (Proxy(..))
 import Data.Text (Text)
-import Data.Int
 import GHC.TypeLits
-import Control.Monad.IO.Class
-import System.Environment
-import OpenTelemetry.Baggage (decodeBaggageHeader)
-import qualified Data.ByteString.Char8 as B
-import qualified OpenTelemetry.Baggage as Baggage
-import qualified Data.HashMap.Strict as H
-import Data.Text.Encoding (decodeUtf8)
 import Data.Maybe (catMaybes)
+import OpenTelemetry.Attributes
 
-data AttributeLimits = AttributeLimits
-  { attributeCountLimit :: Maybe Int
-  , attributeLengthLimit :: Maybe Int
-  }
+newtype Resource (schema :: Maybe Symbol) = Resource Attributes
 
-class ToPrimitiveAttribute a where
-  toPrimitiveAttribute :: a -> PrimitiveAttribute
+-- resourceAttributes :: Resource s -> Attributes
+-- resourceAttributes (Resource attrs) = attrs
 
-data Attribute
-  = AttributeValue PrimitiveAttribute
-  | AttributeArray [PrimitiveAttribute]
-  deriving (Show)
-
-data PrimitiveAttribute
-  = TextAttribute Text
-  | BoolAttribute Bool
-  | DoubleAttribute Double
-  | IntAttribute Int64
-  deriving (Show)
-
-class ToAttribute a where
-  toAttribute :: a -> Attribute
-  default toAttribute :: ToPrimitiveAttribute a => a -> Attribute
-  toAttribute = AttributeValue . toPrimitiveAttribute
-
-instance ToAttribute PrimitiveAttribute where
-  toAttribute = AttributeValue
-
-instance ToPrimitiveAttribute Text where
-  toPrimitiveAttribute = TextAttribute
-instance ToAttribute Text
-
-instance ToPrimitiveAttribute Bool where
-  toPrimitiveAttribute = BoolAttribute
-instance ToAttribute Bool
-
-instance ToPrimitiveAttribute Double where
-  toPrimitiveAttribute = DoubleAttribute
-instance ToAttribute Double
-
-instance ToPrimitiveAttribute Int64 where
-  toPrimitiveAttribute = IntAttribute
-instance ToAttribute Int64
-
-instance ToPrimitiveAttribute Int where
-  toPrimitiveAttribute = IntAttribute . fromIntegral
-instance ToAttribute Int
-
-instance ToPrimitiveAttribute a => ToAttribute [a] where
-  toAttribute = AttributeArray . map toPrimitiveAttribute
-
-newtype Resource (schema :: Maybe Symbol) = Resource [(Text, Attribute)]
-
-resourceAttributes :: Resource s -> [(Text, Attribute)]
-resourceAttributes (Resource attrs) = attrs
-
+-- Utility function to create a resource from a list
+-- of fields and attributes. See the '.=' and '.=?' functions.
+--
+-- @since 0.0.1.0
 mkResource :: [Maybe (Text, Attribute)] -> Resource r
-mkResource = Resource . catMaybes
+mkResource = Resource . unsafeAttributesFromListIgnoringLimits . catMaybes
 
+-- | Utility function to convert a required resource attribute
+-- into the format needed for 'mkResource'.
 (.=) :: ToAttribute a => Text -> a -> Maybe (Text, Attribute)
 k .= v = Just (k, toAttribute v)
 
+-- | Utility function to convert an optional resource attribute
+-- into the format needed for 'mkResource'.
 (.=?) :: ToAttribute a => Text -> Maybe a -> Maybe (Text, Attribute)
 k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
-instance (s ~ ResourceMerge s s) => Semigroup (Resource s) where
-  (<>) = mergeResources
+instance Semigroup (Resource s) where
+  (<>) (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
-instance (s ~ ResourceMerge s s) => Monoid (Resource s) where
-  mempty = Resource []
+instance Monoid (Resource s) where
+  mempty = Resource emptyAttributes
 
-data ResourceCreationParameters = ResourceCreationParameters
-  {
-  }
+-- data ResourceCreationParameters = ResourceCreationParameters
+--   {
+--   }
 
-createResource :: [(Text, Attribute)] -> ResourceCreationParameters -> Resource s
-createResource attrs _params = Resource attrs
+-- Create a resource from list of attributes.
+-- createResource :: Attributes -> ResourceCreationParameters -> Resource s
+-- createResource attrs _params = Resource attrs
 
 -- | Static checks to prevent invalid resources from being merged.
 --
@@ -146,26 +115,31 @@ type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
   ResourceMerge ('Just s) ('Just s) = 'Just s
 
 mergeResources :: Resource l -> Resource r -> Resource (ResourceMerge l r)
-mergeResources (Resource l) (Resource r) = Resource (l <> r)
+mergeResources (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
 class ToResource a where
   type ResourceSchema a :: Maybe Symbol
   toResource :: a -> Resource (ResourceSchema a)
 
--- baggage format environment variables
-getEnvVarResourceAttributes :: MonadIO m => m (Resource 'Nothing)
-getEnvVarResourceAttributes = do
-  mEnv <- liftIO $ lookupEnv "OTEL_RESOURCE_ATTRIBUTES"
-  case mEnv of
-    Nothing -> pure $ Resource []
-    Just envVar -> case decodeBaggageHeader $ B.pack envVar of
-      Left err -> do
-        -- TODO logError
-        liftIO $ putStrLn err
-        pure $ Resource []
-      Right ok ->
-        pure
-          $ Resource
-          $ map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v))
-          $ H.toList
-          $ Baggage.values ok
+class MaterializeResource o where
+  materializeResources :: Resource o -> MaterializedResources
+
+instance MaterializeResource 'Nothing where
+  materializeResources (Resource attrs) = MaterializedResources Nothing attrs
+
+instance KnownSymbol s => MaterializeResource ('Just s) where
+  materializeResources (Resource attrs) = MaterializedResources (Just $ symbolVal (Proxy @s)) attrs
+
+data MaterializedResources = MaterializedResources
+  { materializedResourcesSchema :: Maybe String
+  , materializedResourcesAttributes :: Attributes
+  }
+
+emptyMaterializedResources :: MaterializedResources
+emptyMaterializedResources = MaterializedResources Nothing emptyAttributes
+
+getMaterializedResourcesSchema :: MaterializedResources -> Maybe String
+getMaterializedResourcesSchema = materializedResourcesSchema
+
+getMaterializedResourcesAttributes :: MaterializedResources -> Attributes
+getMaterializedResourcesAttributes = materializedResourcesAttributes
