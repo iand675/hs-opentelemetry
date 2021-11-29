@@ -19,7 +19,7 @@ encodeBaggage = Baggage.encodeBaggageHeader
 w3cBaggagePropagator :: Propagator Context RequestHeaders ResponseHeaders
 w3cBaggagePropagator = Propagator{..}
   where
-    propagatorNames = [ "w3cBaggage" ]
+    propagatorNames = [ "baggage" ]
 
     extractor hs c = case Prelude.lookup "baggage" hs of
       Nothing -> pure c

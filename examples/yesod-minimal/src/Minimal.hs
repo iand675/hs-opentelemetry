@@ -53,7 +53,6 @@ import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttribute
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
   { minimalContext :: Context
-  , minimalPropagator :: Propagator Context RequestHeaders ResponseHeaders
   , minimalConnectionPool :: Pool SqlBackend
   }
 
@@ -101,10 +100,7 @@ getRootR :: Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
   m <- liftIO $ newManager defaultManagerSettings
-  propagator <- minimalPropagator <$> getYesod
   let httpConfig = httpClientInstrumentationConfig
-        { httpClientPropagator = propagator
-        }
   req <- parseUrlThrow "http://localhost:3000/api"
   resp <- httpLbs httpConfig req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
@@ -120,27 +116,10 @@ getApiR = do
 
 main :: IO ()
 main = do
-  otlpExporterConf <- loadExporterEnvironmentVariables
-  rs <- builtInResources
-  otlpExporter_ <- otlpExporter rs otlpExporterConf
-  processor <- batchProcessor $ batchTimeoutConfig otlpExporter_
-
-  tp <- createTracerProvider
-    [ processor
-    ]
-    ((emptyTracerProviderOptions :: TracerProviderOptions Nothing)
-      { tracerProviderOptionsResources = rs
-      })
-
-  setGlobalTracerProvider tp
-
-  let httpPropagators = mconcat
-        [ w3cBaggagePropagator
-        , w3cTraceContextPropagator
-        ]
+  initializeGlobalTracerProvider
 
   runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
-    waiApp <- toWaiApp $ Minimal Context.empty httpPropagators pool
-    openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware tp httpPropagators
+    waiApp <- toWaiApp $ Minimal Context.empty pool
+    openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware
 
     run 3000 $ openTelemetryWaiMiddleware waiApp

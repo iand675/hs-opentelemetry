@@ -3,6 +3,7 @@
 module OpenTelemetry.Instrumentation.Wai 
   ( newOpenTelemetryWaiMiddleware
   , newOpenTelemetryWaiMiddleware'
+  , newOpenTelemetryWaiMiddleware''
   , requestContext
   ) where
 
@@ -20,19 +21,21 @@ import qualified Data.Text as T
 import Control.Monad
 import Network.Socket
 import Data.IP (fromHostAddress, fromHostAddress6)
+import OpenTelemetry.Attributes (lookupAttribute)
 
-newOpenTelemetryWaiMiddleware
-  :: TracerProvider 
-  -> Propagator Context.Context RequestHeaders ResponseHeaders
-  -> IO Middleware
-newOpenTelemetryWaiMiddleware tp = newOpenTelemetryWaiMiddleware' tp Context.empty
+newOpenTelemetryWaiMiddleware :: IO Middleware
+newOpenTelemetryWaiMiddleware = getGlobalTracerProvider >>= newOpenTelemetryWaiMiddleware'
 
 newOpenTelemetryWaiMiddleware'
   :: TracerProvider 
-  -> Context.Context
-  -> Propagator Context.Context RequestHeaders ResponseHeaders
   -> IO Middleware
-newOpenTelemetryWaiMiddleware' tp ctx propagator = do
+newOpenTelemetryWaiMiddleware' tp = newOpenTelemetryWaiMiddleware'' tp Context.empty
+
+newOpenTelemetryWaiMiddleware''
+  :: TracerProvider 
+  -> Context.Context
+  -> IO Middleware
+newOpenTelemetryWaiMiddleware'' tp ctx = do
   waiTracer <- getTracer 
     tp
     "opentelemetry-instrumentation-wai" 
@@ -41,6 +44,7 @@ newOpenTelemetryWaiMiddleware' tp ctx propagator = do
   where
     middleware :: Tracer -> Middleware
     middleware tracer app req sendResp = do
+      let propagator = getTracerProviderPropagators $ getTracerTracerProvider tracer
       -- TODO baggage, span context
       ctxt <- extract propagator (requestHeaders req) ctx
       let path_ = T.decodeUtf8 $ rawPathInfo req
@@ -99,7 +103,7 @@ newOpenTelemetryWaiMiddleware' tp ctx propagator = do
         let resp' = mapResponseHeaders (hs ++) resp
         -- TODO need to propagate baggage
         attrs <- getAttributes requestSpan
-        forM_ (lookup "http.route" attrs) $ \case
+        forM_ (lookupAttribute attrs "http.route") $ \case
           AttributeValue (TextAttribute route) -> updateName requestSpan route 
           _ -> pure ()
 

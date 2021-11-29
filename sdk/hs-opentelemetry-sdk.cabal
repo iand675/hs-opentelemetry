@@ -28,7 +28,6 @@ library
       OpenTelemetry.Baggage
       OpenTelemetry.Context
       OpenTelemetry.Propagators
-      OpenTelemetry.Setup
       OpenTelemetry.Trace
       OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.Sampler
@@ -45,8 +44,13 @@ library
   build-depends:
       async
     , base >=4.7 && <5
+    , bytestring
     , hs-opentelemetry-api
+    , hs-opentelemetry-exporter-otlp
+    , hs-opentelemetry-propagators-w3c
+    , http-types
     , stm
+    , text
     , unagi-chan
     , unordered-containers
     , vector
@@ -66,10 +70,15 @@ test-suite hs-opentelemetry-sdk-test
   build-depends:
       async
     , base >=4.7 && <5
+    , bytestring
     , hs-opentelemetry-api
+    , hs-opentelemetry-exporter-otlp
+    , hs-opentelemetry-propagators-w3c
     , hs-opentelemetry-sdk
     , hspec
+    , http-types
     , stm
+    , text
     , unagi-chan
     , unordered-containers
     , vector

@@ -11,8 +11,8 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            OpenTelemetry API. Intended for use by libraries for direct instrumentation or wrapper packages.
+category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -26,12 +26,14 @@ default-extensions:
 dependencies:
 - base >= 4.7 && < 5
 - async
-- binary
 - bytestring
 - text
-- unordered-containers
 - vault
+- containers
+- hashable
 - thread-utils-context
+- unordered-containers
+- binary
 - random
 - mwc-random
 - vector
@@ -41,7 +43,6 @@ dependencies:
 - http-types
 - attoparsec
 - template-haskell
-- hashable
 - charset
 - ghc-prim
 - unliftio-core
@@ -54,7 +55,7 @@ dependencies:
 
 library:
   source-dirs: src
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   other-modules:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Id

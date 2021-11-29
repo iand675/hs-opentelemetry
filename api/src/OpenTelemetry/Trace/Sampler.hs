@@ -37,11 +37,11 @@ import qualified Data.ByteString.Lazy as L
 import Data.Text
 import Data.Word (Word64)
 import OpenTelemetry.Trace.Id
-import OpenTelemetry.Resource (toAttribute)
 import OpenTelemetry.Context
 import OpenTelemetry.Internal.Trace.Types
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.TraceState as TraceState
+import OpenTelemetry.Attributes (toAttribute)
 
 -- | Returns @RecordAndSample@ always.
 --

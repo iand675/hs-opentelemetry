@@ -14,27 +14,30 @@ import Data.Foldable (Foldable(toList))
 import Data.CaseInsensitive (foldedCase)
 
 data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
-  { httpClientPropagator :: Propagator Context RequestHeaders ResponseHeaders
-  , requestHeadersToRecord :: [HeaderName]
+  { requestHeadersToRecord :: [HeaderName]
   , responseHeadersToRecord :: [HeaderName]
   }
 
 instance Semigroup HttpClientInstrumentationConfig where
   l <> r = HttpClientInstrumentationConfig
-    { httpClientPropagator = httpClientPropagator l <> httpClientPropagator r
-    , requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
+    { requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
     , responseHeadersToRecord = responseHeadersToRecord l <> responseHeadersToRecord r
     }
 
 instance Monoid HttpClientInstrumentationConfig where
   mempty = HttpClientInstrumentationConfig
-    { httpClientPropagator = mempty
-    , requestHeadersToRecord = mempty
+    { requestHeadersToRecord = mempty
     , responseHeadersToRecord = mempty
     }
 
 httpClientInstrumentationConfig :: HttpClientInstrumentationConfig
 httpClientInstrumentationConfig = mempty
+
+  -- TODO see if we can avoid recreating this on each request without being more invasive with the interface
+httpTracerProvider :: MonadIO m => m Tracer
+httpTracerProvider = do
+  tp <- getGlobalTracerProvider
+  getTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
 
 instrumentRequest
   :: MonadIO m
@@ -43,6 +46,7 @@ instrumentRequest
   -> Request
   -> m Request
 instrumentRequest conf ctxt req = do
+  tp <- httpTracerProvider
   forM_ (lookupSpan ctxt) $ \s -> do
     addAttributes s
       [ ( "http.method", toAttribute $ T.decodeUtf8 $ method req)
@@ -67,7 +71,7 @@ instrumentRequest conf ctxt req = do
         (\h -> toList $ (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) $
         requestHeadersToRecord conf
 
-  hdrs <- inject (httpClientPropagator conf) ctxt $ requestHeaders req
+  hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tp) ctxt $ requestHeaders req
   pure $ req
     { requestHeaders = hdrs
     }
@@ -80,7 +84,8 @@ instrumentResponse
   -> Response a
   -> m Context
 instrumentResponse conf ctxt resp = do
-  ctxt' <- extract (httpClientPropagator conf) (responseHeaders resp) ctxt
+  tp <- httpTracerProvider
+  ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tp) (responseHeaders resp) ctxt
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")

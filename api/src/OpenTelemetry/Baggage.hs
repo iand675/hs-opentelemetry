@@ -68,16 +68,22 @@ import Language.Haskell.TH.Syntax
 import Network.HTTP.Types.URI
 import System.IO.Unsafe
 
+-- | A key for a baggage entry, restricted to the set of valid characters
+-- specified in the @token@ definition of RFC 2616: 
+--
+-- https://www.rfc-editor.org/rfc/rfc2616#section-2.2
 newtype Token = Token ByteString
   deriving stock (Show, Eq, Ord)
   deriving newtype (Hashable)
 
+-- | Convert a 'Token' into a 'ByteString'
 tokenValue :: Token -> ByteString
 tokenValue (Token t) = t
 
 instance Lift Token where
   liftTyped (Token tok) = unsafeTExpCoerce $ bsToExp tok
 
+-- | An entry into the baggage 
 data Element = Element
   { value :: Text
   , properties :: [Property]
@@ -225,20 +231,30 @@ decodeBaggageHeaderP = do
         Just <$> valP
       pure $ Property key val
 
+-- | An empty initial baggage value
 empty :: Baggage
 empty = Baggage H.empty
 
-insert :: Token -> Element -> Baggage -> Baggage
+insert :: 
+     Token 
+  -- ^ The name for which to set the value
+  -> Element 
+  -- ^ The value to set. Use 'element' to construct a well-formed element value.
+  -> Baggage 
+  -> Baggage
 insert k v (Baggage c) = Baggage (H.insert k v c)
 
+-- | Delete a key/value pair from the baggage.
 delete :: Token -> Baggage -> Baggage 
 delete k (Baggage c) = Baggage (H.delete k c)
 
+-- | Returns the name/value pairs in the `Baggage`. The order of name/value pairs
+-- is not significant.
+--
+-- @since 0.0.1.0
 values :: Baggage -> H.HashMap Token Element
 values (Baggage m) = m
 
+-- | Convert a 'H.HashMap' into 'Baggage'
 fromHashMap :: H.HashMap Token Element -> Baggage
 fromHashMap = Baggage
-
--- TODO Must implement
--- * A `TextMapPropagator` implementing the [W3C Baggage Specification](https://w3c.github.io/baggage).

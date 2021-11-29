@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Attributes
       OpenTelemetry.Baggage
       OpenTelemetry.Context
       OpenTelemetry.Context.Propagators
@@ -74,6 +75,7 @@ library
     , bytestring
     , charset
     , clock
+    , containers
     , ghc-prim
     , hashable
     , http-types
@@ -116,6 +118,7 @@ test-suite hs-opentelemetry-api-test
     , bytestring
     , charset
     , clock
+    , containers
     , ghc-prim
     , hashable
     , hs-opentelemetry-api

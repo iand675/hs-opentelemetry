@@ -18,7 +18,7 @@ import Data.ProtoLens.Message
 import System.Environment
 import qualified OpenTelemetry.Baggage as Baggage
 import qualified OpenTelemetry.Trace as OT
-import Proto.Opentelemetry.Proto.Trace.V1.Trace (Span'SpanKind (Span'SPAN_KIND_SERVER, Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL), Status'StatusCode (Status'STATUS_CODE_OK, Status'STATUS_CODE_ERROR, Status'STATUS_CODE_UNSET))
+import Proto.Opentelemetry.Proto.Trace.V1.Trace (Span'SpanKind (Span'SPAN_KIND_SERVER, Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL), Status'StatusCode (Status'STATUS_CODE_OK, Status'STATUS_CODE_ERROR, Status'STATUS_CODE_UNSET), InstrumentationLibrarySpans, Span, Span'Link, Span'Event)
 import Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
 import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
@@ -31,16 +31,16 @@ import Lens.Micro
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import qualified Data.Vector as Vector
 import OpenTelemetry.Trace.Id (traceIdBytes, spanIdBytes)
+import OpenTelemetry.Attributes
 import OpenTelemetry.Resource
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import Proto.Opentelemetry.Proto.Common.V1.Common_Fields
-import System.Clock
 import Text.Read (readMaybe)
-import Data.Word
 import GHC.IO (unsafeDupablePerformIO)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
-import qualified VectorBuilder.Vector as VectorBuilder
+import qualified Data.Vector as V
+import OpenTelemetry.Trace (sequenceValues, timestampNanoseconds)
 
 data CompressionFormat = None | GZip
 data Protocol = {- GRpc | HttpJson | -} HttpProtobuf
@@ -124,8 +124,8 @@ protobufMimeType :: C.ByteString
 protobufMimeType = "application/x-protobuf"
 
 -- TODO configurable retryDelay, maximum retry counts
-otlpExporter :: (MonadIO m) => Resource schema -> OTLPExporterConfig -> m SpanExporter
-otlpExporter resourceAttrs conf = do
+otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
+otlpExporter conf = do
   -- TODO, url parsing is janky
   req <- liftIO $ parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
   let baseReq = req
@@ -138,7 +138,17 @@ otlpExporter resourceAttrs conf = do
             requestHeaders req
         }
   pure $ SpanExporter
-    { spanExporterExport = spanExporterExportCall baseReq
+    { spanExporterExport = \spans_ -> do
+        let anySpansToExport = H.size spans_ /= 0 && not (all V.null $ H.elems spans_)
+        if anySpansToExport
+          then do
+            result <- try $ spanExporterExportCall baseReq spans_
+            case result of
+              Left err -> do
+                print err
+                pure $ Failure $ Just err
+              Right ok -> pure ok
+          else pure Success
     , spanExporterShutdown = pure ()
     }
   where
@@ -153,12 +163,12 @@ otlpExporter resourceAttrs conf = do
       _ -> False
 
     spanExporterExportCall baseReq spans_ = do
+      let msg = encodeMessage $
+                immutableSpansToProtobuf spans_
       -- TODO handle server disconnect
       let req = baseReq
             { requestBody =
-                RequestBodyBS $
-                encodeMessage $
-                immutableSpansToProtobuf resourceAttrs spans_
+                RequestBodyBS msg
             }
       sendReq req 0 -- TODO =<< getTime for maximum cutoff
 
@@ -176,7 +186,7 @@ otlpExporter resourceAttrs conf = do
           then exponentialBackoff
           else pure $ Failure $ Just $ SomeException err
         Left err -> pure $ Failure $ Just $ SomeException err
-        Right resp -> if isRetryableStatusCode (responseStatus resp)  
+        Right resp -> if isRetryableStatusCode (responseStatus resp)
           then case lookup hRetryAfter $ responseHeaders resp of
             Nothing -> exponentialBackoff
             Just retryAfter -> do
@@ -191,14 +201,20 @@ otlpExporter resourceAttrs conf = do
             then Failure Nothing
             else Success
 
-attributesToProto :: Functor f => f (Text, Attribute) -> f KeyValue
-attributesToProto = fmap attributeToKeyValue
+attributesToProto :: Attributes -> Vector KeyValue
+attributesToProto =
+  V.fromList .
+  fmap attributeToKeyValue .
+  H.toList .
+  snd .
+  getAttributes
   where
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & stringValue .~ t
       BoolAttribute b -> defMessage & boolValue .~ b
       DoubleAttribute d -> defMessage & doubleValue .~ d
       IntAttribute i -> defMessage & intValue .~ i
+    attributeToKeyValue :: (Text, Attribute) -> KeyValue
     attributeToKeyValue (k, v) = defMessage
       & key .~ k
       & value .~ (case v of
@@ -208,22 +224,33 @@ attributesToProto = fmap attributeToKeyValue
       )
 
 
-immutableSpansToProtobuf :: Resource sym -> HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> ExportTraceServiceRequest
-immutableSpansToProtobuf r completedSpans = defMessage
+immutableSpansToProtobuf :: HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> ExportTraceServiceRequest
+immutableSpansToProtobuf completedSpans = defMessage
   & vec'resourceSpans .~
     Vector.singleton
       ( defMessage
           & resource .~
             ( defMessage
-                & attributes .~ attributesToProto (resourceAttributes r)
+                & vec'attributes .~ attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
+                -- TODO
                 & droppedAttributesCount .~ 0
             )
           -- TODO, seems like spans need to be emitted via an API
           -- that lets us keep them grouped by instrumentation originator
           & instrumentationLibrarySpans .~
-              fmap makeInstrumentationLibrarySpans ( H.toList completedSpans )
+              fmap makeInstrumentationLibrarySpans spanGroupList
       )
   where
+    -- TODO this won't work right if multiple TracerProviders are exporting to a single OTLP exporter with different resources
+    someResourceGroup = case spanGroupList of
+      [] -> emptyMaterializedResources
+      ((_, r):_) -> case r V.!? 0 of
+        Nothing -> emptyMaterializedResources
+        Just s -> OT.getTracerProviderResources $ OT.getTracerTracerProvider $ OT.spanTracer s
+
+    spanGroupList = H.toList completedSpans
+
+    makeInstrumentationLibrarySpans :: (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> InstrumentationLibrarySpans
     makeInstrumentationLibrarySpans (library, completedSpans_) = defMessage
       & instrumentationLibrary .~ (
           defMessage
@@ -232,47 +259,50 @@ immutableSpansToProtobuf r completedSpans = defMessage
         )
       & vec'spans .~ fmap makeSpan completedSpans_
       -- & schemaUrl .~ "" -- TODO
-    makeSpan completedSpan = let startTime = clockTimeToNanoSeconds (OT.spanStart completedSpan) in defMessage
-      & traceId .~ traceIdBytes (OT.traceId $ OT.spanContext completedSpan)
-      & spanId .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
-      & traceState .~ "" -- TODO (_ $ OT.traceState $ OT.spanContext completedSpan)
-      & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.spanName completedSpan
-      & kind .~ (case OT.spanKind completedSpan of
-       OT.Server -> Span'SPAN_KIND_SERVER
-       OT.Client -> Span'SPAN_KIND_CLIENT
-       OT.Producer -> Span'SPAN_KIND_PRODUCER
-       OT.Consumer -> Span'SPAN_KIND_CONSUMER
-       OT.Internal -> Span'SPAN_KIND_INTERNAL)
-      & startTimeUnixNano .~ startTime
-      & endTimeUnixNano .~ maybe startTime clockTimeToNanoSeconds (OT.spanEnd completedSpan)
-      & attributes .~ attributesToProto (OT.spanAttributes completedSpan)
-      & droppedAttributesCount .~ 0 -- TODO
-      & vec'events .~ fmap makeEvent (VectorBuilder.build $ OT.spanEvents completedSpan)
-      & droppedEventsCount .~ 0 -- TODO
-      & links .~ fmap makeLink (OT.spanLinks completedSpan) -- TODO
-      & droppedLinksCount .~ 0 -- TODO
-      & status .~ (case OT.spanStatus completedSpan of
-        OT.Unset -> defMessage
-          & code .~ Status'STATUS_CODE_UNSET
-        OT.Ok -> defMessage
-          & code .~ Status'STATUS_CODE_OK
-        (OT.Error e) -> defMessage
-          & code .~ Status'STATUS_CODE_ERROR
-          & message .~ e
-      )
-      & (\otlpSpan -> case OT.spanParent completedSpan of
-          Nothing -> otlpSpan
-          Just s -> otlpSpan & parentSpanId .~ spanIdBytes (OT.spanId $ unsafeDupablePerformIO (OT.getSpanContext s :: IO OT.SpanContext))
-        )
-    makeEvent e = defMessage
-      & timeUnixNano .~ clockTimeToNanoSeconds (OT.eventTimestamp e)
-      & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.eventName e
-      & attributes .~ attributesToProto (OT.eventAttributes e)
-      & droppedAttributesCount .~ 0
-    makeLink l = defMessage
-      & traceId .~ traceIdBytes (OT.traceId $ OT.linkContext l)
-      & spanId .~ spanIdBytes (OT.spanId $ OT.linkContext l)
-      & attributes .~ attributesToProto (OT.linkAttributes l)
 
-clockTimeToNanoSeconds :: TimeSpec -> Word64
-clockTimeToNanoSeconds TimeSpec{..} = fromIntegral (sec * 1_000_000_000) + fromIntegral nsec
+makeSpan :: OT.ImmutableSpan -> Span
+makeSpan completedSpan = let startTime = timestampNanoseconds (OT.spanStart completedSpan) in defMessage
+  & traceId .~ traceIdBytes (OT.traceId $ OT.spanContext completedSpan)
+  & spanId .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
+  & traceState .~ "" -- TODO (_ $ OT.traceState $ OT.spanContext completedSpan)
+  & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.spanName completedSpan
+  & kind .~ (case OT.spanKind completedSpan of
+    OT.Server -> Span'SPAN_KIND_SERVER
+    OT.Client -> Span'SPAN_KIND_CLIENT
+    OT.Producer -> Span'SPAN_KIND_PRODUCER
+    OT.Consumer -> Span'SPAN_KIND_CONSUMER
+    OT.Internal -> Span'SPAN_KIND_INTERNAL)
+  & startTimeUnixNano .~ startTime
+  & endTimeUnixNano .~ maybe startTime timestampNanoseconds (OT.spanEnd completedSpan)
+  & vec'attributes .~ attributesToProto (OT.spanAttributes completedSpan)
+  & droppedAttributesCount .~ 0 -- TODO
+  & vec'events .~ fmap makeEvent (sequenceValues $ OT.spanEvents completedSpan)
+  & droppedEventsCount .~ 0 -- TODO
+  & vec'links .~ fmap makeLink (OT.spanLinks completedSpan) -- TODO
+  & droppedLinksCount .~ 0 -- TODO
+  & status .~ (case OT.spanStatus completedSpan of
+    OT.Unset -> defMessage
+      & code .~ Status'STATUS_CODE_UNSET
+    OT.Ok -> defMessage
+      & code .~ Status'STATUS_CODE_OK
+    (OT.Error e) -> defMessage
+      & code .~ Status'STATUS_CODE_ERROR
+      & message .~ e
+  )
+  & (\otlpSpan -> case OT.spanParent completedSpan of
+      Nothing -> otlpSpan
+      Just s -> otlpSpan & parentSpanId .~ spanIdBytes (OT.spanId $ unsafeDupablePerformIO (OT.getSpanContext s :: IO OT.SpanContext))
+    )
+
+makeEvent :: OT.Event -> Span'Event
+makeEvent e = defMessage
+  & timeUnixNano .~ timestampNanoseconds (OT.eventTimestamp e)
+  & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.eventName e
+  & vec'attributes .~ attributesToProto (OT.eventAttributes e)
+  & droppedAttributesCount .~ 0
+
+makeLink :: OT.Link -> Span'Link
+makeLink l = defMessage
+  & traceId .~ traceIdBytes (OT.traceId $ OT.linkContext l)
+  & spanId .~ spanIdBytes (OT.spanId $ OT.linkContext l)
+  & vec'attributes .~ attributesToProto (OT.linkAttributes l)
