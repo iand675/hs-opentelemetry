@@ -5,7 +5,7 @@
 -- Module      :  OpenTelemetry.Resource.Container
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Detect & provide resource info about a container
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)

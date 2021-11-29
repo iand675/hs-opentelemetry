@@ -5,7 +5,7 @@
 -- Module      :  OpenTelemetry.Resource.Host
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Information about the underlying general computing instance
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)

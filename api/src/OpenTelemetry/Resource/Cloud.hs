@@ -5,7 +5,7 @@
 -- Module      :  OpenTelemetry.Resource.Cloud
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
---
+-- Description :  Cloud resource detection
 -- Maintainer  :  Ian Duncan
 -- Stability   :  experimental
 -- Portability :  non-portable (GHC extensions)
