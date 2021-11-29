@@ -211,13 +211,13 @@ baseEncodedToTraceId b bs = do
   r <- convertFromBase b bs
   bytesToTraceId r
 
--- | Output a 'TraceId' into a base-encoded bytestring builder.
+-- | Output a 'TraceId' into a base-encoded bytestring 'Builder'.
 --
 -- @since 0.1.0.0
 traceIdBaseEncodedBuilder :: Base -> TraceId -> Builder
 traceIdBaseEncodedBuilder b = B.byteString . convertToBase b . traceIdBytes
 
--- | Output a 'TraceId' into a base-encoded bytestring.
+-- | Output a 'TraceId' into a base-encoded 'ByteString'.
 --
 -- @since 0.1.0.0
 traceIdBaseEncodedByteString :: Base -> TraceId -> ByteString
@@ -271,13 +271,13 @@ baseEncodedToSpanId b bs = do
   r <- convertFromBase b bs
   bytesToSpanId r
 
--- | Output a 'SpanId' into a base-encoded bytestring builder.
+-- | Output a 'SpanId' into a base-encoded bytestring 'Builder'.
 --
 -- @since 0.1.0.0
 spanIdBaseEncodedBuilder :: Base -> SpanId -> Builder
 spanIdBaseEncodedBuilder b = B.byteString . convertToBase b . spanIdBytes
 
--- | Output a 'Spanid' into a base-encoded bytestring.
+-- | Output a 'SpanId' into a base-encoded 'ByteString'.
 --
 -- @since 0.1.0.0
 spanIdBaseEncodedByteString :: Base -> SpanId -> ByteString

@@ -55,9 +55,9 @@ instance Hashable InstrumentationLibrary
 instance IsString InstrumentationLibrary where
   fromString str = InstrumentationLibrary (fromString str) ""
 
-data SpanExporter = SpanExporter
-  { spanExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
-  , spanExporterShutdown :: IO ()
+data TraceExporter = TraceExporter
+  { traceExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+  , traceExporterShutdown :: IO ()
   }
 
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
@@ -205,8 +205,19 @@ data SpanStatus
   -- ^ The operation contains an error. The text field may be empty, or else provide a description of the error.
   | Ok
   -- ^ The operation has been validated by an Application developer or Operator to have completed successfully.
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
+instance Ord SpanStatus where
+  compare Unset Unset = EQ
+  compare Unset (Error _) = LT
+  compare Unset Ok = LT
+  compare (Error _) Unset = GT
+  compare (Error _) (Error _) = GT -- This is a weird one, but last writer wins for errors
+  compare (Error _) Ok = LT
+  compare Ok Unset = GT
+  compare Ok (Error _) = GT
+  compare Ok Ok = EQ
+  
 data ImmutableSpan = ImmutableSpan
   { spanName :: Text
   , spanParent :: Maybe Span
@@ -231,7 +242,7 @@ data Span
 newtype TraceFlags = TraceFlags Word8
   deriving (Show, Eq, Ord)
 
--- | TraceFlags with the 'sampled' not set. This means that it is up to the
+-- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
 -- sampling configuration to decide whether or not to sample the trace.
 defaultTraceFlags :: TraceFlags
 defaultTraceFlags = TraceFlags 0
@@ -240,11 +251,11 @@ defaultTraceFlags = TraceFlags 0
 isSampled :: TraceFlags -> Bool
 isSampled (TraceFlags flags) = flags `testBit` 0
 
--- | Set the 'sampled' flag on the @TraceFlags@
+-- | Set the @sampled@ flag on the @TraceFlags@
 setSampled :: TraceFlags -> TraceFlags
 setSampled (TraceFlags flags) = TraceFlags (flags `setBit` 0)
 
--- | Unset the 'sampled' flag on the @TraceFlags@. This means that the
+-- | Unset the @sampled@ flag on the @TraceFlags@. This means that the
 -- application may choose whether or not to emit this Trace.
 unsetSampled :: TraceFlags -> TraceFlags
 unsetSampled (TraceFlags flags) = TraceFlags (flags `clearBit` 0)
@@ -364,3 +375,6 @@ defaultSpanLimits = SpanLimits
   Nothing
   Nothing
   Nothing
+
+type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
+type Lens' s a = Lens s s a a

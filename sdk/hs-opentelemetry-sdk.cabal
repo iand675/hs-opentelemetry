@@ -28,7 +28,13 @@ library
       OpenTelemetry.Baggage
       OpenTelemetry.Context
       OpenTelemetry.Propagators
+      OpenTelemetry.Resource.Host.Detector
+      OpenTelemetry.Resource.OperatingSystem.Detector
+      OpenTelemetry.Resource.Process.Detector
+      OpenTelemetry.Resource.Service.Detector
+      OpenTelemetry.Resource.Telemetry.Detector
       OpenTelemetry.Trace
+      OpenTelemetry.Trace.IdGenerator.Default
       OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.Sampler
       OpenTelemetry.Trace.SpanProcessors.Batch
@@ -49,9 +55,14 @@ library
     , hs-opentelemetry-exporter-otlp
     , hs-opentelemetry-propagators-w3c
     , http-types
+    , mwc-random
+    , network-bsd
+    , random
+    , random-bytestring
     , stm
     , text
     , unagi-chan
+    , unix
     , unordered-containers
     , vector
     , vector-builder
@@ -77,9 +88,14 @@ test-suite hs-opentelemetry-sdk-test
     , hs-opentelemetry-sdk
     , hspec
     , http-types
+    , mwc-random
+    , network-bsd
+    , random
+    , random-bytestring
     , stm
     , text
     , unagi-chan
+    , unix
     , unordered-containers
     , vector
     , vector-builder

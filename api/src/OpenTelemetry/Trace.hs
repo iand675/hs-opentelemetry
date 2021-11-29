@@ -59,7 +59,6 @@ module OpenTelemetry.Trace
   , InstrumentationLibrary(..)
   , TracerOptions(..)
   , tracerOptions
-  , builtInResources
   -- * Span operations
   , Span
   , ImmutableSpan(..)
@@ -124,41 +123,20 @@ import Data.IORef
 import Data.Text (Text)
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
-import Lens.Micro (Lens')
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.IdGenerator
 import OpenTelemetry.Trace.Sampler
 import OpenTelemetry.Internal.Trace.Types
 import System.IO.Unsafe
-import OpenTelemetry.Resource.Telemetry
-import OpenTelemetry.Resource.Process (currentProcessRuntime, getProcess)
-import OpenTelemetry.Resource.OperatingSystem (getOperatingSystem)
-import OpenTelemetry.Resource.Service
 import Control.Monad
 import System.Timeout (timeout)
-import OpenTelemetry.Resource.Host (getHost)
 import OpenTelemetry.Attributes (Attribute(..), PrimitiveAttribute(..), ToAttribute(..), ToPrimitiveAttribute(..), AttributeLimits, defaultAttributeLimits)
 import System.Clock
 import Data.Word (Word64)
 import Network.HTTP.Types
 import OpenTelemetry.Context.Propagators (Propagator)
 import OpenTelemetry.Context (Context)
-
-builtInResources :: IO (Resource 'Nothing)
-builtInResources = do
-  svc <- getService
-  processInfo <- getProcess
-  osInfo <- getOperatingSystem
-  host <- getHost
-  let rs =
-        toResource svc `mergeResources`
-        toResource telemetry `mergeResources`
-        toResource currentProcessRuntime `mergeResources`
-        toResource processInfo `mergeResources`
-        toResource osInfo `mergeResources`
-        toResource host
-  pure rs
 
 globalTracer :: IORef TracerProvider
 globalTracer = unsafePerformIO $ do
@@ -169,7 +147,7 @@ globalTracer = unsafePerformIO $ do
 {-# NOINLINE globalTracer #-}
 
 data TracerProviderOptions = TracerProviderOptions
-  { tracerProviderOptionsIdGenerator :: Maybe IdGenerator
+  { tracerProviderOptionsIdGenerator :: IdGenerator
   , tracerProviderOptionsSampler :: Sampler
   , tracerProviderOptionsResources :: MaterializedResources
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
@@ -179,7 +157,7 @@ data TracerProviderOptions = TracerProviderOptions
 
 emptyTracerProviderOptions :: TracerProviderOptions
 emptyTracerProviderOptions = TracerProviderOptions 
-  Nothing 
+  dummyIdGenerator 
   (parentBased $ parentBasedOptions alwaysOn) 
   emptyMaterializedResources 
   defaultAttributeLimits 
@@ -191,7 +169,7 @@ emptyTracerProviderOptions = TracerProviderOptions
 -- You should generally use 'getGlobalTracerProvider' for most applications.
 createTracerProvider :: MonadIO m => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
-  let g = fromMaybe defaultIdGenerator (tracerProviderOptionsIdGenerator opts)
+  let g = tracerProviderOptionsIdGenerator opts
   pure $ TracerProvider
     (V.fromList ps)
     g

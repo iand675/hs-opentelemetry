@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Context
@@ -39,7 +40,6 @@ import Control.Monad.IO.Class
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Vault.Strict as V
-import Lens.Micro (Lens')
 import OpenTelemetry.Baggage (Baggage)
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Internal.Trace.Types

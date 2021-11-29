@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  OpenTelemetry.Trace.SpanExporter
+-- Module      :  OpenTelemetry.Trace.Exporter
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
 -- Description :  Encode and transmit telemetry to external systems
@@ -14,8 +14,8 @@
 --
 -----------------------------------------------------------------------------
 
-module OpenTelemetry.Trace.SpanExporter 
-  ( SpanExporter (..)
+module OpenTelemetry.Trace.Exporter 
+  ( TraceExporter (..)
   , ExportResult (..)
   ) where
 import OpenTelemetry.Internal.Trace.Types

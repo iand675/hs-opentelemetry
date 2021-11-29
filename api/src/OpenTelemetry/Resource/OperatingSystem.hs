@@ -15,8 +15,6 @@
 -----------------------------------------------------------------------------
 module OpenTelemetry.Resource.OperatingSystem where
 import Data.Text (Text)
-import qualified Data.Text as T
-import System.Info ( os )
 import OpenTelemetry.Resource
 
 -- | The operating system (OS) on which the process represented by this resource is running.
@@ -58,22 +56,6 @@ data OperatingSystem = OperatingSystem
   -- ^ Human readable operating system name.
   , osVersion :: Maybe Text
   -- ^ The version string of the operating system as defined in
-  }
-
--- | Retrieve any infomration able to be detected about the current operation system.
---
--- Currently only supports 'osType' detection, but PRs are welcome to support additional
--- details.
---
--- @since 0.0.1.0
-getOperatingSystem :: IO OperatingSystem 
-getOperatingSystem = pure $ OperatingSystem
-  { osType = if os == "mingw32"
-      then "windows"
-      else T.pack os
-  , osDescription = Nothing
-  , osName = Nothing
-  , osVersion = Nothing
   }
 
 instance ToResource OperatingSystem where

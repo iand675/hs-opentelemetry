@@ -24,7 +24,7 @@ import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
-import OpenTelemetry.Trace.SpanExporter
+import OpenTelemetry.Trace.TraceExporter
 import Data.Vector (Vector)
 import Data.Maybe
 import Lens.Micro
@@ -124,7 +124,7 @@ protobufMimeType :: C.ByteString
 protobufMimeType = "application/x-protobuf"
 
 -- TODO configurable retryDelay, maximum retry counts
-otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
+otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m TraceExporter
 otlpExporter conf = do
   -- TODO, url parsing is janky
   req <- liftIO $ parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
@@ -137,19 +137,19 @@ otlpExporter conf = do
             fromMaybe [] (otlpTracesHeaders conf) ++
             requestHeaders req
         }
-  pure $ SpanExporter
-    { spanExporterExport = \spans_ -> do
+  pure $ TraceExporter
+    { traceExporterExport = \spans_ -> do
         let anySpansToExport = H.size spans_ /= 0 && not (all V.null $ H.elems spans_)
         if anySpansToExport
           then do
-            result <- try $ spanExporterExportCall baseReq spans_
+            result <- try $ traceExporterExportCall baseReq spans_
             case result of
               Left err -> do
                 print err
                 pure $ Failure $ Just err
               Right ok -> pure ok
           else pure Success
-    , spanExporterShutdown = pure ()
+    , traceExporterShutdown = pure ()
     }
   where
     retryDelay = 100_000 -- 100ms
@@ -162,7 +162,7 @@ otlpExporter conf = do
       ConnectionClosed -> True
       _ -> False
 
-    spanExporterExportCall baseReq spans_ = do
+    traceExporterExportCall baseReq spans_ = do
       let msg = encodeMessage $
                 immutableSpansToProtobuf spans_
       -- TODO handle server disconnect

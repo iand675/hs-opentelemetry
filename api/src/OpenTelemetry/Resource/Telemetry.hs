@@ -52,14 +52,6 @@ data Telemetry = Telemetry
 
   }
 
-telemetry :: Telemetry
-telemetry = Telemetry
-  { telemetrySdkName = "hs-opentelemetry"
-  , telemetrySdkLanguage = Just "haskell"
-  , telemetrySdkVersion = Just "#CURRENT_PACKAGE_VERSION"
-  , telemetryAutoVersion = Nothing
-  }
-
 instance ToResource Telemetry where  
   type ResourceSchema Telemetry = 'Nothing
   toResource Telemetry{..} = mkResource

@@ -16,7 +16,7 @@ module OpenTelemetry.Trace
   , createTracerProvider
   , TracerProviderOptions(..)
   , emptyTracerProviderOptions
-  , builtInResources
+  , detectBuiltInResources
   -- * 'Tracer' operations
   , Tracer
   , tracerName
@@ -55,16 +55,16 @@ import "hs-opentelemetry-api" OpenTelemetry.Resource
 import Data.Maybe (fromMaybe)
 import Data.Either (partitionEithers)
 import qualified Data.Text as T
-import OpenTelemetry.Context.Propagators (Propagator (propagatorNames))
+import OpenTelemetry.Context.Propagators (Propagator)
 import OpenTelemetry.Context (Context)
 import Network.HTTP.Types.Header
 
 import OpenTelemetry.Propagators.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Propagators.W3CBaggage (w3cBaggagePropagator)
 import System.Environment (lookupEnv)
-import OpenTelemetry.Trace.Sampler (Sampler (getDescription), alwaysOn, alwaysOff, traceIdRatioBased, parentBased, parentBasedOptions)
+import OpenTelemetry.Trace.Sampler (Sampler, alwaysOn, alwaysOff, traceIdRatioBased, parentBased, parentBasedOptions)
 import Text.Read (readMaybe)
-import OpenTelemetry.Trace.SpanExporter (SpanExporter)
+import OpenTelemetry.Trace.TraceExporter (TraceExporter)
 import OpenTelemetry.Trace.SpanProcessors.Batch (BatchTimeoutConfig (..), batchTimeoutConfig, batchProcessor)
 import OpenTelemetry.Attributes (AttributeLimits(..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
@@ -74,6 +74,12 @@ import qualified Data.HashMap.Strict as H
 import Data.Text.Encoding (decodeUtf8)
 import OpenTelemetry.Exporters.OTLP (loadExporterEnvironmentVariables, otlpExporter)
 import OpenTelemetry.Trace.SpanProcessor (SpanProcessor)
+import OpenTelemetry.Resource.Service.Detector (detectService)
+import OpenTelemetry.Resource.Process.Detector (detectProcess, detectProcessRuntime)
+import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
+import OpenTelemetry.Resource.Host.Detector (detectHost)
+import OpenTelemetry.Resource.Telemetry (telemetry)
+import OpenTelemetry.Trace.IdGenerator.Default (defaultIdGenerator)
 
 knownPropagators :: [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
 knownPropagators =
@@ -106,7 +112,7 @@ getTracerProviderInitializationOptions  = do
   propagators <- detectPropagators
   spanProcessorConf <- detectBatchSpanProcessorConfig
   exporters <- detectTraceExporters
-  builtInRs <- builtInResources
+  builtInRs <- detectBuiltInResources
   envVarRs <- (mkResource . map Just) <$> detectResourceAttributes
   let allRs = builtInRs <> envVarRs
   processors <- case exporters of
@@ -115,7 +121,8 @@ getTracerProviderInitializationOptions  = do
     e:_ -> do
       pure <$> batchProcessor spanProcessorConf e
   let providerOpts = emptyTracerProviderOptions
-        { tracerProviderOptionsSampler = sampler
+        { tracerProviderOptionsIdGenerator = defaultIdGenerator
+        , tracerProviderOptionsSampler = sampler
         , tracerProviderOptionsAttributeLimits = attrLimits
         , tracerProviderOptionsSpanLimits = spanLimits
         , tracerProviderOptionsPropagators = propagators
@@ -187,12 +194,8 @@ detectSpanLimits = SpanLimits
   <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
   <*> readEnv "OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT"
   <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
-    -- detectOtlpExporterConfig :: _
-    -- -- detectJaegerExporterConfig :: _
-    -- -- detectZipkinExporterConfig :: _
-    -- -- detectPrometheusExporterConfig :: _
 
-knownTraceExporters :: [(T.Text, IO SpanExporter)]
+knownTraceExporters :: [(T.Text, IO TraceExporter)]
 knownTraceExporters =
   [ ("otlp", do
       otlpConfig <- loadExporterEnvironmentVariables
@@ -202,9 +205,9 @@ knownTraceExporters =
   , ("zipkin", error "Zipkin exporter not implemented")
   ]
 
--- TODO, rename SpanExporter to TraceExporter
+-- TODO, rename TraceExporter to TraceExporter
 -- TODO, support multiple exporters
-detectTraceExporters :: IO [SpanExporter]
+detectTraceExporters :: IO [TraceExporter]
 detectTraceExporters = do
   exportersInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
   if exportersInEnv == Just ["none"]
@@ -241,3 +244,18 @@ readEnvDefault k defaultValue =
 
 readEnv :: forall a. Read a => String -> IO (Maybe a)
 readEnv k = (>>= readMaybe) <$> lookupEnv k
+
+detectBuiltInResources :: IO (Resource 'Nothing)
+detectBuiltInResources = do
+  svc <- detectService
+  processInfo <- detectProcess
+  osInfo <- detectOperatingSystem
+  host <- detectHost
+  let rs =
+        toResource svc `mergeResources`
+        toResource telemetry `mergeResources`
+        toResource detectProcessRuntime `mergeResources`
+        toResource processInfo `mergeResources`
+        toResource osInfo `mergeResources`
+        toResource host
+  pure rs

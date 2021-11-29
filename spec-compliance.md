@@ -34,7 +34,7 @@ formats is required. Implementing more than one format is optional.
 | [SpanContext](specification/trace/api.md#spancontext)                                            |          |    |
 | IsValid                                                                                          |          | +  |
 | IsRemote                                                                                         |          | +  |
-| Conforms to the W3C TraceContext spec                                                            |          | +  |
+| Conforms to the W3C TraceContext spec                                                            |          | (partial)  |
 | [Span](specification/trace/api.md#span)                                                          |          |    |
 | Create root span                                                                                 |          | +  |
 | Create with default parent (active span)                                                         |          |    |
@@ -49,9 +49,9 @@ formats is required. Implementing more than one format is optional.
 | IsRecording becomes false after End                                                              |          | +  |
 | Set status with StatusCode (Unset, Ok, Error)                                                    |          | +  |
 | Safe for concurrent calls                                                                        |          | +  |
-| events collection size limit                                                                     |          |    |
+| events collection size limit                                                                     |          | +  |
 | attribute collection size limit                                                                  |          | +  |
-| links collection size limit                                                                      |          |    |
+| links collection size limit                                                                      |          | +  |
 | [Span attributes](specification/trace/api.md#set-attributes)                                     |          | +  |
 | SetAttribute                                                                                     |          | +  |
 | Set order preserved                                                                              | X        |    |
@@ -62,9 +62,9 @@ formats is required. Implementing more than one format is optional.
 | Array of primitives (homogeneous)                                                                |          | +  |
 | `null` values documented as invalid/undefined                                                    |          | N/A |
 | Unicode support for keys and string values                                                       |          | +  |
-| [Span linking](specification/trace/api.md#specifying-links)                                      |          |    |
+| [Span linking](specification/trace/api.md#specifying-links)                                      |          | +  |
 | Links can be recorded on span creation                                                           |          | +  |
-| Links order is preserved                                                                         |          |    |
+| Links order is preserved                                                                         |          | +  |
 | [Span events](specification/trace/api.md#add-events)                                             |          | +  |
 | AddEvent                                                                                         |          | +  |
 | Add order preserved                                                                              |          | +  |
@@ -115,9 +115,9 @@ formats is required. Implementing more than one format is optional.
 | Attach Context                                                                   |          | +  |
 | Detach Context                                                                   |          | +  |
 | Get current Context                                                              |          | +  |
-| Composite Propagator                                                             |          |    |
-| Global Propagator                                                                |          |    |
-| TraceContext Propagator                                                          |          |    |
+| Composite Propagator                                                             |          | + (monoid instance) |
+| Global Propagator                                                                |          | +  |
+| TraceContext Propagator                                                          |          | (partial support) |
 | B3 Propagator                                                                    |          |    |
 | Jaeger Propagator                                                                |          |    |
 | [TextMapPropagator](specification/context/api-propagators.md#textmap-propagator) |          | +  |
@@ -137,10 +137,10 @@ Note: Support for environment variables is optional.
 |OTEL_LOG_LEVEL                                |   |
 |OTEL_PROPAGATORS                              | + |
 |OTEL_BSP_*                                    | + |
-|OTEL_EXPORTER_OTLP_*                          |   |
+|OTEL_EXPORTER_OTLP_*                          | (partial support) |
 |OTEL_EXPORTER_JAEGER_*                        |   |
 |OTEL_EXPORTER_ZIPKIN_*                        |   |
-|OTEL_TRACES_EXPORTER                          |   |
+|OTEL_TRACES_EXPORTER                          | (partial support) |
 |OTEL_METRICS_EXPORTER                         |   |
 |OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT               | + |
 |OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT        | + |

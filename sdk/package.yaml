@@ -39,10 +39,18 @@ dependencies:
 - unordered-containers
 - vector-builder
 - http-types
+- network-bsd
+- unix
+# todo get rid of this when enough of the ecosystem has upgraded
+- random
+- mwc-random
+- random-bytestring
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  other-modules:
+  - Paths_hs_opentelemetry_sdk
 
 tests:
   hs-opentelemetry-sdk-test:

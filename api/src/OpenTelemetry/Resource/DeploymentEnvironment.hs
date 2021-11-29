@@ -15,11 +15,16 @@ module OpenTelemetry.Resource.DeploymentEnvironment where
 import Data.Text (Text)
 import OpenTelemetry.Resource
 
+-- | The software deployment.
+--
+-- This resource doesn't have a an automatic detector because
+-- deployment environments tend to have very different detection
+-- mechanisms for differing projects.
 newtype DeploymentEnvironment = DeploymentEnvironment
   { deploymentEnvironment :: Maybe Text
   -- ^ Name of the deployment environment (aka deployment tier). 
   --
-  -- Examples: 'staging', 'production'
+  -- Examples: @staging@, @production@
   }
 
 instance ToResource DeploymentEnvironment where

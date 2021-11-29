@@ -74,15 +74,3 @@ here](https://github.com/iand675/hs-opentelemetry/blob/main/CONTRIBUTING.md#how-
 PRs will be automatically associated with the reviewers based on
 [CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
 maintainers or approvers for facilitation.
-
-## TODOs
-
-- Make API fully no-op out of the box
-
-- Add underlying connections to the vault for these:
-  - persistent-postgresql
-  - persistent-mysql
-  - persistent-sqlite
-- Add instrumentation for the underlying network info for these ^
-
-- hedis instrumentation
