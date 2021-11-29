@@ -40,7 +40,7 @@ formats is required. Implementing more than one format is optional.
 | Create with default parent (active span)                                                         |          |    |
 | Create with parent from Context                                                                  |          | +  |
 | No explicit parent Span/SpanContext allowed                                                      |          | +  |
-| SpanProcessor.OnStart receives parent Context                                                    |          |    |
+| SpanProcessor.OnStart receives parent Context                                                    |          | +  |
 | UpdateName                                                                                       |          | +  |
 | User-defined start timestamp                                                                     |          | +  |
 | End                                                                                              |          | +  |
@@ -50,10 +50,10 @@ formats is required. Implementing more than one format is optional.
 | Set status with StatusCode (Unset, Ok, Error)                                                    |          | +  |
 | Safe for concurrent calls                                                                        |          | +  |
 | events collection size limit                                                                     |          |    |
-| attribute collection size limit                                                                  |          |    |
+| attribute collection size limit                                                                  |          | +  |
 | links collection size limit                                                                      |          |    |
 | [Span attributes](specification/trace/api.md#set-attributes)                                     |          | +  |
-| SetAttribute                                                                                     |          |    |
+| SetAttribute                                                                                     |          | +  |
 | Set order preserved                                                                              | X        |    |
 | String type                                                                                      |          | +  |
 | Boolean type                                                                                     |          | +  |
@@ -67,7 +67,7 @@ formats is required. Implementing more than one format is optional.
 | Links order is preserved                                                                         |          |    |
 | [Span events](specification/trace/api.md#add-events)                                             |          | +  |
 | AddEvent                                                                                         |          | +  |
-| Add order preserved                                                                              |          |    |
+| Add order preserved                                                                              |          | +  |
 | Safe for concurrent calls                                                                        |          | +  |
 | [Span exceptions](specification/trace/api.md#record-exception)                                   |          | +  |
 | RecordException                                                                                  |          | +  |
@@ -132,38 +132,38 @@ Note: Support for environment variables is optional.
 
 |Feature                                       | Haskell |
 |----------------------------------------------|---|
-|OTEL_RESOURCE_ATTRIBUTES                      | x |
-|OTEL_SERVICE_NAME                             | x |
+|OTEL_RESOURCE_ATTRIBUTES                      | + |
+|OTEL_SERVICE_NAME                             | + |
 |OTEL_LOG_LEVEL                                |   |
-|OTEL_PROPAGATORS                              |   |
-|OTEL_BSP_*                                    |   |
+|OTEL_PROPAGATORS                              | + |
+|OTEL_BSP_*                                    | + |
 |OTEL_EXPORTER_OTLP_*                          |   |
 |OTEL_EXPORTER_JAEGER_*                        |   |
 |OTEL_EXPORTER_ZIPKIN_*                        |   |
 |OTEL_TRACES_EXPORTER                          |   |
 |OTEL_METRICS_EXPORTER                         |   |
-|OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT               |   |
-|OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT        |   |
-|OTEL_SPAN_EVENT_COUNT_LIMIT                   |   |
-|OTEL_SPAN_LINK_COUNT_LIMIT                    |   |
-|OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT              |   |
-|OTEL_LINK_ATTRIBUTE_COUNT_LIMIT               |   |
-|OTEL_TRACES_SAMPLER                           |   |
-|OTEL_TRACES_SAMPLER_ARG                       |   |
-|OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT             |   |
-|OTEL_ATTRIBUTE_COUNT_LIMIT                    |   |
+|OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT               | + |
+|OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT        | + |
+|OTEL_SPAN_EVENT_COUNT_LIMIT                   | + |
+|OTEL_SPAN_LINK_COUNT_LIMIT                    | + |
+|OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT              | + |
+|OTEL_LINK_ATTRIBUTE_COUNT_LIMIT               | + |
+|OTEL_TRACES_SAMPLER                           | + |
+|OTEL_TRACES_SAMPLER_ARG                       | + |
+|OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT             | + |
+|OTEL_ATTRIBUTE_COUNT_LIMIT                    | + |
 
 ## Exporters
 
 | Feature                                                                        | Optional | Haskell |
 |--------------------------------------------------------------------------------|----------|----|
-| [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          | x  |
-| [Exporter interface has `ForceFlush`](specification/trace/sdk.md#forceflush-2) |          |    |
+| [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          | +  |
+| [Exporter interface has `ForceFlush`](specification/trace/sdk.md#forceflush-2) |          | +  |
 | Standard output (logging)                                                      |          |    |
-| In-memory (mock exporter)                                                      |          | x  |
-| [OTLP](specification/protocol/otlp.md)                                         |          | x  |
+| In-memory (mock exporter)                                                      |          | +  |
+| [OTLP](specification/protocol/otlp.md)                                         |          | +  |
 | OTLP/gRPC Exporter                                                             | *        |    |
-| OTLP/HTTP binary Protobuf Exporter                                             | *        | x  |
+| OTLP/HTTP binary Protobuf Exporter                                             | *        | +  |
 | OTLP/HTTP JSON Protobuf Exporter                                               |          |    |
 | OTLP/HTTP gzip Content-Encoding support                                        | X        |    |
 | Concurrent sending                                                             |          |    |

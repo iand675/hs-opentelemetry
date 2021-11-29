@@ -32,7 +32,7 @@ library
       Paths_hs_opentelemetry_instrumentation_http_client
   hs-source-dirs:
       src
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   build-depends:
       aeson
     , base >=4.7 && <5

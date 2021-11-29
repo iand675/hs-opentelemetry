@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-exporter-otlp
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-exporter-otlp#readme>
+synopsis:       OpenTelemetry exporter supporting the standard OTLP protocol
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/blob/main/exporters/otlp/README.md>
+category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
@@ -30,7 +32,7 @@ library
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
       src
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
     , bytestring
@@ -43,7 +45,7 @@ library
     , http-types
     , microlens
     , mtl
-    , proto-lens
+    , proto-lens >=0.7.1.0
     , text
     , unordered-containers
     , vector
@@ -71,7 +73,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
     , http-types
     , microlens
     , mtl
-    , proto-lens
+    , proto-lens >=0.7.1.0
     , text
     , unordered-containers
     , vector

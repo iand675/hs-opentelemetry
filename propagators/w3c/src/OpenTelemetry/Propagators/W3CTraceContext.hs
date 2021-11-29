@@ -1,20 +1,51 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Propagators.W3CTraceContext
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+-- Description :  Standardized trace context propagation format intended for HTTP headers
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- Distributed tracing is a methodology implemented by tracing tools to follow, analyze and debug a transaction across multiple software components. Typically, a distributed trace traverses more than one component which requires it to be uniquely identifiable across all participating systems. Trace context propagation passes along this unique identification. Today, trace context propagation is implemented individually by each tracing vendor. In multi-vendor environments, this causes interoperability problems, like:
+--
+-- - Traces that are collected by different tracing vendors cannot be correlated as there is no shared unique identifier.
+-- - Traces that cross boundaries between different tracing vendors can not be propagated as there is no uniformly agreed set of identification that is forwarded.
+-- - Vendor specific metadata might be dropped by intermediaries.
+-- - Cloud platform vendors, intermediaries and service providers, cannot guarantee to support trace context propagation as there is no standard to follow.
+-- - In the past, these problems did not have a significant impact as most applications were monitored by a single tracing vendor and stayed within the boundaries of a single platform provider. Today, an increasing number of applications are highly distributed and leverage multiple middleware services and cloud platforms.
+--
+-- - This transformation of modern applications calls for a distributed tracing context propagation standard.
+--
+-- This module therefore provides support for tracing context propagation in accordance with the W3C tracing context
+-- propagation specifications: https://www.w3.org/TR/trace-context/
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Propagators.W3CTraceContext where
 
 import Data.Attoparsec.ByteString.Char8
+    ( parseOnly, string, Parser, hexadecimal, takeWhile )
 import Data.ByteString (ByteString)
 import Data.Char (isHexDigit)
 import Data.Word (Word8)
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as L
-import Network.HTTP.Types
+import Network.HTTP.Types ( RequestHeaders, ResponseHeaders )
 import qualified OpenTelemetry.Context as Ctxt
-import OpenTelemetry.Context.Propagators
+import OpenTelemetry.Context.Propagators ( Propagator(..) )
 import OpenTelemetry.Trace
--- import qualified OpenTelemetry.Trace as Trace
+    ( traceFlagsFromWord8,
+      traceFlagsValue,
+      getSpanContext,
+      wrapSpanContext,
+      Span,
+      SpanContext(..),
+      TraceFlags )
 import OpenTelemetry.Trace.Id (TraceId, SpanId, Base(..), spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder, baseEncodedToTraceId, baseEncodedToSpanId)
-import OpenTelemetry.Trace.TraceState
+import OpenTelemetry.Trace.TraceState ( TraceState, empty )
 import Prelude hiding (takeWhile)
 
 {-
@@ -28,10 +59,15 @@ data TraceParent = TraceParent
   , traceFlags :: {-# UNPACK #-} !TraceFlags
   } deriving (Show)
 
-decodeSpanContext :: Maybe ByteString -> Maybe ByteString -> Maybe SpanContext
--- W3C spec says:
--- If a tracestate header is received without an accompanying traceparent header, 
--- it is invalid and MUST be discarded.
+-- | Attempt to decode a 'SpanContext' from optional @traceparent@ and @tracestate@ header inputs.
+--
+-- @since 0.0.1.0
+decodeSpanContext :: 
+     Maybe ByteString 
+  -- ^ @traceparent@ header value
+  -> Maybe ByteString 
+  -- ^ @tracestate@ header value
+  -> Maybe SpanContext
 decodeSpanContext Nothing _ = Nothing
 decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
   TraceParent{..} <- decodeTraceparentHeader traceparentHeader
@@ -72,6 +108,9 @@ traceparentParser = do
   -- Intentionally not consuming end of input in case of version > 0
   pure $ TraceParent {..}
 
+-- | Encoded the given 'Span' into a @traceparent@, @tracestate@ tuple.
+--
+-- @since 0.0.1.0
 encodeSpanContext :: Span -> IO (ByteString, ByteString)
 encodeSpanContext s = do
   ctxt <- getSpanContext s
@@ -88,10 +127,13 @@ encodeSpanContext s = do
       B.char7 '-' <>
       B.word8HexFixed (traceFlagsValue traceFlags)
 
+-- | Propagate trace context information via headers using the w3c specification format
+--
+-- @since 0.0.1.0
 w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders ResponseHeaders
 w3cTraceContextPropagator = Propagator{..}
   where
-    propagatorNames = [ "w3cTraceContext" ]
+    propagatorNames = [ "tracecontext" ]
 
     extractor hs c = do
       let traceParentHeader = Prelude.lookup "traceparent" hs

@@ -30,7 +30,7 @@ library
       Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:
       src
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
     , bytestring

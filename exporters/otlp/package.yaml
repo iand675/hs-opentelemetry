@@ -11,13 +11,13 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            OpenTelemetry exporter supporting the standard OTLP protocol
+category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-exporter-otlp#readme>
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/blob/main/exporters/otlp/README.md>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -32,13 +32,13 @@ dependencies:
 - mtl
 - vector
 - vector-builder
-- proto-lens
+- proto-lens >= 0.7.1.0
 - microlens
 - clock
 - unordered-containers
 
 library:
-  ghc-options: -Wall -Werror
+  ghc-options: -Wall
   source-dirs: src
 
 tests:
