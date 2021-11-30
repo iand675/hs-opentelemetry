@@ -1,0 +1,6 @@
+- &preface
+  license:             BSD3
+  author:              "Ian Duncan"
+  maintainer:          "ian@iankduncan.com"
+  copyright:           "2021 Ian Duncan"
+  github:              "iand675/hs-opentelemetry"
