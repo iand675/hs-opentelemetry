@@ -1,3 +1,3 @@
-# Changelog for otel-propagators-w3c
+# Changelog for otel-propagator-w3c
 
 ## Unreleased changes

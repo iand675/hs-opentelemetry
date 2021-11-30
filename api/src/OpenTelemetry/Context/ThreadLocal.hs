@@ -5,7 +5,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      :  OpenTelemetry.Context.Propagators
+-- Module      :  OpenTelemetry.Context.ThreadLocal
 -- Copyright   :  (c) Ian Duncan, 2021
 -- License     :  BSD-3
 -- Description :  State management for 'OpenTelemetry.Context.Context' on a per-thread basis.

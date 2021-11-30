@@ -2,8 +2,8 @@
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
 import Control.Monad.IO.Class
 import OpenTelemetry.Context (Context, lookupSpan)
-import OpenTelemetry.Context.Propagators
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
+import OpenTelemetry.Propagator
 import Network.HTTP.Client
 import Network.HTTP.Types
 import Control.Monad (forM_, when)

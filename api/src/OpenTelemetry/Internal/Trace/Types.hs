@@ -8,39 +8,27 @@ module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
 import Control.Exception (SomeException)
+import Control.Monad.IO.Class
 import Data.Bits
-import Data.IORef (IORef)
-import Data.Word (Word8)
-import Data.Text (Text)
 import Data.Hashable (Hashable)
-import Data.Vector (Vector)
-import OpenTelemetry.Context.Types
-import OpenTelemetry.Resource
-import OpenTelemetry.Internal.Trace.Id
-import OpenTelemetry.Trace.IdGenerator
-import OpenTelemetry.Trace.TraceState
-import System.Clock (TimeSpec)
 import Data.HashMap.Strict (HashMap)
-import GHC.Generics
+import Data.IORef (IORef, readIORef)
 import Data.String ( IsString(..) )
-import VectorBuilder.Builder (Builder)
-import OpenTelemetry.Attributes
-import qualified VectorBuilder.Vector as Builder
-import qualified VectorBuilder.Builder as Builder
+import Data.Text (Text)
+import Data.Vector (Vector)
+import Data.Word (Word8)
+import GHC.Generics
 import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
-import OpenTelemetry.Context.Propagators (Propagator)
+import OpenTelemetry.Attributes
+import OpenTelemetry.Context.Types
+import OpenTelemetry.Trace.Id
+import OpenTelemetry.Resource
+import OpenTelemetry.Trace.Id.Generator
+import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Trace.TraceState
+import OpenTelemetry.Util
+import System.Clock (TimeSpec)
 
-newtype AppendOnlySequence a = AppendOnlySequence (Builder a)
-  deriving (Semigroup, Monoid)
-
-sequenceValues :: AppendOnlySequence a -> Vector a
-sequenceValues (AppendOnlySequence a) = Builder.build a
-
-append :: AppendOnlySequence a -> a -> AppendOnlySequence a
-append (AppendOnlySequence b) x = AppendOnlySequence (b <> Builder.singleton x)
-
-sequenceSize :: AppendOnlySequence a -> Int
-sequenceSize (AppendOnlySequence b) = Builder.size b 
 
 data ExportResult
   = Success
@@ -55,25 +43,45 @@ instance Hashable InstrumentationLibrary
 instance IsString InstrumentationLibrary where
   fromString str = InstrumentationLibrary (fromString str) ""
 
-data TraceExporter = TraceExporter
-  { traceExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
-  , traceExporterShutdown :: IO ()
+data Exporter = Exporter
+  { exporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+  , exporterShutdown :: IO ()
   }
 
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
 
-data SpanProcessor = SpanProcessor
-  { spanProcessorOnStart :: IORef ImmutableSpan -> Context -> IO ()
-  , spanProcessorOnEnd :: IORef ImmutableSpan -> IO ()
-  , spanProcessorShutdown :: IO (Async ShutdownResult)
-  , spanProcessorForceFlush :: IO ()
+data Processor = Processor
+  { processorOnStart :: IORef ImmutableSpan -> Context -> IO ()
+  -- ^ Called when a span is started. This method is called synchronously on the thread that started the span, therefore it should not block or throw exceptions.
+  , processorOnEnd :: IORef ImmutableSpan -> IO ()
+  -- ^ Called after a span is ended (i.e., the end timestamp is already set). This method is called synchronously within the 'OpenTelemetry.Trace.endSpan' API, therefore it should not block or throw an exception.
+  , processorShutdown :: IO (Async ShutdownResult)
+  -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
+  -- 
+  -- Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
+  --
+  -- Shutdown SHOULD let the caller know whether it succeeded, failed or timed out.
+  -- 
+  -- Shutdown MUST include the effects of ForceFlush.
+  --
+  -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
+  , processorForceFlush :: IO ()
+  -- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
+  --
+  -- In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
+  --
+  -- ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+  --
+  -- ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans.
+  --
+  -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
   }
 
 {- | 
 'Tracer's can be create from a 'TracerProvider'.
 -}
 data TracerProvider = TracerProvider 
-  { tracerProviderProcessors :: !(Vector SpanProcessor)
+  { tracerProviderProcessors :: !(Vector Processor)
   , tracerProviderIdGenerator :: !IdGenerator
   , tracerProviderSampler :: !Sampler
   , tracerProviderResources :: !MaterializedResources
@@ -128,7 +136,7 @@ data SpanArguments = SpanArguments
   -- of the various values that may be specified.
   , attributes :: [(Text, Attribute)]
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
-  -- These attributes are provided to 'SpanProcessor's, so they may be useful in some
+  -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
   , links :: [Link]
   -- ^ A collection of `Link`s that point to causally related 'Span's.
@@ -226,8 +234,8 @@ data ImmutableSpan = ImmutableSpan
   , spanStart :: Timestamp
   , spanEnd :: Maybe Timestamp
   , spanAttributes :: Attributes
-  , spanLinks :: Vector Link
-  , spanEvents :: AppendOnlySequence Event
+  , spanLinks :: FrozenBoundedCollection Link
+  , spanEvents :: AppendOnlyBoundedCollection Event
   , spanStatus :: SpanStatus
   , spanTracer :: Tracer
   -- ^ Creator of the span
@@ -378,3 +386,10 @@ defaultSpanLimits = SpanLimits
 
 type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 type Lens' s a = Lens s s a a
+
+-- | When sending tracing information across process boundaries,
+-- the @SpanContext@ is used to serialize the relevant information.
+getSpanContext :: MonadIO m => Span -> m SpanContext
+getSpanContext (Span s) = liftIO (spanContext <$> readIORef s)
+getSpanContext (FrozenSpan c) = pure c
+getSpanContext (Dropped c) = pure c

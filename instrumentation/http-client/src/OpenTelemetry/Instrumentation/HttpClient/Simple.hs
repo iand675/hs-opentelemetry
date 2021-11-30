@@ -17,7 +17,7 @@ import Network.HTTP.Simple as X hiding (httpBS, httpLBS, httpNoBody, httpJSON, h
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Conduit (ConduitM, Void)
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Instrumentation.HttpClient.Raw
 import qualified OpenTelemetry.Instrumentation.Conduit as Conduit

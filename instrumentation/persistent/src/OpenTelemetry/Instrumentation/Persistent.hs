@@ -7,7 +7,7 @@ module OpenTelemetry.Instrumentation.Persistent
   , lookupConnectionContext
   , wrapSqlBackend
   ) where
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
 import OpenTelemetry.Context
 import Data.Acquire.Internal
 import Data.Maybe (fromMaybe)
@@ -90,7 +90,7 @@ wrapSqlBackend ctxt attrs conn = do
   let conn' = Data.Maybe.fromMaybe conn (lookupOriginalConnection conn)
 
   -- TODO add schema to tracerOptions?
-  t <- OpenTelemetry.Trace.getTracer tp "otel-persistent" tracerOptions
+  t <- OpenTelemetry.Trace.Core.getTracer tp "otel-persistent" tracerOptions
   let hooks = emptySqlBackendHooks
         { hookGetStatement = \conn sql stmt -> do
             pure $ Statement

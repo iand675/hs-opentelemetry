@@ -1,6 +1,6 @@
 module OpenTelemetry.Instrumentation.Conduit where
 import Conduit
-import OpenTelemetry.Trace hiding (getTracer)
+import OpenTelemetry.Trace.Core hiding (getTracer)
 import OpenTelemetry.Trace.Monad (MonadTracer(..), MonadGetContext(..))
 import Data.Text (Text)
 import Control.Exception (throwIO, SomeException)

@@ -17,7 +17,7 @@ module OpenTelemetry.Instrumentation.HttpClient
   ) where
 import qualified Data.ByteString.Lazy as L
 import Control.Monad.IO.Class ( MonadIO(..) )
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
     ( defaultSpanArguments,
       SpanArguments(kind),
       SpanKind(Client) )

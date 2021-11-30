@@ -53,7 +53,7 @@ Fully instrumented application examples are available in the [examples](examples
 
 | Exporter  | OpenTelemetry Package    | Module                       | Support            |
 |-----------|--------------------------|------------------------------|--------------------|
-| OTLP      | otel-exporter-otlp       | OpenTelemetry.Exporters.OTLP | :white_check_mark: |
+| OTLP      | otel-exporter-otlp       | OpenTelemetry.Exporter.OTLP  | :white_check_mark: |
 | Jaeger    |                          |                              | Not Implemented.   |
 | Zipkin    |                          |                              | Not Implemented    |
 | Honeycomb | (use otel-exporter-otlp) |                              | :white_check_mark: |

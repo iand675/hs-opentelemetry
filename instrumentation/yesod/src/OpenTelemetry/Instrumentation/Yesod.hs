@@ -21,7 +21,7 @@ import qualified Data.Text.Encoding as T
 import Lens.Micro
 import OpenTelemetry.Context (HasContext(..))
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Instrumentation.Wai
 import Yesod.Core
@@ -50,7 +50,7 @@ instance HasContext site => HasContext (HandlerData child site) where
 instance MonadTracer (HandlerFor site) where
   getTracer = do
     tp <- getGlobalTracerProvider
-    OpenTelemetry.Trace.getTracer tp "otel-instrumentation-yesod" tracerOptions
+    OpenTelemetry.Trace.Core.getTracer tp "otel-instrumentation-yesod" tracerOptions
 
 instance HasContext site => MonadGetContext (HandlerFor site) where
   getContext = asks (^. contextL)

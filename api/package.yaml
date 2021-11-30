@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-api
-version:             0.1.0.0
+version:             0.0.1.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -51,12 +51,7 @@ library:
   ghc-options: -Wall
   other-modules:
   - OpenTelemetry.Context.Types
-  - OpenTelemetry.Internal.Trace.Id
   - OpenTelemetry.Internal.Trace.Types
-  - OpenTelemetry.Trace.Core
-  # TODO
-  - OpenTelemetry.Propagators.B3
-  - OpenTelemetry.Propagators.Jaeger
 
 tests:
   hs-opentelemetry-api-test:

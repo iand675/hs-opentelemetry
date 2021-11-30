@@ -1,11 +1,11 @@
-cabal-version: 1.12
+cabal-version: 1.22
 
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-sdk
-version:        0.1.0.0
+version:        0.0.1.0
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-sdk#readme>
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
@@ -25,23 +25,43 @@ source-repository head
 
 library
   exposed-modules:
-      OpenTelemetry.Baggage
-      OpenTelemetry.Context
-      OpenTelemetry.Propagators
+      OpenTelemetry.Processor.Batch
+      OpenTelemetry.Processor.Simple
       OpenTelemetry.Resource.Host.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
       OpenTelemetry.Resource.Service.Detector
       OpenTelemetry.Resource.Telemetry.Detector
       OpenTelemetry.Trace
-      OpenTelemetry.Trace.IdGenerator.Default
-      OpenTelemetry.Trace.Monad
-      OpenTelemetry.Trace.Sampler
-      OpenTelemetry.Trace.SpanProcessors.Batch
-      OpenTelemetry.Trace.SpanProcessors.Simple
-      OpenTelemetry.Util
+      OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
       Paths_hs_opentelemetry_sdk
+  reexported-modules:
+      OpenTelemetry.Attributes
+    , OpenTelemetry.Baggage
+    , OpenTelemetry.Context
+    , OpenTelemetry.Context.ThreadLocal
+    , OpenTelemetry.Exporter
+    , OpenTelemetry.Processor
+    , OpenTelemetry.Propagator
+    , OpenTelemetry.Resource
+    , OpenTelemetry.Resource.Cloud
+    , OpenTelemetry.Resource.Container
+    , OpenTelemetry.Resource.DeploymentEnvironment
+    , OpenTelemetry.Resource.Device
+    , OpenTelemetry.Resource.FaaS
+    , OpenTelemetry.Resource.Host
+    , OpenTelemetry.Resource.Kubernetes
+    , OpenTelemetry.Resource.OperatingSystem
+    , OpenTelemetry.Resource.Process
+    , OpenTelemetry.Resource.Service
+    , OpenTelemetry.Resource.Telemetry
+    , OpenTelemetry.Resource.Webengine
+    , OpenTelemetry.Trace.Id
+    , OpenTelemetry.Trace.Monad
+    , OpenTelemetry.Trace.Sampler
+    , OpenTelemetry.Trace.TraceState
+    , OpenTelemetry.Util
   hs-source-dirs:
       src
   default-extensions:
@@ -53,7 +73,7 @@ library
     , bytestring
     , hs-opentelemetry-api
     , hs-opentelemetry-exporter-otlp
-    , hs-opentelemetry-propagators-w3c
+    , hs-opentelemetry-propagator-w3c
     , http-types
     , mwc-random
     , network-bsd
@@ -72,6 +92,10 @@ test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.BaggageSpec
+      OpenTelemetry.ContextSpec
+      OpenTelemetry.ResourceSpec
+      OpenTelemetry.TraceSpec
       Paths_hs_opentelemetry_sdk
   hs-source-dirs:
       test
@@ -82,9 +106,10 @@ test-suite hs-opentelemetry-sdk-test
       async
     , base >=4.7 && <5
     , bytestring
+    , clock
     , hs-opentelemetry-api
     , hs-opentelemetry-exporter-otlp
-    , hs-opentelemetry-propagators-w3c
+    , hs-opentelemetry-propagator-w3c
     , hs-opentelemetry-sdk
     , hspec
     , http-types

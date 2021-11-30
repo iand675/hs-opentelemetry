@@ -1,1 +1,1 @@
-# otel-propagators-w3c
+# otel-propagator-w3c

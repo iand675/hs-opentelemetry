@@ -13,8 +13,8 @@ import Network.HTTP.Types
 import Network.Wai
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Context.Propagators
-import OpenTelemetry.Trace
+import OpenTelemetry.Propagator
+import OpenTelemetry.Trace.Core
 import System.IO.Unsafe
 import qualified Data.Text.Encoding as T
 import qualified Data.Text as T
@@ -102,7 +102,7 @@ newOpenTelemetryWaiMiddleware'' tp ctx = do
         -- injecting the span here, but is that actually useful??
         let resp' = mapResponseHeaders (hs ++) resp
         -- TODO need to propagate baggage
-        attrs <- getAttributes requestSpan
+        attrs <- spanGetAttributes requestSpan
         forM_ (lookupAttribute attrs "http.route") $ \case
           AttributeValue (TextAttribute route) -> updateName requestSpan route 
           _ -> pure ()
