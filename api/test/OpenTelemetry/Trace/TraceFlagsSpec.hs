@@ -1,6 +1,6 @@
 module OpenTelemetry.Trace.TraceFlagsSpec where
 
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
 import Test.Hspec
 
 spec :: Spec

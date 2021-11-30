@@ -30,7 +30,7 @@ dependencies:
 - hs-opentelemetry-instrumentation-http-client
 - hs-opentelemetry-instrumentation-persistent
 - hs-opentelemetry-instrumentation-postgresql-simple
-- hs-opentelemetry-propagators-w3c
+- hs-opentelemetry-propagator-w3c
 - hs-opentelemetry-exporter-otlp
 
 executables:

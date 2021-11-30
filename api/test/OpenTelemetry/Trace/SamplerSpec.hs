@@ -3,7 +3,7 @@ module OpenTelemetry.Trace.SamplerSpec where
 import Control.Monad
 import Test.Hspec
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Sampler
 import qualified OpenTelemetry.Trace.TraceState as TraceState

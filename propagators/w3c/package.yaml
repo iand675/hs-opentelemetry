@@ -1,5 +1,5 @@
-name:                hs-opentelemetry-propagators-w3c
-version:             0.1.0.0
+name:                hs-opentelemetry-propagator-w3c
+version:             0.0.1.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -32,7 +32,7 @@ library:
   source-dirs: src
 
 tests:
-  hs-opentelemetry-propagators-w3c-test:
+  hs-opentelemetry-propagator-w3c-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -40,4 +40,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-propagators-w3c
+    - hs-opentelemetry-propagator-w3c

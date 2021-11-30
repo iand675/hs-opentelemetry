@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-instrumentation-postgresql-simple
-version:             0.1.0.0
+version:             0.0.1.0
 github:              "iand675/hs-opentelemetry-instrumentation-postgresql-simple"
 license:             BSD3
 author:              "Ian Duncan"

@@ -45,22 +45,20 @@ import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
 import Data.Text (Text, pack)
 import OpenTelemetry.Context (Context, insertSpan)
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
   ( Tracer
   , Span
   , SpanStatus(Error)
   , SpanKind(..)
   , SpanArguments(..)
   , Link (..)
-  , createSpan
+  , createSpanWithoutCallStack
   , endSpan
   , recordException
   , setStatus
   , defaultSpanArguments, whenSpanIsRecording, addAttributes, ToAttribute (toAttribute)
   )
 import Control.Monad.Reader (ReaderT, forM_)
-import Control.Concurrent (myThreadId)
-import OpenTelemetry.Util (getThreadId)
 import GHC.Stack
 import qualified Data.Text as T
 
@@ -138,13 +136,9 @@ inSpan'' cs n args f = do
   t <- getTracer
   ctx <- getContext
   bracketError
-    (liftIO $ createSpan t ctx n args)
+    (liftIO $ createSpanWithoutCallStack t ctx n args)
     (\e s -> liftIO $ do
       whenSpanIsRecording s $ do
-        tid <- myThreadId
-        addAttributes s
-          [ ("thread.id", toAttribute $ getThreadId tid)
-          ]
         case getCallStack cs of
           [] -> pure ()
           (fn, loc):_ -> do

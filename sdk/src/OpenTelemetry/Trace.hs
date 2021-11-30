@@ -21,18 +21,20 @@ module OpenTelemetry.Trace
   , Tracer
   , tracerName
   , getTracer
+  , TracerOptions(..)
   , tracerOptions
   , HasTracer(..)
   , InstrumentationLibrary(..)
   -- * 'Span' operations
   , Span
   , createSpan
+  , createSpanWithoutCallStack
   , defaultSpanArguments
   , SpanArguments(..)
   , updateName
   , addAttribute 
   , addAttributes
-  , getAttributes
+  , spanGetAttributes
   , ToAttribute(..)
   , ToPrimitiveAttribute(..)
   , Attribute(..)
@@ -46,40 +48,40 @@ module OpenTelemetry.Trace
   , setStatus
   , SpanStatus(..)
   , SpanContext(..)
+  , endSpan
   -- TODO, don't remember if this is okay with the spec or not
   , ImmutableSpan(..)
   ) where
 
-import "hs-opentelemetry-api" OpenTelemetry.Trace
-import "hs-opentelemetry-api" OpenTelemetry.Resource
+import OpenTelemetry.Trace.Core
+import OpenTelemetry.Resource
 import Data.Maybe (fromMaybe)
 import Data.Either (partitionEithers)
 import qualified Data.Text as T
-import OpenTelemetry.Context.Propagators (Propagator)
 import OpenTelemetry.Context (Context)
 import Network.HTTP.Types.Header
-
-import OpenTelemetry.Propagators.W3CTraceContext (w3cTraceContextPropagator)
-import OpenTelemetry.Propagators.W3CBaggage (w3cBaggagePropagator)
+import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
+import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
+import OpenTelemetry.Propagator (Propagator)
 import System.Environment (lookupEnv)
 import OpenTelemetry.Trace.Sampler (Sampler, alwaysOn, alwaysOff, traceIdRatioBased, parentBased, parentBasedOptions)
 import Text.Read (readMaybe)
-import OpenTelemetry.Trace.TraceExporter (TraceExporter)
-import OpenTelemetry.Trace.SpanProcessors.Batch (BatchTimeoutConfig (..), batchTimeoutConfig, batchProcessor)
+import OpenTelemetry.Exporter (Exporter)
+import OpenTelemetry.Processor.Batch (BatchTimeoutConfig (..), batchTimeoutConfig, batchProcessor)
 import OpenTelemetry.Attributes (AttributeLimits(..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified Data.ByteString.Char8 as B
 import qualified OpenTelemetry.Baggage as Baggage
 import qualified Data.HashMap.Strict as H
 import Data.Text.Encoding (decodeUtf8)
-import OpenTelemetry.Exporters.OTLP (loadExporterEnvironmentVariables, otlpExporter)
-import OpenTelemetry.Trace.SpanProcessor (SpanProcessor)
+import OpenTelemetry.Exporter.OTLP (loadExporterEnvironmentVariables, otlpExporter)
+import OpenTelemetry.Processor (Processor)
 import OpenTelemetry.Resource.Service.Detector (detectService)
 import OpenTelemetry.Resource.Process.Detector (detectProcess, detectProcessRuntime)
 import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
 import OpenTelemetry.Resource.Host.Detector (detectHost)
-import OpenTelemetry.Resource.Telemetry (telemetry)
-import OpenTelemetry.Trace.IdGenerator.Default (defaultIdGenerator)
+import OpenTelemetry.Resource.Telemetry.Detector (detectTelemetry)
+import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 
 knownPropagators :: [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
 knownPropagators =
@@ -87,7 +89,7 @@ knownPropagators =
   , ("baggage", w3cBaggagePropagator)
   , ("b3", error "B3 not yet implemented")
   , ("b3multi", error "B3 multi not yet implemented")
-  , ("jaeger", error "B3 multi not yet implemented")
+  , ("jaeger", error "Jaeger not yet implemented")
   ]
 
 -- TODO, actually implement a registry systme
@@ -104,14 +106,14 @@ initializeTracerProvider = do
   (processors, opts) <- getTracerProviderInitializationOptions
   createTracerProvider processors opts
 
-getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
+getTracerProviderInitializationOptions :: IO ([Processor], TracerProviderOptions)
 getTracerProviderInitializationOptions  = do
   sampler <- detectSampler
   attrLimits <- detectAttributeLimits
   spanLimits <- detectSpanLimits
   propagators <- detectPropagators
-  spanProcessorConf <- detectBatchSpanProcessorConfig
-  exporters <- detectTraceExporters
+  processorConf <- detectBatchProcessorConfig
+  exporters <- detectExporters
   builtInRs <- detectBuiltInResources
   envVarRs <- (mkResource . map Just) <$> detectResourceAttributes
   let allRs = builtInRs <> envVarRs
@@ -119,7 +121,7 @@ getTracerProviderInitializationOptions  = do
     [] -> do
       pure []
     e:_ -> do
-      pure <$> batchProcessor spanProcessorConf e
+      pure <$> batchProcessor processorConf e
   let providerOpts = emptyTracerProviderOptions
         { tracerProviderOptionsIdGenerator = defaultIdGenerator
         , tracerProviderOptionsSampler = sampler
@@ -174,8 +176,8 @@ detectSampler = do
         samplerConstructor (T.pack <$> envArg)
   pure sampler
 
-detectBatchSpanProcessorConfig :: IO BatchTimeoutConfig
-detectBatchSpanProcessorConfig = BatchTimeoutConfig 
+detectBatchProcessorConfig :: IO BatchTimeoutConfig
+detectBatchProcessorConfig = BatchTimeoutConfig 
   <$> readEnvDefault "OTEL_BSP_MAX_QUEUE_SIZE" (maxQueueSize batchTimeoutConfig)
   <*> readEnvDefault "OTEL_BSP_SCHEDULE_DELAY" (scheduledDelayMillis batchTimeoutConfig)
   <*> readEnvDefault "OTEL_BSP_EXPORT_TIMEOUT" (exportTimeoutMillis batchTimeoutConfig)
@@ -195,8 +197,8 @@ detectSpanLimits = SpanLimits
   <*> readEnv "OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT"
   <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
 
-knownTraceExporters :: [(T.Text, IO TraceExporter)]
-knownTraceExporters =
+knownExporters :: [(T.Text, IO Exporter)]
+knownExporters =
   [ ("otlp", do
       otlpConfig <- loadExporterEnvironmentVariables
       otlpExporter otlpConfig
@@ -205,16 +207,16 @@ knownTraceExporters =
   , ("zipkin", error "Zipkin exporter not implemented")
   ]
 
--- TODO, rename TraceExporter to TraceExporter
+-- TODO, rename Exporter to Exporter
 -- TODO, support multiple exporters
-detectTraceExporters :: IO [TraceExporter]
-detectTraceExporters = do
+detectExporters :: IO [Exporter]
+detectExporters = do
   exportersInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
   if exportersInEnv == Just ["none"]
     then pure []
     else do
       let envExporters = fromMaybe ["otlp"] exportersInEnv
-          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k knownTraceExporters) envExporters
+          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k knownExporters) envExporters
           (_notFound, exporterIntializers) = partitionEithers exportersAndRegistryEntry
       -- TODO, notFound logging
       sequence exporterIntializers
@@ -253,7 +255,7 @@ detectBuiltInResources = do
   host <- detectHost
   let rs =
         toResource svc `mergeResources`
-        toResource telemetry `mergeResources`
+        toResource detectTelemetry `mergeResources`
         toResource detectProcessRuntime `mergeResources`
         toResource processInfo `mergeResources`
         toResource osInfo `mergeResources`

@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-sdk
-version:             0.1.0.0
+version:             0.0.1.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -28,7 +28,7 @@ dependencies:
 - text
 # These are "distribution" packages
 - hs-opentelemetry-api
-- hs-opentelemetry-propagators-w3c
+- hs-opentelemetry-propagator-w3c
 - hs-opentelemetry-exporter-otlp
 
 
@@ -49,6 +49,34 @@ dependencies:
 library:
   ghc-options: -Wall
   source-dirs: src
+  reexported-modules:
+    - OpenTelemetry.Attributes
+    - OpenTelemetry.Baggage
+    - OpenTelemetry.Context
+    - OpenTelemetry.Context.ThreadLocal
+    - OpenTelemetry.Exporter
+    - OpenTelemetry.Processor
+    - OpenTelemetry.Propagator
+    - OpenTelemetry.Resource
+    - OpenTelemetry.Resource.Cloud
+    - OpenTelemetry.Resource.Container
+    - OpenTelemetry.Resource.DeploymentEnvironment
+    - OpenTelemetry.Resource.Device
+    - OpenTelemetry.Resource.FaaS
+    - OpenTelemetry.Resource.Host
+    - OpenTelemetry.Resource.Kubernetes
+    - OpenTelemetry.Resource.OperatingSystem
+    - OpenTelemetry.Resource.Process
+    - OpenTelemetry.Resource.Service
+    - OpenTelemetry.Resource.Telemetry
+    - OpenTelemetry.Resource.Webengine
+    # - OpenTelemetry.Trace
+    - OpenTelemetry.Trace.Id
+    # - OpenTelemetry.Trace.IdGenerator
+    - OpenTelemetry.Trace.Monad
+    - OpenTelemetry.Trace.Sampler
+    - OpenTelemetry.Trace.TraceState
+    - OpenTelemetry.Util
   other-modules:
   - Paths_hs_opentelemetry_sdk
 
@@ -63,3 +91,5 @@ tests:
     dependencies:
     - hspec
     - hs-opentelemetry-sdk
+    - hs-opentelemetry-api
+    - clock

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-api
-version:        0.1.0.0
+version:        0.0.1.0
 synopsis:       OpenTelemetry API. Intended for use by libraries for direct instrumentation or wrapper packages.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry-api#readme>
 category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
@@ -30,8 +30,10 @@ library
       OpenTelemetry.Attributes
       OpenTelemetry.Baggage
       OpenTelemetry.Context
-      OpenTelemetry.Context.Propagators
       OpenTelemetry.Context.ThreadLocal
+      OpenTelemetry.Exporter
+      OpenTelemetry.Processor
+      OpenTelemetry.Propagator
       OpenTelemetry.Resource
       OpenTelemetry.Resource.Cloud
       OpenTelemetry.Resource.Container
@@ -45,22 +47,17 @@ library
       OpenTelemetry.Resource.Service
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
-      OpenTelemetry.Trace
-      OpenTelemetry.Trace.Exporter
+      OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
-      OpenTelemetry.Trace.IdGenerator
+      OpenTelemetry.Trace.Id.Generator
+      OpenTelemetry.Trace.Id.Generator.Dummy
       OpenTelemetry.Trace.Monad
       OpenTelemetry.Trace.Sampler
-      OpenTelemetry.Trace.SpanProcessor
       OpenTelemetry.Trace.TraceState
       OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Context.Types
-      OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.Internal.Trace.Types
-      OpenTelemetry.Trace.Core
-      OpenTelemetry.Propagators.B3
-      OpenTelemetry.Propagators.Jaeger
   hs-source-dirs:
       src
   default-extensions:

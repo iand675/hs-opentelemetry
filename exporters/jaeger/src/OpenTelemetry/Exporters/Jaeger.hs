@@ -1,1 +1,1 @@
-module OpenTelemetry.Exporters.Jaeger where
+module OpenTelemetry.Exporter.Jaeger where

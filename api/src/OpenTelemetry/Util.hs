@@ -1,11 +1,12 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE MagicHash #-}
-{-# LANGUAGE UnliftedFFITypes #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UnliftedFFITypes #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Util
@@ -21,13 +22,29 @@ module OpenTelemetry.Util
   ( constructorName
   , HasConstructor
   , getThreadId
+  -- * Data structures
+  , AppendOnlyBoundedCollection
+  , emptyAppendOnlyBoundedCollection
+  , appendToBoundedCollection
+  , appendOnlyBoundedCollectionSize
+  , appendOnlyBoundedCollectionValues
+  , appendOnlyBoundedCollectionDroppedElementCount
+  , FrozenBoundedCollection
+  , frozenBoundedCollection
+  , frozenBoundedCollectionValues
+  , frozenBoundedCollectionDroppedElementCount
   ) where
 
+import Data.Foldable
 import Data.Kind
+import qualified Data.Vector as V
 import GHC.Generics
 import GHC.Conc (ThreadId(ThreadId))
 import GHC.Base (ThreadId#)
 import Foreign.C (CInt(..))
+import VectorBuilder.Builder (Builder)
+import qualified VectorBuilder.Builder as Builder
+import qualified VectorBuilder.Vector as Builder
 
 -- | Useful for annotating which constructor in an ADT was chosen
 --
@@ -55,3 +72,46 @@ foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: ThreadId# -> CInt
 getThreadId :: ThreadId -> Int
 getThreadId (ThreadId tid#) = fromIntegral (c_getThreadId tid#)
 {-# INLINE getThreadId #-}
+
+data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection 
+  { collection :: Builder a
+  , maxSize :: {-# UNPACK #-} !Int
+  , dropped :: {-# UNPACK #-} !Int
+  }
+
+-- | Initialize a bounded collection that admits a maximum size
+emptyAppendOnlyBoundedCollection :: 
+     Int
+  -- ^ Maximum size
+  -> AppendOnlyBoundedCollection a
+emptyAppendOnlyBoundedCollection s = AppendOnlyBoundedCollection mempty s 0
+
+appendOnlyBoundedCollectionValues :: AppendOnlyBoundedCollection a -> V.Vector a
+appendOnlyBoundedCollectionValues (AppendOnlyBoundedCollection a _ _) = Builder.build a
+
+appendOnlyBoundedCollectionSize :: AppendOnlyBoundedCollection a -> Int
+appendOnlyBoundedCollectionSize (AppendOnlyBoundedCollection b _ _) = Builder.size b 
+
+appendOnlyBoundedCollectionDroppedElementCount :: AppendOnlyBoundedCollection a -> Int
+appendOnlyBoundedCollectionDroppedElementCount (AppendOnlyBoundedCollection _ _ d) = d 
+
+appendToBoundedCollection :: AppendOnlyBoundedCollection a -> a -> AppendOnlyBoundedCollection a
+appendToBoundedCollection c@(AppendOnlyBoundedCollection b ms d) x = if appendOnlyBoundedCollectionSize c < ms
+  then AppendOnlyBoundedCollection (b <> Builder.singleton x) ms d
+  else AppendOnlyBoundedCollection b ms (d + 1)
+
+data FrozenBoundedCollection a = FrozenBoundedCollection
+  { collection :: !(V.Vector a)
+  , dropped :: !Int
+  }
+
+frozenBoundedCollection :: Foldable f => Int -> f a -> FrozenBoundedCollection a
+frozenBoundedCollection maxSize_ coll = FrozenBoundedCollection (V.fromListN maxSize_ $ toList coll) (collLength - maxSize_)
+  where
+    collLength = length coll
+
+frozenBoundedCollectionValues :: FrozenBoundedCollection a -> V.Vector a
+frozenBoundedCollectionValues (FrozenBoundedCollection coll _) = coll
+
+frozenBoundedCollectionDroppedElementCount :: FrozenBoundedCollection a -> Int
+frozenBoundedCollectionDroppedElementCount (FrozenBoundedCollection _ dropped_) = dropped_

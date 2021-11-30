@@ -22,7 +22,6 @@ import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
-import OpenTelemetry.Exporters.Handle
 import OpenTelemetry.Context (Context, HasContext(..))
 import qualified OpenTelemetry.Context as Context
 import Lens.Micro (lens)
@@ -32,9 +31,8 @@ import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Yesod
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.Wai
-import OpenTelemetry.Propagators
-import OpenTelemetry.Propagators.W3CBaggage
-import OpenTelemetry.Propagators.W3CTraceContext
+import OpenTelemetry.Propagator.W3CBaggage
+import OpenTelemetry.Propagator.W3CTraceContext
 import Yesod.Core
   ( RenderRoute (..)
   , Yesod(..)
@@ -46,8 +44,8 @@ import Yesod.Core
   )
 import Yesod.Core.Handler
 import Yesod.Persist
-import OpenTelemetry.Exporters.OTLP
-import OpenTelemetry.Trace.SpanProcessors.Batch
+import OpenTelemetry.Exporter.OTLP
+import OpenTelemetry.Processor.Batch
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 
 -- | This is my data type. There are many like it, but this one is mine.

@@ -39,7 +39,6 @@ import Data.Word (Word64)
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Context
 import OpenTelemetry.Internal.Trace.Types
-import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.TraceState as TraceState
 import OpenTelemetry.Attributes (toAttribute)
 

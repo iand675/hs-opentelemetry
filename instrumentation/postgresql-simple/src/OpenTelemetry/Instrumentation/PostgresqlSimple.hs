@@ -64,7 +64,7 @@ import Database.PostgreSQL.Simple.Internal
 import qualified Data.ByteString.Char8 as C
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Data.Text as T
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Resource ((.=), (.=?))
 import Data.Maybe (catMaybes)

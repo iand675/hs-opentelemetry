@@ -40,7 +40,7 @@ formats is required. Implementing more than one format is optional.
 | Create with default parent (active span)                                                         |          |    |
 | Create with parent from Context                                                                  |          | +  |
 | No explicit parent Span/SpanContext allowed                                                      |          | +  |
-| SpanProcessor.OnStart receives parent Context                                                    |          | +  |
+| Processor.OnStart receives parent Context                                                    |          | +  |
 | UpdateName                                                                                       |          | +  |
 | User-defined start timestamp                                                                     |          | +  |
 | End                                                                                              |          | +  |
@@ -72,15 +72,15 @@ formats is required. Implementing more than one format is optional.
 | [Span exceptions](specification/trace/api.md#record-exception)                                   |          | +  |
 | RecordException                                                                                  |          | +  |
 | RecordException with extra parameters                                                            |          | +  |
-| [Sampling](specification/trace/sdk.md#sampling)                                                  |          |    |
-| Allow samplers to modify tracestate                                                              |          |    |
+| [Sampling](specification/trace/sdk.md#sampling)                                                  |          | +  |
+| Allow samplers to modify tracestate                                                              |          | +  |
 | ShouldSample gets full parent Context                                                            |          | +  |
 | ShouldSample gets InstrumentationLibrary                                                         |          | +  |
 | [New Span ID created also for non-recording Spans](specification/trace/sdk.md#sdk-span-creation) |          | +  |
 | [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          | +  |
-| [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        |    |
-| [Built-in `SpanProcessor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1) |          | +  |
-| [Attribute Limits](specification/common/common.md#attribute-limits)                              | X        |    |
+| [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        | +  |
+| [Built-in `Processor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1) |          | +  |
+| [Attribute Limits](specification/common/common.md#attribute-limits)                              | X        | +  |
 
 ## Baggage
 
