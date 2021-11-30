@@ -1,10 +1,9 @@
+_common/lib: !include "../package-common.yaml"
+
 name:                hs-opentelemetry-api
 version:             0.0.1.0
-github:              "iand675/hs-opentelemetry"
-license:             BSD3
-author:              "Ian Duncan"
-maintainer:          "ian@iankduncan.com"
-copyright:           "2021 Ian Duncan"
+
+<<: *preface
 
 extra-source-files:
 - README.md
