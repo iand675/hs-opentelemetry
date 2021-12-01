@@ -1,1 +1,1 @@
-# otel-exporter-handle
+# hs-opentelemetry-exporter-handle

@@ -1,3 +1,3 @@
-# Changelog for otel-instrumentation-yesod
+# Changelog for hs-opentelemetry-instrumentation-yesod
 
 ## Unreleased changes

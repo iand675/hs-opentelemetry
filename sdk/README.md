@@ -10,7 +10,7 @@ tracing, logging, and metric data.
 
 ### Install Dependencies
 
-Add `otel-sdk` to your `package.yaml` or Cabal file.
+Add `hs-opentelemetry-sdk` to your `package.yaml` or Cabal file.
 
 ### Trace Your Code
 

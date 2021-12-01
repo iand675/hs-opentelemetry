@@ -1,3 +1,3 @@
-# Changelog for otel-exporter-zipkin
+# Changelog for hs-opentelemetry-exporter-zipkin
 
 ## Unreleased changes

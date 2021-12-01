@@ -1,1 +1,1 @@
-# otel-propagator-jaeger
+# hs-opentelemetry-propagator-jaeger

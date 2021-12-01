@@ -1,3 +1,3 @@
-# Changelog for otel-exporter-jaeger
+# Changelog for hs-opentelemetry-exporter-jaeger
 
 ## Unreleased changes

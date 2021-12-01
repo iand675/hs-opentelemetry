@@ -1,1 +1,1 @@
-# otel-exporter-otlp
+# hs-opentelemetry-exporter-otlp

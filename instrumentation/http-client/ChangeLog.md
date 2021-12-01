@@ -1,3 +1,3 @@
-# Changelog for otel-instrumentation-http-client
+# Changelog for hs-opentelemetry-instrumentation-http-client
 
 ## Unreleased changes

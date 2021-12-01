@@ -1,1 +1,1 @@
-# otel-exporter-zipkin
+# hs-opentelemetry-exporter-zipkin

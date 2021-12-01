@@ -9,9 +9,20 @@ whether the application has registered an OpenTelemetry SDK configuration or not
 
 In order to generate and export telemetry data, you will also need to use the [OpenTelemetry Haskell SDK](https://github.com/iand675/hs-opentelemetry/blob/main/sdk/README.md).
 
-### Install Dependencies
+## Install Dependencies
 
 Add `hs-opentelemetry-api` to your `package.yaml` or Cabal file.
+
+## Using the Library
+
+The primary interface is located in `OpenTelemetry.Trace.Core`.
+
+``` haskell
+
+thingToInstrument :: IO ()
+thingToInstrument = ...
+
+```
 
 ### Useful Links
 - For more information on OpenTelemetry, visit: <https://opentelemetry.io/>

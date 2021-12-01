@@ -1,3 +1,3 @@
-# Changelog for otel-instrumentation-wai
+# Changelog for hs-opentelemetry-instrumentation-wai
 
 ## Unreleased changes

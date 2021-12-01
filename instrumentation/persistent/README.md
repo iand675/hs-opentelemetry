@@ -1,1 +1,1 @@
-# otel-persistent
+# hs-opentelemetry-persistent

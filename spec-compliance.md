@@ -19,7 +19,7 @@ formats is required. Implementing more than one format is optional.
 | [TracerProvider](specification/trace/api.md#tracerprovider-operations)                           |          | +  |
 | Create TracerProvider                                                                            |          | +  |
 | Get a Tracer                                                                                     |          | +  |
-| Get a Tracer with schema_url                                                                     |          |    |
+| Get a Tracer with schema_url                                                                     |          | (partial)  |
 | Safe for concurrent calls                                                                        |          | +  |
 | Shutdown (SDK only required)                                                                     |          | +  |
 | ForceFlush (SDK only required)                                                                   |          | +  |
@@ -40,7 +40,7 @@ formats is required. Implementing more than one format is optional.
 | Create with default parent (active span)                                                         |          |    |
 | Create with parent from Context                                                                  |          | +  |
 | No explicit parent Span/SpanContext allowed                                                      |          | +  |
-| Processor.OnStart receives parent Context                                                    |          | +  |
+| Processor.OnStart receives parent Context                                                        |          | +  |
 | UpdateName                                                                                       |          | +  |
 | User-defined start timestamp                                                                     |          | +  |
 | End                                                                                              |          | +  |
@@ -79,7 +79,7 @@ formats is required. Implementing more than one format is optional.
 | [New Span ID created also for non-recording Spans](specification/trace/sdk.md#sdk-span-creation) |          | +  |
 | [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          | +  |
 | [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        | +  |
-| [Built-in `Processor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1) |          | +  |
+| [Built-in `Processor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1)     |          | +  |
 | [Attribute Limits](specification/common/common.md#attribute-limits)                              | X        | +  |
 
 ## Baggage

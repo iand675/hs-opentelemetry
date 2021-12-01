@@ -1,1 +1,1 @@
-# otel-propagator-w3c
+# hs-opentelemetry-propagator-w3c

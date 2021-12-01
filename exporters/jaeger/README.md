@@ -1,1 +1,1 @@
-# otel-exporter-jaeger
+# hs-opentelemetry-exporter-jaeger

@@ -1,3 +1,3 @@
-# Changelog for otel-propagator-w3c
+# Changelog for hs-opentelemetry-propagator-w3c
 
 ## Unreleased changes
