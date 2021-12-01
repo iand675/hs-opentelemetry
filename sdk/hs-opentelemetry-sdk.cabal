@@ -6,7 +6,9 @@ cabal-version: 1.22
 
 name:           hs-opentelemetry-sdk
 version:        0.0.1.0
+synopsis:       OpenTelemetry SDK for use in applications.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
+category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
@@ -64,8 +66,6 @@ library
     , OpenTelemetry.Util
   hs-source-dirs:
       src
-  default-extensions:
-      PackageImports
   ghc-options: -Wall
   build-depends:
       async
@@ -99,8 +99,6 @@ test-suite hs-opentelemetry-sdk-test
       Paths_hs_opentelemetry_sdk
   hs-source-dirs:
       test
-  default-extensions:
-      PackageImports
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       async

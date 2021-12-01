@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-otlp
 version:        0.0.1.0
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/otlp#readme>
+synopsis:       OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
+category:       OpenTelemetry
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
