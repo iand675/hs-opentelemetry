@@ -9,7 +9,6 @@ extra-source-files:
 - README.md
 - ChangeLog.md
 
-# Metadata used when publishing your package
 synopsis:            OpenTelemetry API for use by libraries for direct instrumentation or wrapper packages.
 category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 
