@@ -10,6 +10,7 @@ module Minimal where
 
 import qualified Data.ByteString.Lazy as L
 import Conduit
+import Control.Exception (bracket)
 import Data.Conduit.List as CL
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -109,10 +110,11 @@ getApiR = do
 
 main :: IO ()
 main = do
-  initializeGlobalTracerProvider
+  bracket 
+    initializeGlobalTracerProvider 
+    shutdownTracerProvider $ \_ -> do
+      runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
+        waiApp <- toWaiApp $ Minimal pool
+        openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware
 
-  runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
-    waiApp <- toWaiApp $ Minimal pool
-    openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware
-
-    run 3000 $ openTelemetryWaiMiddleware waiApp
+        run 3000 $ openTelemetryWaiMiddleware waiApp
