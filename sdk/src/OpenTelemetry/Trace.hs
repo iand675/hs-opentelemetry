@@ -9,6 +9,7 @@ module OpenTelemetry.Trace
   , initializeGlobalTracerProvider
   , initializeTracerProvider
   , getTracerProviderInitializationOptions
+  , shutdownTracerProvider
   -- ** Getting / setting the global 'TracerProvider'
   , getGlobalTracerProvider
   , setGlobalTracerProvider
@@ -96,10 +97,11 @@ knownPropagators =
 readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
 readRegisteredPropagators = pure knownPropagators
 
-initializeGlobalTracerProvider :: IO ()
+initializeGlobalTracerProvider :: IO TracerProvider
 initializeGlobalTracerProvider = do
   t <- initializeTracerProvider
   setGlobalTracerProvider t
+  pure t
 
 initializeTracerProvider :: IO TracerProvider
 initializeTracerProvider = do
