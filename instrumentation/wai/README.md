@@ -1,1 +1,1 @@
-# otel-instrumentation-wai
+# hs-opentelemetry-instrumentation-wai

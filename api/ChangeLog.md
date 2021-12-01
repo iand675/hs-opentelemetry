@@ -1,3 +1,3 @@
-# Changelog for otel-api
+# Changelog for hs-opentelemetry-api
 
 ## Unreleased changes

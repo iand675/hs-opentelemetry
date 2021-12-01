@@ -1,1 +1,1 @@
-# otel-instrumentation-http-client
+# hs-opentelemetry-instrumentation-http-client

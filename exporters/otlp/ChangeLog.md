@@ -1,3 +1,3 @@
-# Changelog for otel-exporter-otlp
+# Changelog for hs-opentelemetry-exporter-otlp
 
 ## Unreleased changes

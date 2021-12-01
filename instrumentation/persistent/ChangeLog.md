@@ -1,3 +1,3 @@
-# Changelog for otel-persistent
+# Changelog for hs-opentelemetry-persistent
 
 ## Unreleased changes

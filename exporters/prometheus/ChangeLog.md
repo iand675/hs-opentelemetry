@@ -1,3 +1,3 @@
-# Changelog for otel-exporter-prometheus
+# Changelog for hs-opentelemetry-exporter-prometheus
 
 ## Unreleased changes

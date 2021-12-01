@@ -1,1 +1,1 @@
-# otel-instrumentation-yesod
+# hs-opentelemetry-instrumentation-yesod

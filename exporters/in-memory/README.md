@@ -1,1 +1,1 @@
-# otel-exporter-in-memory
+# hs-opentelemetry-exporter-in-memory

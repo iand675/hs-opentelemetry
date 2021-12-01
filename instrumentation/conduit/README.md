@@ -1,1 +1,1 @@
-# otel-instrumentation-conduit
+# hs-opentelemetry-instrumentation-conduit

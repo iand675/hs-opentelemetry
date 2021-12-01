@@ -1,1 +1,1 @@
-# otel-exporter-prometheus
+# hs-opentelemetry-exporter-prometheus

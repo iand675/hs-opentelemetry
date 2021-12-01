@@ -1,1 +1,1 @@
-# otel-propagator-b3
+# hs-opentelemetry-propagator-b3
