@@ -6,7 +6,6 @@ import OpenTelemetry.Trace.Core
 import Control.Monad.Reader
 import OpenTelemetry.Context
 import Control.Exception
-import OpenTelemetry.Trace.Monad (inSpan, MonadTracer (..), bracketError, inSpan')
 import qualified Data.Bifunctor
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.IORef
@@ -18,19 +17,10 @@ import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import OpenTelemetry.Util
 
-newtype TestTraceMonad a = TestTraceMonad (ReaderT (Tracer, Context) IO a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO)
-
-instance MonadTracer TestTraceMonad where
-  getTracer = TestTraceMonad $ asks fst
-
 newtype TestException = TestException String
   deriving (Show)
 
 instance Exception TestException
-
-runTestTraceMonad :: Tracer -> Context -> TestTraceMonad a -> IO a
-runTestTraceMonad t c (TestTraceMonad m) = runReaderT m (t, c)
 
 exceptionTest :: IO ()
 exceptionTest = do
@@ -38,11 +28,9 @@ exceptionTest = do
   t <- OpenTelemetry.Trace.Core.getTracer tp "test" tracerOptions
   spanToCheck <- newIORef undefined
   handle (\(TestException _) -> pure ()) $ do
-    runTestTraceMonad t empty $ do
-      inSpan' "test" defaultSpanArguments $ \span -> do
-        liftIO $ writeIORef spanToCheck span
-        throw $ TestException "wow"
-        pure ()
+    inSpan' t "test" defaultSpanArguments $ \span -> do
+      liftIO $ writeIORef spanToCheck span
+      throw $ TestException "wow"
   spanState <- unsafeReadSpan =<< readIORef spanToCheck
   let ev = V.head $ appendOnlyBoundedCollectionValues $ spanEvents spanState
   eventName ev `shouldBe` "exception"
