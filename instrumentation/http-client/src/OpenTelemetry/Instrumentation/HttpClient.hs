@@ -17,15 +17,13 @@ module OpenTelemetry.Instrumentation.HttpClient
   ) where
 import qualified Data.ByteString.Lazy as L
 import Control.Monad.IO.Class ( MonadIO(..) )
+import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Trace.Core
     ( defaultSpanArguments,
       SpanArguments(kind),
       SpanKind(Client) )
 import OpenTelemetry.Trace.Monad
     ( inSpan',
-      MonadBracketError,
-      MonadGetContext(getContext),
-      MonadLocalContext,
       MonadTracer )
 import Network.HTTP.Client as X hiding (withResponse, httpLbs, httpNoBody, responseOpen)
 import qualified Network.HTTP.Client as Client
@@ -52,7 +50,7 @@ spanArgs = defaultSpanArguments { kind = Client }
 --
 -- You will need to use functions such as 'brRead' to consume the response
 -- body.
-withResponse :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig
+withResponse :: (MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig
              -> Client.Request
              -> Client.Manager
              -> (Client.Response Client.BodyReader -> m a)
@@ -72,7 +70,7 @@ withResponse httpConf req man f = inSpan' "withResponse" spanArgs $ \_wrSpan -> 
 -- performs fully strict I\/O, and only uses a lazy ByteString in its response
 -- for memory efficiency. If you are anticipating a large response body, you
 -- are encouraged to use 'withResponse' and 'brRead' instead.
-httpLbs :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
+httpLbs :: (MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = inSpan' "httpLbs" spanArgs $ \_ -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -83,7 +81,7 @@ httpLbs httpConf req man = inSpan' "httpLbs" spanArgs $ \_ -> do
 
 -- | A convenient wrapper around 'withResponse' which ignores the response
 -- body. This is useful, for example, when performing a HEAD request.
-httpNoBody :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
+httpNoBody :: (MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = inSpan' "httpNoBody" spanArgs $ \_ -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -118,7 +116,7 @@ httpNoBody httpConf req man = inSpan' "httpNoBody" spanArgs $ \_ -> do
 -- functions, it's wise to remove Transfer-Encoding:, Content-Length:,
 -- Content-Encoding: and Accept-Encoding: from request and response
 -- headers to be relayed.
-responseOpen :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
+responseOpen :: (MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = inSpan' "responseOpen" spanArgs $ \_ -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req

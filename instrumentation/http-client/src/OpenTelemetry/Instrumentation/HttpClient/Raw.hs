@@ -2,6 +2,7 @@
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
 import Control.Monad.IO.Class
 import OpenTelemetry.Context (Context, lookupSpan)
+import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Propagator
 import Network.HTTP.Client
@@ -82,10 +83,11 @@ instrumentResponse
   => HttpClientInstrumentationConfig
   -> Context
   -> Response a
-  -> m Context
+  -> m ()
 instrumentResponse conf ctxt resp = do
   tp <- httpTracerProvider
   ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tp) (responseHeaders resp) ctxt
+  _ <- attachContext ctxt'
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")
@@ -105,4 +107,3 @@ instrumentResponse conf ctxt resp = do
       concatMap
         (\h -> toList $ (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp)) $
         responseHeadersToRecord conf
-  pure ctxt'

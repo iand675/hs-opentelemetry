@@ -6,7 +6,7 @@ import OpenTelemetry.Trace.Core
 import Control.Monad.Reader
 import OpenTelemetry.Context
 import Control.Exception
-import OpenTelemetry.Trace.Monad (inSpan, MonadGetContext (..), MonadTracer (..), MonadLocalContext (..), MonadBracketError, bracketError, bracketErrorUnliftIO, inSpan')
+import OpenTelemetry.Trace.Monad (inSpan, MonadTracer (..), bracketError, inSpan')
 import qualified Data.Bifunctor
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.IORef
@@ -21,16 +21,6 @@ import OpenTelemetry.Util
 newtype TestTraceMonad a = TestTraceMonad (ReaderT (Tracer, Context) IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadUnliftIO)
 
-instance MonadBracketError TestTraceMonad where
-  bracketError = bracketErrorUnliftIO
-
-instance MonadGetContext TestTraceMonad where
-  getContext = TestTraceMonad $ asks snd
-
-instance MonadLocalContext TestTraceMonad where
-  localContext f (TestTraceMonad m) = TestTraceMonad $ local
-    (Data.Bifunctor.second f)
-    m
 instance MonadTracer TestTraceMonad where
   getTracer = TestTraceMonad $ asks fst
 

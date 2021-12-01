@@ -24,6 +24,7 @@ import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Context (Context, HasContext(..))
 import qualified OpenTelemetry.Context as Context
+import OpenTelemetry.Context.ThreadLocal
 import Lens.Micro (lens)
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Monad
@@ -50,8 +51,7 @@ import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttribute
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
-  { minimalContext :: Context
-  , minimalConnectionPool :: Pool SqlBackend
+  { minimalConnectionPool :: Pool SqlBackend
   }
 
 $( do
@@ -77,22 +77,17 @@ instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
     inSpan "yesod.runDB" defaultSpanArguments $ do
+      ctxt <- getContext
       app <- getYesod
       runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
         { alterBackend = \conn -> do
-            ctxt <- getContext
             -- TODO, could probably not do this on each runDB call.
             staticAttrs <- case getSimpleConn conn of
               Nothing -> pure []
               Just pgConn -> staticConnectionAttributes pgConn
             connWithHooks <- wrapSqlBackend ctxt staticAttrs conn
-            pure $ insertConnectionContext (minimalContext app) connWithHooks
+            pure $ insertConnectionContext ctxt connWithHooks
         }
-
-instance HasContext Minimal where
-  contextL = lens
-    minimalContext
-    (\m c -> m { minimalContext = c })
 
 getRootR :: Handler Text
 getRootR = do
@@ -117,7 +112,7 @@ main = do
   initializeGlobalTracerProvider
 
   runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
-    waiApp <- toWaiApp $ Minimal Context.empty pool
+    waiApp <- toWaiApp $ Minimal pool
     openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware
 
     run 3000 $ openTelemetryWaiMiddleware waiApp

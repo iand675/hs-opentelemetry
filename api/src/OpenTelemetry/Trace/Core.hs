@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Trace.Core
@@ -74,6 +75,9 @@ module OpenTelemetry.Trace.Core (
   , setSampled
   , unsetSampled
   -- ** Creating @Span@s
+  , inSpan
+  , inSpan'
+  , inSpan''
   , createSpan
   , createSpanWithoutCallStack
   , wrapSpanContext
@@ -114,6 +118,7 @@ module OpenTelemetry.Trace.Core (
   -- * Limits
   , SpanLimits(..)
   , defaultSpanLimits
+  , bracketError
 ) where
 import Control.Applicative
 import Control.Concurrent.Async
@@ -123,7 +128,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Coerce
 import Data.IORef
-import Data.Maybe (isNothing, fromMaybe)
+import Data.Maybe (isNothing, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable
@@ -134,6 +139,7 @@ import Network.HTTP.Types
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Context
+import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
@@ -147,7 +153,8 @@ import OpenTelemetry.Util
 import System.Clock
 import System.IO.Unsafe
 import System.Timeout (timeout)
-
+import Control.Exception (SomeException(..))
+import Control.Monad.IO.Unlift
 -- | Create a 'Span'. 
 --
 -- If the provided 'Context' has a span in it (inserted via 'OpenTelemetry.Context.insertSpan'),
@@ -264,6 +271,62 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
         RecordOnly -> mkRecordingSpan
         RecordAndSample -> mkRecordingSpan
 
+inSpan
+  :: (MonadUnliftIO m, HasCallStack)
+  => Tracer
+  -> Text
+  -> SpanArguments
+  -> m a
+  -> m a
+inSpan t n args m = inSpan'' t callStack n args (const m)
+
+inSpan'
+  :: (MonadUnliftIO m, HasCallStack)
+  => Tracer
+  -> Text
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan' t = inSpan'' t callStack
+
+inSpan''
+  :: (MonadUnliftIO m, HasCallStack)
+  => Tracer
+  -> CallStack
+  -> Text
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan'' t cs n args f = do
+  bracketError
+    (liftIO $ do
+      ctx <- getContext
+      s <- createSpanWithoutCallStack t ctx n args
+      adjustContext (insertSpan s)
+      whenSpanIsRecording s $ do
+        case getCallStack cs of
+          [] -> pure ()
+          (fn, loc):_ -> do
+            OpenTelemetry.Trace.Core.addAttributes s
+              [ ("code.function", toAttribute $ T.pack fn)
+              , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+              , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+              , ("code.lineno", toAttribute $ srcLocStartLine loc)
+              , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+              ]
+      pure (lookupSpan ctx, s)
+    )
+    (\e (parent, s) -> liftIO $ do
+      forM_ e $ \(SomeException inner) -> do
+        setStatus s $ Error $ T.pack $ displayException inner
+        recordException s [] Nothing inner
+      endSpan s Nothing
+      adjustContext $ \ctx ->
+        maybe ctx (\p -> insertSpan p ctx) parent
+    )
+    (\(_, s) -> f s)
+
+
 -- | Returns whether the the @Span@ is currently recording. If a span
 -- is dropped, this will always return False. If a span is from an
 -- external process, this will return True, and if the span was 
@@ -378,10 +441,11 @@ endSpan :: MonadIO m
   -> m ()
 endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
-  frozenS <- atomicModifyIORef s $ \i ->
+  (alreadyFinished, frozenS) <- atomicModifyIORef s $ \i ->
     let ref = i { spanEnd = spanEnd i <|> Just ts }
-    in (ref, ref)
-  mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    in (ref, (isJust $ spanEnd i, ref))
+  unless alreadyFinished $ do
+    mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
 endSpan (FrozenSpan _) _ = pure ()
 endSpan (Dropped _) _ = pure ()
 
