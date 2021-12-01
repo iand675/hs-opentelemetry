@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnliftedFFITypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Util
@@ -22,6 +23,7 @@ module OpenTelemetry.Util
   ( constructorName
   , HasConstructor
   , getThreadId
+  , bracketError
   -- * Data structures
   , AppendOnlyBoundedCollection
   , emptyAppendOnlyBoundedCollection
@@ -45,6 +47,9 @@ import Foreign.C (CInt(..))
 import VectorBuilder.Builder (Builder)
 import qualified VectorBuilder.Builder as Builder
 import qualified VectorBuilder.Vector as Builder
+import Control.Monad.IO.Unlift
+import Control.Exception (SomeException)
+import qualified Control.Exception as EUnsafe
 
 -- | Useful for annotating which constructor in an ADT was chosen
 --
@@ -115,3 +120,25 @@ frozenBoundedCollectionValues (FrozenBoundedCollection coll _) = coll
 
 frozenBoundedCollectionDroppedElementCount :: FrozenBoundedCollection a -> Int
 frozenBoundedCollectionDroppedElementCount (FrozenBoundedCollection _ dropped_) = dropped_
+
+-- | Like 'Context.Exception.bracket', but provides the @after@ function with information about
+-- uncaught exceptions.
+--
+-- @since 0.1.0.0
+bracketError :: MonadUnliftIO m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+bracketError before after thing = withRunInIO $ \run -> EUnsafe.mask $ \restore -> do
+  x <- run before
+  res1 <- EUnsafe.try $ restore $ run $ thing x
+  case res1 of
+    Left (e1 :: SomeException) -> do
+      -- explicitly ignore exceptions from after. We know that
+      -- no async exceptions were thrown there, so therefore
+      -- the stronger exception must come from thing
+      --
+      -- https://github.com/fpco/safe-exceptions/issues/2
+      _ :: Either SomeException b <-
+          EUnsafe.try $ EUnsafe.uninterruptibleMask_ $ run $ after (Just e1) x
+      EUnsafe.throwIO e1
+    Right y -> do
+      _ <- EUnsafe.uninterruptibleMask_ $ run $ after Nothing x
+      return y
