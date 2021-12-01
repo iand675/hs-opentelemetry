@@ -14,16 +14,14 @@ module OpenTelemetry.Instrumentation.Yesod
   handlerEnvL
   ) where
 
-import Control.Monad.Reader (asks, local)
-import Data.Maybe (fromMaybe, catMaybes)
+import Data.Maybe (catMaybes)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Lens.Micro
-import OpenTelemetry.Context (HasContext(..))
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Trace.Core
+import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
-import OpenTelemetry.Instrumentation.Wai
 import Yesod.Core
 import Yesod.Core.Types
 import Language.Haskell.TH.Syntax
@@ -41,25 +39,10 @@ rheSiteL :: Lens' (RunHandlerEnv child site) site
 rheSiteL = lens rheSite (\rhe new -> rhe { rheSite = new })
 {-# INLINE rheSiteL #-}
 
-instance HasContext site => HasContext (RunHandlerEnv child site) where
-  contextL = rheSiteL . contextL
-
-instance HasContext site => HasContext (HandlerData child site) where
-  contextL = handlerEnvL . contextL
-
 instance MonadTracer (HandlerFor site) where
   getTracer = do
     tp <- getGlobalTracerProvider
-    OpenTelemetry.Trace.Core.getTracer tp "otel-instrumentation-yesod" tracerOptions
-
-instance HasContext site => MonadGetContext (HandlerFor site) where
-  getContext = asks (^. contextL)
-
-instance HasContext site => MonadLocalContext (HandlerFor site) where
-  localContext f = local (contextL %~ f)
-
-instance MonadBracketError (HandlerFor site) where
-  bracketError = bracketErrorUnliftIO
+    OpenTelemetry.Trace.Core.getTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions
 
 -- | Template Haskell to generate a function named routeToRendererFunction.
 --
@@ -158,39 +141,37 @@ data RouteRenderer site = RouteRenderer
   }
 
 openTelemetryYesodMiddleware
-  :: (HasContext site, ToTypedContent res)
+  :: (ToTypedContent res)
   => RouteRenderer site
   -> HandlerFor site res
   -> HandlerFor site res
 openTelemetryYesodMiddleware rr m = do
   -- tracer <- OpenTelemetry.Trace.Monad.getTracer
   req <- waiRequest
-  let mctxt = requestContext req
-  localContext (<> fromMaybe Context.empty mctxt) $ do
-    mspan <- Context.lookupSpan <$> getContext
-    mr <- getCurrentRoute
-    let sharedAttributes = catMaybes
-          [ do
-              r <- mr
-              pure ("http.route", toAttribute $ pathRender rr r)
-          , do
-              ff <- lookup "X-Forwarded-For" $ requestHeaders req
-              pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-          ]
-        args = defaultSpanArguments
-          { kind = maybe Server (const Internal) mspan
-          , attributes = sharedAttributes
-          }
-    mapM_ (`addAttributes` sharedAttributes) mspan
-    eResult <- inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
-      catch (Right <$> m) $ \e -> do
-        -- We want to mark the span as an error if it's an InternalError,
-        -- the other HCError values are 4xx status codes which don't
-        -- really count as a server error in OpenTelemetry spec parlance.
-        case e of
-          HCError (InternalError _) -> throwIO e
-          _ -> pure ()
-        pure (Left (e :: HandlerContents))
-    case eResult of
-      Left hc -> throwIO hc
-      Right normal -> pure normal
+  mspan <- Context.lookupSpan <$> getContext
+  mr <- getCurrentRoute
+  let sharedAttributes = catMaybes
+        [ do
+            r <- mr
+            pure ("http.route", toAttribute $ pathRender rr r)
+        , do
+            ff <- lookup "X-Forwarded-For" $ requestHeaders req
+            pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+        ]
+      args = defaultSpanArguments
+        { kind = maybe Server (const Internal) mspan
+        , attributes = sharedAttributes
+        }
+  mapM_ (`addAttributes` sharedAttributes) mspan
+  eResult <- inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
+    catch (Right <$> m) $ \e -> do
+      -- We want to mark the span as an error if it's an InternalError,
+      -- the other HCError values are 4xx status codes which don't
+      -- really count as a server error in OpenTelemetry spec parlance.
+      case e of
+        HCError (InternalError _) -> throwIO e
+        _ -> pure ()
+      pure (Left (e :: HandlerContents))
+  case eResult of
+    Left hc -> throwIO hc
+    Right normal -> pure normal

@@ -51,7 +51,8 @@
 module OpenTelemetry.Context.ThreadLocal 
   ( 
   -- * Thread-local context
-    lookupContext
+    getContext
+  , lookupContext
   , attachContext
   , detachContext
   , adjustContext
@@ -61,11 +62,12 @@ module OpenTelemetry.Context.ThreadLocal
   , detachContextFromThread
   , adjustContextOnThread
   ) where
-import OpenTelemetry.Context.Types (Context)
+import OpenTelemetry.Context (Context, empty)
 import Control.Concurrent
 -- import Control.Concurrent.Async
 import Control.Concurrent.Thread.Storage
 import Control.Monad.IO.Class
+import Data.Maybe (fromMaybe)
 -- import Control.Monad
 import System.IO.Unsafe
 import Prelude hiding (lookup)
@@ -75,6 +77,13 @@ type ThreadContextMap = ThreadStorageMap Context
 threadContextMap :: ThreadContextMap
 threadContextMap = unsafePerformIO newThreadStorageMap
 {-# NOINLINE threadContextMap #-}
+
+-- | Retrieve a stored 'Context' for the current thread, or an empty context if none exists.
+--
+-- Warning: this can easily cause disconnected traces if libraries don't explicitly set the
+-- context on forked threads.
+getContext :: MonadIO m => m Context
+getContext = fromMaybe empty <$> lookupContext
 
 -- | Retrieve a stored 'Context' for the current thread, if it exists.
 lookupContext :: MonadIO m => m (Maybe Context)

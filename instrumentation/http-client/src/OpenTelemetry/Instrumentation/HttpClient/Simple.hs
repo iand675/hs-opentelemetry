@@ -17,7 +17,8 @@ import Network.HTTP.Simple as X hiding (httpBS, httpLBS, httpNoBody, httpJSON, h
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.Conduit (ConduitM, Void)
-import OpenTelemetry.Trace.Core
+import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Instrumentation.HttpClient.Raw
 import qualified OpenTelemetry.Instrumentation.Conduit as Conduit
@@ -28,7 +29,7 @@ import Conduit (MonadResource, lift)
 spanArgs :: SpanArguments
 spanArgs = defaultSpanArguments { kind = Client }
 
-httpBS :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response B.ByteString)
+httpBS :: (MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response B.ByteString)
 httpBS httpConf req = inSpan' "httpBS" spanArgs $ \_s -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -36,7 +37,7 @@ httpBS httpConf req = inSpan' "httpBS" spanArgs $ \_s -> do
   _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
-httpLBS :: (MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response L.ByteString)
+httpLBS :: (MonadUnliftIO m,MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response L.ByteString)
 httpLBS httpConf req = inSpan' "httpLBS" spanArgs $ \_s -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -44,7 +45,7 @@ httpLBS httpConf req = inSpan' "httpLBS" spanArgs $ \_s -> do
   _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
-httpNoBody :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response ())
+httpNoBody :: (MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response ())
 httpNoBody httpConf req = inSpan' "httpNoBody" spanArgs $ \_s -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -52,7 +53,7 @@ httpNoBody httpConf req = inSpan' "httpNoBody" spanArgs $ \_s -> do
   _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
-httpJSON :: (MonadGetContext m, MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m, FromJSON a) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response a)
+httpJSON :: (MonadUnliftIO m, MonadTracer m, FromJSON a) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response a)
 httpJSON httpConf req = inSpan' "httpJSON" spanArgs $ \_s -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -60,7 +61,7 @@ httpJSON httpConf req = inSpan' "httpJSON" spanArgs $ \_s -> do
   _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
-httpJSONEither :: (FromJSON a, MonadIO m, MonadBracketError m, MonadLocalContext m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response (Either Simple.JSONException a))
+httpJSONEither :: (FromJSON a, MonadUnliftIO m, MonadTracer m) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response (Either Simple.JSONException a))
 httpJSONEither httpConf req = inSpan' "httpJSONEither" spanArgs $ \_s -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -68,7 +69,7 @@ httpJSONEither httpConf req = inSpan' "httpJSONEither" spanArgs $ \_s -> do
   _ <- instrumentResponse httpConf ctxt resp
   pure resp
 
-httpSink :: (MonadBracketError m, MonadLocalContext m, MonadTracer m, MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response () -> ConduitM B.ByteString Void m a) -> m a
+httpSink :: (MonadTracer m, MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response () -> ConduitM B.ByteString Void m a) -> m a
 httpSink httpConf req f = inSpan' "httpSink" spanArgs $ \_s -> do 
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -76,7 +77,7 @@ httpSink httpConf req f = inSpan' "httpSink" spanArgs $ \_s -> do
     _ <- instrumentResponse httpConf ctxt resp
     f resp
 
-httpSource :: (MonadLocalContext m, MonadTracer m, MonadUnliftIO m, MonadResource m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> ConduitM i o m r) -> ConduitM i o m r
+httpSource :: (MonadTracer m, MonadUnliftIO m, MonadResource m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> ConduitM i o m r) -> ConduitM i o m r
 httpSource httpConf req f = Conduit.inSpan "httpSource" spanArgs $ \_s -> do
   ctxt <- lift getContext
   req' <- instrumentRequest httpConf ctxt req
@@ -84,7 +85,7 @@ httpSource httpConf req f = Conduit.inSpan "httpSource" spanArgs $ \_s -> do
     _ <- instrumentResponse httpConf ctxt resp
     f resp
 
-withResponse :: (MonadBracketError m, MonadLocalContext m, MonadTracer m, MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> m a) -> m a
+withResponse :: ( MonadTracer m, MonadUnliftIO m) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> m a) -> m a
 withResponse httpConf req f = inSpan' "withResponse" spanArgs $ \_s -> do
   ctxt <- getContext
   req' <- instrumentRequest httpConf ctxt req

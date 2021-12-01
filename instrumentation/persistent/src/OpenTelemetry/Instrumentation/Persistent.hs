@@ -21,7 +21,7 @@ import qualified Data.Vault.Strict as Vault
 import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Resource
 import UnliftIO.Exception
-import OpenTelemetry.Trace.Monad (bracketErrorUnliftIO, MonadGetContext(..), MonadLocalContext(..), MonadTracer(..))
+import OpenTelemetry.Trace.Monad (MonadTracer(..))
 import Control.Monad.Reader
 import qualified Data.Text as T
 
@@ -31,26 +31,6 @@ instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlReadBackend m
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlWriteBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
-
-instance {-# OVERLAPS #-} MonadGetContext m => MonadGetContext (ReaderT SqlBackend m) where
-  getContext = lift getContext
-instance {-# OVERLAPS #-} MonadGetContext m => MonadGetContext (ReaderT SqlReadBackend m) where
-  getContext = lift getContext
-instance {-# OVERLAPS #-} MonadGetContext m => MonadGetContext (ReaderT SqlWriteBackend m) where
-  getContext = lift getContext
-
-instance {-# OVERLAPS #-} MonadLocalContext m => MonadLocalContext (ReaderT SqlBackend m) where
-  localContext f m = mapReaderT (localContext f) $ do
-    ctx <- getContext
-    local (insertConnectionContext ctx) m
-instance {-# OVERLAPS #-} MonadLocalContext m => MonadLocalContext (ReaderT SqlReadBackend m) where
-  localContext f m = mapReaderT (localContext f) $ do
-    ctx <- getContext
-    local (SqlReadBackend . insertConnectionContext ctx . unSqlReadBackend) m
-instance {-# OVERLAPS #-} MonadLocalContext m => MonadLocalContext (ReaderT SqlWriteBackend m) where
-  localContext f m = mapReaderT (localContext f) $ do
-    ctx <- getContext
-    local (SqlWriteBackend . insertConnectionContext ctx . unSqlWriteBackend) m
 
 contextKey :: Vault.Key Context
 contextKey = unsafePerformIO Vault.newKey
@@ -90,7 +70,7 @@ wrapSqlBackend ctxt attrs conn = do
   let conn' = Data.Maybe.fromMaybe conn (lookupOriginalConnection conn)
 
   -- TODO add schema to tracerOptions?
-  t <- OpenTelemetry.Trace.Core.getTracer tp "otel-persistent" tracerOptions
+  t <- OpenTelemetry.Trace.Core.getTracer tp "hs-opentelemetry-persistent" tracerOptions
   let hooks = emptySqlBackendHooks
         { hookGetStatement = \conn sql stmt -> do
             pure $ Statement
@@ -117,7 +97,7 @@ wrapSqlBackend ctxt attrs conn = do
                         )
 
               , stmtExecute = \ps -> do
-                  bracketErrorUnliftIO
+                  bracketError
                     (
                       createSpan
                         t
