@@ -29,7 +29,7 @@ dependencies:
 - vault
 - containers
 - hashable
-- thread-utils-context
+- thread-utils-context == 0.2.*
 - unordered-containers
 - binary
 - vector

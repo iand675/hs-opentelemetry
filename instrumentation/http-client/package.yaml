@@ -26,12 +26,12 @@ dependencies:
 - http-client-tls
 - http-conduit
 - http-types
-- hs-opentelemetry-api
+- hs-opentelemetry-api == 0.0.1.*
 - text
 - bytestring
 - unliftio
 - aeson
-- hs-opentelemetry-instrumentation-conduit
+- hs-opentelemetry-instrumentation-conduit == 0.0.1.*
 
 library:
   ghc-options: -Wall

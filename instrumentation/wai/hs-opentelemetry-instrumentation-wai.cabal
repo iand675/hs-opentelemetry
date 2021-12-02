@@ -36,7 +36,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api
+    , hs-opentelemetry-api ==0.0.1.*
     , http-types
     , iproute
     , network
@@ -56,7 +56,7 @@ test-suite hs-opentelemetry-instrumentation-wai-test
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api
+    , hs-opentelemetry-api ==0.0.1.*
     , hs-opentelemetry-instrumentation-wai
     , http-types
     , iproute
