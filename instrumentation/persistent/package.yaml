@@ -20,12 +20,12 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api
+- hs-opentelemetry-api == 0.0.1.*
 - persistent
 - text
 - vault
 - resourcet
-- unliftio
+- unliftio # TODO, unliftio-core
 - mtl
 
 library:

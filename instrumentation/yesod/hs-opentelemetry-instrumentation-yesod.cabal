@@ -35,8 +35,8 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api
-    , hs-opentelemetry-instrumentation-wai
+    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-instrumentation-wai ==0.0.1.*
     , microlens
     , mtl
     , template-haskell
@@ -56,8 +56,8 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api
-    , hs-opentelemetry-instrumentation-wai
+    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-instrumentation-wai ==0.0.1.*
     , hs-opentelemetry-instrumentation-yesod
     , microlens
     , mtl

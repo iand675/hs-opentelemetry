@@ -22,7 +22,7 @@ dependencies:
 - base >= 4.7 && < 5
 - http-types
 - wai
-- hs-opentelemetry-api
+- hs-opentelemetry-api == 0.0.1.*
 - vault
 - text
 - bytestring

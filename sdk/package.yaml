@@ -22,10 +22,9 @@ dependencies:
 - bytestring
 - text
 # These are "distribution" packages
-- hs-opentelemetry-api
-- hs-opentelemetry-propagator-w3c
-- hs-opentelemetry-exporter-otlp
-
+- hs-opentelemetry-api == 0.0.1.*
+- hs-opentelemetry-propagator-w3c == 0.0.1.*
+- hs-opentelemetry-exporter-otlp == 0.0.1.*
 
 - async
 - vector
