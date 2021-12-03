@@ -173,6 +173,17 @@ related spans, and specifying the `SpanKind`.
 
 This just scratches the surface of the capabilities that OpenTelemetry tracing provides for understanding your systems in production. See the `OpenTelemetry.Trace` module for more of the functionality available to you.
 
+### Launch your app!
+
+Out of the box, your instrumented app will attempt to send trace information to localhost. We recommend running an instance of the
+[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) locally where possible, but can also set environment variables to configure your application to use different exporters, endpoints, and more: 
+
+``` shell
+OTEL_EXPORTER_OTLP_ENDPOINT="https://api.vendor.xyz" OTEL_EXPORTER_OTLP_HEADERS="x-vendor-api-key=$YOUR_API_KEY,x-vendor-dataset=$YOUR_VENDOR_DATASET_NAME" stack exec yesod-minimal
+```
+
+See the environment variable mentioned earlier in the README for the full list. 
+
 <hr/>
 ✅ <b>Before you go...</b> ✅
 
