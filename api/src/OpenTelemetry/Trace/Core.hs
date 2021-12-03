@@ -123,7 +123,7 @@ module OpenTelemetry.Trace.Core (
 import Control.Applicative
 import Control.Concurrent.Async
 import Control.Concurrent (myThreadId)
-import Control.Exception (Exception(..))
+import Control.Exception (Exception(..), try)
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Coerce
@@ -180,15 +180,19 @@ createSpan :: (MonadIO m, HasCallStack)
 createSpan t c n args = do
   createSpanWithoutCallStack t c n $ case getCallStack callStack of
     [] -> args
-    (fn, loc):_ -> args
-      { attributes = 
-            ("code.function", toAttribute $ T.pack fn)
-          : ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-          : ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-          : ("code.lineno", toAttribute $ srcLocStartLine loc)
-          : ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-          : attributes args
-      }
+    (_, loc):rest ->
+      let addFunction = case rest of
+            (fn, _):_ -> (("code.function", toAttribute $ T.pack fn) :)
+            [] -> id
+      in args
+          { attributes =
+                addFunction
+              $ ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+              : ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+              : ("code.lineno", toAttribute $ srcLocStartLine loc)
+              : ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+              : attributes args
+          }
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
 createSpanWithoutCallStack
@@ -249,11 +253,11 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
                   , spanParent = parent
                   , spanKind = kind
                   , spanAttributes =
-                      A.addAttributes 
-                        (limitBy t spanAttributeCountLimit) 
-                        emptyAttributes 
+                      A.addAttributes
+                        (limitBy t spanAttributeCountLimit)
+                        emptyAttributes
                         (concat [additionalInfo, attrs, attributes])
-                  , spanLinks = 
+                  , spanLinks =
                       let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                        in frozenBoundedCollection limitedLinks links
                   , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
@@ -263,7 +267,10 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
                   , spanTracer = t
                   }
             s <- newIORef is
-            mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            case eResult of
+              Left err -> print (err :: SomeException)
+              Right _ -> pure ()
             pure $ Span s
 
       case samplingOutcome of
@@ -322,7 +329,7 @@ inSpan'' t cs n args f = do
         recordException s [] Nothing inner
       endSpan s Nothing
       adjustContext $ \ctx ->
-        maybe ctx (\p -> insertSpan p ctx) parent
+        maybe ctx (`insertSpan` ctx) parent
     )
     (\(_, s) -> f s)
 
@@ -356,11 +363,11 @@ Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetr
 -}
 addAttribute :: MonadIO m => A.ToAttribute a => Span -> Text -> a -> m ()
 addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
-  { spanAttributes = 
-      OpenTelemetry.Attributes.addAttribute 
-        (limitBy (spanTracer i) spanAttributeCountLimit) 
-        (spanAttributes i) 
-        k 
+  { spanAttributes =
+      OpenTelemetry.Attributes.addAttribute
+        (limitBy (spanTracer i) spanAttributeCountLimit)
+        (spanAttributes i)
+        k
         v
   }
 addAttribute (FrozenSpan _) _ _ = pure ()
@@ -368,10 +375,10 @@ addAttribute (Dropped _) _ _ = pure ()
 
 addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
-  { spanAttributes = 
-      OpenTelemetry.Attributes.addAttributes 
-      (limitBy (spanTracer i) spanAttributeCountLimit) 
-      (spanAttributes i) 
+  { spanAttributes =
+      OpenTelemetry.Attributes.addAttributes
+      (limitBy (spanTracer i) spanAttributeCountLimit)
+      (spanAttributes i)
       attrs
   }
 addAttributes (FrozenSpan _) _ = pure ()
@@ -381,12 +388,12 @@ addEvent :: MonadIO m => Span -> NewEvent -> m ()
 addEvent (Span s) NewEvent{..} = liftIO $ do
   t <- maybe getTimestamp pure newEventTimestamp
   modifyIORef s $ \i -> i
-    { spanEvents = appendToBoundedCollection (spanEvents i) $ 
+    { spanEvents = appendToBoundedCollection (spanEvents i) $
         Event
           { eventName = newEventName
-          , eventAttributes = A.addAttributes 
-              (limitBy (spanTracer i) eventAttributeCountLimit) 
-              emptyAttributes 
+          , eventAttributes = A.addAttributes
+              (limitBy (spanTracer i) eventAttributeCountLimit)
+              emptyAttributes
               newEventAttributes
           , eventTimestamp = t
           }
@@ -445,7 +452,10 @@ endSpan (Span s) mts = liftIO $ do
     let ref = i { spanEnd = spanEnd i <|> Just ts }
     in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
-    mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    case eResult of
+      Left err -> print (err :: SomeException)
+      Right _ -> pure ()
 endSpan (FrozenSpan _) _ = pure ()
 endSpan (Dropped _) _ = pure ()
 
@@ -460,7 +470,7 @@ recordException s attrs ts e = liftIO $ do
   let message = T.pack $ show e
   addEvent s $ NewEvent
     { newEventName = "exception"
-    , newEventAttributes = 
+    , newEventAttributes =
         attrs ++
         [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
         , ("exception.message", A.toAttribute message)
@@ -520,9 +530,9 @@ spanGetAttributes = \case
 getTimestamp :: MonadIO m => m Timestamp
 getTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
-limitBy :: 
-     Tracer 
-  -> (SpanLimits -> Maybe Int) 
+limitBy ::
+     Tracer
+  -> (SpanLimits -> Maybe Int)
   -- ^ Attribute count
   -> AttributeLimits
 limitBy t countF = AttributeLimits
@@ -530,13 +540,13 @@ limitBy t countF = AttributeLimits
   , attributeLengthLimit = lengthLimit
   }
   where
-    countLimit = 
+    countLimit =
       countF (tracerProviderSpanLimits $ tracerProvider t) <|>
-      attributeCountLimit 
+      attributeCountLimit
         (tracerProviderAttributeLimits $ tracerProvider t)
-    lengthLimit = 
+    lengthLimit =
       spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t) <|>
-      attributeLengthLimit 
+      attributeLengthLimit
         (tracerProviderAttributeLimits $ tracerProvider t)
 
 globalTracer :: IORef TracerProvider
@@ -557,11 +567,11 @@ data TracerProviderOptions = TracerProviderOptions
   }
 
 emptyTracerProviderOptions :: TracerProviderOptions
-emptyTracerProviderOptions = TracerProviderOptions 
-  dummyIdGenerator 
-  (parentBased $ parentBasedOptions alwaysOn) 
-  emptyMaterializedResources 
-  defaultAttributeLimits 
+emptyTracerProviderOptions = TracerProviderOptions
+  dummyIdGenerator
+  (parentBased $ parentBasedOptions alwaysOn)
+  emptyMaterializedResources
+  defaultAttributeLimits
   defaultSpanLimits
   mempty
 

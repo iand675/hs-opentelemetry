@@ -13,6 +13,7 @@ dependencies:
 - warp
 - text
 - vault
+- unliftio
 # database
 - yesod-persistent
 - monad-logger
