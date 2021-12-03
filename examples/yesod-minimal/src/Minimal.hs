@@ -10,7 +10,6 @@ module Minimal where
 
 import qualified Data.ByteString.Lazy as L
 import Conduit
-import Control.Exception (bracket)
 import Data.Conduit.List as CL
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -49,6 +48,7 @@ import Yesod.Persist
 import OpenTelemetry.Exporter.OTLP
 import OpenTelemetry.Processor.Batch
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
+import UnliftIO hiding (Handler)
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Minimal = Minimal
@@ -78,7 +78,6 @@ instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
     inSpan "yesod.runDB" defaultSpanArguments $ do
-      ctxt <- getContext
       app <- getYesod
       runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
         { alterBackend = \conn -> do
@@ -86,14 +85,14 @@ instance YesodPersist Minimal where
             staticAttrs <- case getSimpleConn conn of
               Nothing -> pure []
               Just pgConn -> staticConnectionAttributes pgConn
-            connWithHooks <- wrapSqlBackend ctxt staticAttrs conn
-            pure $ insertConnectionContext ctxt connWithHooks
+            wrapSqlBackend staticAttrs conn
         }
 
 getRootR :: Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
-  m <- liftIO $ newManager defaultManagerSettings
+  m <- inSpan "initialize http manager" defaultSpanArguments $ do
+    liftIO $ newManager defaultManagerSettings
   let httpConfig = httpClientInstrumentationConfig
   req <- parseUrlThrow "http://localhost:3000/api"
   resp <- httpLbs httpConfig req m
@@ -102,7 +101,16 @@ getRootR = do
 getApiR :: Handler Text
 getApiR = do
   inSpan "annotatedFunction" defaultSpanArguments $ do
-    res <- runDB $ [sqlQQ|select 1|]
+    res <- runDB $ do
+      res <- inSpan "hierarchy works inside runDB" defaultSpanArguments $ 
+        [sqlQQ|select 1|]
+      eResult <- try $ do
+        inSpan "failed span" defaultSpanArguments $ 
+          [executeQQ|raise 'I failed'|]
+      liftIO $ case eResult of
+        Left e -> print (e :: SomeException)
+        Right _ -> pure ()
+      pure res
     case res of
       [Single (1 :: Int)] -> pure ()
       _ -> error "sad"

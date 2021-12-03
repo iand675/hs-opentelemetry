@@ -141,7 +141,7 @@ handleWebRequest req = makeResponse
 
 ``` haskell
 handleWebRequest :: Request -> IO Response
-handleWebRequest req = inSpan (requestPath req) spanArgs $ \webReqSpan -> do
+handleWebRequest req = inSpan' (requestPath req) spanArgs $ \webReqSpan -> do
   resp <- makeResponse
   addEvent $ NewEvent
     { name = "made a response"
