@@ -39,6 +39,7 @@ module OpenTelemetry.Exporter.OTLP (
   , otlpExporterGRpcEndpoint
 ) where
 
+import Codec.Compression.GZip
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeException(..), try)
 import Control.Monad.IO.Class
@@ -65,7 +66,7 @@ import Lens.Micro
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import qualified Data.Vector as Vector
 import OpenTelemetry.Trace.Id (traceIdBytes, spanIdBytes)
-import OpenTelemetry.Attributes
+import OpenTelemetry.Attributes hiding (droppedAttributesCount)
 import OpenTelemetry.Resource
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import Proto.Opentelemetry.Proto.Common.V1.Common_Fields
@@ -75,6 +76,8 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
 import OpenTelemetry.Util
+import Control.Applicative ((<|>))
+import qualified Data.ByteString.Lazy as L
 
 data CompressionFormat = None | GZip
 data Protocol = {- GRpc | HttpJson | -} HttpProtobuf
@@ -130,8 +133,14 @@ loadExporterEnvironmentVariables = liftIO $ do
     pure Nothing <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_HEADERS" <*>
     pure Nothing <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_COMPRESSION" <*>
-    pure Nothing <*>
+    -- TODO lookupEnv  <*>
+    (fmap 
+      (\case
+        "gzip" -> GZip
+        "none" -> None
+        -- TODO
+        _ -> None
+      ) <$> lookupEnv "OTEL_EXPORTER_OTLP_COMPRESSION") <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION" <*>
     pure Nothing <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_COMPRESSION" <*>
@@ -163,21 +172,30 @@ otlpExporter conf = do
   -- TODO, url parsing is janky
 -- TODO configurable retryDelay, maximum retry counts
   req <- liftIO $ parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
-  let baseReq = req
+
+  let (encodingHeader, encoder) = maybe (id, id)
+        (\case
+          None -> (id, id)
+          GZip -> (((hContentEncoding, "gzip") :), compress)
+        ) 
+        (otlpTracesCompression conf <|> otlpCompression conf)
+
+      baseReqHeaders = encodingHeader $
+        (hContentType, protobufMimeType) :
+        (hAcceptEncoding, protobufMimeType) :
+        fromMaybe [] (otlpHeaders conf) ++
+        fromMaybe [] (otlpTracesHeaders conf) ++
+        requestHeaders req
+      baseReq = req
         { method = "POST"
-        , requestHeaders =
-            (hContentType, protobufMimeType) :
-            (hAcceptEncoding, protobufMimeType) :
-            fromMaybe [] (otlpHeaders conf) ++
-            fromMaybe [] (otlpTracesHeaders conf) ++
-            requestHeaders req
+        , requestHeaders = baseReqHeaders
         }
   pure $ Exporter
     { exporterExport = \spans_ -> do
         let anySpansToExport = H.size spans_ /= 0 && not (all V.null $ H.elems spans_)
         if anySpansToExport
           then do
-            result <- try $ exporterExportCall baseReq spans_
+            result <- try $ exporterExportCall encoder baseReq spans_
             case result of
               Left err -> do
                 print err
@@ -197,12 +215,12 @@ otlpExporter conf = do
       ConnectionClosed -> True
       _ -> False
 
-    exporterExportCall baseReq spans_ = do
+    exporterExportCall encoder baseReq spans_ = do
       msg <- encodeMessage <$> immutableSpansToProtobuf spans_
       -- TODO handle server disconnect
       let req = baseReq
             { requestBody =
-                RequestBodyBS msg
+                RequestBodyLBS $ encoder $ L.fromStrict msg
             }
       sendReq req 0 -- TODO =<< getTime for maximum cutoff
 
@@ -325,7 +343,7 @@ makeSpan completedSpan = do
     & droppedAttributesCount .~ fromIntegral (fst (getAttributes $ OT.spanAttributes completedSpan))
     & vec'events .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.spanEvents completedSpan)
     & droppedEventsCount .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanEvents completedSpan))
-    & vec'links .~ fmap makeLink (frozenBoundedCollectionValues $ OT.spanLinks completedSpan) -- TODO
+    & vec'links .~ fmap makeLink (frozenBoundedCollectionValues $ OT.spanLinks completedSpan)
     & droppedLinksCount .~ fromIntegral (frozenBoundedCollectionDroppedElementCount (OT.spanLinks completedSpan))
     & status .~ (case OT.spanStatus completedSpan of
       OT.Unset -> defMessage
@@ -343,10 +361,11 @@ makeEvent e = defMessage
   & timeUnixNano .~ timestampNanoseconds (OT.eventTimestamp e)
   & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.eventName e
   & vec'attributes .~ attributesToProto (OT.eventAttributes e)
-  & droppedAttributesCount .~ 0
+  & droppedAttributesCount .~ fromIntegral (fst (getAttributes $ OT.eventAttributes e))
 
 makeLink :: OT.Link -> Span'Link
 makeLink l = defMessage
-  & traceId .~ traceIdBytes (OT.traceId $ OT.linkContext l)
-  & spanId .~ spanIdBytes (OT.spanId $ OT.linkContext l)
-  & vec'attributes .~ attributesToProto (OT.linkAttributes l)
+  & traceId .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
+  & spanId .~ spanIdBytes (OT.spanId $ OT.frozenLinkContext l)
+  & vec'attributes .~ attributesToProto (OT.frozenLinkAttributes l)
+  & droppedAttributesCount .~ fromIntegral (fst (getAttributes $ OT.frozenLinkAttributes l))

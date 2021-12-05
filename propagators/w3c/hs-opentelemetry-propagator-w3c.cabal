@@ -5,8 +5,10 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-propagator-w3c
-version:        0.0.1.0
+version:        0.0.1.1
+synopsis:       Trace propagation via HTTP headers following the w3c tracestate spec.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/w3c#readme>
+category:       OpenTelemetry, Tracing, Web
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
@@ -36,7 +38,7 @@ library
       attoparsec
     , base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-api ==0.0.2.*
     , http-types
     , text
   default-language: Haskell2010
@@ -53,7 +55,7 @@ test-suite hs-opentelemetry-propagator-w3c-test
       attoparsec
     , base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-api ==0.0.2.*
     , hs-opentelemetry-propagator-w3c
     , http-types
     , text

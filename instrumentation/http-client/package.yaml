@@ -26,7 +26,7 @@ dependencies:
 - http-client-tls
 - http-conduit
 - http-types
-- hs-opentelemetry-api == 0.0.1.*
+- hs-opentelemetry-api == 0.0.2.*
 - text
 - bytestring
 - unliftio

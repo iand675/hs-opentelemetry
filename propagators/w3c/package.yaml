@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-propagator-w3c
-version:             0.0.1.0
+version:             0.0.1.1
 
 <<: *preface
 
@@ -10,8 +10,8 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            Trace propagation via HTTP headers following the w3c tracestate spec.
+category:            OpenTelemetry, Tracing, Web
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -22,7 +22,7 @@ dependencies:
 - base >= 4.7 && < 5
 - bytestring
 - text
-- hs-opentelemetry-api == 0.0.1.*
+- hs-opentelemetry-api == 0.0.2.*
 - http-types
 - attoparsec
 

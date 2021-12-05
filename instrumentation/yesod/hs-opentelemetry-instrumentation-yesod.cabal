@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-instrumentation-yesod
-version:        0.0.1.0
+version:        0.0.1.1
 synopsis:       Yesod middleware for providing OpenTelemetry instrumentation
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/yesod#readme>
 category:       OpenTelemetry, Web
@@ -35,7 +35,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-api ==0.0.2.*
     , hs-opentelemetry-instrumentation-wai ==0.0.1.*
     , microlens
     , mtl
@@ -56,7 +56,7 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-api ==0.0.2.*
     , hs-opentelemetry-instrumentation-wai ==0.0.1.*
     , hs-opentelemetry-instrumentation-yesod
     , microlens

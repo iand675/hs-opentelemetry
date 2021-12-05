@@ -39,7 +39,7 @@ library
     , bytestring
     , case-insensitive
     , conduit
-    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-api ==0.0.2.*
     , hs-opentelemetry-instrumentation-conduit ==0.0.1.*
     , http-client
     , http-client-tls
@@ -63,7 +63,7 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , bytestring
     , case-insensitive
     , conduit
-    , hs-opentelemetry-api ==0.0.1.*
+    , hs-opentelemetry-api ==0.0.2.*
     , hs-opentelemetry-instrumentation-conduit ==0.0.1.*
     , hs-opentelemetry-instrumentation-http-client
     , http-client

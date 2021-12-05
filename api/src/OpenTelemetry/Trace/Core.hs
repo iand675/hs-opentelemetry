@@ -84,6 +84,7 @@ module OpenTelemetry.Trace.Core (
   , SpanKind(..)
   , defaultSpanArguments
   , SpanArguments(..)
+  , NewLink(..)
   , Link(..)
   -- ** Recording @Event@s
   , Event(..)
@@ -259,7 +260,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
                         (concat [additionalInfo, attrs, attributes])
                   , spanLinks =
                       let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                       in frozenBoundedCollection limitedLinks links
+                       in frozenBoundedCollection limitedLinks $ fmap freezeLink links
                   , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                   , spanStatus = Unset
                   , spanStart = st
@@ -277,6 +278,12 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
         Drop -> pure $ Dropped ctxtForSpan
         RecordOnly -> mkRecordingSpan
         RecordAndSample -> mkRecordingSpan
+  where
+    freezeLink :: NewLink -> Link
+    freezeLink NewLink{..} = Link
+      { frozenLinkContext = linkContext
+      , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
+      }
 
 inSpan
   :: (MonadUnliftIO m, HasCallStack)

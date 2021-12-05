@@ -22,7 +22,7 @@ dependencies:
 - base >= 4.7 && < 5
 - conduit
 - text
-- hs-opentelemetry-api == 0.0.1.*
+- hs-opentelemetry-api == 0.0.2.*
 
 library:
   ghc-options: -Wall
