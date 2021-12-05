@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DataKinds #-}
@@ -80,7 +79,7 @@ data Processor = Processor
 {- | 
 'Tracer's can be create from a 'TracerProvider'.
 -}
-data TracerProvider = TracerProvider 
+data TracerProvider = TracerProvider
   { tracerProviderProcessors :: !(Vector Processor)
   , tracerProviderIdGenerator :: !IdGenerator
   , tracerProviderSampler :: !Sampler
@@ -121,10 +120,18 @@ It is recommended, however, to not set parent of the Span in this scenario as se
 represents a single parent scenario, in many cases the parent Span fully encloses the child Span. 
 This is not the case in scatter/gather and batch scenarios.
 -}
-data Link = Link
+data NewLink = NewLink
   { linkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , linkAttributes :: Attributes
+  , linkAttributes :: [(Text, Attribute)]
+  -- ^ Zero or more Attributes further describing the link.
+  }
+  deriving (Show)
+
+data Link = Link
+  { frozenLinkContext :: !SpanContext
+  -- ^ @SpanContext@ of the @Span@ to link to.
+  , frozenLinkAttributes :: Attributes
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
@@ -138,18 +145,18 @@ data SpanArguments = SpanArguments
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
-  , links :: [Link]
+  , links :: [NewLink]
   -- ^ A collection of `Link`s that point to causally related 'Span's.
   , startTime :: Maybe Timestamp
   -- ^ An explicit start time, if the span has already begun.
   }
 
 -- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
-data FlushResult 
-  = FlushTimeout 
+data FlushResult
+  = FlushTimeout
   -- ^ One or more spans did not export from all associated exporters
   -- within the alotted timeframe.
-  | FlushSuccess 
+  | FlushSuccess
   -- ^ Flushing spans to all associated exporters succeeded.
   | FlushError
   -- ^ One or more exporters failed to successfully export one or more 
@@ -182,19 +189,19 @@ To summarize the interpretation of these kinds
 +-------------+--------------+---------------+------------------+------------------+
 
 -}
-data SpanKind 
+data SpanKind
   = Server
   -- ^ Indicates that the span covers server-side handling of a synchronous RPC or other remote request. 
   -- This span is the child of a remote @Client@ span that was expected to wait for a response.
-  | Client 
+  | Client
   -- ^ Indicates that the span describes a synchronous request to some remote service. 
   -- This span is the parent of a remote @Server@ span and waits for its response.
-  | Producer 
+  | Producer
   -- ^ Indicates that the span describes the parent of an asynchronous request. 
   -- This parent span is expected to end before the corresponding child @Producer@ span, 
   -- possibly even before the child span starts. In messaging scenarios with batching, 
   -- tracing individual messages requires a new @Producer@ span per message to be created.
-  | Consumer 
+  | Consumer
   -- ^ Indicates that the span describes the child of an asynchronous @Producer@ request. 
   | Internal
   -- ^  Default value. Indicates that the span represents an internal operation within an application, 
@@ -206,10 +213,10 @@ data SpanKind
 -- The default is @Unset@
 --
 -- These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
-data SpanStatus 
+data SpanStatus
   = Unset
   -- ^ The default status.
-  | Error Text 
+  | Error Text
   -- ^ The operation contains an error. The text field may be empty, or else provide a description of the error.
   | Ok
   -- ^ The operation has been validated by an Application developer or Operator to have completed successfully.
@@ -225,7 +232,7 @@ instance Ord SpanStatus where
   compare Ok Unset = GT
   compare Ok (Error _) = GT
   compare Ok Ok = EQ
-  
+
 data ImmutableSpan = ImmutableSpan
   { spanName :: Text
   , spanParent :: Maybe Span
@@ -241,7 +248,7 @@ data ImmutableSpan = ImmutableSpan
   -- ^ Creator of the span
   }
 
-data Span 
+data Span
   = Span (IORef ImmutableSpan)
   | FrozenSpan SpanContext
   | Dropped SpanContext
@@ -350,9 +357,9 @@ class ToEvent a where
 -- | The outcome of a call to 'Sampler' indicating
 -- whether the 'Tracer' should sample a 'Span'.
 data SamplingResult
-  = Drop 
+  = Drop
   -- ^ isRecording == false. Span will not be recorded and all events and attributes will be dropped.
-  | RecordOnly 
+  | RecordOnly
   -- ^ isRecording == true, but Sampled flag MUST NOT be set.
   | RecordAndSample
   -- ^ isRecording == true, AND Sampled flag MUST be set.

@@ -41,7 +41,8 @@ module OpenTelemetry.Trace
   , Attribute(..)
   , PrimitiveAttribute(..)
   , SpanKind(..)
-  , Link(..)
+  , Link
+  , NewLink(..)
   , Event
   , NewEvent(..)
   , addEvent
