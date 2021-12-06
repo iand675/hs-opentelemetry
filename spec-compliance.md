@@ -28,16 +28,16 @@ formats is required. Implementing more than one format is optional.
 | Set active Span                                                                                  |          | +  |
 | [Tracer](specification/trace/api.md#tracer-operations)                                           |          | +  |
 | Create a new Span                                                                                |          | +  |
-| Get active Span                                                                                  |          |    |
-| Mark Span active                                                                                 |          |    |
+| Get active Span                                                                                  |          | +  |
+| Mark Span active                                                                                 |          | +  |
 | Safe for concurrent calls                                                                        |          | +  |
-| [SpanContext](specification/trace/api.md#spancontext)                                            |          |    |
+| [SpanContext](specification/trace/api.md#spancontext)                                            |          | +  |
 | IsValid                                                                                          |          | +  |
 | IsRemote                                                                                         |          | +  |
 | Conforms to the W3C TraceContext spec                                                            |          | (partial)  |
-| [Span](specification/trace/api.md#span)                                                          |          |    |
+| [Span](specification/trace/api.md#span)                                                          |          | +  |
 | Create root span                                                                                 |          | +  |
-| Create with default parent (active span)                                                         |          |    |
+| Create with default parent (active span)                                                         |          | +  |
 | Create with parent from Context                                                                  |          | +  |
 | No explicit parent Span/SpanContext allowed                                                      |          | +  |
 | Processor.OnStart receives parent Context                                                        |          | +  |
@@ -165,7 +165,7 @@ Note: Support for environment variables is optional.
 | OTLP/gRPC Exporter                                                             | *        |    |
 | OTLP/HTTP binary Protobuf Exporter                                             | *        | +  |
 | OTLP/HTTP JSON Protobuf Exporter                                               |          |    |
-| OTLP/HTTP gzip Content-Encoding support                                        | X        |    |
+| OTLP/HTTP gzip Content-Encoding support                                        | X        | +  |
 | Concurrent sending                                                             |          |    |
 | Honors retryable responses with backoff                                        | X        | +  |
 | Honors non-retryable responses                                                 | X        | +  |
