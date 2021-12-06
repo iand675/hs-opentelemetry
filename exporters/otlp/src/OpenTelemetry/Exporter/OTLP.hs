@@ -66,7 +66,7 @@ import Lens.Micro
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import qualified Data.Vector as Vector
 import OpenTelemetry.Trace.Id (traceIdBytes, spanIdBytes)
-import OpenTelemetry.Attributes hiding (droppedAttributesCount)
+import OpenTelemetry.Attributes
 import OpenTelemetry.Resource
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import Proto.Opentelemetry.Proto.Common.V1.Common_Fields
@@ -207,7 +207,8 @@ otlpExporter conf = do
   where
     retryDelay = 100_000 -- 100ms
     maxRetryCount = 5
-    isRetryableStatusCode status_ = status_ == status429 || status_ == status503
+    isRetryableStatusCode status_ = 
+      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
     isRetryableException = \case
       ResponseTimeout -> True
       ConnectionTimeout -> True
