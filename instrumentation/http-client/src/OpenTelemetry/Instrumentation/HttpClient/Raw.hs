@@ -38,7 +38,7 @@ httpClientInstrumentationConfig = mempty
 httpTracerProvider :: MonadIO m => m Tracer
 httpTracerProvider = do
   tp <- getGlobalTracerProvider
-  getTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
+  pure $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
 
 instrumentRequest
   :: MonadIO m
