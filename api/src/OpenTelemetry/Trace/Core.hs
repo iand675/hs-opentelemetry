@@ -694,7 +694,7 @@ makeTracer tp n TracerOptions{} = Tracer n tp
 getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
 getTracer tp n TracerOptions{} = liftIO $ do
   pure $ Tracer n tp
-{-# DEPRECATED getTracer "use makeTracer or getTracerFromGlobalTracerProvider" #-}
+{-# DEPRECATED getTracer "use makeTracer" #-}
 
 getImmutableSpanTracer :: ImmutableSpan -> Tracer
 getImmutableSpanTracer = spanTracer

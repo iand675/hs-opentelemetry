@@ -94,6 +94,7 @@ module OpenTelemetry.Trace
   , Tracer
   , tracerName
   , getTracer
+  , makeTracer
   , TracerOptions(..)
   , tracerOptions
   , HasTracer(..)
