@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-module OpenTelemetry.Resource.Host.Detector where
+module OpenTelemetry.Resource.Host.Detector 
+  ( detectHost
+  , builtInHostDetectors
+  , HostDetector
+  ) where
 
 import OpenTelemetry.Resource.Host
 

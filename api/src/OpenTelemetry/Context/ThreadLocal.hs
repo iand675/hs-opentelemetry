@@ -1,6 +1,3 @@
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE UnboxedTuples #-}
 {-# LANGUAGE UnliftedFFITypes #-}
 
 -----------------------------------------------------------------------------
@@ -32,21 +29,6 @@
 --   means in practice that any unused contexts will cleaned up upon the next
 --   garbage collection and may not be actively freed when the program exits.
 --
--- Note that this implementation of context sharing is
--- mildly expensive for the garbage collector, hard to reason about without deep
--- knowledge of the code you are instrumenting, and has limited guarantees of behavior 
--- across GHC versions due to internals usage.
---
--- Why use this implementation, then? Depending on the structure of libraries
--- that you are attempting to instrument, this may be the only way to smuggle
--- a 'Context' in without significant breaking changes to the existing library
--- interface.
---
--- The rule of thumb:
--- - Where possible, use OpenTelemetry.Context in a reader-esque monad, or
---   pass it around directly.
--- - When all else fails, use this instead.
---
 -----------------------------------------------------------------------------
 module OpenTelemetry.Context.ThreadLocal 
   ( 
@@ -57,6 +39,8 @@ module OpenTelemetry.Context.ThreadLocal
   , detachContext
   , adjustContext
   -- ** Generalized thread-local context functions
+  -- You should not use these without using some sort of specific cross-thread coordination mechanism, 
+  -- as there is no guarantee of what work the remote thread has done yet.
   , lookupContextOnThread
   , attachContextOnThread
   , detachContextFromThread
@@ -82,38 +66,56 @@ threadContextMap = unsafePerformIO newThreadStorageMap
 --
 -- Warning: this can easily cause disconnected traces if libraries don't explicitly set the
 -- context on forked threads.
+--
+-- @since 0.0.1.0
 getContext :: MonadIO m => m Context
 getContext = fromMaybe empty <$> lookupContext
 
 -- | Retrieve a stored 'Context' for the current thread, if it exists.
+--
+-- @since 0.0.1.0
 lookupContext :: MonadIO m => m (Maybe Context)
 lookupContext = lookup threadContextMap
 
 -- | Retrieve a stored 'Context' for the provided 'ThreadId', if it exists.
+--
+-- @since 0.0.1.0
 lookupContextOnThread :: MonadIO m => ThreadId -> m (Maybe Context)
 lookupContextOnThread = lookupOnThread threadContextMap
 
 -- | Store a given 'Context' for the current thread, returning any context previously stored.
+--
+-- @since 0.0.1.0
 attachContext :: MonadIO m => Context -> m (Maybe Context)
 attachContext = attach threadContextMap
 
 -- | Store a given 'Context' for the provided 'ThreadId', returning any context previously stored.
+--
+-- @since 0.0.1.0
 attachContextOnThread :: MonadIO m => ThreadId -> Context -> m (Maybe Context)
 attachContextOnThread = attachOnThread threadContextMap
 
 -- | Remove a stored 'Context' for the current thread, returning any context previously stored.
+--
+-- @since 0.0.1.0
 detachContext :: MonadIO m => m (Maybe Context)
 detachContext = detach threadContextMap
 
 -- | Remove a stored 'Context' for the provided 'ThreadId', returning any context previously stored.
+--
+-- @since 0.0.1.0
 detachContextFromThread :: MonadIO m => ThreadId -> m (Maybe Context)
 detachContextFromThread = detachFromThread threadContextMap
 
 -- | Alter the context on the current thread using the provided function
+--
+-- @since 0.0.1.0
 adjustContext :: MonadIO m => (Context -> Context) -> m ()
 adjustContext = adjust threadContextMap
 
 -- | Alter the context
+--
+-- @since 0.0.1.0
 adjustContextOnThread :: MonadIO m => ThreadId -> (Context -> Context) -> m ()
 adjustContextOnThread = adjustOnThread threadContextMap
 

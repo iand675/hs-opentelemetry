@@ -18,7 +18,7 @@
 --
 -- A trace contains a single root span which encapsulates the end-to-end latency for the entire request. You can think of this as a single logical operation, such as clicking a button in a web application to add a product to a shopping cart. The root span would measure the time it took from an end-user clicking that button to the operation being completed or failing (so, the item is added to the cart or some error occurs) and the result being displayed to the user. A trace is comprised of the single root span and any number of child spans, which represent operations taking place as part of the request. Each span contains metadata about the operation, such as its name, start and end timestamps, attributes, events, and status.
 -- 
--- To create and manage spans in OpenTelemetry, the OpenTelemetry API provides the tracer interface. This object is responsible for tracking the active span in your process, and allows you to access the current span in order to perform operations on it such as adding attributes, events, and finishing it when the work it tracks is complete. One or more tracer objects can be created in a process through the tracer provider, a factory interface that allows for multiple tracers to be instantiated in a single process with different options.
+-- To create and manage 'Span's in OpenTelemetry, the <https://hackage.haskell.org/package/hs-opentelemetry-api OpenTelemetry API> provides the tracer interface. This object is responsible for tracking the active span in your process, and allows you to access the current span in order to perform operations on it such as adding attributes, events, and finishing it when the work it tracks is complete. One or more tracer objects can be created in a process through the tracer provider, a factory interface that allows for multiple 'Tracer's to be instantiated in a single process with different options.
 -- 
 -- Generally, the lifecycle of a span resembles the following:
 -- 
@@ -54,6 +54,7 @@ module OpenTelemetry.Trace.Core (
   , Tracer
   , tracerName
   , HasTracer(..)
+  , makeTracer
   , getTracer
   , getImmutableSpanTracer
   , getTracerTracerProvider
@@ -124,7 +125,7 @@ module OpenTelemetry.Trace.Core (
 import Control.Applicative
 import Control.Concurrent.Async
 import Control.Concurrent (myThreadId)
-import Control.Exception (Exception(..), try)
+import Control.Exception ( Exception(..), try, SomeException(..) )
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Coerce
@@ -140,6 +141,7 @@ import Network.HTTP.Types
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Context
+import OpenTelemetry.Common
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Internal.Trace.Types
@@ -154,8 +156,8 @@ import OpenTelemetry.Util
 import System.Clock
 import System.IO.Unsafe
 import System.Timeout (timeout)
-import Control.Exception (SomeException(..))
 import Control.Monad.IO.Unlift
+import OpenTelemetry.Logging.Core (Log)
 -- | Create a 'Span'. 
 --
 -- If the provided 'Context' has a span in it (inserted via 'OpenTelemetry.Context.insertSpan'),
@@ -285,12 +287,21 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
       , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
       }
 
+-- | The simplest function for annotating code with trace information.
+--
+-- @since 0.0.1.0
 inSpan
   :: (MonadUnliftIO m, HasCallStack)
   => Tracer
   -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
   -> SpanArguments
+  -- ^ Additional options for creating the span, such as 'SpanKind',
+  -- span links, starting attributes, etc.
   -> m a
+  -- ^ The action to perform. 'inSpan' will record the time spent on the
+  -- action without forcing strict evaluation of the result. Any uncaught
+  -- exceptions will be recorded and rethrown.
   -> m a
 inSpan t n args m = inSpan'' t callStack n args (const m)
 
@@ -298,6 +309,7 @@ inSpan'
   :: (MonadUnliftIO m, HasCallStack)
   => Tracer
   -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
@@ -307,7 +319,10 @@ inSpan''
   :: (MonadUnliftIO m, HasCallStack)
   => Tracer
   -> CallStack
+  -- ^ Record the location of the span in the codebase using the provided
+  -- callstack for source location info.
   -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
@@ -351,7 +366,8 @@ isRecording (Span s) = liftIO (isNothing . spanEnd <$> readIORef s)
 isRecording (FrozenSpan _) = pure True
 isRecording (Dropped _) = pure False
 
-{- |
+{- | Add an attribute to a span. Only has a useful effect on recording spans.
+
 As an application developer when you need to record an attribute first consult existing semantic conventions for Resources, Spans, and Metrics. If an appropriate name does not exists you will need to come up with a new name. To do that consider a few options:
 
 The name is specific to your company and may be possibly used outside the company as well. To avoid clashes with names introduced by other companies (in a distributed system that uses applications from multiple vendors) it is recommended to prefix the new name by your company’s reverse domain name, e.g. 'com.acme.shopname'.
@@ -367,8 +383,17 @@ Attribute names that start with 'otel.' are reserved to be defined by OpenTeleme
 For example, the 'otel.library.name' attribute is used to record the instrumentation library name, which is an OpenTelemetry concept that is natively represented in OTLP, but does not have an equivalent in other telemetry formats and protocols.
 
 Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetry specification.
+
+@since 0.0.1.0
 -}
-addAttribute :: MonadIO m => A.ToAttribute a => Span -> Text -> a -> m ()
+addAttribute :: (MonadIO m, A.ToAttribute a) 
+  => Span 
+  -- ^ Span to add the attribute to
+  -> Text 
+  -- ^ Attribute name
+  -> a 
+  -- ^ Attribute value
+  -> m ()
 addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes =
       OpenTelemetry.Attributes.addAttribute
@@ -380,6 +405,11 @@ addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
 addAttribute (FrozenSpan _) _ _ = pure ()
 addAttribute (Dropped _) _ _ = pure ()
 
+-- | A convenience function related to 'addAttribute' that adds multiple attributes to a span at the same time.
+--
+-- This function may be slightly more performant than repeatedly calling 'addAttribute'.  
+--
+-- @since 0.0.1.0
 addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
   { spanAttributes =
@@ -391,6 +421,9 @@ addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
 addAttributes (FrozenSpan _) _ = pure ()
 addAttributes (Dropped _) _ = pure ()
 
+-- | Add an event to a recording span. Events will not be recorded for remote spans and dropped spans.
+--
+-- @since 0.0.1.0
 addEvent :: MonadIO m => Span -> NewEvent -> m ()
 addEvent (Span s) NewEvent{..} = liftIO $ do
   t <- maybe getTimestamp pure newEventTimestamp
@@ -411,6 +444,8 @@ addEvent (Dropped _) _ = pure ()
 -- | Sets the Status of the Span. If used, this will override the default @Span@ status, which is @Unset@.
 --
 -- These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
+--
+-- @since 0.0.1.0
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
 setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i
   { spanStatus = if st > spanStatus i
@@ -571,8 +606,14 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
+  , tracerProviderOptionsLogger :: Log Text -> IO ()
   }
 
+-- | Options for creating a 'TracerProvider' with invalid ids, no resources, default limits, and no propagators.
+--
+-- In effect, tracing is a no-op when using this configuration.
+--
+-- @since 0.0.1.0
 emptyTracerProviderOptions :: TracerProviderOptions
 emptyTracerProviderOptions = TracerProviderOptions
   dummyIdGenerator
@@ -581,6 +622,7 @@ emptyTracerProviderOptions = TracerProviderOptions
   defaultAttributeLimits
   defaultSpanLimits
   mempty
+  (\_ -> pure ())
 
 -- | Initialize a new tracer provider
 --
@@ -596,10 +638,25 @@ createTracerProvider ps opts = liftIO $ do
     (tracerProviderOptionsAttributeLimits opts)
     (tracerProviderOptionsSpanLimits opts)
     (tracerProviderOptionsPropagators opts)
+    (tracerProviderOptionsLogger opts)
 
+-- | Access the globally configured 'TracerProvider'. Once the 
+-- the global tracer provider is initialized via the OpenTelemetry SDK,
+-- 'Tracer's created from this 'TracerProvider' will export spans to their
+-- configured exporters. Prior to that, any 'Tracer's acquired from the
+-- uninitialized 'TracerProvider' will create no-op spans.
+--
+-- @since 0.0.1.0
 getGlobalTracerProvider :: MonadIO m => m TracerProvider
 getGlobalTracerProvider = liftIO $ readIORef globalTracer
 
+-- | Overwrite the globally configured 'TracerProvider'.
+--
+-- 'Tracer's acquired from the previously installed 'TracerProvider'
+-- will continue to use that 'TracerProvider's configured span processors,
+-- exporters, and other settings.
+--
+-- @since 0.0.1.0
 setGlobalTracerProvider :: MonadIO m => TracerProvider -> m ()
 setGlobalTracerProvider = liftIO . writeIORef globalTracer
 
@@ -609,19 +666,35 @@ getTracerProviderResources = tracerProviderResources
 getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders ResponseHeaders
 getTracerProviderPropagators = tracerProviderPropagators
 
+-- | Tracer configuration options.
 newtype TracerOptions = TracerOptions
   { tracerSchema :: Maybe Text
+  -- ^ OpenTelemetry provides a schema for describing common attributes so that backends can easily parse and identify relevant information. 
+  -- It is important to understand these conventions when writing instrumentation, in order to normalize your data and increase its utility.
+  --
+  -- In particular, this option is valuable to set when possible, because it allows vendors to normalize data accross releases in order to account
+  -- for attribute name changes.
   }
 
+-- | Default Tracer options
 tracerOptions :: TracerOptions
 tracerOptions = TracerOptions Nothing
 
+-- | A small utility lens for extracting a 'Tracer' from a larger data type
+--
+-- This will generally be most useful as a means of implementing 'OpenTelemetry.Trace.Monad.getTracer'
+--
+-- @since 0.0.1.0
 class HasTracer s where
   tracerL :: Lens' s Tracer
+
+makeTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Tracer
+makeTracer tp n TracerOptions{} = Tracer n tp
 
 getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
 getTracer tp n TracerOptions{} = liftIO $ do
   pure $ Tracer n tp
+{-# DEPRECATED getTracer "use makeTracer or getTracerFromGlobalTracerProvider" #-}
 
 getImmutableSpanTracer :: ImmutableSpan -> Tracer
 getImmutableSpanTracer = spanTracer

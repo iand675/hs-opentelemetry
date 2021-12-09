@@ -16,7 +16,7 @@ import qualified OpenTelemetry.Exporter as Exporter
 import qualified Data.HashMap.Strict as HashMap
 
 newtype SimpleProcessorConfig = SimpleProcessorConfig
-  { exporter :: Exporter.Exporter
+  { exporter :: Exporter.Exporter ImmutableSpan
   -- ^ The exporter where the spans are pushed.
   }
 

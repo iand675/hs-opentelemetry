@@ -26,7 +26,7 @@ import OpenTelemetry.Context (Context, HasContext(..))
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import Lens.Micro (lens)
-import OpenTelemetry.Trace
+import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Yesod

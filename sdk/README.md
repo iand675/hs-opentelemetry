@@ -69,8 +69,8 @@ A `Tracer` is constructed by calling the `getTracer` function, which requires a 
 
 ### TracerProvider
 
-A `TracerProvider` is key to using OpenTelemetry tracing. It is the data structure responsible
-for designating how spans are 
+A `TracerProvider` is key to using OpenTelemetry tracing. It is the data structure responsible for designating how spans are processed and exported
+to external systems.
 
 ## Install Dependencies
 

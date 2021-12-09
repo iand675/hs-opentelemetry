@@ -1,5 +1,11 @@
 # Changelog for hs-opentelemetry-sdk
 
+## 0.0.2.1
+
+- Doc enhancements
+- `makeTracer` introduced to replace `getTracer`
+- Tighten exports. Not likely to cause any breaking changes for existing users.
+
 ## 0.0.2.0
 
 - Update hs-opentelemetry-api bounds

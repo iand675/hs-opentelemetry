@@ -1,4 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Processor.Batch
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+-- Description :  Performant exporting of spans in time & space-bounded batches.
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- This is an implementation of the Span Processor which create batches of finished spans and passes the export-friendly span data representations to the configured Exporter.
+--
+-----------------------------------------------------------------------------
 module OpenTelemetry.Processor.Batch
   ( BatchTimeoutConfig(..)
   , batchTimeoutConfig
@@ -142,17 +155,17 @@ will be incremented.
 
 -- TODO, counters for dropped spans, exported spans
 
-data BoundedSpanMap = BoundedSpanMap
+data BoundedMap a = BoundedMap
   { itemBounds :: !Int
   , itemCount :: !Int
-  , itemMap :: HashMap InstrumentationLibrary (Builder.Builder ImmutableSpan)
+  , itemMap :: HashMap InstrumentationLibrary (Builder.Builder a)
   }
 
-boundedSpanMap :: Int -> BoundedSpanMap
-boundedSpanMap bounds = BoundedSpanMap bounds 0 mempty
+boundedMap :: Int -> BoundedMap a
+boundedMap bounds = BoundedMap bounds 0 mempty
 
-pushSpan :: ImmutableSpan -> BoundedSpanMap -> Maybe BoundedSpanMap
-pushSpan s m = if itemCount m + 1 >= itemBounds m
+push :: ImmutableSpan -> BoundedMap ImmutableSpan -> Maybe (BoundedMap ImmutableSpan)
+push s m = if itemCount m + 1 >= itemBounds m
   then Nothing
   else Just $! m
     { itemCount = itemCount m + 1
@@ -163,8 +176,8 @@ pushSpan s m = if itemCount m + 1 >= itemBounds m
         itemMap m
     }
 
-buildSpanExport :: BoundedSpanMap -> (BoundedSpanMap, HashMap InstrumentationLibrary (Vector ImmutableSpan))
-buildSpanExport m =
+buildExport :: BoundedMap a -> (BoundedMap a, HashMap InstrumentationLibrary (Vector a))
+buildExport m =
   ( m { itemCount = 0, itemMap = mempty }
   , Builder.build <$> itemMap m
   )
@@ -173,13 +186,13 @@ buildSpanExport m =
 -- The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections 
 -- required to transmit the data. This processor supports both size and time based batching.
 --
-batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter -> m Processor
+batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
-  batch <- newIORef $ boundedSpanMap maxQueueSize
+  batch <- newIORef $ boundedMap maxQueueSize
   workSignal <- newEmptyMVar
   worker <- async $ forever $ do
     void $ timeout (millisToMicros scheduledDelayMillis) $ takeMVar workSignal
-    batchToProcess <- atomicModifyIORef' batch buildSpanExport
+    batchToProcess <- atomicModifyIORef' batch buildExport
     Exporter.exporterExport exporter batchToProcess
 
 
@@ -188,7 +201,7 @@ batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
     , processorOnEnd = \s -> do
         span_ <- readIORef s
         appendFailed <- atomicModifyIORef' batch $ \builder ->
-          case pushSpan span_ builder of
+          case push span_ builder of
             Nothing -> (builder, True)
             Just b' -> (b', False)
         when appendFailed $ void $ tryPutMVar workSignal ()
