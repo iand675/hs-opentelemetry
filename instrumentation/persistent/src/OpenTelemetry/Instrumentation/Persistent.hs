@@ -56,7 +56,7 @@ wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
   -- TODO add schema to tracerOptions?
-  t <- OpenTelemetry.Trace.Core.getTracer tp "hs-opentelemetry-persistent" tracerOptions
+  let t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
   let hooks = emptySqlBackendHooks
         { hookGetStatement = \conn sql stmt -> do
             pure $ Statement
