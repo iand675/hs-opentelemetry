@@ -1,5 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-module OpenTelemetry.Resource.OperatingSystem.Detector where
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  OpenTelemetry.Resource.OperatingSystem.Detector
+-- Copyright   :  (c) Ian Duncan, 2021
+-- License     :  BSD-3
+-- Maintainer  :  Ian Duncan
+-- Stability   :  experimental
+-- Portability :  non-portable (GHC extensions)
+--
+-- Detect information about the current system's OS.
+--
+-----------------------------------------------------------------------------
+module OpenTelemetry.Resource.OperatingSystem.Detector 
+  ( detectOperatingSystem
+  ) where
 import OpenTelemetry.Resource.OperatingSystem
 import qualified Data.Text as T
 import System.Info ( os )

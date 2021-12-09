@@ -48,6 +48,7 @@ import qualified Data.Text as T
 import GHC.Generics
 import Data.Data
 import Data.Hashable
+import Data.String
 
 -- | Default attribute limits used in the global attribute limit configuration if no environment variables are set.
 --
@@ -118,14 +119,35 @@ data AttributeLimits = AttributeLimits
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)
 
+-- | Convert a Haskell value to a 'PrimitiveAttribute' value.
 class ToPrimitiveAttribute a where
   toPrimitiveAttribute :: a -> PrimitiveAttribute
 
+-- | An attribute represents user-provided metadata about a span, link, or event.
+--
+-- Telemetry tools may use this data to support high-cardinality querying, visualization
+-- in waterfall diagrams, trace sampling decisions, and more.
 data Attribute
   = AttributeValue PrimitiveAttribute
+  -- ^ An attribute representing a single primitive value
   | AttributeArray [PrimitiveAttribute]
+  -- ^ An attribute representing an array of primitive values.
+  --
+  -- All values in the array MUST be of the same primitive attribute type.
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)
+
+-- | Create a `TextAttribute` from the string value.
+--
+-- @since 0.0.2.1
+instance IsString PrimitiveAttribute where
+  fromString = TextAttribute . fromString
+
+-- | Create a `TextAttribute` from the string value.
+--
+-- @since 0.0.2.1
+instance IsString Attribute where
+  fromString = AttributeValue . fromString
 
 data PrimitiveAttribute
   = TextAttribute Text
@@ -135,7 +157,19 @@ data PrimitiveAttribute
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)
 
-
+-- | Convert a Haskell value to an 'Attribute' value.
+--
+-- For most values, you can define an instance of 'ToPrimitiveAttribute' and use the default 'toAttribute' implementation:
+--
+-- @
+--
+-- data Foo = Foo
+--
+-- instance ToPrimitiveAttribute Foo where
+--   toPrimitiveAttribute Foo = TextAttribute "Foo"
+-- instance ToAttribute foo
+--
+-- @
 class ToAttribute a where
   toAttribute :: a -> Attribute
   default toAttribute :: ToPrimitiveAttribute a => a -> Attribute

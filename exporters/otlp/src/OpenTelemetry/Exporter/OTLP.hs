@@ -167,7 +167,7 @@ protobufMimeType :: C.ByteString
 protobufMimeType = "application/x-protobuf"
 
 -- | Initial the OTLP 'Exporter'
-otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m Exporter
+otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m (Exporter OT.ImmutableSpan)
 otlpExporter conf = do
   -- TODO, url parsing is janky
 -- TODO configurable retryDelay, maximum retry counts

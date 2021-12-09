@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+stack upload \
+  otlp \
+  api \
+  sdk \
+  exporters/in-memory \
+  exporters/otlp \
+  propagators/w3c \
+  instrumentation/conduit \
+  instrumentation/wai \
+  instrumentation/yesod \
+  instrumentation/http-client \
+  instrumentation/postgresql-simple
+  # Pending upstream merges
+  # instrumentation/persistent
+  # Pending dev
+  # propagators/b3
+  # propagators/jaeger
+  # exporters/handle
+  # exporters/jaeger
+  # exporters/zipkin

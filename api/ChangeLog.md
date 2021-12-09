@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-api
 
+## 0.0.2.1
+
+- Doc enhancements
+
 ## 0.0.2.0
 
 - Separate `Link` and `NewLink` into two different datatypes to improve Link creation interface.

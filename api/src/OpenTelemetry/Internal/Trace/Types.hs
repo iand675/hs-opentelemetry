@@ -19,31 +19,62 @@ import Data.Word (Word8)
 import GHC.Generics
 import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes
+import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
+import OpenTelemetry.Logging.Core (Log)
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id.Generator
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Trace.TraceState
 import OpenTelemetry.Util
-import System.Clock (TimeSpec)
 
 
 data ExportResult
   = Success
   | Failure (Maybe SomeException)
 
+-- | An identifier for the library that provides the instrumentation for a given Instrumented Library. 
+-- Instrumented Library and Instrumentation Library may be the same library if it has built-in OpenTelemetry instrumentation.
+--
+-- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly. 
+-- However, many libraries will not have such integration, and as such there is a need for a separate library which would inject such calls, using mechanisms such as wrapping interfaces,
+-- subscribing to library-specific callbacks, or translating existing telemetry into the OpenTelemetry model.
+--
+-- A library that enables OpenTelemetry observability for another library is called an Instrumentation Library.
+--
+-- An instrumentation library should be named to follow any naming conventions of the instrumented library (e.g. 'middleware' for a web framework).
+--
+-- If there is no established name, the recommendation is to prefix packages with "hs-opentelemetry-instrumentation", followed by the instrumented library name itself.
+--
+-- In general, you can initialize the instrumentation library like so:
+--
+-- @
+--
+-- import qualified Data.Text as T
+-- import Data.Version (showVersion)
+-- import Paths_your_package_name
+--
+-- instrumentationLibrary :: InstrumentationLibrary
+-- instrumentationLibrary = InstrumentationLibrary
+--   { libraryName = "your_package_name"
+--   , libraryVersion = T.pack $ showVersion version
+--   }
+--
+-- @
 data InstrumentationLibrary = InstrumentationLibrary
   { libraryName :: {-# UNPACK #-} !Text
+  -- ^ The name of the instrumentation library
   , libraryVersion :: {-# UNPACK #-} !Text
+  -- ^ The version of the instrumented library
   } deriving (Ord, Eq, Generic, Show)
 
 instance Hashable InstrumentationLibrary
 instance IsString InstrumentationLibrary where
   fromString str = InstrumentationLibrary (fromString str) ""
 
-data Exporter = Exporter
-  { exporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+data Exporter a = Exporter
+  { exporterExport :: HashMap InstrumentationLibrary (Vector a) -> IO ExportResult
   , exporterShutdown :: IO ()
   }
 
@@ -77,7 +108,7 @@ data Processor = Processor
   }
 
 {- | 
-'Tracer's can be create from a 'TracerProvider'.
+'Tracer's can be created from a 'TracerProvider'.
 -}
 data TracerProvider = TracerProvider
   { tracerProviderProcessors :: !(Vector Processor)
@@ -87,6 +118,7 @@ data TracerProvider = TracerProvider
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
   , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
+  , tracerProviderLogger :: Log Text -> IO ()
   }
 
 -- | The 'Tracer' is responsible for creating 'Span's.
@@ -95,13 +127,18 @@ data TracerProvider = TracerProvider
 -- it instruments.
 data Tracer = Tracer
   { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
+  -- ^ Get the name of the 'Tracer'
+  --
+  -- @since 0.0.10
   , tracerProvider :: !TracerProvider
+  -- ^ Get the TracerProvider from which the 'Tracer' was created
+  --
+  -- @since 0.0.10
   }
 
-newtype Timestamp = Timestamp TimeSpec
-  deriving (Show, Eq, Ord)
-
 {- |
+This is a link that is being added to a span which is going to be created.
+
 A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related. 
 @Link@s can point to Spans inside a single Trace or across different Traces. @Link@s can be used to represent 
 batched operations where a @Span@ was initiated by multiple initiating Spans, each representing a single incoming 
@@ -128,6 +165,27 @@ data NewLink = NewLink
   }
   deriving (Show)
 
+{- |
+This is an immutable link for an existing span.
+
+A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related. 
+@Link@s can point to Spans inside a single Trace or across different Traces. @Link@s can be used to represent 
+batched operations where a @Span@ was initiated by multiple initiating Spans, each representing a single incoming 
+item being processed in the batch.
+
+Another example of using a Link is to declare the relationship between the originating and following trace. 
+This can be used when a Trace enters trusted boundaries of a service and service policy requires the generation 
+of a new Trace rather than trusting the incoming Trace context. The new linked Trace may also represent a long 
+running asynchronous data processing operation that was initiated by one of many fast incoming requests.
+
+When using the scatter/gather (also called fork/join) pattern, the root operation starts multiple downstream 
+processing operations and all of them are aggregated back in a single Span. 
+This last Span is linked to many operations it aggregates. 
+All of them are the Spans from the same Trace. And similar to the Parent field of a Span. 
+It is recommended, however, to not set parent of the Span in this scenario as semantically the parent field 
+represents a single parent scenario, in many cases the parent Span fully encloses the child Span. 
+This is not the case in scatter/gather and batch scenarios.
+-}
 data Link = Link
   { frozenLinkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
@@ -233,29 +291,53 @@ instance Ord SpanStatus where
   compare Ok (Error _) = GT
   compare Ok Ok = EQ
 
+-- | The frozen representation of a 'Span' that originates from the currently running process.
+--
+-- Only 'Processor's and 'Exporter's should use rely on this interface.
 data ImmutableSpan = ImmutableSpan
   { spanName :: Text
+  -- ^ A name identifying the role of the span (like function or method name).
   , spanParent :: Maybe Span
   , spanContext :: SpanContext
+  -- ^ A `SpanContext` represents the portion of a `Span` which must be serialized and
+  -- propagated along side of a distributed context. `SpanContext`s are immutable.
   , spanKind :: SpanKind
+  -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
+  -- of the various values that may be specified.
   , spanStart :: Timestamp
+  -- ^ A timestamp that corresponds to the start of the span
   , spanEnd :: Maybe Timestamp
+  -- ^ A timestamp that corresponds to the end of the span, if the span has ended.
   , spanAttributes :: Attributes
   , spanLinks :: FrozenBoundedCollection Link
+  -- ^ Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
   , spanEvents :: AppendOnlyBoundedCollection Event
+  -- ^ Events, which denote a point in time occurrence. These can be useful for recording data about a span such as when an exception was thrown, or to emit structured logs into the span tree.
   , spanStatus :: SpanStatus
   , spanTracer :: Tracer
   -- ^ Creator of the span
   }
 
+-- | A 'Span' is the fundamental type you'll work with to trace your systems.
+--
+-- A span is a single piece of instrumentation from a single location in your code or infrastructure. A span represents a single "unit of work" done by a service. Each span contains several key pieces of data:
+--
+-- - A service name identifying the service the span is from
+-- - A name identifying the role of the span (like function or method name)
+-- - A timestamp that corresponds to the start of the span
+-- - A duration that describes how long that unit of work took to complete
+-- - An ID that uniquely identifies the span
+-- - A trace ID identifying which trace the span belongs to
+-- - A parent ID representing the parent span that called this span. (There is no parent ID for the root span of a given trace, which denotes that it's the start of the trace.)
+-- - Any additional metadata that might be helpful.
+-- - Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
+-- - Events, which denote a point in time occurrence. These can be useful for recording data about a span such as when an exception was thrown, or to emit structured logs into the span tree.
+--
+-- A trace is made up of multiple spans. Tracing vendors such as Zipkin, Jaeger, Honeycomb, Datadog, Lightstep, etc. use the metadata from each span to reconstruct the relationships between them and generate a trace diagram.
 data Span
   = Span (IORef ImmutableSpan)
   | FrozenSpan SpanContext
   | Dropped SpanContext
-
--- |  contain details about the trace. Unlike TraceState values, TraceFlags are present in all traces. The current version of the specification only supports a single flag called sampled.
-newtype TraceFlags = TraceFlags Word8
-  deriving (Show, Eq, Ord)
 
 -- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
 -- sampling configuration to decide whether or not to sample the trace.
@@ -323,6 +405,14 @@ data SpanContext = SpanContext
 
 newtype NonRecordingSpan = NonRecordingSpan SpanContext
 
+-- | A “log” that happens as part of a span. An operation that is too fast for its own span, but too unique to roll up into its parent span.
+--
+-- Events contain a name, a timestamp, and an optional set of Attributes, along with a timestamp. Events represent an event that occurred at a specific time within a span’s workload.
+--
+-- When creating an event, this is the version that you will use. Attributes added that exceed the configured attribute limits will be dropped,
+-- which is accounted for in the 'Event' structure.
+--
+-- @since 0.0.1.0
 data NewEvent = NewEvent
   { newEventName :: Text
   -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
