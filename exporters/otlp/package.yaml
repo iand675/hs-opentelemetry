@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-exporter-otlp
-version:             0.0.1.2
+version:             0.0.1.3
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -21,7 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.0.2.*
+- hs-opentelemetry-api == 0.0.3.*
 - hs-opentelemetry-otlp == 0.0.1.*
 - text
 - bytestring

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-exporter-in-memory
-version:        0.0.1.1
+version:        0.0.1.2
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/in-memory#readme>
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
@@ -34,7 +34,7 @@ library
   build-depends:
       async
     , base >=4.7 && <5
-    , hs-opentelemetry-api ==0.0.2.*
+    , hs-opentelemetry-api ==0.0.3.*
     , unagi-chan
   default-language: Haskell2010
 
@@ -49,7 +49,7 @@ test-suite hs-opentelemetry-exporter-in-memory-test
   build-depends:
       async
     , base >=4.7 && <5
-    , hs-opentelemetry-api ==0.0.2.*
+    , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-exporter-in-memory
     , unagi-chan
   default-language: Haskell2010
