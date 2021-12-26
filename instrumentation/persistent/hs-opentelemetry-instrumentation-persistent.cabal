@@ -32,7 +32,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.0.2.*
+    , hs-opentelemetry-api ==0.0.3.*
     , mtl
     , persistent
     , resourcet
@@ -51,7 +51,7 @@ test-suite hs-opentelemetry-persistent-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.0.2.*
+    , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-instrumentation-persistent
     , mtl
     , persistent

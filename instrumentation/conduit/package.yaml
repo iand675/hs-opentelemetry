@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-conduit
-version:             0.0.1.0
+version:             0.0.1.1
 
 <<: *preface
 
@@ -22,7 +22,7 @@ dependencies:
 - base >= 4.7 && < 5
 - conduit
 - text
-- hs-opentelemetry-api == 0.0.2.*
+- hs-opentelemetry-api == 0.0.3.*
 
 library:
   ghc-options: -Wall
