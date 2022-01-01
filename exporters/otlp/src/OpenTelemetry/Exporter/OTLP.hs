@@ -234,11 +234,14 @@ otlpExporter conf = do
               threadDelay (retryDelay `shiftL` backoffCount)
               sendReq req (backoffCount + 1)
 
+      either print (\_ -> pure ()) eResp
+
       case eResp of
         Left err@(HttpExceptionRequest _ e) -> if isRetryableException e
           then exponentialBackoff
           else pure $ Failure $ Just $ SomeException err
-        Left err -> pure $ Failure $ Just $ SomeException err
+        Left err -> do
+          pure $ Failure $ Just $ SomeException err
         Right resp -> if isRetryableStatusCode (responseStatus resp)
           then case lookup hRetryAfter $ responseHeaders resp of
             Nothing -> exponentialBackoff
@@ -250,9 +253,11 @@ otlpExporter conf = do
                   threadDelay (seconds * 1_000_000)
                   sendReq req (backoffCount + 1)
 
-          else pure $! if statusCode (responseStatus resp) >= 300
-            then Failure Nothing
-            else Success
+          else if statusCode (responseStatus resp) >= 300
+            then do
+              print resp
+              pure $ Failure Nothing
+            else pure Success
 
 attributesToProto :: Attributes -> Vector KeyValue
 attributesToProto =
