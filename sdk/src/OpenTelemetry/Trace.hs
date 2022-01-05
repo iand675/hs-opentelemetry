@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  OpenTelemetry.Trace
@@ -86,6 +87,7 @@ module OpenTelemetry.Trace
   , initializeGlobalTracerProvider
   , initializeTracerProvider
   , getTracerProviderInitializationOptions
+  , getTracerProviderInitializationOptions'
   , shutdownTracerProvider
   -- ** Getting / setting the global 'TracerProvider'
   , getGlobalTracerProvider
@@ -293,7 +295,13 @@ initializeTracerProvider = do
   createTracerProvider processors opts
 
 getTracerProviderInitializationOptions :: IO ([Processor], TracerProviderOptions)
-getTracerProviderInitializationOptions  = do
+getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
+
+-- | Detect ptions for initializing a tracer provider from the app environment, taking additional supported resources as well.
+--
+-- @since 0.0.3.1
+getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Resource any -> IO ([Processor], TracerProviderOptions)
+getTracerProviderInitializationOptions' rs = do
   sampler <- detectSampler
   attrLimits <- detectAttributeLimits
   spanLimits <- detectSpanLimits
@@ -301,8 +309,8 @@ getTracerProviderInitializationOptions  = do
   processorConf <- detectBatchProcessorConfig
   exporters <- detectExporters
   builtInRs <- detectBuiltInResources
-  envVarRs <- (mkResource . map Just) <$> detectResourceAttributes
-  let allRs = builtInRs <> envVarRs
+  envVarRs <- mkResource . map Just <$> detectResourceAttributes
+  let allRs = mergeResources (builtInRs <> envVarRs) rs
   processors <- case exporters of
     [] -> do
       pure []

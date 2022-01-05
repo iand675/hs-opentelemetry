@@ -1,5 +1,13 @@
 # Changelog for hs-opentelemetry-sdk
 
+## 0.0.3.2
+
+- Fix haddock issue
+
+## 0.0.3.1
+
+- `getTracerProviderInitializationOptions'` introduced to enable custom resource detection
+
 ## 0.0.2.1
 
 - Doc enhancements
