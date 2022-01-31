@@ -55,6 +55,7 @@ import Data.Maybe (fromMaybe)
 -- import Control.Monad
 import System.IO.Unsafe
 import Prelude hiding (lookup)
+import Control.Monad (void)
 
 type ThreadContextMap = ThreadStorageMap Context
 
@@ -111,7 +112,9 @@ detachContextFromThread = detachFromThread threadContextMap
 --
 -- @since 0.0.1.0
 adjustContext :: MonadIO m => (Context -> Context) -> m ()
-adjustContext = adjust threadContextMap
+adjustContext f = liftIO $ do
+  ctxt <- getContext
+  void $ attachContext $ f ctxt
 
 -- | Alter the context
 --
