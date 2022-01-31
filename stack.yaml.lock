@@ -19,44 +19,19 @@ packages:
   original:
     hackage: thread-utils-finalizers-0.1.0.0
 - completed:
-    subdir: persistent
-    name: persistent
-    version: 2.14.0.0
-    git: https://github.com/iand675/persistent.git
+    hackage: persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
     pantry-tree:
-      size: 5935
-      sha256: 8f3ed4b97de80db688df8cf17bec8c0f6799728da3d19e1b384840fa5e2922fc
-    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
+      size: 6052
+      sha256: debd3496e44bf01264de8bc0d3da92991c1550632fe1ef66818392f4c9955323
   original:
-    subdir: persistent
-    git: https://github.com/iand675/persistent.git
-    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
+    hackage: persistent-2.13.3.0
 - completed:
-    subdir: persistent-postgresql
-    name: persistent-postgresql
-    version: 2.14.0.0
-    git: https://github.com/iand675/persistent.git
+    hackage: persistent-postgresql-2.13.4.0@sha256:7fc0ffc4a591c0355c8ad793bc6de08c13321c81a3fb748c9a23448ac88d987a,3686
     pantry-tree:
-      size: 1245
-      sha256: 01c2495b9095476f6bae8c14d2e08ba00d175cbb6b2c12280d6df36269a17647
-    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
+      size: 1140
+      sha256: 78b6907bf9bc82a524251dfeb2cf0d3f8c599427c8ae0b0a1d933158b6909281
   original:
-    subdir: persistent-postgresql
-    git: https://github.com/iand675/persistent.git
-    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
-- completed:
-    subdir: persistent-qq
-    name: persistent-qq
-    version: 2.12.0.1
-    git: https://github.com/iand675/persistent.git
-    pantry-tree:
-      size: 642
-      sha256: cb8c27dde49ab59d71c540ce2a08b8201ed148aa3fe7e7dd8129442fa0ec8b65
-    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
-  original:
-    subdir: persistent-qq
-    git: https://github.com/iand675/persistent.git
-    commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
+    hackage: persistent-postgresql-2.13.4.0
 - completed:
     hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
     pantry-tree:

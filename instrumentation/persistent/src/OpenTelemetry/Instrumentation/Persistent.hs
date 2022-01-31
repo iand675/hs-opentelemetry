@@ -10,7 +10,7 @@ import Data.Acquire.Internal
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Database.Persist.Sql
-import Database.Persist.SqlBackend (setConnHooks, SqlBackendHooks (hookGetStatement), emptySqlBackendHooks, MkSqlBackendArgs (connRDBMS), getRDBMS, getConnVault, modifyConnVault)
+import Database.Persist.SqlBackend (setConnHooks, emptySqlBackendHooks, MkSqlBackendArgs (connRDBMS), getRDBMS, getConnVault, modifyConnVault)
 import Database.Persist.SqlBackend.Internal
 import Control.Monad.IO.Class
 import System.IO.Unsafe (unsafePerformIO)

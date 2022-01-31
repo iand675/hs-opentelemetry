@@ -62,12 +62,8 @@ packages:
 extra-deps:
 - thread-utils-context-0.2.0.0
 - thread-utils-finalizers-0.1.0.0
-- git: https://github.com/iand675/persistent.git
-  commit: 69bdefd3978aa27004fb118f301aae0fb1c40640
-  subdirs:
-  - persistent
-  - persistent-postgresql
-  - persistent-qq
+- persistent-2.13.3.0
+- persistent-postgresql-2.13.4.0
 - proto-lens-0.7.1.0
 - proto-lens-runtime-0.7.0.1
 # just for testing
