@@ -77,6 +77,7 @@ import UnliftIO
 import Data.Text (Text)
 import GHC.Stack
 
+-- | Get attributes that can be attached to a span denoting some database action
 staticConnectionAttributes :: MonadIO m => Connection -> m [(T.Text, Attribute)]
 staticConnectionAttributes Connection{connectionHandle} = liftIO $ do
   (mDb, mUser, mHost, mPort) <- withMVar connectionHandle $ \pqConn -> do

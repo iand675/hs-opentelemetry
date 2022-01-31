@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-api
 
+## 0.0.3.1
+
+- `adjustContext` uses an empty context if one hasn't been created on the current thread yet instead of acting as a no-op.
+
 ## 0.0.2.1
 
 - Doc enhancements
