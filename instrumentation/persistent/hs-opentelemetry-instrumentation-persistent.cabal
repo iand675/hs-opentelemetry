@@ -34,7 +34,7 @@ library
       base >=4.7 && <5
     , hs-opentelemetry-api ==0.0.3.*
     , mtl
-    , persistent
+    , persistent >=2.13.3
     , resourcet
     , text
     , unliftio
@@ -54,7 +54,7 @@ test-suite hs-opentelemetry-persistent-test
     , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-instrumentation-persistent
     , mtl
-    , persistent
+    , persistent >=2.13.3
     , resourcet
     , text
     , unliftio

@@ -18,6 +18,7 @@ import Database.Persist.Postgresql
 import Database.Persist.SqlBackend
 import Database.Persist.Sql
 import Database.Persist.Sql.Raw.QQ
+import Database.Persist.SqlBackend.SqlPoolHooks
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Types
@@ -79,14 +80,12 @@ instance YesodPersist Minimal where
   runDB m = do
     inSpan "yesod.runDB" defaultSpanArguments $ do
       app <- getYesod
-      runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ defaultSqlPoolHooks
-        { alterBackend = \conn -> do
-            -- TODO, could probably not do this on each runDB call.
-            staticAttrs <- case getSimpleConn conn of
-              Nothing -> pure []
-              Just pgConn -> staticConnectionAttributes pgConn
-            wrapSqlBackend staticAttrs conn
-        }
+      runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ setAlterBackend defaultSqlPoolHooks $ \conn -> do
+        -- TODO, could probably not do this on each runDB call.
+        staticAttrs <- case getSimpleConn conn of
+          Nothing -> pure []
+          Just pgConn -> staticConnectionAttributes pgConn
+        wrapSqlBackend staticAttrs conn
 
 getRootR :: Handler Text
 getRootR = do
