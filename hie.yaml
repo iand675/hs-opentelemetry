@@ -1,0 +1,85 @@
+cradle:
+  stack:
+    - path: "api/src"
+      component: "hs-opentelemetry-api:lib"
+
+    - path: "api/test"
+      component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
+
+    - path: "examples/yesod-minimal/src"
+      component: "yesod-minimal:lib"
+
+    - path: "examples/yesod-minimal/src/Minimal.hs"
+      component: "yesod-minimal:exe:yesod-minimal"
+
+    - path: "examples/yesod-minimal/src/Paths_yesod_minimal.hs"
+      component: "yesod-minimal:exe:yesod-minimal"
+
+    - path: "exporters/handle/src"
+      component: "hs-opentelemetry-exporter-handle:lib"
+
+    - path: "exporters/handle/test"
+      component: "hs-opentelemetry-exporter-handle:test:hs-opentelemetry-exporter-handle-test"
+
+    - path: "exporters/in-memory/src"
+      component: "hs-opentelemetry-exporter-in-memory:lib"
+
+    - path: "exporters/in-memory/test"
+      component: "hs-opentelemetry-exporter-in-memory:test:hs-opentelemetry-exporter-in-memory-test"
+
+    - path: "exporters/otlp/src"
+      component: "hs-opentelemetry-exporter-otlp:lib"
+
+    - path: "exporters/otlp/test"
+      component: "hs-opentelemetry-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
+
+    - path: "instrumentation/conduit/src"
+      component: "hs-opentelemetry-instrumentation-conduit:lib"
+
+    - path: "instrumentation/conduit/test"
+      component: "hs-opentelemetry-instrumentation-conduit:test:hs-opentelemetry-instrumentation-conduit-test"
+
+    - path: "instrumentation/http-client/src"
+      component: "hs-opentelemetry-instrumentation-http-client:lib"
+
+    - path: "instrumentation/http-client/test"
+      component: "hs-opentelemetry-instrumentation-http-client:test:hs-opentelemetry-instrumentation-http-client-test"
+
+    - path: "instrumentation/persistent/src"
+      component: "hs-opentelemetry-instrumentation-persistent:lib"
+
+    - path: "instrumentation/persistent/test"
+      component: "hs-opentelemetry-instrumentation-persistent:test:hs-opentelemetry-persistent-test"
+
+    - path: "instrumentation/postgresql-simple/src"
+      component: "hs-opentelemetry-instrumentation-postgresql-simple:lib"
+
+    - path: "instrumentation/postgresql-simple/test"
+      component: "hs-opentelemetry-instrumentation-postgresql-simple:test:hs-opentelemetry-instrumentation-postgresql-simple-test"
+
+    - path: "instrumentation/wai/src"
+      component: "hs-opentelemetry-instrumentation-wai:lib"
+
+    - path: "instrumentation/wai/test"
+      component: "hs-opentelemetry-instrumentation-wai:test:hs-opentelemetry-instrumentation-wai-test"
+
+    - path: "instrumentation/yesod/src"
+      component: "hs-opentelemetry-instrumentation-yesod:lib"
+
+    - path: "instrumentation/yesod/test"
+      component: "hs-opentelemetry-instrumentation-yesod:test:hs-opentelemetry-instrumentation-yesod-test"
+
+    - path: "otlp/src"
+      component: "hs-opentelemetry-otlp:lib"
+
+    - path: "propagators/w3c/src"
+      component: "hs-opentelemetry-propagator-w3c:lib"
+
+    - path: "propagators/w3c/test"
+      component: "hs-opentelemetry-propagator-w3c:test:hs-opentelemetry-propagator-w3c-test"
+
+    - path: "sdk/src"
+      component: "hs-opentelemetry-sdk:lib"
+
+    - path: "sdk/test"
+      component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
