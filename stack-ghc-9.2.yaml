@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-19.2
+resolver: nightly-2022-04-04
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -62,10 +62,9 @@ packages:
 extra-deps:
 - thread-utils-context-0.2.0.0
 - thread-utils-finalizers-0.1.0.0
-- persistent-2.13.3.0
-- persistent-postgresql-2.13.4.0
 - proto-lens-0.7.1.0
 - proto-lens-runtime-0.7.0.1
+
 # just for testing
 # - mwc-random-0.14.0.0
 # - random-1.1
