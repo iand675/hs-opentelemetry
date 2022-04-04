@@ -19,20 +19,6 @@ packages:
   original:
     hackage: thread-utils-finalizers-0.1.0.0
 - completed:
-    hackage: persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
-    pantry-tree:
-      size: 6052
-      sha256: debd3496e44bf01264de8bc0d3da92991c1550632fe1ef66818392f4c9955323
-  original:
-    hackage: persistent-2.13.3.0
-- completed:
-    hackage: persistent-postgresql-2.13.4.0@sha256:7fc0ffc4a591c0355c8ad793bc6de08c13321c81a3fb748c9a23448ac88d987a,3686
-    pantry-tree:
-      size: 1140
-      sha256: 78b6907bf9bc82a524251dfeb2cf0d3f8c599427c8ae0b0a1d933158b6909281
-  original:
-    hackage: persistent-postgresql-2.13.4.0
-- completed:
     hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
     pantry-tree:
       size: 1857
@@ -48,7 +34,7 @@ packages:
     hackage: proto-lens-runtime-0.7.0.1
 snapshots:
 - completed:
-    size: 617368
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/2.yaml
-    sha256: e7e57649a12f6178d1158e4b6f1f1885ed56d210ae6174385271cecc9b1ea974
-  original: lts-19.2
+    size: 545842
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/4/4.yaml
+    sha256: c4a9ea936518c6d01ed21a6a838c880781d29b4c5533a5d10187d45968733a3e
+  original: nightly-2022-04-04
