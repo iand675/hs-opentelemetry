@@ -73,7 +73,7 @@ wrapSqlBackend attrs conn_ = do
                       spanCleanup (parent, s) = do
                         s `endSpan` Nothing
                         adjustContext $ \ctx ->
-                          maybe ctx (`insertSpan` ctx) parent
+                          maybe (removeSpan ctx) (`insertSpan` ctx) parent
 
                   (p, child) <- mkAcquire spanCreator spanCleanup
 
