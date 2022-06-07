@@ -20,5 +20,16 @@ jobs:
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}
           restore-keys: |
             stack-${{ runner.os }}
+      # 9.2 testing support?
       - run: stack test
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: stack-${{ runner.os }}-9.2-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}
+          restore-keys: |
+            stack-${{ runner.os }}-9.2
+      - run: stack test
+      - run: stack test --stack-yaml stack-ghc-9.2.yaml
 
