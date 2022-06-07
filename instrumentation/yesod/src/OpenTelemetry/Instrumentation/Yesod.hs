@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -70,7 +71,11 @@ goTree front names (ResourceParent name _check pieces trees) =
     toIgnore = length $ filter isDynamic pieces
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
+#if MIN_VERSION_template_haskell(2, 18, 0)
+    front' = front . ConP (mkName name) [] . ignored
+#else
     front' = front . ConP (mkName name) . ignored
+#endif
     newNames = names <> [name]
 
 goRes :: (Pat -> Pat) -> [String] -> Resource a -> Q Clause
@@ -99,7 +104,11 @@ mkRouteToPattern appName ress = do
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
+#if MIN_VERSION_template_haskell(2, 18, 0)
+    parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) [] $ mconcat
+#else
     parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) $ mconcat
+#endif
       [ replicate (length $ filter isDynamic pieces) WildP
       , [nestedPat]
       ]

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-instrumentation-wai
-version:        0.0.1.2
+version:        0.0.1.3
 synopsis:       WAI instrumentation middleware for OpenTelemetry
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/wai#readme>
 category:       OpenTelemetry, Web

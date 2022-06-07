@@ -19,19 +19,19 @@ packages:
   original:
     hackage: thread-utils-finalizers-0.1.0.0
 - completed:
-    hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
+    hackage: proto-lens-0.7.1.1@sha256:8419e86fd7f521206a991c3ccb1777332a07a8250b380b06694f9f301b1ff38d,2972
     pantry-tree:
       size: 1857
-      sha256: 2f1199d04d0588805e06faa0bf9a75898584d76243d4f945acbcc0e93913732e
+      sha256: 307d85c746f63db33ec7c0f7fe8a3b31d7b02e1bb42a7838f7271c3dd0e3d4ff
   original:
-    hackage: proto-lens-0.7.1.0
+    hackage: proto-lens-0.7.1.1
 - completed:
-    hackage: proto-lens-runtime-0.7.0.1@sha256:703f327422b2e204f8ea13c5e178edd8ab42ccd01c7a5a89fcb1b37ab474c68a,3038
+    hackage: proto-lens-runtime-0.7.0.2@sha256:25d11fd08b56025c89e6be5da46f40a82bd845218b235b9e0114253b45caa074,3051
     pantry-tree:
       size: 168
-      sha256: 145cb9a15b73d45b07cb3f9f0716256b2ed9e27ac296268ce100a4f0e477e110
+      sha256: 99e2a2398324bb34159e634723ba644508eaf75e110d7c9e5110aa26cce2d07a
   original:
-    hackage: proto-lens-runtime-0.7.0.1
+    hackage: proto-lens-runtime-0.7.0.2
 snapshots:
 - completed:
     size: 545842

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-api
-version:        0.0.3.3
+version:        0.0.3.5
 synopsis:       OpenTelemetry API for use by libraries for direct instrumentation or wrapper packages.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/api#readme>
 category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics

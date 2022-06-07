@@ -62,8 +62,8 @@ packages:
 extra-deps:
 - thread-utils-context-0.2.0.0
 - thread-utils-finalizers-0.1.0.0
-- proto-lens-0.7.1.0
-- proto-lens-runtime-0.7.0.1
+- proto-lens-0.7.1.1
+- proto-lens-runtime-0.7.0.2
 
 # just for testing
 # - mwc-random-0.14.0.0
