@@ -124,6 +124,7 @@ module OpenTelemetry.Trace
   , TracerProviderOptions(..)
   , emptyTracerProviderOptions
   , detectBuiltInResources
+  , detectSampler
   , createSpan
   , createSpanWithoutCallStack
   , endSpan
@@ -360,6 +361,11 @@ knownSamplers =
   ]
 
 -- TODO MUST log invalid arg
+
+-- | Detect a sampler from the app environment. If no sampler is specified,
+-- the parentbased sampler is used.
+--
+-- @since 0.0.3.3
 detectSampler :: IO Sampler
 detectSampler = do
   envSampler <- lookupEnv "OTEL_TRACES_SAMPLER"

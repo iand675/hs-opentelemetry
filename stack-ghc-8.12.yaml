@@ -43,6 +43,7 @@ packages:
 # - propagators/jaeger
 - propagators/w3c
 - instrumentation/conduit
+- instrumentation/cloudflare
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/postgresql-simple
