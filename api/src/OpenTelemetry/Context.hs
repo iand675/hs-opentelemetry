@@ -33,8 +33,10 @@ module OpenTelemetry.Context
   , union
   , insertSpan
   , lookupSpan
+  , removeSpan
   , insertBaggage
   , lookupBaggage
+  , removeBaggage
   ) where
 import Control.Monad.IO.Class
 import Data.Maybe
@@ -88,6 +90,9 @@ lookupSpan = lookup spanKey
 insertSpan :: Span -> Context -> Context
 insertSpan = insert spanKey
 
+removeSpan :: Context -> Context 
+removeSpan = delete spanKey
+
 baggageKey :: Key Baggage
 baggageKey = unsafePerformIO $ newKey "baggage"
 {-# NOINLINE baggageKey #-}
@@ -99,3 +104,6 @@ insertBaggage :: Baggage -> Context -> Context
 insertBaggage b c = case lookup baggageKey c of
   Nothing -> insert baggageKey b c
   Just b' -> insert baggageKey (b <> b') c
+
+removeBaggage :: Context -> Context
+removeBaggage = delete baggageKey

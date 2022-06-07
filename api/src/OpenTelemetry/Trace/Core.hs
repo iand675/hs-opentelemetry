@@ -351,7 +351,7 @@ inSpan'' t cs n args f = do
         recordException s [] Nothing inner
       endSpan s Nothing
       adjustContext $ \ctx ->
-        maybe ctx (`insertSpan` ctx) parent
+        maybe (removeSpan ctx) (`insertSpan` ctx) parent
     )
     (\(_, s) -> f s)
 

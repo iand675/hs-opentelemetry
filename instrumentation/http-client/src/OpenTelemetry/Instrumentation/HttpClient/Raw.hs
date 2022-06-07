@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
+import Control.Applicative ((<|>))
 import Control.Monad.IO.Class
 import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
@@ -13,21 +14,25 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Foldable (Foldable(toList))
 import Data.CaseInsensitive (foldedCase)
+import qualified Data.Maybe
 
 data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
-  { requestHeadersToRecord :: [HeaderName]
+  { requestName :: Maybe T.Text
+  , requestHeadersToRecord :: [HeaderName]
   , responseHeadersToRecord :: [HeaderName]
   }
 
 instance Semigroup HttpClientInstrumentationConfig where
   l <> r = HttpClientInstrumentationConfig
-    { requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
+    { requestName = requestName r <|> requestName l -- flipped on purpose: last writer wins
+    , requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
     , responseHeadersToRecord = responseHeadersToRecord l <> responseHeadersToRecord r
     }
 
 instance Monoid HttpClientInstrumentationConfig where
   mempty = HttpClientInstrumentationConfig
-    { requestHeadersToRecord = mempty
+    { requestName = Nothing
+    , requestHeadersToRecord = mempty
     , responseHeadersToRecord = mempty
     }
 
@@ -49,13 +54,13 @@ instrumentRequest
 instrumentRequest conf ctxt req = do
   tp <- httpTracerProvider
   forM_ (lookupSpan ctxt) $ \s -> do
-    addAttributes s
-      [ ( "http.method", toAttribute $ T.decodeUtf8 $ method req)
-      , ( "http.url",
-          toAttribute $
+    let url =
           T.decodeUtf8
           ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
-        )
+    updateName s $ Data.Maybe.fromMaybe url $ requestName conf
+    addAttributes s
+      [ ( "http.method", toAttribute $ T.decodeUtf8 $ method req)
+      , ( "http.url", toAttribute url)
       , ( "http.target", toAttribute $ T.decodeUtf8 (path req <> queryString req))
       , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
       , ( "http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
