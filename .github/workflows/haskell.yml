@@ -12,6 +12,7 @@ jobs:
           # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
           stack-version: 'latest'
+      - uses: cachix/install-nix-action@v15
       - uses: actions/cache@v2
         with:
           path: |
