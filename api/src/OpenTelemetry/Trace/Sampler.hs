@@ -55,7 +55,7 @@ alwaysOn = Sampler
       pure (RecordAndSample, [], maybe TraceState.empty traceState mspanCtxt)
   }
 
--- | Returns @RecordAndSample@ always.
+-- | Returns @Drop@ always.
 --
 -- Description returns AlwaysOffSampler.
 --
