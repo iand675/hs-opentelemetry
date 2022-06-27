@@ -83,3 +83,6 @@ cradle:
 
     - path: "sdk/test"
       component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
+
+    - path: "utils/exceptions/src"
+      component: "hs-opentelemetry-utils-exceptions:lib"
