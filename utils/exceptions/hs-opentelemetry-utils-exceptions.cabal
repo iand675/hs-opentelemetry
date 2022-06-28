@@ -6,7 +6,7 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-utils-exceptions
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/cloudflare#readme>
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/utils/exceptions#readme>
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -29,7 +29,7 @@ library
     , text
   default-language: Haskell2010
 
-test-suite cloudflare-test
+test-suite exceptions-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
