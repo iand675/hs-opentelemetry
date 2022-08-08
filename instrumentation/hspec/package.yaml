@@ -1,0 +1,45 @@
+_common/lib: !include "../../package-common.yaml"
+
+name:                hs-opentelemetry-instrumentation-hspec
+version:             0.0.1.0
+
+<<: *preface
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/hspec#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- hs-opentelemetry-api == 0.0.3.*
+- hspec >= 2.9.4
+- hspec-core >= 2.9.4
+- text
+- vault
+- resourcet
+- unliftio # TODO, unliftio-core
+- mtl
+
+library:
+  # ghc-options: -Wall
+  source-dirs: src
+
+tests:
+  hs-opentelemetry-hspec-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-hspec
