@@ -1,0 +1,1 @@
+# hs-opentelemetry-instrumentation-hspec
