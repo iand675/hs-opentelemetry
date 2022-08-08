@@ -37,6 +37,7 @@ dependencies:
 - http-types
 - network-bsd
 - unix
+- transformers
 # todo get rid of this when enough of the ecosystem has upgraded
 - random
 - mwc-random
