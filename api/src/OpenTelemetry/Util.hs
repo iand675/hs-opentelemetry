@@ -78,14 +78,19 @@ getThreadId :: ThreadId -> Int
 getThreadId (ThreadId tid#) = fromIntegral (c_getThreadId tid#)
 {-# INLINE getThreadId #-}
 
-data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection 
+data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection
   { collection :: Builder a
   , maxSize :: {-# UNPACK #-} !Int
   , dropped :: {-# UNPACK #-} !Int
   }
 
+instance forall a. Show a => Show (AppendOnlyBoundedCollection a) where
+  show AppendOnlyBoundedCollection {collection=c} =
+    let vec = Builder.build c :: V.Vector a
+        in show vec
+
 -- | Initialize a bounded collection that admits a maximum size
-emptyAppendOnlyBoundedCollection :: 
+emptyAppendOnlyBoundedCollection ::
      Int
   -- ^ Maximum size
   -> AppendOnlyBoundedCollection a
@@ -95,10 +100,10 @@ appendOnlyBoundedCollectionValues :: AppendOnlyBoundedCollection a -> V.Vector a
 appendOnlyBoundedCollectionValues (AppendOnlyBoundedCollection a _ _) = Builder.build a
 
 appendOnlyBoundedCollectionSize :: AppendOnlyBoundedCollection a -> Int
-appendOnlyBoundedCollectionSize (AppendOnlyBoundedCollection b _ _) = Builder.size b 
+appendOnlyBoundedCollectionSize (AppendOnlyBoundedCollection b _ _) = Builder.size b
 
 appendOnlyBoundedCollectionDroppedElementCount :: AppendOnlyBoundedCollection a -> Int
-appendOnlyBoundedCollectionDroppedElementCount (AppendOnlyBoundedCollection _ _ d) = d 
+appendOnlyBoundedCollectionDroppedElementCount (AppendOnlyBoundedCollection _ _ d) = d
 
 appendToBoundedCollection :: AppendOnlyBoundedCollection a -> a -> AppendOnlyBoundedCollection a
 appendToBoundedCollection c@(AppendOnlyBoundedCollection b ms d) x = if appendOnlyBoundedCollectionSize c < ms
@@ -108,7 +113,7 @@ appendToBoundedCollection c@(AppendOnlyBoundedCollection b ms d) x = if appendOn
 data FrozenBoundedCollection a = FrozenBoundedCollection
   { collection :: !(V.Vector a)
   , dropped :: !Int
-  }
+  } deriving (Show)
 
 frozenBoundedCollection :: Foldable f => Int -> f a -> FrozenBoundedCollection a
 frozenBoundedCollection maxSize_ coll = FrozenBoundedCollection (V.fromListN maxSize_ $ toList coll) (collLength - maxSize_)
