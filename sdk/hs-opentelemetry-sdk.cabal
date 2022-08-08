@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.5.
 --
 -- see: https://github.com/sol/hpack
 
@@ -83,6 +83,7 @@ library
     , random-bytestring
     , stm
     , text
+    , transformers
     , unagi-chan
     , unix
     , unordered-containers
@@ -119,6 +120,7 @@ test-suite hs-opentelemetry-sdk-test
     , random-bytestring
     , stm
     , text
+    , transformers
     , unagi-chan
     , unix
     , unordered-containers
