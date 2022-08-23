@@ -34,10 +34,10 @@ data ExportResult
   = Success
   | Failure (Maybe SomeException)
 
--- | An identifier for the library that provides the instrumentation for a given Instrumented Library. 
+-- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
 -- Instrumented Library and Instrumentation Library may be the same library if it has built-in OpenTelemetry instrumentation.
 --
--- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly. 
+-- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly.
 -- However, many libraries will not have such integration, and as such there is a need for a separate library which would inject such calls, using mechanisms such as wrapping interfaces,
 -- subscribing to library-specific callbacks, or translating existing telemetry into the OpenTelemetry model.
 --
@@ -87,11 +87,11 @@ data Processor = Processor
   -- ^ Called after a span is ended (i.e., the end timestamp is already set). This method is called synchronously within the 'OpenTelemetry.Trace.endSpan' API, therefore it should not block or throw an exception.
   , processorShutdown :: IO (Async ShutdownResult)
   -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
-  -- 
+  --
   -- Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
   --
   -- Shutdown SHOULD let the caller know whether it succeeded, failed or timed out.
-  -- 
+  --
   -- Shutdown MUST include the effects of ForceFlush.
   --
   -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
@@ -107,7 +107,7 @@ data Processor = Processor
   -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
   }
 
-{- | 
+{- |
 'Tracer's can be created from a 'TracerProvider'.
 -}
 data TracerProvider = TracerProvider
@@ -122,7 +122,7 @@ data TracerProvider = TracerProvider
   }
 
 -- | The 'Tracer' is responsible for creating 'Span's.
--- 
+--
 -- Each 'Tracer' should be associated with the library or application that
 -- it instruments.
 data Tracer = Tracer
@@ -136,25 +136,28 @@ data Tracer = Tracer
   -- @since 0.0.10
   }
 
+instance Show Tracer where
+  show Tracer {tracerName = name} = "Tracer { tracerName = " <> show name <> "}"
+
 {- |
 This is a link that is being added to a span which is going to be created.
 
-A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related. 
-@Link@s can point to Spans inside a single Trace or across different Traces. @Link@s can be used to represent 
-batched operations where a @Span@ was initiated by multiple initiating Spans, each representing a single incoming 
+A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related.
+@Link@s can point to Spans inside a single Trace or across different Traces. @Link@s can be used to represent
+batched operations where a @Span@ was initiated by multiple initiating Spans, each representing a single incoming
 item being processed in the batch.
 
-Another example of using a Link is to declare the relationship between the originating and following trace. 
-This can be used when a Trace enters trusted boundaries of a service and service policy requires the generation 
-of a new Trace rather than trusting the incoming Trace context. The new linked Trace may also represent a long 
+Another example of using a Link is to declare the relationship between the originating and following trace.
+This can be used when a Trace enters trusted boundaries of a service and service policy requires the generation
+of a new Trace rather than trusting the incoming Trace context. The new linked Trace may also represent a long
 running asynchronous data processing operation that was initiated by one of many fast incoming requests.
 
-When using the scatter/gather (also called fork/join) pattern, the root operation starts multiple downstream 
-processing operations and all of them are aggregated back in a single Span. 
-This last Span is linked to many operations it aggregates. 
-All of them are the Spans from the same Trace. And similar to the Parent field of a Span. 
-It is recommended, however, to not set parent of the Span in this scenario as semantically the parent field 
-represents a single parent scenario, in many cases the parent Span fully encloses the child Span. 
+When using the scatter/gather (also called fork/join) pattern, the root operation starts multiple downstream
+processing operations and all of them are aggregated back in a single Span.
+This last Span is linked to many operations it aggregates.
+All of them are the Spans from the same Trace. And similar to the Parent field of a Span.
+It is recommended, however, to not set parent of the Span in this scenario as semantically the parent field
+represents a single parent scenario, in many cases the parent Span fully encloses the child Span.
 This is not the case in scatter/gather and batch scenarios.
 -}
 data NewLink = NewLink
@@ -168,22 +171,22 @@ data NewLink = NewLink
 {- |
 This is an immutable link for an existing span.
 
-A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related. 
-@Link@s can point to Spans inside a single Trace or across different Traces. @Link@s can be used to represent 
-batched operations where a @Span@ was initiated by multiple initiating Spans, each representing a single incoming 
+A @Span@ may be linked to zero or more other @Spans@ (defined by @SpanContext@) that are causally related.
+@Link@s can point to Spans inside a single Trace or across different Traces. @Link@s can be used to represent
+batched operations where a @Span@ was initiated by multiple initiating Spans, each representing a single incoming
 item being processed in the batch.
 
-Another example of using a Link is to declare the relationship between the originating and following trace. 
-This can be used when a Trace enters trusted boundaries of a service and service policy requires the generation 
-of a new Trace rather than trusting the incoming Trace context. The new linked Trace may also represent a long 
+Another example of using a Link is to declare the relationship between the originating and following trace.
+This can be used when a Trace enters trusted boundaries of a service and service policy requires the generation
+of a new Trace rather than trusting the incoming Trace context. The new linked Trace may also represent a long
 running asynchronous data processing operation that was initiated by one of many fast incoming requests.
 
-When using the scatter/gather (also called fork/join) pattern, the root operation starts multiple downstream 
-processing operations and all of them are aggregated back in a single Span. 
-This last Span is linked to many operations it aggregates. 
-All of them are the Spans from the same Trace. And similar to the Parent field of a Span. 
-It is recommended, however, to not set parent of the Span in this scenario as semantically the parent field 
-represents a single parent scenario, in many cases the parent Span fully encloses the child Span. 
+When using the scatter/gather (also called fork/join) pattern, the root operation starts multiple downstream
+processing operations and all of them are aggregated back in a single Span.
+This last Span is linked to many operations it aggregates.
+All of them are the Spans from the same Trace. And similar to the Parent field of a Span.
+It is recommended, however, to not set parent of the Span in this scenario as semantically the parent field
+represents a single parent scenario, in many cases the parent Span fully encloses the child Span.
 This is not the case in scatter/gather and batch scenarios.
 -}
 data Link = Link
@@ -217,7 +220,7 @@ data FlushResult
   | FlushSuccess
   -- ^ Flushing spans to all associated exporters succeeded.
   | FlushError
-  -- ^ One or more exporters failed to successfully export one or more 
+  -- ^ One or more exporters failed to successfully export one or more
   -- unexported spans.
   deriving (Show)
 
@@ -249,20 +252,20 @@ To summarize the interpretation of these kinds
 -}
 data SpanKind
   = Server
-  -- ^ Indicates that the span covers server-side handling of a synchronous RPC or other remote request. 
+  -- ^ Indicates that the span covers server-side handling of a synchronous RPC or other remote request.
   -- This span is the child of a remote @Client@ span that was expected to wait for a response.
   | Client
-  -- ^ Indicates that the span describes a synchronous request to some remote service. 
+  -- ^ Indicates that the span describes a synchronous request to some remote service.
   -- This span is the parent of a remote @Server@ span and waits for its response.
   | Producer
-  -- ^ Indicates that the span describes the parent of an asynchronous request. 
-  -- This parent span is expected to end before the corresponding child @Producer@ span, 
-  -- possibly even before the child span starts. In messaging scenarios with batching, 
+  -- ^ Indicates that the span describes the parent of an asynchronous request.
+  -- This parent span is expected to end before the corresponding child @Producer@ span,
+  -- possibly even before the child span starts. In messaging scenarios with batching,
   -- tracing individual messages requires a new @Producer@ span per message to be created.
   | Consumer
-  -- ^ Indicates that the span describes the child of an asynchronous @Producer@ request. 
+  -- ^ Indicates that the span describes the child of an asynchronous @Producer@ request.
   | Internal
-  -- ^  Default value. Indicates that the span represents an internal operation within an application, 
+  -- ^  Default value. Indicates that the span represents an internal operation within an application,
   -- as opposed to an operations with remote parents or children.
   deriving (Show)
 
@@ -316,7 +319,7 @@ data ImmutableSpan = ImmutableSpan
   , spanStatus :: SpanStatus
   , spanTracer :: Tracer
   -- ^ Creator of the span
-  }
+  } deriving (Show)
 
 -- | A 'Span' is the fundamental type you'll work with to trace your systems.
 --
@@ -338,6 +341,11 @@ data Span
   = Span (IORef ImmutableSpan)
   | FrozenSpan SpanContext
   | Dropped SpanContext
+
+instance Show Span where
+  show (Span _ioref) = "(mutable span)"
+  show (FrozenSpan ctx) = show ctx
+  show (Dropped ctx) = show ctx
 
 -- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
 -- sampling configuration to decide whether or not to sample the trace.
@@ -455,7 +463,7 @@ data SamplingResult
   -- ^ isRecording == true, AND Sampled flag MUST be set.
   deriving (Show, Eq)
 
--- | Interface that allows users to create custom samplers which will return a sampling SamplingResult based on information that 
+-- | Interface that allows users to create custom samplers which will return a sampling SamplingResult based on information that
 -- is typically available just before the Span was created.
 data Sampler = Sampler
   { getDescription :: Text
