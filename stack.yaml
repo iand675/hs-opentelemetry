@@ -50,6 +50,7 @@ packages:
 - instrumentation/yesod
 - instrumentation/wai
 - examples/yesod-minimal
+- utils/exceptions
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
