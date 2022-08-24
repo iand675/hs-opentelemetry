@@ -1,3 +1,4 @@
+-- | Instrumentation for Hspec test suites
 {-# LANGUAGE OverloadedStrings #-}
 
 module OpenTelemetry.Instrumentation.Hspec
@@ -16,17 +17,26 @@ import OpenTelemetry.Context.ThreadLocal (adjustContext, attachContext, getConte
 import OpenTelemetry.Trace.Core
 import Test.Hspec.Core.Spec (ActionWith, Item (..), Spec, SpecWith, mapSpecItem_)
 
+-- | Creates a wrapper function that you can pass a spec into.
+--
+--   This function will wrap each @it@ test case with a span with the name of
+--   the test case.
+--
+--   The context in which this is called determines the parent span of all of
+--   the spec items.
 wrapSpec :: MonadIO m => m (SpecWith a -> SpecWith a)
 wrapSpec = do
   tp <- getGlobalTracerProvider
   let tracer = makeTracer tp "hs-opentelemetry-instrumentation-hspec" tracerOptions
   context <- getContext
 
-  -- FIXME: this kind of just dumps everything flat into one span. We could
-  -- possibly do better, e.g. finding the `describe`s and making them into spans
-  -- but I am not sure how that interacts with the evaluator
+  -- FIXME: this kind of just dumps everything flat into one span per `it`. We
+  -- could possibly do better, e.g. finding the `describe`s and making them into
+  -- spans but I am not sure how that would be achieved.
   pure $ \spec -> mapSpecItem_ (wrapExampleInSpan tracer context) spec
 
+-- | Wraps one example in a span parented by the specified context, and ensures
+--   the thread running the spec item will have a context available.
 wrapExampleInSpan :: Tracer -> Context -> Item a -> Item a
 wrapExampleInSpan tp traceContext item@Item {itemExample = ex, itemRequirement = req} =
   item

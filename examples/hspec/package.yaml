@@ -1,0 +1,27 @@
+name: hspec-example
+
+dependencies:
+# minimal example dependencies
+- base
+- hspec
+- unliftio
+- text
+# opentelemetry dependencies
+- hs-opentelemetry-sdk
+- hs-opentelemetry-api
+- hs-opentelemetry-exporter-handle
+- hs-opentelemetry-instrumentation-hspec
+
+ghc-options:
+  - -Wall
+
+tests:
+  test:
+    dependencies:
+      - hspec-example
+    main: Main.hs
+    source-dirs:
+      - test
+
+library:
+  source-dirs: src
