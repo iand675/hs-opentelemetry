@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -19,7 +20,8 @@
 -- transport-specific in format. Use newtypes for serialisation instead.
 --
 -----------------------------------------------------------------------------
-module OpenTelemetry.Trace.Id 
+
+module OpenTelemetry.Trace.Id
   ( -- * Working with 'TraceId's
     TraceId
     -- ** Creating 'TraceId's
@@ -113,8 +115,13 @@ isEmptyTraceId (TraceId (SBS arr)) =
   isTrue#
     (eqWord#
       (or#
+#if MIN_VERSION_base(4,17,0)
+        (word64ToWord# (indexWord64Array# arr 0#))
+        (word64ToWord# (indexWord64Array# arr 1#)))
+#else
         (indexWord64Array# arr 0#)
         (indexWord64Array# arr 1#))
+#endif
       (int2Word# 0#))
 
 -- | Access the byte-level representation of the provided 'TraceId'
@@ -174,7 +181,11 @@ newSpanId gen = liftIO (SpanId . toShort <$> generateSpanIdBytes gen)
 isEmptySpanId :: SpanId -> Bool
 isEmptySpanId (SpanId (SBS arr)) = isTrue#
   (eqWord#
+#if MIN_VERSION_base(4,17,0)
+    (word64ToWord# (indexWord64Array# arr 0#))
+#else
     (indexWord64Array# arr 0#)
+#endif
     (int2Word# 0#))
 
 -- | Access the byte-level representation of the provided 'SpanId'
