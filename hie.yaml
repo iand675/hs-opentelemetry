@@ -33,6 +33,12 @@ cradle:
     - path: "exporters/otlp/test"
       component: "hs-opentelemetry-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
 
+    - path: "instrumentation/cloudflare/src"
+      component: "hs-opentelemetry-instrumentation-cloudflare:lib"
+
+    - path: "instrumentation/cloudflare/test"
+      component: "hs-opentelemetry-instrumentation-cloudflare:test:cloudflare-test"
+
     - path: "instrumentation/conduit/src"
       component: "hs-opentelemetry-instrumentation-conduit:lib"
 
@@ -83,3 +89,9 @@ cradle:
 
     - path: "sdk/test"
       component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
+
+    - path: "utils/exceptions/src"
+      component: "hs-opentelemetry-utils-exceptions:lib"
+
+    - path: "utils/exceptions/test"
+      component: "hs-opentelemetry-utils-exceptions:test:exceptions-test"
