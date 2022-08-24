@@ -1,11 +1,11 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-sdk
-version:        0.0.3.2
+version:        0.0.3.3
 synopsis:       OpenTelemetry SDK for use in applications.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
 category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics

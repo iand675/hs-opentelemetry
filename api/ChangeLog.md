@@ -1,5 +1,10 @@
 # Changelog for hs-opentelemetry-api
 
+## 0.0.3.6
+
+- GHC 9.4 support
+- Add Show instances to several api types
+
 ## 0.0.3.1
 
 - `adjustContext` uses an empty context if one hasn't been created on the current thread yet instead of acting as a no-op.

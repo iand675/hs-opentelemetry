@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-sdk
 
+## 0.0.3.3
+
+- Fix batch processor flush behavior on shutdown to not drop spans
+
 ## 0.0.3.2
 
 - Fix haddock issue
