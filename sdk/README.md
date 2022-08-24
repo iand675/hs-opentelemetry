@@ -65,7 +65,7 @@ Typically, the way traces are sampled works like this: when the root span is bei
 
 The OpenTelemetry Tracing API uses a data type called a `Tracer` to create traces. These `Tracer`s are designed to be associated with one instrumentation library. That way, telemetry they produce can be understood to come from the library or portion of your code base that it instruments.
 
-A `Tracer` is constructed by calling the `getTracer` function, which requires a `TracerProvider`, which we'll discuss next.
+A `Tracer` is constructed by calling the `makeTracer` function, which requires a `TracerProvider` and `TracerOptions`, which we'll discuss next.
 
 ### TracerProvider
 
@@ -99,11 +99,8 @@ main = withTracer $ \tracer -> do
       initializeGlobalTracerProvider
       -- Ensure that any spans that haven't been exported yet are flushed
       shutdownTracerProvider
-      (\tracerProvider -> do
-        -- Get a tracer so you can create spans
-        tracer <- getTracer tracerProvider "your-app-name-or-subsystem"
-        f tracer
-      )
+      -- Get a tracer so you can create spans
+      (\tracerProvider -> f makeTracer tracerProvider "your-app-name-or-subsystem")
 ```
 
 The primary configuration mechanism for `initializeGlobalTracerProvider` is via the environment variables listed in the official [OpenTelemetry specification](https://github.com/open-telemetry/opentelemetry-specification/blob/6ad485b743553099476d676f1f0369bae0304547/specification/sdk-environment-variables.md).
