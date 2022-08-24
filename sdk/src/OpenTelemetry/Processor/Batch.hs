@@ -28,6 +28,7 @@ import Data.IORef (atomicModifyIORef', readIORef, newIORef)
 import Control.Concurrent.Async
 import Control.Concurrent.MVar (newEmptyMVar, takeMVar, tryPutMVar)
 import Control.Monad
+import Control.Monad.Trans.Except
 import System.Timeout
 import Control.Exception
 import Data.HashMap.Strict (HashMap)
@@ -100,15 +101,15 @@ will be incremented.
 
 -}
 
--- newGreenBlueBuffer 
+-- newGreenBlueBuffer
 --   :: Int  --  Max queue size (2048)
 --   -> Int  --  Export batch size (512)
 --   -> IO (GreenBlueBuffer a)
 -- newGreenBlueBuffer maxQueueSize batchSize = do
 --   let logBase2 = finiteBitSize maxQueueSize - 1 - countLeadingZeros maxQueueSize
 
---   let closestFittingPowerOfTwo = 2 * if (1 `shiftL` logBase2) == maxQueueSize 
---         then maxQueueSize 
+--   let closestFittingPowerOfTwo = 2 * if (1 `shiftL` logBase2) == maxQueueSize
+--         then maxQueueSize
 --         else 1 `shiftL` (logBase2 + 1)
 
 --   readSection <- newTVarIO 0
@@ -151,7 +152,7 @@ will be incremented.
   --     modifyTVar gbWriteSection (+ 1)
   --     setTVar gbPendingWrites 0
   --   -- TODO slice and freeze appropriate section
-    -- M.slice (gbSectionSize * (r .&. gbSectionMask) 
+    -- M.slice (gbSectionSize * (r .&. gbSectionMask)
 
 -- TODO, counters for dropped spans, exported spans
 
@@ -182,19 +183,31 @@ buildExport m =
   , Builder.build <$> itemMap m
   )
 
+-- | Exitable forever loop
+loop :: Monad m => ExceptT e m a -> m e
+loop = liftM (either id id) . runExceptT . forever
+
+data ProcessorMessage = Flush | Shutdown
+
 -- |
--- The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections 
+-- The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections
 -- required to transmit the data. This processor supports both size and time based batching.
 --
 batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
   batch <- newIORef $ boundedMap maxQueueSize
   workSignal <- newEmptyMVar
-  worker <- async $ forever $ do
-    void $ timeout (millisToMicros scheduledDelayMillis) $ takeMVar workSignal
-    batchToProcess <- atomicModifyIORef' batch buildExport
-    Exporter.exporterExport exporter batchToProcess
+  worker <- async $ loop $ do
+    req <- liftIO $ timeout (millisToMicros scheduledDelayMillis)
+      $ takeMVar workSignal
+    batchToProcess <- liftIO $ atomicModifyIORef' batch buildExport
+    res <- liftIO $ Exporter.exporterExport exporter batchToProcess
 
+    -- if we were asked to shutdown, quit cleanly after this batch
+    -- FIXME: this could lose batches if there's more than one in queue?
+    case req of
+      Just Shutdown -> throwE res
+      _ -> pure ()
 
   pure $ Processor
     { processorOnStart = \_ _ -> pure ()
@@ -204,13 +217,18 @@ batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
           case push span_ builder of
             Nothing -> (builder, True)
             Just b' -> (b', False)
-        when appendFailed $ void $ tryPutMVar workSignal ()
+        when appendFailed $ void $ tryPutMVar workSignal Flush
 
-    , processorForceFlush = void $ tryPutMVar workSignal ()
+    , processorForceFlush = void $ tryPutMVar workSignal Flush
     -- TODO where to call restore, if anywhere?
     , processorShutdown = async $ mask $ \_restore -> do
+        -- flush remaining messages
+        void $ tryPutMVar workSignal Shutdown
+
         shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $
-          cancel worker
+          wait worker
+        -- make sure the worker comes down
+        uninterruptibleCancel worker
         -- TODO, not convinced we should shut down processor here
 
         case shutdownResult of
@@ -223,7 +241,7 @@ batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
   buffer <- newGreenBlueBuffer _ _
   batchProcessorAction <- async $ forever $ do
     -- It would be nice to do an immediate send when possible
-    chunk <- if (sendDelay == 0) 
+    chunk <- if (sendDelay == 0)
       else consumeChunk
       then threadDelay sendDelay >> consumeChunk
     timeout _ $ export exporter chunk
@@ -232,7 +250,7 @@ batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
     , onEnd = \s -> void $ tryInsert buffer s
     , shutdown = do
         gracefullyShutdownBatchProcessor
-        
+
 
     , forceFlush = pure ()
     }
