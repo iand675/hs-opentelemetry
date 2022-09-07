@@ -152,7 +152,7 @@ This can be used when a Trace enters trusted boundaries of a service and service
 of a new Trace rather than trusting the incoming Trace context. The new linked Trace may also represent a long
 running asynchronous data processing operation that was initiated by one of many fast incoming requests.
 
-When using the scatter/gather (also called fork/join) pattern, the root operation starts multiple downstream
+When using the scatter\/gather (also called fork\/join) pattern, the root operation starts multiple downstream
 processing operations and all of them are aggregated back in a single Span.
 This last Span is linked to many operations it aggregates.
 All of them are the Spans from the same Trace. And similar to the Parent field of a Span.
