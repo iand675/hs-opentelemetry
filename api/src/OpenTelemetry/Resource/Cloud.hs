@@ -1,23 +1,28 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Resource.Cloud
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Cloud resource detection
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
--- Cloud resource detection
---
+
 -----------------------------------------------------------------------------
-module OpenTelemetry.Resource.Cloud 
-  ( Cloud(..)
-  ) where
+
+{- |
+ Module      :  OpenTelemetry.Resource.Cloud
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Cloud resource detection
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+
+ Cloud resource detection
+-}
+module OpenTelemetry.Resource.Cloud (
+  Cloud (..),
+) where
+
 import Data.Text (Text)
-import OpenTelemetry.Resource (ToResource(..), mkResource, (.=?))
+import OpenTelemetry.Resource (ToResource (..), mkResource, (.=?))
+
 
 -- | A cloud infrastructure (e.g. GCP, Azure, AWS).
 data Cloud = Cloud
@@ -41,7 +46,6 @@ data Cloud = Cloud
   -- +------------------+------------------------+
   -- | @tencent_cloud@  | Tencent Cloud          |
   -- +------------------+------------------------+
-  --
   , cloudAccountId :: Maybe Text
   -- ^ The cloud account ID the resource is assigned to.
   , cloudRegion :: Maybe Text
@@ -100,15 +104,16 @@ data Cloud = Cloud
   -- +------------------------------+-------------------------------------------------+
   -- | @tencent_cloud_scf@          | Tencent Cloud Serverless Cloud Function (SCF)   |
   -- +------------------------------+-------------------------------------------------+
-  --
   }
+
 
 instance ToResource Cloud where
   type ResourceSchema Cloud = 'Nothing
-  toResource Cloud{..} = mkResource
-    [ "cloud.provider" .=? cloudProvider
-    , "cloud.account.id" .=? cloudAccountId
-    , "cloud.region" .=? cloudRegion
-    , "cloud.availability_zone" .=? cloudAvailabilityZone
-    , "cloud.platform" .=? cloudPlatform
-    ]
+  toResource Cloud {..} =
+    mkResource
+      [ "cloud.provider" .=? cloudProvider
+      , "cloud.account.id" .=? cloudAccountId
+      , "cloud.region" .=? cloudRegion
+      , "cloud.availability_zone" .=? cloudAvailabilityZone
+      , "cloud.platform" .=? cloudPlatform
+      ]

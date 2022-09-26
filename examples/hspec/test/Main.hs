@@ -17,11 +17,13 @@ import Test.Hspec
 import Test.Hspec.Runner (defaultConfig, hspecWith)
 import UnliftIO (MonadUnliftIO, bracket, finally, throwString)
 
--- | Initialize the global tracing provider for the application and run an action
---   (that action is generally the entry point of the application), cleaning
---   up the provider afterwards.
---
---   This also sets up an empty context (creating a new trace ID).
+
+{- | Initialize the global tracing provider for the application and run an action
+   (that action is generally the entry point of the application), cleaning
+   up the provider afterwards.
+
+   This also sets up an empty context (creating a new trace ID).
+-}
 withGlobalTracing :: Sampler -> IO a -> IO a
 withGlobalTracing sampler act = do
   void $ attachContext Context.empty
@@ -29,6 +31,7 @@ withGlobalTracing sampler act = do
     (initializeTracing sampler)
     shutdownTracerProvider
     $ const act
+
 
 printTraceLink :: IO ()
 printTraceLink = do
@@ -41,6 +44,7 @@ printTraceLink = do
   theTraceId <- traceIdBaseEncodedText Base16 . traceId <$> getSpanContext theSpan
 
   putStrLn $ "Trace link: (some service)/" <> unpack theTraceId
+
 
 initializeTracing :: Sampler -> IO TracerProvider
 initializeTracing sampler = do
@@ -55,11 +59,13 @@ initializeTracing sampler = do
 
   pure provider
 
+
 inSpan :: (MonadUnliftIO m, HasCallStack) => Text -> SpanArguments -> m a -> m a
 inSpan name args act = do
   tp <- getGlobalTracerProvider
   let tracer = makeTracer tp "hspec-example" tracerOptions
   Trace.inSpan tracer name args act
+
 
 main :: IO ()
 main = do
@@ -67,6 +73,7 @@ main = do
   withGlobalTracing alwaysOn $
     inSpan "Run tests" defaultSpanArguments $
       runTests `finally` printTraceLink
+
 
 runTests :: IO ()
 runTests = do

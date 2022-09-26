@@ -1,136 +1,151 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Trace.Core
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Low-level tracing API
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
--- Traces track the progression of a single request, called a trace, as it is handled by services that make up an application. The request may be initiated by a user or an application. Distributed tracing is a form of tracing that traverses process, network and security boundaries. Each unit of work in a trace is called a span; a trace is a tree of spans. Spans are objects that represent the work being done by individual services or components involved in a request as it flows through a system. A span contains a span context, which is a set of globally unique identifiers that represent the unique request that each span is a part of. A span provides Request, Error and Duration (RED) metrics that can be used to debug availability as well as performance issues.
---
--- A trace contains a single root span which encapsulates the end-to-end latency for the entire request. You can think of this as a single logical operation, such as clicking a button in a web application to add a product to a shopping cart. The root span would measure the time it took from an end-user clicking that button to the operation being completed or failing (so, the item is added to the cart or some error occurs) and the result being displayed to the user. A trace is comprised of the single root span and any number of child spans, which represent operations taking place as part of the request. Each span contains metadata about the operation, such as its name, start and end timestamps, attributes, events, and status.
--- 
--- To create and manage 'Span's in OpenTelemetry, the <https://hackage.haskell.org/package/hs-opentelemetry-api OpenTelemetry API> provides the tracer interface. This object is responsible for tracking the active span in your process, and allows you to access the current span in order to perform operations on it such as adding attributes, events, and finishing it when the work it tracks is complete. One or more tracer objects can be created in a process through the tracer provider, a factory interface that allows for multiple 'Tracer's to be instantiated in a single process with different options.
--- 
--- Generally, the lifecycle of a span resembles the following:
--- 
--- A request is received by a service. The span context is extracted from the request headers, if it exists.
--- A new span is created as a child of the extracted span context; if none exists, a new root span is created.
--- The service handles the request. Additional attributes and events are added to the span that are useful for understanding the context of the request, such as the hostname of the machine handling the request, or customer identifiers.
--- New spans may be created to represent work being done by sub-components of the service.
--- When the service makes a remote call to another service, the current span context is serialized and forwarded to the next service by injecting the span context into the headers or message envelope.
--- The work being done by the service completes, successfully or not. The span status is appropriately set, and the span is marked finished.
--- For more information, see the traces specification, which covers concepts including: trace, span, parent/child relationship, span context, attributes, events and links.
---
---
--- This module implements eveything required to conform to the trace & span public interface described
--- by the OpenTelemetry specification.
---
--- See OpenTelemetry.Trace.Monad for an implementation that's
--- generally easier to use in idiomatic Haskell.
---
+
 -----------------------------------------------------------------------------
+
+{- |
+ Module      :  OpenTelemetry.Trace.Core
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Low-level tracing API
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+
+ Traces track the progression of a single request, called a trace, as it is handled by services that make up an application. The request may be initiated by a user or an application. Distributed tracing is a form of tracing that traverses process, network and security boundaries. Each unit of work in a trace is called a span; a trace is a tree of spans. Spans are objects that represent the work being done by individual services or components involved in a request as it flows through a system. A span contains a span context, which is a set of globally unique identifiers that represent the unique request that each span is a part of. A span provides Request, Error and Duration (RED) metrics that can be used to debug availability as well as performance issues.
+
+ A trace contains a single root span which encapsulates the end-to-end latency for the entire request. You can think of this as a single logical operation, such as clicking a button in a web application to add a product to a shopping cart. The root span would measure the time it took from an end-user clicking that button to the operation being completed or failing (so, the item is added to the cart or some error occurs) and the result being displayed to the user. A trace is comprised of the single root span and any number of child spans, which represent operations taking place as part of the request. Each span contains metadata about the operation, such as its name, start and end timestamps, attributes, events, and status.
+
+ To create and manage 'Span's in OpenTelemetry, the <https://hackage.haskell.org/package/hs-opentelemetry-api OpenTelemetry API> provides the tracer interface. This object is responsible for tracking the active span in your process, and allows you to access the current span in order to perform operations on it such as adding attributes, events, and finishing it when the work it tracks is complete. One or more tracer objects can be created in a process through the tracer provider, a factory interface that allows for multiple 'Tracer's to be instantiated in a single process with different options.
+
+ Generally, the lifecycle of a span resembles the following:
+
+ A request is received by a service. The span context is extracted from the request headers, if it exists.
+ A new span is created as a child of the extracted span context; if none exists, a new root span is created.
+ The service handles the request. Additional attributes and events are added to the span that are useful for understanding the context of the request, such as the hostname of the machine handling the request, or customer identifiers.
+ New spans may be created to represent work being done by sub-components of the service.
+ When the service makes a remote call to another service, the current span context is serialized and forwarded to the next service by injecting the span context into the headers or message envelope.
+ The work being done by the service completes, successfully or not. The span status is appropriately set, and the span is marked finished.
+ For more information, see the traces specification, which covers concepts including: trace, span, parent/child relationship, span context, attributes, events and links.
+
+
+ This module implements eveything required to conform to the trace & span public interface described
+ by the OpenTelemetry specification.
+
+ See OpenTelemetry.Trace.Monad for an implementation that's
+ generally easier to use in idiomatic Haskell.
+-}
 module OpenTelemetry.Trace.Core (
   -- * @TracerProvider@ operations
-    TracerProvider
-  , createTracerProvider
-  , shutdownTracerProvider
-  , forceFlushTracerProvider
-  , getTracerProviderResources
-  , getTracerProviderPropagators
-  , getGlobalTracerProvider
-  , setGlobalTracerProvider
-  , emptyTracerProviderOptions
-  , TracerProviderOptions(..)
+  TracerProvider,
+  createTracerProvider,
+  shutdownTracerProvider,
+  forceFlushTracerProvider,
+  getTracerProviderResources,
+  getTracerProviderPropagators,
+  getGlobalTracerProvider,
+  setGlobalTracerProvider,
+  emptyTracerProviderOptions,
+  TracerProviderOptions (..),
+
   -- * @Tracer@ operations
-  , Tracer
-  , tracerName
-  , HasTracer(..)
-  , makeTracer
-  , getTracer
-  , getImmutableSpanTracer
-  , getTracerTracerProvider
-  , InstrumentationLibrary(..)
-  , TracerOptions(..)
-  , tracerOptions
+  Tracer,
+  tracerName,
+  HasTracer (..),
+  makeTracer,
+  getTracer,
+  getImmutableSpanTracer,
+  getTracerTracerProvider,
+  InstrumentationLibrary (..),
+  TracerOptions (..),
+  tracerOptions,
+
   -- * Span operations
-  , Span
-  , ImmutableSpan(..)
-  , SpanContext(..)
-  -- | W3c Trace flags 
+  Span,
+  ImmutableSpan (..),
+  SpanContext (..),
+  -- | W3c Trace flags
   --
   -- https://www.w3.org/TR/trace-context/#trace-flags
-  , TraceFlags
-  , traceFlagsValue
-  , traceFlagsFromWord8
-  , defaultTraceFlags
-  , isSampled
-  , setSampled
-  , unsetSampled
+  TraceFlags,
+  traceFlagsValue,
+  traceFlagsFromWord8,
+  defaultTraceFlags,
+  isSampled,
+  setSampled,
+  unsetSampled,
+
   -- ** Creating @Span@s
-  , inSpan
-  , inSpan'
-  , inSpan''
-  , createSpan
-  , createSpanWithoutCallStack
-  , wrapSpanContext
-  , SpanKind(..)
-  , defaultSpanArguments
-  , SpanArguments(..)
-  , NewLink(..)
-  , Link(..)
+  inSpan,
+  inSpan',
+  inSpan'',
+  createSpan,
+  createSpanWithoutCallStack,
+  wrapSpanContext,
+  SpanKind (..),
+  defaultSpanArguments,
+  SpanArguments (..),
+  NewLink (..),
+  Link (..),
+
   -- ** Recording @Event@s
-  , Event(..)
-  , NewEvent(..)
-  , addEvent
+  Event (..),
+  NewEvent (..),
+  addEvent,
+
   -- ** Enriching @Span@s with additional information
-  , updateName
-  , OpenTelemetry.Trace.Core.addAttribute
-  , OpenTelemetry.Trace.Core.addAttributes
-  , spanGetAttributes
-  , Attribute(..)
-  , ToAttribute(..)
-  , PrimitiveAttribute(..)
-  , ToPrimitiveAttribute(..)
-  -- ** Recording error information 
-  , recordException
-  , setStatus
-  , SpanStatus(..)
+  updateName,
+  OpenTelemetry.Trace.Core.addAttribute,
+  OpenTelemetry.Trace.Core.addAttributes,
+  spanGetAttributes,
+  Attribute (..),
+  ToAttribute (..),
+  PrimitiveAttribute (..),
+  ToPrimitiveAttribute (..),
+
+  -- ** Recording error information
+  recordException,
+  setStatus,
+  SpanStatus (..),
+
   -- ** Completing @Span@s
-  , endSpan
+  endSpan,
+
   -- ** Accessing other @Span@ information
-  , getSpanContext
-  , isRecording
-  , isValid
-  , spanIsRemote
+  getSpanContext,
+  isRecording,
+  isValid,
+  spanIsRemote,
+
   -- * Utilities
-  , Timestamp
-  , getTimestamp
-  , timestampNanoseconds
-  , unsafeReadSpan
-  , whenSpanIsRecording
+  Timestamp,
+  getTimestamp,
+  timestampNanoseconds,
+  unsafeReadSpan,
+  whenSpanIsRecording,
+
   -- * Limits
-  , SpanLimits(..)
-  , defaultSpanLimits
-  , bracketError
+  SpanLimits (..),
+  defaultSpanLimits,
+  bracketError,
 ) where
+
 import Control.Applicative
-import Control.Concurrent.Async
 import Control.Concurrent (myThreadId)
-import Control.Exception ( Exception(..), try, SomeException(..) )
+import Control.Concurrent.Async
+import Control.Exception (Exception (..), SomeException (..), try)
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Data.Coerce
 import Data.IORef
-import Data.Maybe (isNothing, fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable
@@ -140,12 +155,13 @@ import GHC.Stack
 import Network.HTTP.Types
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Attributes as A
-import OpenTelemetry.Context
 import OpenTelemetry.Common
+import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
+import OpenTelemetry.Logging.Core (Log)
+import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Id.Generator
@@ -156,63 +172,66 @@ import OpenTelemetry.Util
 import System.Clock
 import System.IO.Unsafe
 import System.Timeout (timeout)
-import Control.Monad.IO.Unlift
-import OpenTelemetry.Logging.Core (Log)
--- | Create a 'Span'. 
---
--- If the provided 'Context' has a span in it (inserted via 'OpenTelemetry.Context.insertSpan'),
--- that 'Span' will be used as the parent of the 'Span' created via this API.
---
--- Note: if the @hs-opentelemetry-sdk@ or another SDK is not installed, all actions that use the created
--- 'Span's produced will be no-ops.
---
--- @since 0.0.1.0
-createSpan :: (MonadIO m, HasCallStack)
-  => Tracer
-  -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
+
+
+{- | Create a 'Span'.
+
+ If the provided 'Context' has a span in it (inserted via 'OpenTelemetry.Context.insertSpan'),
+ that 'Span' will be used as the parent of the 'Span' created via this API.
+
+ Note: if the @hs-opentelemetry-sdk@ or another SDK is not installed, all actions that use the created
+ 'Span's produced will be no-ops.
+
+ @since 0.0.1.0
+-}
+createSpan ::
+  (MonadIO m, HasCallStack) =>
+  -- | 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
   -- used for the lifecycle of the created 'Span'
-  -> Context
-  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
+  Tracer ->
+  -- | Context, potentially containing a parent span. If no existing parent (or context) exists,
   -- you can use 'OpenTelemetry.Context.empty'.
-  -> Text
-  -- ^ Span name
-  -> SpanArguments
-  -- ^ Additional span information
-  -> m Span
-  -- ^ The created span.
+  Context ->
+  -- | Span name
+  Text ->
+  -- | Additional span information
+  SpanArguments ->
+  -- | The created span.
+  m Span
 createSpan t c n args = do
   createSpanWithoutCallStack t c n $ case getCallStack callStack of
     [] -> args
-    (_, loc):rest ->
+    (_, loc) : rest ->
       let addFunction = case rest of
-            (fn, _):_ -> (("code.function", toAttribute $ T.pack fn) :)
+            (fn, _) : _ -> (("code.function", toAttribute $ T.pack fn) :)
             [] -> id
-      in args
-          { attributes =
-                addFunction
-              $ ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-              : ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-              : ("code.lineno", toAttribute $ srcLocStartLine loc)
-              : ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-              : attributes args
-          }
+       in args
+            { attributes =
+                addFunction $
+                  ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+                    : ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+                    : ("code.lineno", toAttribute $ srcLocStartLine loc)
+                    : ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+                    : attributes args
+            }
+
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
-createSpanWithoutCallStack
-  :: MonadIO m
-  => Tracer
-  -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
+createSpanWithoutCallStack ::
+  MonadIO m =>
+  -- | 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
   -- used for the lifecycle of the created 'Span'
-  -> Context
-  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
+  Tracer ->
+  -- | Context, potentially containing a parent span. If no existing parent (or context) exists,
   -- you can use 'OpenTelemetry.Context.empty'.
-  -> Text
-  -- ^ Span name
-  -> SpanArguments
-  -- ^ Additional span information
-  -> m Span
-  -- ^ The created span.
-createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
+  Context ->
+  -- | Span name
+  Text ->
+  -- | Additional span information
+  SpanArguments ->
+  -- | The created span.
+  m Span
+createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
   sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
   let parent = lookupSpan ctxt
   tId <- case parent of
@@ -228,47 +247,51 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
       (samplingOutcome, attrs, samplingTraceState) <- case parent of
         -- TODO, this seems logically like what we'd do here
         Just (Dropped _) -> pure (Drop, [], TraceState.empty)
-        _ -> shouldSample (tracerProviderSampler $ tracerProvider t)
-          ctxt
-          tId
-          n
-          args
+        _ ->
+          shouldSample
+            (tracerProviderSampler $ tracerProvider t)
+            ctxt
+            tId
+            n
+            args
 
       -- TODO properly populate
-      let ctxtForSpan = SpanContext
-            { traceFlags = case samplingOutcome of
-                Drop -> defaultTraceFlags
-                RecordOnly -> defaultTraceFlags
-                RecordAndSample -> setSampled defaultTraceFlags
-            , isRemote = False
-            , traceState = samplingTraceState
-            , spanId = sId
-            , traceId = tId
-            }
+      let ctxtForSpan =
+            SpanContext
+              { traceFlags = case samplingOutcome of
+                  Drop -> defaultTraceFlags
+                  RecordOnly -> defaultTraceFlags
+                  RecordAndSample -> setSampled defaultTraceFlags
+              , isRemote = False
+              , traceState = samplingTraceState
+              , spanId = sId
+              , traceId = tId
+              }
 
           mkRecordingSpan = do
             st <- maybe getTimestamp pure startTime
             tid <- myThreadId
             let additionalInfo = [("thread.id", toAttribute $ getThreadId tid)]
-                is = ImmutableSpan
-                  { spanName = n
-                  , spanContext = ctxtForSpan
-                  , spanParent = parent
-                  , spanKind = kind
-                  , spanAttributes =
-                      A.addAttributes
-                        (limitBy t spanAttributeCountLimit)
-                        emptyAttributes
-                        (concat [additionalInfo, attrs, attributes])
-                  , spanLinks =
-                      let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                       in frozenBoundedCollection limitedLinks $ fmap freezeLink links
-                  , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                  , spanStatus = Unset
-                  , spanStart = st
-                  , spanEnd = Nothing
-                  , spanTracer = t
-                  }
+                is =
+                  ImmutableSpan
+                    { spanName = n
+                    , spanContext = ctxtForSpan
+                    , spanParent = parent
+                    , spanKind = kind
+                    , spanAttributes =
+                        A.addAttributes
+                          (limitBy t spanAttributeCountLimit)
+                          emptyAttributes
+                          (concat [additionalInfo, attrs, attributes])
+                    , spanLinks =
+                        let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
+                         in frozenBoundedCollection limitedLinks $ fmap freezeLink links
+                    , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
+                    , spanStatus = Unset
+                    , spanStart = st
+                    , spanEnd = Nothing
+                    , spanTracer = t
+                    }
             s <- newIORef is
             eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
@@ -280,91 +303,99 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments{..} = liftIO $ do
         Drop -> pure $ Dropped ctxtForSpan
         RecordOnly -> mkRecordingSpan
         RecordAndSample -> mkRecordingSpan
-  where
-    freezeLink :: NewLink -> Link
-    freezeLink NewLink{..} = Link
+ where
+  freezeLink :: NewLink -> Link
+  freezeLink NewLink {..} =
+    Link
       { frozenLinkContext = linkContext
       , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
       }
 
--- | The simplest function for annotating code with trace information.
---
--- @since 0.0.1.0
-inSpan
-  :: (MonadUnliftIO m, HasCallStack)
-  => Tracer
-  -> Text
-  -- ^ The name of the span. This may be updated later via 'updateName'
-  -> SpanArguments
-  -- ^ Additional options for creating the span, such as 'SpanKind',
+
+{- | The simplest function for annotating code with trace information.
+
+ @since 0.0.1.0
+-}
+inSpan ::
+  (MonadUnliftIO m, HasCallStack) =>
+  Tracer ->
+  -- | The name of the span. This may be updated later via 'updateName'
+  Text ->
+  -- | Additional options for creating the span, such as 'SpanKind',
   -- span links, starting attributes, etc.
-  -> m a
-  -- ^ The action to perform. 'inSpan' will record the time spent on the
+  SpanArguments ->
+  -- | The action to perform. 'inSpan' will record the time spent on the
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
-  -> m a
+  m a ->
+  m a
 inSpan t n args m = inSpan'' t callStack n args (const m)
 
-inSpan'
-  :: (MonadUnliftIO m, HasCallStack)
-  => Tracer
-  -> Text
-  -- ^ The name of the span. This may be updated later via 'updateName'
-  -> SpanArguments
-  -> (Span -> m a)
-  -> m a
+
+inSpan' ::
+  (MonadUnliftIO m, HasCallStack) =>
+  Tracer ->
+  -- | The name of the span. This may be updated later via 'updateName'
+  Text ->
+  SpanArguments ->
+  (Span -> m a) ->
+  m a
 inSpan' t = inSpan'' t callStack
 
-inSpan''
-  :: (MonadUnliftIO m, HasCallStack)
-  => Tracer
-  -> CallStack
-  -- ^ Record the location of the span in the codebase using the provided
+
+inSpan'' ::
+  (MonadUnliftIO m, HasCallStack) =>
+  Tracer ->
+  -- | Record the location of the span in the codebase using the provided
   -- callstack for source location info.
-  -> Text
-  -- ^ The name of the span. This may be updated later via 'updateName'
-  -> SpanArguments
-  -> (Span -> m a)
-  -> m a
+  CallStack ->
+  -- | The name of the span. This may be updated later via 'updateName'
+  Text ->
+  SpanArguments ->
+  (Span -> m a) ->
+  m a
 inSpan'' t cs n args f = do
   bracketError
-    (liftIO $ do
-      ctx <- getContext
-      s <- createSpanWithoutCallStack t ctx n args
-      adjustContext (insertSpan s)
-      whenSpanIsRecording s $ do
-        case getCallStack cs of
-          [] -> pure ()
-          (fn, loc):_ -> do
-            OpenTelemetry.Trace.Core.addAttributes s
-              [ ("code.function", toAttribute $ T.pack fn)
-              , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-              , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-              , ("code.lineno", toAttribute $ srcLocStartLine loc)
-              , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-              ]
-      pure (lookupSpan ctx, s)
+    ( liftIO $ do
+        ctx <- getContext
+        s <- createSpanWithoutCallStack t ctx n args
+        adjustContext (insertSpan s)
+        whenSpanIsRecording s $ do
+          case getCallStack cs of
+            [] -> pure ()
+            (fn, loc) : _ -> do
+              OpenTelemetry.Trace.Core.addAttributes
+                s
+                [ ("code.function", toAttribute $ T.pack fn)
+                , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+                , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+                , ("code.lineno", toAttribute $ srcLocStartLine loc)
+                , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+                ]
+        pure (lookupSpan ctx, s)
     )
-    (\e (parent, s) -> liftIO $ do
-      forM_ e $ \(SomeException inner) -> do
-        setStatus s $ Error $ T.pack $ displayException inner
-        recordException s [] Nothing inner
-      endSpan s Nothing
-      adjustContext $ \ctx ->
-        maybe (removeSpan ctx) (`insertSpan` ctx) parent
+    ( \e (parent, s) -> liftIO $ do
+        forM_ e $ \(SomeException inner) -> do
+          setStatus s $ Error $ T.pack $ displayException inner
+          recordException s [] Nothing inner
+        endSpan s Nothing
+        adjustContext $ \ctx ->
+          maybe (removeSpan ctx) (`insertSpan` ctx) parent
     )
     (\(_, s) -> f s)
 
 
--- | Returns whether the the @Span@ is currently recording. If a span
--- is dropped, this will always return False. If a span is from an
--- external process, this will return True, and if the span was 
--- created by this process, the span will return True until endSpan
--- is called.
+{- | Returns whether the the @Span@ is currently recording. If a span
+ is dropped, this will always return False. If a span is from an
+ external process, this will return True, and if the span was
+ created by this process, the span will return True until endSpan
+ is called.
+-}
 isRecording :: MonadIO m => Span -> m Bool
 isRecording (Span s) = liftIO (isNothing . spanEnd <$> readIORef s)
 isRecording (FrozenSpan _) = pure True
 isRecording (Dropped _) = pure False
+
 
 {- | Add an attribute to a span. Only has a useful effect on recording spans.
 
@@ -386,74 +417,89 @@ Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetr
 
 @since 0.0.1.0
 -}
-addAttribute :: (MonadIO m, A.ToAttribute a) 
-  => Span 
-  -- ^ Span to add the attribute to
-  -> Text 
-  -- ^ Attribute name
-  -> a 
-  -- ^ Attribute value
-  -> m ()
-addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i -> i
-  { spanAttributes =
-      OpenTelemetry.Attributes.addAttribute
-        (limitBy (spanTracer i) spanAttributeCountLimit)
-        (spanAttributes i)
-        k
-        v
-  }
+addAttribute ::
+  (MonadIO m, A.ToAttribute a) =>
+  -- | Span to add the attribute to
+  Span ->
+  -- | Attribute name
+  Text ->
+  -- | Attribute value
+  a ->
+  m ()
+addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i ->
+  i
+    { spanAttributes =
+        OpenTelemetry.Attributes.addAttribute
+          (limitBy (spanTracer i) spanAttributeCountLimit)
+          (spanAttributes i)
+          k
+          v
+    }
 addAttribute (FrozenSpan _) _ _ = pure ()
 addAttribute (Dropped _) _ _ = pure ()
 
--- | A convenience function related to 'addAttribute' that adds multiple attributes to a span at the same time.
---
--- This function may be slightly more performant than repeatedly calling 'addAttribute'.  
---
--- @since 0.0.1.0
+
+{- | A convenience function related to 'addAttribute' that adds multiple attributes to a span at the same time.
+
+ This function may be slightly more performant than repeatedly calling 'addAttribute'.
+
+ @since 0.0.1.0
+-}
 addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
-addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i -> i
-  { spanAttributes =
-      OpenTelemetry.Attributes.addAttributes
-      (limitBy (spanTracer i) spanAttributeCountLimit)
-      (spanAttributes i)
-      attrs
-  }
+addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i ->
+  i
+    { spanAttributes =
+        OpenTelemetry.Attributes.addAttributes
+          (limitBy (spanTracer i) spanAttributeCountLimit)
+          (spanAttributes i)
+          attrs
+    }
 addAttributes (FrozenSpan _) _ = pure ()
 addAttributes (Dropped _) _ = pure ()
 
--- | Add an event to a recording span. Events will not be recorded for remote spans and dropped spans.
---
--- @since 0.0.1.0
+
+{- | Add an event to a recording span. Events will not be recorded for remote spans and dropped spans.
+
+ @since 0.0.1.0
+-}
 addEvent :: MonadIO m => Span -> NewEvent -> m ()
-addEvent (Span s) NewEvent{..} = liftIO $ do
+addEvent (Span s) NewEvent {..} = liftIO $ do
   t <- maybe getTimestamp pure newEventTimestamp
-  modifyIORef s $ \i -> i
-    { spanEvents = appendToBoundedCollection (spanEvents i) $
-        Event
-          { eventName = newEventName
-          , eventAttributes = A.addAttributes
-              (limitBy (spanTracer i) eventAttributeCountLimit)
-              emptyAttributes
-              newEventAttributes
-          , eventTimestamp = t
-          }
-    }
+  modifyIORef s $ \i ->
+    i
+      { spanEvents =
+          appendToBoundedCollection (spanEvents i) $
+            Event
+              { eventName = newEventName
+              , eventAttributes =
+                  A.addAttributes
+                    (limitBy (spanTracer i) eventAttributeCountLimit)
+                    emptyAttributes
+                    newEventAttributes
+              , eventTimestamp = t
+              }
+      }
 addEvent (FrozenSpan _) _ = pure ()
 addEvent (Dropped _) _ = pure ()
 
--- | Sets the Status of the Span. If used, this will override the default @Span@ status, which is @Unset@.
---
--- These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
---
--- @since 0.0.1.0
+
+{- | Sets the Status of the Span. If used, this will override the default @Span@ status, which is @Unset@.
+
+ These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
+
+ @since 0.0.1.0
+-}
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
-setStatus (Span s) st = liftIO $ modifyIORef s $ \i -> i
-  { spanStatus = if st > spanStatus i
-      then st
-      else spanStatus i
-  }
+setStatus (Span s) st = liftIO $ modifyIORef s $ \i ->
+  i
+    { spanStatus =
+        if st > spanStatus i
+          then st
+          else spanStatus i
+    }
 setStatus (FrozenSpan _) _ = pure ()
 setStatus (Dropped _) _ = pure ()
+
 
 {- |
 Updates the Span name. Upon this update, any sampling behavior based on Span name will depend on the implementation.
@@ -464,35 +510,38 @@ Alternatives for the name update may be late Span creation, when Span is started
 
 @since 0.0.1.0
 -}
-updateName :: MonadIO m =>
-     Span
-  -> Text
-  -- ^ The new span name, which supersedes whatever was passed in when the Span was started
-  -> m ()
-updateName (Span s) n = liftIO $ modifyIORef s $ \i -> i { spanName = n }
+updateName ::
+  MonadIO m =>
+  Span ->
+  -- | The new span name, which supersedes whatever was passed in when the Span was started
+  Text ->
+  m ()
+updateName (Span s) n = liftIO $ modifyIORef s $ \i -> i {spanName = n}
 updateName (FrozenSpan _) _ = pure ()
 updateName (Dropped _) _ = pure ()
+
 
 {- |
 Signals that the operation described by this span has now (or at the time optionally specified) ended.
 
 This does have any effects on child spans. Those may still be running and can be ended later.
 
-This also does not inactivate the Span in any Context it is active in. It is still possible to use an ended span as 
+This also does not inactivate the Span in any Context it is active in. It is still possible to use an ended span as
 parent via a Context it is contained in. Also, putting the Span into a Context will still work after the Span was ended.
 
 @since 0.0.1.0
 -}
-endSpan :: MonadIO m
-  => Span
-  -> Maybe Timestamp
-  -- ^ Optional @Timestamp@ signalling the end time of the span. If not provided, the current time will be used.
-  -> m ()
+endSpan ::
+  MonadIO m =>
+  Span ->
+  -- | Optional @Timestamp@ signalling the end time of the span. If not provided, the current time will be used.
+  Maybe Timestamp ->
+  m ()
 endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
   (alreadyFinished, frozenS) <- atomicModifyIORef s $ \i ->
-    let ref = i { spanEnd = spanEnd i <|> Just ts }
-    in (ref, (isJust $ spanEnd i, ref))
+    let ref = i {spanEnd = spanEnd i <|> Just ts}
+     in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
     eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
@@ -501,33 +550,39 @@ endSpan (Span s) mts = liftIO $ do
 endSpan (FrozenSpan _) _ = pure ()
 endSpan (Dropped _) _ = pure ()
 
--- | A specialized variant of @addEvent@ that records attributes conforming to
--- the OpenTelemetry specification's 
--- <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>
---
--- @since 0.0.1.0
+
+{- | A specialized variant of @addEvent@ that records attributes conforming to
+ the OpenTelemetry specification's
+ <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>
+
+ @since 0.0.1.0
+-}
 recordException :: (MonadIO m, Exception e) => Span -> [(Text, Attribute)] -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
-  addEvent s $ NewEvent
-    { newEventName = "exception"
-    , newEventAttributes =
-        attrs ++
-        [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
-        , ("exception.message", A.toAttribute message)
-        , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
-        ]
-    , newEventTimestamp = ts
-    }
+  addEvent s $
+    NewEvent
+      { newEventName = "exception"
+      , newEventAttributes =
+          attrs
+            ++ [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
+               , ("exception.message", A.toAttribute message)
+               , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
+               ]
+      , newEventTimestamp = ts
+      }
+
 
 -- | Returns @True@ if the @SpanContext@ has a non-zero @TraceID@ and a non-zero @SpanID@
 isValid :: SpanContext -> Bool
-isValid sc = not
-  (isEmptyTraceId (traceId sc) && isEmptySpanId (spanId sc))
+isValid sc =
+  not
+    (isEmptyTraceId (traceId sc) && isEmptySpanId (spanId sc))
+
 
 {- |
-Returns @True@ if the @SpanContext@ was propagated from a remote parent, 
+Returns @True@ if the @SpanContext@ was propagated from a remote parent,
 
 When extracting a SpanContext through the Propagators API, isRemote MUST return @True@,
 whereas for the SpanContext of any child spans it MUST return @False@.
@@ -539,20 +594,25 @@ spanIsRemote (Span s) = liftIO $ do
 spanIsRemote (FrozenSpan c) = pure $ Types.isRemote c
 spanIsRemote (Dropped _) = pure False
 
--- | Really only intended for tests, this function does not conform
--- to semantic versioning .
+
+{- | Really only intended for tests, this function does not conform
+ to semantic versioning .
+-}
 unsafeReadSpan :: MonadIO m => Span -> m ImmutableSpan
 unsafeReadSpan = \case
   Span ref -> liftIO $ readIORef ref
   FrozenSpan _s -> error "This span is from another process"
   Dropped _s -> error "This span was dropped"
 
+
 wrapSpanContext :: SpanContext -> Span
 wrapSpanContext = FrozenSpan
 
--- | This can be useful for pulling data for attributes and
--- using it to copy / otherwise use the data to further enrich
--- instrumentation.
+
+{- | This can be useful for pulling data for attributes and
+ using it to copy / otherwise use the data to further enrich
+ instrumentation.
+-}
 spanGetAttributes :: MonadIO m => Span -> m A.Attributes
 spanGetAttributes = \case
   Span ref -> do
@@ -561,43 +621,50 @@ spanGetAttributes = \case
   FrozenSpan _ -> pure A.emptyAttributes
   Dropped _ -> pure A.emptyAttributes
 
--- | Sometimes, you may have a more accurate notion of when a traced
--- operation has ended. In this case you may call 'getTimestamp', and then
--- supply 'endSpan' with the more accurate timestamp you have acquired.
---
--- When using the monadic interface, (such as 'OpenTelemetry.Trace.Monad.inSpan', you may call
--- 'endSpan' early to record the information, and the first call to 'endSpan' will be honored.
---
--- @since 0.0.1.0
+
+{- | Sometimes, you may have a more accurate notion of when a traced
+ operation has ended. In this case you may call 'getTimestamp', and then
+ supply 'endSpan' with the more accurate timestamp you have acquired.
+
+ When using the monadic interface, (such as 'OpenTelemetry.Trace.Monad.inSpan', you may call
+ 'endSpan' early to record the information, and the first call to 'endSpan' will be honored.
+
+ @since 0.0.1.0
+-}
 getTimestamp :: MonadIO m => m Timestamp
 getTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
+
 limitBy ::
-     Tracer
-  -> (SpanLimits -> Maybe Int)
-  -- ^ Attribute count
-  -> AttributeLimits
-limitBy t countF = AttributeLimits
-  { attributeCountLimit = countLimit
-  , attributeLengthLimit = lengthLimit
-  }
-  where
-    countLimit =
-      countF (tracerProviderSpanLimits $ tracerProvider t) <|>
-      attributeCountLimit
+  Tracer ->
+  -- | Attribute count
+  (SpanLimits -> Maybe Int) ->
+  AttributeLimits
+limitBy t countF =
+  AttributeLimits
+    { attributeCountLimit = countLimit
+    , attributeLengthLimit = lengthLimit
+    }
+ where
+  countLimit =
+    countF (tracerProviderSpanLimits $ tracerProvider t)
+      <|> attributeCountLimit
         (tracerProviderAttributeLimits $ tracerProvider t)
-    lengthLimit =
-      spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t) <|>
-      attributeLengthLimit
+  lengthLimit =
+    spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t)
+      <|> attributeLengthLimit
         (tracerProviderAttributeLimits $ tracerProvider t)
+
 
 globalTracer :: IORef TracerProvider
 globalTracer = unsafePerformIO $ do
-  p <- createTracerProvider
-    []
-    emptyTracerProviderOptions
+  p <-
+    createTracerProvider
+      []
+      emptyTracerProviderOptions
   newIORef p
 {-# NOINLINE globalTracer #-}
+
 
 data TracerProviderOptions = TracerProviderOptions
   { tracerProviderOptionsIdGenerator :: IdGenerator
@@ -609,155 +676,185 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsLogger :: Log Text -> IO ()
   }
 
--- | Options for creating a 'TracerProvider' with invalid ids, no resources, default limits, and no propagators.
---
--- In effect, tracing is a no-op when using this configuration.
---
--- @since 0.0.1.0
-emptyTracerProviderOptions :: TracerProviderOptions
-emptyTracerProviderOptions = TracerProviderOptions
-  dummyIdGenerator
-  (parentBased $ parentBasedOptions alwaysOn)
-  emptyMaterializedResources
-  defaultAttributeLimits
-  defaultSpanLimits
-  mempty
-  (\_ -> pure ())
 
--- | Initialize a new tracer provider
---
--- You should generally use 'getGlobalTracerProvider' for most applications.
+{- | Options for creating a 'TracerProvider' with invalid ids, no resources, default limits, and no propagators.
+
+ In effect, tracing is a no-op when using this configuration.
+
+ @since 0.0.1.0
+-}
+emptyTracerProviderOptions :: TracerProviderOptions
+emptyTracerProviderOptions =
+  TracerProviderOptions
+    dummyIdGenerator
+    (parentBased $ parentBasedOptions alwaysOn)
+    emptyMaterializedResources
+    defaultAttributeLimits
+    defaultSpanLimits
+    mempty
+    (\_ -> pure ())
+
+
+{- | Initialize a new tracer provider
+
+ You should generally use 'getGlobalTracerProvider' for most applications.
+-}
 createTracerProvider :: MonadIO m => [Processor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
-  pure $ TracerProvider
-    (V.fromList ps)
-    g
-    (tracerProviderOptionsSampler opts)
-    (tracerProviderOptionsResources opts)
-    (tracerProviderOptionsAttributeLimits opts)
-    (tracerProviderOptionsSpanLimits opts)
-    (tracerProviderOptionsPropagators opts)
-    (tracerProviderOptionsLogger opts)
+  pure $
+    TracerProvider
+      (V.fromList ps)
+      g
+      (tracerProviderOptionsSampler opts)
+      (tracerProviderOptionsResources opts)
+      (tracerProviderOptionsAttributeLimits opts)
+      (tracerProviderOptionsSpanLimits opts)
+      (tracerProviderOptionsPropagators opts)
+      (tracerProviderOptionsLogger opts)
 
--- | Access the globally configured 'TracerProvider'. Once the 
--- the global tracer provider is initialized via the OpenTelemetry SDK,
--- 'Tracer's created from this 'TracerProvider' will export spans to their
--- configured exporters. Prior to that, any 'Tracer's acquired from the
--- uninitialized 'TracerProvider' will create no-op spans.
---
--- @since 0.0.1.0
+
+{- | Access the globally configured 'TracerProvider'. Once the
+ the global tracer provider is initialized via the OpenTelemetry SDK,
+ 'Tracer's created from this 'TracerProvider' will export spans to their
+ configured exporters. Prior to that, any 'Tracer's acquired from the
+ uninitialized 'TracerProvider' will create no-op spans.
+
+ @since 0.0.1.0
+-}
 getGlobalTracerProvider :: MonadIO m => m TracerProvider
 getGlobalTracerProvider = liftIO $ readIORef globalTracer
 
--- | Overwrite the globally configured 'TracerProvider'.
---
--- 'Tracer's acquired from the previously installed 'TracerProvider'
--- will continue to use that 'TracerProvider's configured span processors,
--- exporters, and other settings.
---
--- @since 0.0.1.0
+
+{- | Overwrite the globally configured 'TracerProvider'.
+
+ 'Tracer's acquired from the previously installed 'TracerProvider'
+ will continue to use that 'TracerProvider's configured span processors,
+ exporters, and other settings.
+
+ @since 0.0.1.0
+-}
 setGlobalTracerProvider :: MonadIO m => TracerProvider -> m ()
 setGlobalTracerProvider = liftIO . writeIORef globalTracer
+
 
 getTracerProviderResources :: TracerProvider -> MaterializedResources
 getTracerProviderResources = tracerProviderResources
 
+
 getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders ResponseHeaders
 getTracerProviderPropagators = tracerProviderPropagators
+
 
 -- | Tracer configuration options.
 newtype TracerOptions = TracerOptions
   { tracerSchema :: Maybe Text
-  -- ^ OpenTelemetry provides a schema for describing common attributes so that backends can easily parse and identify relevant information. 
+  -- ^ OpenTelemetry provides a schema for describing common attributes so that backends can easily parse and identify relevant information.
   -- It is important to understand these conventions when writing instrumentation, in order to normalize your data and increase its utility.
   --
   -- In particular, this option is valuable to set when possible, because it allows vendors to normalize data accross releases in order to account
   -- for attribute name changes.
   }
 
+
 -- | Default Tracer options
 tracerOptions :: TracerOptions
 tracerOptions = TracerOptions Nothing
 
--- | A small utility lens for extracting a 'Tracer' from a larger data type
---
--- This will generally be most useful as a means of implementing 'OpenTelemetry.Trace.Monad.getTracer'
---
--- @since 0.0.1.0
+
+{- | A small utility lens for extracting a 'Tracer' from a larger data type
+
+ This will generally be most useful as a means of implementing 'OpenTelemetry.Trace.Monad.getTracer'
+
+ @since 0.0.1.0
+-}
 class HasTracer s where
   tracerL :: Lens' s Tracer
 
+
 makeTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Tracer
-makeTracer tp n TracerOptions{} = Tracer n tp
+makeTracer tp n TracerOptions {} = Tracer n tp
+
 
 getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
-getTracer tp n TracerOptions{} = liftIO $ do
+getTracer tp n TracerOptions {} = liftIO $ do
   pure $ Tracer n tp
 {-# DEPRECATED getTracer "use makeTracer" #-}
+
 
 getImmutableSpanTracer :: ImmutableSpan -> Tracer
 getImmutableSpanTracer = spanTracer
 
+
 getTracerTracerProvider :: Tracer -> TracerProvider
 getTracerTracerProvider = tracerProvider
 
--- | Smart constructor for 'SpanArguments' providing reasonable values for most 'Span's created
--- that are internal to an application.
---
--- Defaults:
---
--- - `kind`: `Internal`
--- - `attributes`: @[]@
--- - `links`: @[]@
--- - `startTime`: `Nothing` (`getTimestamp` will be called upon `Span` creation)
-defaultSpanArguments :: SpanArguments
-defaultSpanArguments = SpanArguments
-  { kind = Internal
-  , attributes = []
-  , links = []
-  , startTime = Nothing
-  }
 
--- | This method provides a way for provider to do any cleanup required.
---
--- This will also trigger shutdowns on all internal processors.
---
--- @since 0.0.1.0
+{- | Smart constructor for 'SpanArguments' providing reasonable values for most 'Span's created
+ that are internal to an application.
+
+ Defaults:
+
+ - `kind`: `Internal`
+ - `attributes`: @[]@
+ - `links`: @[]@
+ - `startTime`: `Nothing` (`getTimestamp` will be called upon `Span` creation)
+-}
+defaultSpanArguments :: SpanArguments
+defaultSpanArguments =
+  SpanArguments
+    { kind = Internal
+    , attributes = []
+    , links = []
+    , startTime = Nothing
+    }
+
+
+{- | This method provides a way for provider to do any cleanup required.
+
+ This will also trigger shutdowns on all internal processors.
+
+ @since 0.0.1.0
+-}
 shutdownTracerProvider :: MonadIO m => TracerProvider -> m ()
-shutdownTracerProvider TracerProvider{..} = liftIO $ do
+shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
     processorShutdown processor
   mapM_ wait asyncShutdownResults
 
--- | This method provides a way for provider to immediately export all spans that have not yet 
--- been exported for all the internal processors.
-forceFlushTracerProvider
-  :: MonadIO m
-  => TracerProvider
-  -> Maybe Int
-  -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
-  -> m FlushResult
-  -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
-forceFlushTracerProvider TracerProvider{..} mtimeout = liftIO $ do
+
+{- | This method provides a way for provider to immediately export all spans that have not yet
+ been exported for all the internal processors.
+-}
+forceFlushTracerProvider ::
+  MonadIO m =>
+  TracerProvider ->
+  -- | Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  Maybe Int ->
+  -- | Result that denotes whether the flush action succeeded, failed, or timed out.
+  m FlushResult
+forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   jobs <- forM tracerProviderProcessors $ \processor -> async $ do
     processorForceFlush processor
-  mresult <- timeout (fromMaybe 5_000_000 mtimeout) $
-    foldM
-      (\status action -> do
-        res <- waitCatch action
-        pure $! case res of
-          Left _err -> FlushError
-          Right _ok -> status
-      )
-      FlushSuccess
-      jobs
+  mresult <-
+    timeout (fromMaybe 5_000_000 mtimeout) $
+      foldM
+        ( \status action -> do
+            res <- waitCatch action
+            pure $! case res of
+              Left _err -> FlushError
+              Right _ok -> status
+        )
+        FlushSuccess
+        jobs
   case mresult of
     Nothing -> pure FlushTimeout
     Just res -> pure res
 
--- | Utility function to only perform costly attribute annotations
--- for spans that are actually 
+
+{- | Utility function to only perform costly attribute annotations
+ for spans that are actually
+-}
 whenSpanIsRecording :: MonadIO m => Span -> m () -> m ()
 whenSpanIsRecording (Span ref) m = do
   span_ <- liftIO $ readIORef ref
@@ -767,5 +864,6 @@ whenSpanIsRecording (Span ref) m = do
 whenSpanIsRecording (FrozenSpan _) _ = pure ()
 whenSpanIsRecording (Dropped _) _ = pure ()
 
+
 timestampNanoseconds :: Timestamp -> Word64
-timestampNanoseconds (Timestamp TimeSpec{..}) = fromIntegral (sec * 1_000_000_000) + fromIntegral nsec
+timestampNanoseconds (Timestamp TimeSpec {..}) = fromIntegral (sec * 1_000_000_000) + fromIntegral nsec

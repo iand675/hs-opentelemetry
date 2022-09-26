@@ -1,21 +1,26 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Resource.OperatingSystem
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Information about the operating system (OS) on which the process represented by this resource is running.
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
--- In case of virtualized environments, this is the operating system as it is observed by the process, i.e., the virtualized guest rather than the underlying host.
---
+
 -----------------------------------------------------------------------------
+
+{- |
+ Module      :  OpenTelemetry.Resource.OperatingSystem
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Information about the operating system (OS) on which the process represented by this resource is running.
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+
+ In case of virtualized environments, this is the operating system as it is observed by the process, i.e., the virtualized guest rather than the underlying host.
+-}
 module OpenTelemetry.Resource.OperatingSystem where
+
 import Data.Text (Text)
 import OpenTelemetry.Resource
+
 
 -- | The operating system (OS) on which the process represented by this resource is running.
 data OperatingSystem = OperatingSystem
@@ -49,7 +54,6 @@ data OperatingSystem = OperatingSystem
   -- +-----------------+---------------------------------------+
   -- | @z_os@          | IBM z/OS                              |
   -- +-----------------+---------------------------------------+
-
   , osDescription :: Maybe Text
   -- ^ Human readable (not intended to be parsed) OS version information, like e.g. reported by @ver@ or @lsb_release -a@ commands.
   , osName :: Maybe Text
@@ -58,12 +62,16 @@ data OperatingSystem = OperatingSystem
   -- ^ The version string of the operating system as defined in
   }
 
+
 instance ToResource OperatingSystem where
   type ResourceSchema OperatingSystem = 'Nothing
+
+
   -- TODO ^ schema
-  toResource OperatingSystem{..} = mkResource
-    [ "os.type" .= osType
-    , "os.description" .=? osDescription
-    , "os.name" .=? osName
-    , "os.version" .=? osVersion
-    ]
+  toResource OperatingSystem {..} =
+    mkResource
+      [ "os.type" .= osType
+      , "os.description" .=? osDescription
+      , "os.name" .=? osName
+      , "os.version" .=? osVersion
+      ]

@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module OpenTelemetry.ContextSpec where
+
 import Control.Monad
 import Data.Maybe
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import Test.Hspec
 import Prelude hiding (lookup)
+
 
 spec :: Spec
 spec = describe "Context" $ do
@@ -60,4 +63,3 @@ spec = describe "Context" $ do
     specify "Setter argument" pending
     specify "Getter argument" pending
     specify "Getter argument returning keys" pending
-
