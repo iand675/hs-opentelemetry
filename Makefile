@@ -1,3 +1,9 @@
+format:
+	fourmolu --mode inplace $$(git ls-files | grep -E "\.hs$$")
+
+format.check:
+	fourmolu --mode check $$(git ls-files | grep -E "\.hs$$")
+
 CABALS := \
   api/hs-opentelemetry-api.cabal\
   examples/hspec/hspec-example.cabal\
