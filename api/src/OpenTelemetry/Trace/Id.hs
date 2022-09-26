@@ -111,18 +111,23 @@ newTraceId gen = liftIO (TraceId . toShort <$> generateTraceIdBytes gen)
 --
 -- @since 0.1.0.0
 isEmptyTraceId :: TraceId -> Bool
+#if MIN_VERSION_base(4,17,0)
 isEmptyTraceId (TraceId (SBS arr)) =
   isTrue#
     (eqWord#
       (or#
-#if MIN_VERSION_base(4,17,0)
         (word64ToWord# (indexWord64Array# arr 0#))
         (word64ToWord# (indexWord64Array# arr 1#)))
+      (int2Word# 0#))
 #else
+isEmptyTraceId (TraceId (SBS arr)) =
+  isTrue#
+    (eqWord#
+      (or#
         (indexWord64Array# arr 0#)
         (indexWord64Array# arr 1#))
-#endif
       (int2Word# 0#))
+#endif
 
 -- | Access the byte-level representation of the provided 'TraceId'
 --
@@ -179,14 +184,17 @@ newSpanId gen = liftIO (SpanId . toShort <$> generateSpanIdBytes gen)
 --
 -- @since 0.1.0.0
 isEmptySpanId :: SpanId -> Bool
+#if MIN_VERSION_base(4,17,0)
 isEmptySpanId (SpanId (SBS arr)) = isTrue#
   (eqWord#
-#if MIN_VERSION_base(4,17,0)
     (word64ToWord# (indexWord64Array# arr 0#))
-#else
-    (indexWord64Array# arr 0#)
-#endif
     (int2Word# 0#))
+#else
+isEmptySpanId (SpanId (SBS arr)) = isTrue#
+  (eqWord#
+    (indexWord64Array# arr 0#)
+    (int2Word# 0#))
+#endif
 
 -- | Access the byte-level representation of the provided 'SpanId'
 --
