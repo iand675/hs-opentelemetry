@@ -1,7 +1,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-module OpenTelemetry.Instrumentation.PostgresqlSimple 
-  ( staticConnectionAttributes
+
+module OpenTelemetry.Instrumentation.PostgresqlSimple (
+  staticConnectionAttributes,
   {-
   -- * Queries that return results
     query
@@ -32,74 +33,77 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple
   -- * Reexported functions
   , module X
   -}
-  ) where
+) where
 
 import Control.Monad.IO.Class
-import qualified Database.PostgreSQL.Simple as Simple
-import Database.PostgreSQL.Simple as X hiding 
-  ( query
-  , query_
-  , queryWith
-  , queryWith_
-  , fold
-  , foldWithOptions
-  , fold_
-  , foldWithOptions_
-  , forEach
-  , forEach_
-  , returning
-  , foldWith
-  , foldWithOptionsAndParser
-  , foldWith_
-  , foldWithOptionsAndParser_
-  , forEachWith
-  , forEachWith_
-  , returningWith
-  , execute
-  , execute_
-  , executeMany
-  )
-import Database.PostgreSQL.Simple.Internal
-    ( Connection(Connection, connectionHandle) )
 import qualified Data.ByteString.Char8 as C
-import qualified Database.PostgreSQL.LibPQ as LibPQ
+import Data.IP
+import Data.Int (Int64)
+import Data.Maybe (catMaybes)
+import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import qualified Database.PostgreSQL.LibPQ as LibPQ
+import Database.PostgreSQL.Simple as X hiding (
+  execute,
+  executeMany,
+  execute_,
+  fold,
+  foldWith,
+  foldWithOptions,
+  foldWithOptionsAndParser,
+  foldWithOptionsAndParser_,
+  foldWithOptions_,
+  foldWith_,
+  fold_,
+  forEach,
+  forEachWith,
+  forEachWith_,
+  forEach_,
+  query,
+  queryWith,
+  queryWith_,
+  query_,
+  returning,
+  returningWith,
+ )
+import qualified Database.PostgreSQL.Simple as Simple
+import qualified Database.PostgreSQL.Simple.FromRow as Simple
+import Database.PostgreSQL.Simple.Internal (
+  Connection (Connection, connectionHandle),
+ )
+import GHC.Stack
+import OpenTelemetry.Resource ((.=), (.=?))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
-import OpenTelemetry.Resource ((.=), (.=?))
-import Data.Maybe (catMaybes)
-import qualified Data.Text.Encoding as TE
 import Text.Read (readMaybe)
-import Data.IP
-import qualified Database.PostgreSQL.Simple.FromRow as Simple
-import Data.Int (Int64)
 import UnliftIO
-import Data.Text (Text)
-import GHC.Stack
+
 
 -- | Get attributes that can be attached to a span denoting some database action
 staticConnectionAttributes :: MonadIO m => Connection -> m [(T.Text, Attribute)]
-staticConnectionAttributes Connection{connectionHandle} = liftIO $ do
+staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
   (mDb, mUser, mHost, mPort) <- withMVar connectionHandle $ \pqConn -> do
     (,,,)
       <$> LibPQ.db pqConn
-      <*> LibPQ.user pqConn 
+      <*> LibPQ.user pqConn
       <*> LibPQ.host pqConn
       <*> LibPQ.port pqConn
-  pure $ 
-    ("db.system", toAttribute ("postgresql" :: T.Text)) :
-    catMaybes
-      [ "db.user" .=? (TE.decodeUtf8 <$> mUser)
-      , "db.name" .=? (TE.decodeUtf8 <$> mDb)
-      , "net.peer.port" .=? (do
-          port <- TE.decodeUtf8 <$> mPort
-          (readMaybe $ T.unpack port) :: Maybe Int
-        )
-      , case (readMaybe . C.unpack) =<< mHost of
-          Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost)
-          Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
-          Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
-      ]
+  pure $
+    ("db.system", toAttribute ("postgresql" :: T.Text))
+      : catMaybes
+        [ "db.user" .=? (TE.decodeUtf8 <$> mUser)
+        , "db.name" .=? (TE.decodeUtf8 <$> mDb)
+        , "net.peer.port"
+            .=? ( do
+                    port <- TE.decodeUtf8 <$> mPort
+                    (readMaybe $ T.unpack port) :: Maybe Int
+                )
+        , case (readMaybe . C.unpack) =<< mHost of
+            Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost)
+            Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
+            Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
+        ]
 
 {-
 -- | Perform a @SELECT@ or other SQL query that is expected to return

@@ -12,13 +12,13 @@ import qualified Data.Text as T
 import GHC.Exception (SrcLoc (..), getCallStack)
 import GHC.Stack (CallStack, callStack)
 import GHC.Stack.Types (HasCallStack)
-
 import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext)
 import qualified OpenTelemetry.Context.ThreadLocal as TraceCore.SpanContext
 import qualified OpenTelemetry.Trace as Trace
 import OpenTelemetry.Trace.Core (ToAttribute (..), endSpan, recordException, setStatus, whenSpanIsRecording)
 import qualified OpenTelemetry.Trace.Core as TraceCore
+
 
 bracketError' :: MonadMask m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 bracketError' before after thing = MonadMask.mask $ \restore -> do
@@ -38,6 +38,7 @@ bracketError' before after thing = MonadMask.mask $ \restore -> do
       MonadMask.uninterruptibleMask_ $ after Nothing x
       return y
 
+
 -- | The simplest function for annotating code with trace information.
 inSpanM ::
   (MonadIO m, MonadMask m, HasCallStack) =>
@@ -54,6 +55,7 @@ inSpanM ::
   m a
 inSpanM t n args m = inSpanM'' t callStack n args (const m)
 
+
 inSpanM' ::
   (MonadIO m, MonadMask m, HasCallStack) =>
   Trace.Tracer ->
@@ -63,6 +65,7 @@ inSpanM' ::
   (Trace.Span -> m a) ->
   m a
 inSpanM' t = inSpanM'' t callStack
+
 
 inSpanM'' ::
   (MonadMask m, HasCallStack, MonadIO m) =>
@@ -76,29 +79,29 @@ inSpanM'' ::
   (Trace.Span -> m a) ->
   m a
 inSpanM'' t cs n args f = bracketError' before after (f . snd)
-  where
-    before = do
-      ctx <- TraceCore.SpanContext.getContext
-      s <- TraceCore.createSpanWithoutCallStack t ctx n args
-      adjustContext (insertSpan s)
-      whenSpanIsRecording s $ do
-        case getCallStack cs of
-          [] -> pure ()
-          (fn, loc) : _ -> do
-            TraceCore.addAttributes
-              s
-              [ ("code.function", toAttribute $ T.pack fn),
-                ("code.namespace", toAttribute $ T.pack $ srcLocModule loc),
-                ("code.filepath", toAttribute $ T.pack $ srcLocFile loc),
-                ("code.lineno", toAttribute $ srcLocStartLine loc),
-                ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-              ]
-      pure (lookupSpan ctx, s)
+ where
+  before = do
+    ctx <- TraceCore.SpanContext.getContext
+    s <- TraceCore.createSpanWithoutCallStack t ctx n args
+    adjustContext (insertSpan s)
+    whenSpanIsRecording s $ do
+      case getCallStack cs of
+        [] -> pure ()
+        (fn, loc) : _ -> do
+          TraceCore.addAttributes
+            s
+            [ ("code.function", toAttribute $ T.pack fn)
+            , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+            , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+            , ("code.lineno", toAttribute $ srcLocStartLine loc)
+            , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+            ]
+    pure (lookupSpan ctx, s)
 
-    after e (parent, s) = do
-      forM_ e $ \(MonadMask.SomeException inner) -> do
-        setStatus s $ Trace.Error $ T.pack $ MonadMask.displayException inner
-        recordException s [] Nothing inner
-      endSpan s Nothing
-      adjustContext $ \ctx ->
-        maybe (removeSpan ctx) (`insertSpan` ctx) parent
+  after e (parent, s) = do
+    forM_ e $ \(MonadMask.SomeException inner) -> do
+      setStatus s $ Trace.Error $ T.pack $ MonadMask.displayException inner
+      recordException s [] Nothing inner
+    endSpan s Nothing
+    adjustContext $ \ctx ->
+      maybe (removeSpan ctx) (`insertSpan` ctx) parent

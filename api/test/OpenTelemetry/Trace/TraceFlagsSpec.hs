@@ -3,6 +3,7 @@ module OpenTelemetry.Trace.TraceFlagsSpec where
 import OpenTelemetry.Trace.Core
 import Test.Hspec
 
+
 spec :: Spec
 spec = describe "TraceFlags" $ do
   it "starts unsampled by default" $ do

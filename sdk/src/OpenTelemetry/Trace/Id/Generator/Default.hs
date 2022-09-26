@@ -1,23 +1,27 @@
 {-# LANGUAGE CPP #-}
------------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Trace.Id.Generator.Default
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
--- A reasonably performant out of the box implementation of random span and trace id generation.
---
------------------------------------------------------------------------------
-module OpenTelemetry.Trace.Id.Generator.Default 
-  ( defaultIdGenerator
-  ) where
 
-import System.Random.MWC
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+
+{- |
+ Module      :  OpenTelemetry.Trace.Id.Generator.Default
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+
+ A reasonably performant out of the box implementation of random span and trace id generation.
+-}
+module OpenTelemetry.Trace.Id.Generator.Default (
+  defaultIdGenerator,
+) where
+
+import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
 import System.IO.Unsafe (unsafePerformIO)
-import OpenTelemetry.Trace.Id.Generator (IdGenerator(..))
+import System.Random.MWC
+
 
 #if MIN_VERSION_random(1,2,0)
 import System.Random.Stateful
@@ -25,9 +29,11 @@ import System.Random.Stateful
 import Data.ByteString.Random
 #endif
 
--- | The default generator for trace and span ids.
---
--- @since 0.1.0.0
+
+{- | The default generator for trace and span ids.
+
+ @since 0.1.0.0
+-}
 defaultIdGenerator :: IdGenerator
 #if MIN_VERSION_random(1,2,0)
 defaultIdGenerator = unsafePerformIO $ do

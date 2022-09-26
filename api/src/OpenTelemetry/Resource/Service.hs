@@ -1,27 +1,32 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Resource.Service
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Resource information about a "service"
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
+
 -----------------------------------------------------------------------------
+
+{- |
+ Module      :  OpenTelemetry.Resource.Service
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Resource information about a "service"
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+-}
 module OpenTelemetry.Resource.Service where
+
 import Data.Text
 import OpenTelemetry.Resource
+
 
 -- | A service instance
 data Service = Service
   { serviceName :: Text
   -- ^ Logical name of the service.
   --
-  -- MUST be the same for all instances of horizontally scaled services. 
-  -- If the value was not specified, SDKs MUST fallback to unknown_service: concatenated with process.executable.name, 
+  -- MUST be the same for all instances of horizontally scaled services.
+  -- If the value was not specified, SDKs MUST fallback to unknown_service: concatenated with process.executable.name,
   -- e.g. unknown_service:bash. If process.executable.name is not available, the value MUST be set to unknown_service.
   --
   -- If using the built-in resource detectors, this can be specified via the
@@ -44,11 +49,13 @@ data Service = Service
   -- Example: @2.0.0@
   }
 
+
 instance ToResource Service where
   type ResourceSchema Service = 'Nothing
-  toResource Service{..} = mkResource
-    [ "service.name" .= serviceName
-    , "service.namespace" .=? serviceNamespace
-    , "service.instance.id" .=? serviceInstanceId
-    , "service.version" .=? serviceVersion
-    ]
+  toResource Service {..} =
+    mkResource
+      [ "service.name" .= serviceName
+      , "service.namespace" .=? serviceNamespace
+      , "service.instance.id" .=? serviceInstanceId
+      , "service.version" .=? serviceVersion
+      ]

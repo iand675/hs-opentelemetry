@@ -1,40 +1,45 @@
 {-# LANGUAGE RecordWildCards #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Processor.Batch
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Performant exporting of spans in time & space-bounded batches.
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
--- This is an implementation of the Span Processor which create batches of finished spans and passes the export-friendly span data representations to the configured Exporter.
---
+
 -----------------------------------------------------------------------------
-module OpenTelemetry.Processor.Batch
-  ( BatchTimeoutConfig(..)
-  , batchTimeoutConfig
-  , batchProcessor
+
+{- |
+ Module      :  OpenTelemetry.Processor.Batch
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Performant exporting of spans in time & space-bounded batches.
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+
+ This is an implementation of the Span Processor which create batches of finished spans and passes the export-friendly span data representations to the configured Exporter.
+-}
+module OpenTelemetry.Processor.Batch (
+  BatchTimeoutConfig (..),
+  batchTimeoutConfig,
+  batchProcessor,
   -- , BatchProcessorOperations
-  ) where
-import Control.Monad.IO.Class
-import OpenTelemetry.Processor
-import OpenTelemetry.Exporter (Exporter)
-import qualified OpenTelemetry.Exporter as Exporter
-import VectorBuilder.Builder as Builder
-import VectorBuilder.Vector as Builder
-import Data.IORef (atomicModifyIORef', readIORef, newIORef)
+) where
+
 import Control.Concurrent.Async
 import Control.Concurrent.MVar (newEmptyMVar, takeMVar, tryPutMVar)
-import Control.Monad
-import Control.Monad.Trans.Except
-import System.Timeout
 import Control.Exception
+import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Except
 import Data.HashMap.Strict (HashMap)
-import OpenTelemetry.Trace.Core
 import qualified Data.HashMap.Strict as HashMap
+import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Vector (Vector)
+import OpenTelemetry.Exporter (Exporter)
+import qualified OpenTelemetry.Exporter as Exporter
+import OpenTelemetry.Processor
+import OpenTelemetry.Trace.Core
+import System.Timeout
+import VectorBuilder.Builder as Builder
+import VectorBuilder.Vector as Builder
+
 
 -- | Configurable options for batch exporting frequence and size
 data BatchTimeoutConfig = BatchTimeoutConfig
@@ -49,16 +54,20 @@ data BatchTimeoutConfig = BatchTimeoutConfig
   , maxExportBatchSize :: Int
   -- ^ The maximum batch size of every export. It must be
   -- smaller or equal to 'maxQueueSize'. The default value is 512.
-  } deriving (Show)
+  }
+  deriving (Show)
+
 
 -- | Default configuration values
 batchTimeoutConfig :: BatchTimeoutConfig
-batchTimeoutConfig = BatchTimeoutConfig
-  { maxQueueSize = 1024
-  , scheduledDelayMillis = 5000
-  , exportTimeoutMillis = 30000
-  , maxExportBatchSize = 512
-  }
+batchTimeoutConfig =
+  BatchTimeoutConfig
+    { maxQueueSize = 1024
+    , scheduledDelayMillis = 5000
+    , exportTimeoutMillis = 30000
+    , maxExportBatchSize = 512
+    }
+
 
 -- type BatchProcessorOperations = ()
 
@@ -74,9 +83,7 @@ batchTimeoutConfig = BatchTimeoutConfig
 --   , gbVector :: !(M.IOVector a)
 --   }
 
-
 {- brainstorm: Single Word64 state sketch
-
 
   63 (high bit): green or blue
   32-62: read section
@@ -87,12 +94,12 @@ batchTimeoutConfig = BatchTimeoutConfig
 
 Green
     512       512       512       512
-|---------|---------|---------|---------|
+\|---------|---------|---------|---------|
      0         1         2         3
 
 Blue
     512       512       512       512
-|---------|---------|---------|---------|
+\|---------|---------|---------|---------|
      0         1         2         3
 
 The current read section denotes one chunk of length gbSize, which gets flushed
@@ -146,13 +153,13 @@ will be incremented.
 -- consumeChunk :: GreenBlueBuffer a -> IO (V.Vector a)
 -- consumeChunk GreenBlueBuffer{..} = atomically $ do
 --   r <- readTVar gbReadSection
-  --   w <- readTVar gbWriteSection
-  --   c <- readTVar gbPendingWrites
-  --   when (r == w) $ do
-  --     modifyTVar gbWriteSection (+ 1)
-  --     setTVar gbPendingWrites 0
-  --   -- TODO slice and freeze appropriate section
-    -- M.slice (gbSectionSize * (r .&. gbSectionMask)
+--   w <- readTVar gbWriteSection
+--   c <- readTVar gbPendingWrites
+--   when (r == w) $ do
+--     modifyTVar gbWriteSection (+ 1)
+--     setTVar gbPendingWrites 0
+--   -- TODO slice and freeze appropriate section
+-- M.slice (gbSectionSize * (r .&. gbSectionMask)
 
 -- TODO, counters for dropped spans, exported spans
 
@@ -162,44 +169,56 @@ data BoundedMap a = BoundedMap
   , itemMap :: HashMap InstrumentationLibrary (Builder.Builder a)
   }
 
+
 boundedMap :: Int -> BoundedMap a
 boundedMap bounds = BoundedMap bounds 0 mempty
 
+
 push :: ImmutableSpan -> BoundedMap ImmutableSpan -> Maybe (BoundedMap ImmutableSpan)
-push s m = if itemCount m + 1 >= itemBounds m
-  then Nothing
-  else Just $! m
-    { itemCount = itemCount m + 1
-    , itemMap = HashMap.insertWith
-        (<>)
-        (tracerName $ spanTracer s)
-        (Builder.singleton s) $
-        itemMap m
-    }
+push s m =
+  if itemCount m + 1 >= itemBounds m
+    then Nothing
+    else
+      Just $!
+        m
+          { itemCount = itemCount m + 1
+          , itemMap =
+              HashMap.insertWith
+                (<>)
+                (tracerName $ spanTracer s)
+                (Builder.singleton s)
+                $ itemMap m
+          }
+
 
 buildExport :: BoundedMap a -> (BoundedMap a, HashMap InstrumentationLibrary (Vector a))
 buildExport m =
-  ( m { itemCount = 0, itemMap = mempty }
+  ( m {itemCount = 0, itemMap = mempty}
   , Builder.build <$> itemMap m
   )
+
 
 -- | Exitable forever loop
 loop :: Monad m => ExceptT e m a -> m e
 loop = liftM (either id id) . runExceptT . forever
 
+
 data ProcessorMessage = Flush | Shutdown
 
--- |
--- The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections
--- required to transmit the data. This processor supports both size and time based batching.
---
+
+{- |
+ The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections
+ required to transmit the data. This processor supports both size and time based batching.
+-}
 batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
-batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
+batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   batch <- newIORef $ boundedMap maxQueueSize
   workSignal <- newEmptyMVar
   worker <- async $ loop $ do
-    req <- liftIO $ timeout (millisToMicros scheduledDelayMillis)
-      $ takeMVar workSignal
+    req <-
+      liftIO $
+        timeout (millisToMicros scheduledDelayMillis) $
+          takeMVar workSignal
     batchToProcess <- liftIO $ atomicModifyIORef' batch buildExport
     res <- liftIO $ Exporter.exporterExport exporter batchToProcess
 
@@ -209,51 +228,52 @@ batchProcessor BatchTimeoutConfig{..} exporter = liftIO $ do
       Just Shutdown -> throwE res
       _ -> pure ()
 
-  pure $ Processor
-    { processorOnStart = \_ _ -> pure ()
-    , processorOnEnd = \s -> do
-        span_ <- readIORef s
-        appendFailed <- atomicModifyIORef' batch $ \builder ->
-          case push span_ builder of
-            Nothing -> (builder, True)
-            Just b' -> (b', False)
-        when appendFailed $ void $ tryPutMVar workSignal Flush
+  pure $
+    Processor
+      { processorOnStart = \_ _ -> pure ()
+      , processorOnEnd = \s -> do
+          span_ <- readIORef s
+          appendFailed <- atomicModifyIORef' batch $ \builder ->
+            case push span_ builder of
+              Nothing -> (builder, True)
+              Just b' -> (b', False)
+          when appendFailed $ void $ tryPutMVar workSignal Flush
+      , processorForceFlush = void $ tryPutMVar workSignal Flush
+      , -- TODO where to call restore, if anywhere?
+        processorShutdown = async $ mask $ \_restore -> do
+          -- flush remaining messages
+          void $ tryPutMVar workSignal Shutdown
 
-    , processorForceFlush = void $ tryPutMVar workSignal Flush
-    -- TODO where to call restore, if anywhere?
-    , processorShutdown = async $ mask $ \_restore -> do
-        -- flush remaining messages
-        void $ tryPutMVar workSignal Shutdown
+          shutdownResult <-
+            timeout (millisToMicros exportTimeoutMillis) $
+              wait worker
+          -- make sure the worker comes down
+          uninterruptibleCancel worker
+          -- TODO, not convinced we should shut down processor here
 
-        shutdownResult <- timeout (millisToMicros exportTimeoutMillis) $
-          wait worker
-        -- make sure the worker comes down
-        uninterruptibleCancel worker
-        -- TODO, not convinced we should shut down processor here
+          case shutdownResult of
+            Nothing -> pure ShutdownFailure
+            Just _ -> pure ShutdownSuccess
+      }
+ where
+  millisToMicros = (* 1000)
 
-        case shutdownResult of
-          Nothing -> pure ShutdownFailure
-          Just _ -> pure ShutdownSuccess
-    }
-  where
-    millisToMicros = (* 1000)
-  {-
-  buffer <- newGreenBlueBuffer _ _
-  batchProcessorAction <- async $ forever $ do
-    -- It would be nice to do an immediate send when possible
-    chunk <- if (sendDelay == 0)
-      else consumeChunk
-      then threadDelay sendDelay >> consumeChunk
-    timeout _ $ export exporter chunk
-  pure $ Processor
-    { onStart = \_ _ -> pure ()
-    , onEnd = \s -> void $ tryInsert buffer s
-    , shutdown = do
-        gracefullyShutdownBatchProcessor
+{-
+buffer <- newGreenBlueBuffer _ _
+batchProcessorAction <- async $ forever $ do
+  -- It would be nice to do an immediate send when possible
+  chunk <- if (sendDelay == 0)
+    else consumeChunk
+    then threadDelay sendDelay >> consumeChunk
+  timeout _ $ export exporter chunk
+pure $ Processor
+  { onStart = \_ _ -> pure ()
+  , onEnd = \s -> void $ tryInsert buffer s
+  , shutdown = do
+      gracefullyShutdownBatchProcessor
 
-
-    , forceFlush = pure ()
-    }
-  where
-    sendDelay = scheduledDelayMilis * 1_000
-  -}
+  , forceFlush = pure ()
+  }
+where
+  sendDelay = scheduledDelayMilis * 1_000
+-}

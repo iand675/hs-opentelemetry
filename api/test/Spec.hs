@@ -1,26 +1,31 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-import Test.Hspec
-import OpenTelemetry.Attributes (lookupAttribute)
-import OpenTelemetry.Trace.Core
-import Control.Monad.Reader
-import OpenTelemetry.Context
+
 import Control.Exception
-import qualified Data.Bifunctor
 import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Monad.Reader
+import qualified Data.Bifunctor
 import Data.IORef
 import Data.Maybe (isJust)
 import qualified Data.Vector as V
-import qualified VectorBuilder.Vector as Builder
+import OpenTelemetry.Attributes (lookupAttribute)
+import OpenTelemetry.Context
+import OpenTelemetry.Trace.Core
 -- Specs
-import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
+
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
+import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import OpenTelemetry.Util
+import Test.Hspec
+import qualified VectorBuilder.Vector as Builder
+
 
 newtype TestException = TestException String
   deriving (Show)
 
+
 instance Exception TestException
+
 
 exceptionTest :: IO ()
 exceptionTest = do
@@ -34,10 +39,11 @@ exceptionTest = do
   spanState <- unsafeReadSpan =<< readIORef spanToCheck
   let ev = V.head $ appendOnlyBoundedCollectionValues $ spanEvents spanState
   eventName ev `shouldBe` "exception"
-  eventAttributes ev `shouldSatisfy` \attrs -> 
-    isJust (lookupAttribute attrs "exception.type") &&
-    isJust (lookupAttribute attrs "exception.message") &&
-    isJust (lookupAttribute attrs "exception.stacktrace")
+  eventAttributes ev `shouldSatisfy` \attrs ->
+    isJust (lookupAttribute attrs "exception.type")
+      && isJust (lookupAttribute attrs "exception.message")
+      && isJust (lookupAttribute attrs "exception.stacktrace")
+
 
 main :: IO ()
 main = hspec $ do
