@@ -64,6 +64,7 @@ mkRouteToRenderer appName ress = do
 
 goTree :: (Pat -> Pat) -> [String] -> ResourceTree a -> Q [Clause]
 goTree front names (ResourceLeaf res) = pure <$> goRes front names res
+#if MIN_VERSION_template_haskell(2, 18, 0)
 goTree front names (ResourceParent name _check pieces trees) =
   concat <$> mapM (goTree front' newNames) trees
   where
@@ -71,12 +72,19 @@ goTree front names (ResourceParent name _check pieces trees) =
     toIgnore = length $ filter isDynamic pieces
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-#if MIN_VERSION_template_haskell(2, 18, 0)
     front' = front . ConP (mkName name) [] . ignored
-#else
-    front' = front . ConP (mkName name) . ignored
-#endif
     newNames = names <> [name]
+#else
+goTree front names (ResourceParent name _check pieces trees) =
+  concat <$> mapM (goTree front' newNames) trees
+  where
+    ignored = (replicate toIgnore WildP ++) . pure
+    toIgnore = length $ filter isDynamic pieces
+    isDynamic Dynamic {} = True
+    isDynamic Static {} = False
+    front' = front . ConP (mkName name) . ignored
+    newNames = names <> [name]
+#endif
 
 goRes :: (Pat -> Pat) -> [String] -> Resource a -> Q Clause
 goRes front names Resource {..} =
@@ -89,6 +97,7 @@ goRes front names Resource {..} =
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
 
 mkRouteToPattern :: Name -> [ResourceTree String] -> Q [Dec]
+#if MIN_VERSION_template_haskell(2, 18, 0)
 mkRouteToPattern appName ress = do
   let fnName = mkName "routeToPattern"
       t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
@@ -104,11 +113,7 @@ mkRouteToPattern appName ress = do
     toText s = VarE 'T.pack `AppE` LitE (StringL s)
     isDynamic Dynamic {} = True
     isDynamic Static {} = False
-#if MIN_VERSION_template_haskell(2, 18, 0)
     parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) [] $ mconcat
-#else
-    parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) $ mconcat
-#endif
       [ replicate (length $ filter isDynamic pieces) WildP
       , [nestedPat]
       ]
@@ -118,6 +123,33 @@ mkRouteToPattern appName ress = do
         [clausePattern]
         (NormalB $ toText $ renderPattern fr)
         []
+#else
+mkRouteToPattern appName ress = do
+  let fnName = mkName "routeToPattern"
+      t1 `arrow` t2 = ArrowT `AppT` t1 `AppT` t2
+
+  clauses <- mapM mkClause $ flatten ress
+
+  pure
+    [ SigD fnName ((ConT ''Route `AppT` ConT appName) `arrow` ConT ''Text)
+    , FunD fnName clauses
+    ]
+
+  where
+    toText s = VarE 'T.pack `AppE` LitE (StringL s)
+    isDynamic Dynamic {} = True
+    isDynamic Static {} = False
+    parentPieceWrapper (parentName, pieces) nestedPat = ConP (mkName parentName) $ mconcat
+      [ replicate (length $ filter isDynamic pieces) WildP
+      , [nestedPat]
+      ]
+    mkClause fr@FlatResource{..} = do
+      let clausePattern = foldr parentPieceWrapper (RecP (mkName frName) []) frParentPieces
+      pure $ Clause
+        [clausePattern]
+        (NormalB $ toText $ renderPattern fr)
+        []
+#endif
 
 renderPattern :: FlatResource String -> String
 renderPattern FlatResource{..} = concat $ concat
