@@ -1,0 +1,50 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.7.
+--
+-- see: https://github.com/sol/hpack
+
+name:           hspec-example
+version:        0.0.0
+build-type:     Simple
+
+library
+  exposed-modules:
+      TestTarget
+  other-modules:
+      Paths_hspec_example
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base
+    , hs-opentelemetry-api
+    , hs-opentelemetry-exporter-handle
+    , hs-opentelemetry-instrumentation-hspec
+    , hs-opentelemetry-sdk
+    , hspec
+    , text
+    , unliftio
+  default-language: Haskell2010
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Spec
+      TargetSpec
+      Paths_hspec_example
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      base
+    , hs-opentelemetry-api
+    , hs-opentelemetry-exporter-handle
+    , hs-opentelemetry-instrumentation-hspec
+    , hs-opentelemetry-sdk
+    , hspec
+    , hspec-example
+    , text
+    , unliftio
+  default-language: Haskell2010
