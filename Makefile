@@ -1,6 +1,8 @@
+.PHONY: format
 format:
 	fourmolu --mode inplace $$(git ls-files | grep -E "\.hs$$")
 
+.PHONY: format.check
 format.check:
 	fourmolu --mode check $$(git ls-files | grep -E "\.hs$$")
 
