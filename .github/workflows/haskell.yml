@@ -49,6 +49,7 @@ jobs:
         with:
           path: ~/.cabal
           key: cabal-${{ runner.os }}-8.10
+      - run: cabal update
       - run: cabal build --only-dependencies all
       - run: cabal build all
       - run: cabal test all
