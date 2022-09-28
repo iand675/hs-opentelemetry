@@ -11,6 +11,7 @@ in
       ghc
       cabal-install
       stack
+      hpack
 
       haskell.packages.${compiler}.implicit-hie
       haskell.packages.${compiler}.haskell-language-server
