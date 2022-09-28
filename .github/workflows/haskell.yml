@@ -1,6 +1,6 @@
 on: [push]
 jobs:
-  ghc-9_0:
+  stack-ghc-9_0:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,7 +21,7 @@ jobs:
       - run: stack build --only-dependencies
       - run: stack build
       - run: stack test
-  ghc-9_2:
+  stack-ghc-9_2:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -42,4 +42,18 @@ jobs:
       - run: stack --stack-yaml stack-ghc-9.2.yaml build --only-dependencies
       - run: stack --stack-yaml stack-ghc-9.2.yaml build
       - run: stack --stack-yaml stack-ghc-9.2.yaml test
-
+  cabal-ghc-8_10:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+      - uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixos-22.05
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cabal
+          key: cabal-${{ runner.os }}-8.10
+      - run: cabal build --only-dependencies all
+      - run: cabal build all
+      - run: cabal test all
