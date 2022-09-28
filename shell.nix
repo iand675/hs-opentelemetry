@@ -9,6 +9,7 @@ in
       niv
 
       ghc
+      cabal-install
       stack
 
       haskell.packages.${compiler}.implicit-hie
