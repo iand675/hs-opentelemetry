@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.5.
 --
 -- see: https://github.com/sol/hpack
 
@@ -9,9 +9,9 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/cloudflare#readme>
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan
+author:         Ian Duncan, Jade Lovelace
 maintainer:     ian@iankduncan.com
-copyright:      2021 Ian Duncan
+copyright:      2022 Ian Duncan
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

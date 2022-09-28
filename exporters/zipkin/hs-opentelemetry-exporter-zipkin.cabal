@@ -1,17 +1,17 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 
-name:           hs-opentelemetry-instrumentation-conduit
-version:        0.0.1.1
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/conduit#readme>
+name:           hs-opentelemetry-exporter-zipkin
+version:        0.0.1.0
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/zipkin#readme>
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
+author:         Ian Duncan
 maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
+copyright:      2021 Ian Duncan
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -25,31 +25,24 @@ source-repository head
 
 library
   exposed-modules:
-      OpenTelemetry.Instrumentation.Conduit
+      OpenTelemetry.Exporter.Zipkin
   other-modules:
-      Paths_hs_opentelemetry_instrumentation_conduit
+      Paths_hs_opentelemetry_exporter_zipkin
   hs-source-dirs:
       src
-  ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , conduit
-    , hs-opentelemetry-api ==0.0.3.*
-    , text
   default-language: Haskell2010
 
-test-suite hs-opentelemetry-instrumentation-conduit-test
+test-suite hs-opentelemetry-exporter-zipkin-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_hs_opentelemetry_instrumentation_conduit
+      Paths_hs_opentelemetry_exporter_zipkin
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , conduit
-    , hs-opentelemetry-api ==0.0.3.*
-    , hs-opentelemetry-instrumentation-conduit
-    , text
+    , hs-opentelemetry-exporter-zipkin
   default-language: Haskell2010
