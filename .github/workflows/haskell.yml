@@ -1,19 +1,16 @@
 on: [push]
-name: build
 jobs:
-  runhaskell:
-    name: Build everything
-    runs-on: ubuntu-latest # or macOS-latest, or windows-latest
+  ghc-9_0:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
         with:
-          # ghc-version: '8.8.3' # Exact version of ghc to use
-          # cabal-version: 'latest'. Omitted, but defaults to 'latest'
           enable-stack: true
-          stack-version: 'latest'
-      - uses: cachix/install-nix-action@v15
-      - uses: actions/cache@v2
+      - uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixos-22.05
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.stack
@@ -21,9 +18,20 @@ jobs:
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}
           restore-keys: |
             stack-${{ runner.os }}
-      # 9.2 testing support?
+      - run: stack build --only-dependencies
+      - run: stack build
       - run: stack test
-      - uses: actions/cache@v2
+  ghc-9_2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+        with:
+          enable-stack: true
+      - uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixos-22.05
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.stack
@@ -31,6 +39,7 @@ jobs:
           key: stack-${{ runner.os }}-9.2-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}
           restore-keys: |
             stack-${{ runner.os }}-9.2
-      - run: stack test
-      - run: stack test --stack-yaml stack-ghc-9.2.yaml
+      - run: stack --stack-yaml stack-ghc-9.2.yaml build --only-dependencies
+      - run: stack --stack-yaml stack-ghc-9.2.yaml build
+      - run: stack --stack-yaml stack-ghc-9.2.yaml test
 
