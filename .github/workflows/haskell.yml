@@ -9,6 +9,9 @@ jobs:
       - uses: cachix/install-nix-action@v17
         with:
           nix_path: nixpkgs=channel:nixos-22.05
+      - uses: haskell/actions/setup@v2
+        with:
+          enable-stack: true
       - uses: actions/cache@v3
         with:
           path: |
@@ -27,6 +30,9 @@ jobs:
       - uses: cachix/install-nix-action@v17
         with:
           nix_path: nixpkgs=channel:nixos-22.05
+      - uses: haskell/actions/setup@v2
+        with:
+          enable-stack: true
       - uses: actions/cache@v3
         with:
           path: |
@@ -49,7 +55,7 @@ jobs:
         with:
           path: ~/.cabal
           key: cabal-${{ runner.os }}-8.10
-      - run: cabal update
-      - run: cabal build --only-dependencies all
-      - run: cabal build all
-      - run: cabal test all
+      - run: nix-shell --run 'cabal update'
+      - run: nix-shell --run 'cabal build --only-dependencies all'
+      - run: nix-shell --run 'cabal build all'
+      - run: nix-shell --run 'cabal test all'
