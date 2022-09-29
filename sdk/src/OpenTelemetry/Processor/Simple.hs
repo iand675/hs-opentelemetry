@@ -51,14 +51,14 @@ simpleProcessor SimpleProcessorConfig {..} = do
           pure ShutdownSuccess
       , processorForceFlush = pure ()
       }
- where
-  shutdownProcessor :: OutChan (IORef ImmutableSpan) -> IO ()
-  shutdownProcessor outChan = do
-    (Element m, _) <- tryReadChan outChan
-    mSpan <- m
-    case mSpan of
-      Nothing -> pure ()
-      Just spanRef -> do
-        span_ <- readIORef spanRef
-        _ <- exporter `Exporter.exporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
-        shutdownProcessor outChan
+  where
+    shutdownProcessor :: OutChan (IORef ImmutableSpan) -> IO ()
+    shutdownProcessor outChan = do
+      (Element m, _) <- tryReadChan outChan
+      mSpan <- m
+      case mSpan of
+        Nothing -> pure ()
+        Just spanRef -> do
+          span_ <- readIORef spanRef
+          _ <- exporter `Exporter.exporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
+          shutdownProcessor outChan

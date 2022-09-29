@@ -34,9 +34,9 @@ detectHost = do
   pure $ case mhost of
     Nothing -> Host Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     Just host -> host
- where
-  go Nothing hostDetector = hostDetector
-  go mhost@(Just _host) _ = pure mhost
+  where
+    go Nothing hostDetector = hostDetector
+    go mhost@(Just _host) _ = pure mhost
 
 
 {- | A set of detectors for e.g. AWS, GCP, and other cloud providers.

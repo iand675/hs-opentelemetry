@@ -173,10 +173,10 @@ token =
     , quoteType = \_ -> fail "Can't use a Baggage Token as a type"
     , quoteDec = \_ -> fail "Can't use a Baggage Token as a declaration"
     }
- where
-  parseExp = \str -> case mkToken $ T.pack str of
-    Nothing -> fail (show str ++ " is not a valid Token.")
-    Just tok -> lift tok
+  where
+    parseExp = \str -> case mkToken $ T.pack str of
+      Nothing -> fail (show str ++ " is not a valid Token.")
+      Just tok -> lift tok
 
 
 data InvalidBaggage
@@ -201,18 +201,18 @@ encodeBaggageHeaderB (Baggage bmap) =
     intersperse (B.char7 ',') $
       map go $
         H.toList bmap
- where
-  go (Token k, Element v props) =
-    B.byteString k
-      <> B.char7 '='
-      <> urlEncodeBuilder False (encodeUtf8 v)
-      <> (mconcat $ intersperse (B.char7 ';') $ map propEncoder props)
-  propEncoder (Property (Token k) mv) =
-    B.byteString k
-      <> maybe
-        mempty
-        (\v -> B.char7 '=' <> urlEncodeBuilder False (encodeUtf8 v))
-        mv
+  where
+    go (Token k, Element v props) =
+      B.byteString k
+        <> B.char7 '='
+        <> urlEncodeBuilder False (encodeUtf8 v)
+        <> (mconcat $ intersperse (B.char7 ';') $ map propEncoder props)
+    propEncoder (Property (Token k) mv) =
+      B.byteString k
+        <> maybe
+          mempty
+          (\v -> B.char7 '=' <> urlEncodeBuilder False (encodeUtf8 v))
+          mv
 
 
 decodeBaggageHeader :: ByteString -> Either String Baggage
@@ -226,39 +226,39 @@ decodeBaggageHeaderP = do
   otherMembers <- many (owsP >> P.char8 ',' >> owsP >> memberP)
   owsP
   pure $ Baggage $ H.fromList (firstMember : otherMembers)
- where
-  owsSet = C.fromList " \t"
-  owsP = P.skipWhile (`C.member` owsSet)
-  memberP :: P.Parser (Token, Element)
-  memberP = do
-    tok <- tokenP
-    owsP
-    _ <- P.char8 '='
-    owsP
-    val <- valP
-    props <- many (owsP >> P.char8 ';' >> owsP >> propertyP)
-    pure (tok, Element val props)
-  valueSet =
-    C.fromList $
-      concat
-        [ ['\x21']
-        , ['\x23' .. '\x2B']
-        , ['\x2D' .. '\x3A']
-        , ['\x3C' .. '\x5B']
-        , ['\x5D' .. '\x7E']
-        ]
-  tokenP :: P.Parser Token
-  tokenP = Token <$> P.takeWhile1 (`C.member` tokenCharacters)
-  valP = decodeUtf8 <$> P.takeWhile (`C.member` valueSet)
-  propertyP :: P.Parser Property
-  propertyP = do
-    key <- tokenP
-    owsP
-    val <- P.option Nothing $ do
+  where
+    owsSet = C.fromList " \t"
+    owsP = P.skipWhile (`C.member` owsSet)
+    memberP :: P.Parser (Token, Element)
+    memberP = do
+      tok <- tokenP
+      owsP
       _ <- P.char8 '='
       owsP
-      Just <$> valP
-    pure $ Property key val
+      val <- valP
+      props <- many (owsP >> P.char8 ';' >> owsP >> propertyP)
+      pure (tok, Element val props)
+    valueSet =
+      C.fromList $
+        concat
+          [ ['\x21']
+          , ['\x23' .. '\x2B']
+          , ['\x2D' .. '\x3A']
+          , ['\x3C' .. '\x5B']
+          , ['\x5D' .. '\x7E']
+          ]
+    tokenP :: P.Parser Token
+    tokenP = Token <$> P.takeWhile1 (`C.member` tokenCharacters)
+    valP = decodeUtf8 <$> P.takeWhile (`C.member` valueSet)
+    propertyP :: P.Parser Property
+    propertyP = do
+      key <- tokenP
+      owsP
+      val <- P.option Nothing $ do
+        _ <- P.char8 '='
+        owsP
+        Just <$> valP
+      pure $ Property key val
 
 
 -- | An empty initial baggage value

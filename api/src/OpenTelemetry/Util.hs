@@ -140,8 +140,8 @@ data FrozenBoundedCollection a = FrozenBoundedCollection
 
 frozenBoundedCollection :: Foldable f => Int -> f a -> FrozenBoundedCollection a
 frozenBoundedCollection maxSize_ coll = FrozenBoundedCollection (V.fromListN maxSize_ $ toList coll) (collLength - maxSize_)
- where
-  collLength = length coll
+  where
+    collLength = length coll
 
 
 frozenBoundedCollectionValues :: FrozenBoundedCollection a -> V.Vector a

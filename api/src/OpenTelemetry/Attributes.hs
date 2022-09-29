@@ -91,21 +91,21 @@ addAttribute AttributeLimits {..} Attributes {..} k v = case attributeCountLimit
     if newCount > limit_
       then Attributes attributes attributesCount (attributesDropped + 1)
       else Attributes newAttrs newCount attributesDropped
- where
-  newAttrs = H.insert k (limitLengths $ toAttribute v) attributes
-  newCount =
-    if H.member k attributes
-      then attributesCount
-      else attributesCount + 1
+  where
+    newAttrs = H.insert k (limitLengths $ toAttribute v) attributes
+    newCount =
+      if H.member k attributes
+        then attributesCount
+        else attributesCount + 1
 
-  limitPrimAttr limit_ (TextAttribute t) = TextAttribute (T.take limit_ t)
-  limitPrimAttr _ attr = attr
+    limitPrimAttr limit_ (TextAttribute t) = TextAttribute (T.take limit_ t)
+    limitPrimAttr _ attr = attr
 
-  limitLengths attr = case attributeLengthLimit of
-    Nothing -> attr
-    Just limit_ -> case attr of
-      AttributeValue val -> AttributeValue $ limitPrimAttr limit_ val
-      AttributeArray arr -> AttributeArray $ fmap (limitPrimAttr limit_) arr
+    limitLengths attr = case attributeLengthLimit of
+      Nothing -> attr
+      Just limit_ -> case attr of
+        AttributeValue val -> AttributeValue $ limitPrimAttr limit_ val
+        AttributeArray arr -> AttributeArray $ fmap (limitPrimAttr limit_) arr
 {-# INLINE addAttribute #-}
 
 
@@ -261,6 +261,6 @@ unsafeMergeAttributesIgnoringLimits (Attributes l lc ld) (Attributes r rc rd) = 
 
 unsafeAttributesFromListIgnoringLimits :: [(Text, Attribute)] -> Attributes
 unsafeAttributesFromListIgnoringLimits l = Attributes hm c 0
- where
-  hm = H.fromList l
-  c = H.size hm
+  where
+    hm = H.fromList l
+    c = H.size hm
