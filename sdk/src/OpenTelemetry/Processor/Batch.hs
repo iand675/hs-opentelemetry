@@ -255,8 +255,8 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
             Nothing -> pure ShutdownFailure
             Just _ -> pure ShutdownSuccess
       }
- where
-  millisToMicros = (* 1000)
+  where
+    millisToMicros = (* 1000)
 
 {-
 buffer <- newGreenBlueBuffer _ _

@@ -95,14 +95,14 @@ decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
       , spanId = parentId
       , traceState = ts
       }
- where
-  decodeTraceparentHeader :: ByteString -> Maybe TraceParent
-  decodeTraceparentHeader tp = case parseOnly traceparentParser tp of
-    Left _ -> Nothing
-    Right ok -> Just ok
+  where
+    decodeTraceparentHeader :: ByteString -> Maybe TraceParent
+    decodeTraceparentHeader tp = case parseOnly traceparentParser tp of
+      Left _ -> Nothing
+      Right ok -> Just ok
 
-  decodeTracestateHeader :: ByteString -> TraceState
-  decodeTracestateHeader _ = empty
+    decodeTracestateHeader :: ByteString -> TraceState
+    decodeTracestateHeader _ = empty
 
 
 traceparentParser :: Parser TraceParent
@@ -133,16 +133,16 @@ encodeSpanContext s = do
   ctxt <- getSpanContext s
   -- TODO tracestate
   pure (L.toStrict $ B.toLazyByteString $ traceparentHeader ctxt, "")
- where
-  traceparentHeader SpanContext {..} =
-    -- version
-    B.word8HexFixed 0
-      <> B.char7 '-'
-      <> traceIdBaseEncodedBuilder Base16 traceId
-      <> B.char7 '-'
-      <> spanIdBaseEncodedBuilder Base16 spanId
-      <> B.char7 '-'
-      <> B.word8HexFixed (traceFlagsValue traceFlags)
+  where
+    traceparentHeader SpanContext {..} =
+      -- version
+      B.word8HexFixed 0
+        <> B.char7 '-'
+        <> traceIdBaseEncodedBuilder Base16 traceId
+        <> B.char7 '-'
+        <> spanIdBaseEncodedBuilder Base16 spanId
+        <> B.char7 '-'
+        <> B.word8HexFixed (traceFlagsValue traceFlags)
 
 
 {- | Propagate trace context information via headers using the w3c specification format
@@ -151,23 +151,23 @@ encodeSpanContext s = do
 -}
 w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders ResponseHeaders
 w3cTraceContextPropagator = Propagator {..}
- where
-  propagatorNames = ["tracecontext"]
+  where
+    propagatorNames = ["tracecontext"]
 
-  extractor hs c = do
-    let traceParentHeader = Prelude.lookup "traceparent" hs
-        traceStateHeader = Prelude.lookup "tracestate" hs
-        mspanContext = decodeSpanContext traceParentHeader traceStateHeader
-    pure $! case mspanContext of
-      Nothing -> c
-      Just s -> Ctxt.insertSpan (wrapSpanContext (s {isRemote = True})) c
+    extractor hs c = do
+      let traceParentHeader = Prelude.lookup "traceparent" hs
+          traceStateHeader = Prelude.lookup "tracestate" hs
+          mspanContext = decodeSpanContext traceParentHeader traceStateHeader
+      pure $! case mspanContext of
+        Nothing -> c
+        Just s -> Ctxt.insertSpan (wrapSpanContext (s {isRemote = True})) c
 
-  injector c hs = case Ctxt.lookupSpan c of
-    Nothing -> pure hs
-    Just s -> do
-      (traceParentHeader, traceStateHeader) <- encodeSpanContext s
-      pure
-        ( ("traceparent", traceParentHeader)
-            : ("tracestate", traceStateHeader)
-            : hs
-        )
+    injector c hs = case Ctxt.lookupSpan c of
+      Nothing -> pure hs
+      Just s -> do
+        (traceParentHeader, traceStateHeader) <- encodeSpanContext s
+        pure
+          ( ("traceparent", traceParentHeader)
+              : ("tracestate", traceStateHeader)
+              : hs
+          )

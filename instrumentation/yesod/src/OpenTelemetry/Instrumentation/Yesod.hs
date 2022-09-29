@@ -101,8 +101,8 @@ goRes front names Resource {..} =
       [front $ RecP (mkName resourceName) []]
       (NormalB $ toText $ intercalate "." (names <> [resourceName]))
       []
- where
-  toText s = VarE 'T.pack `AppE` LitE (StringL s)
+  where
+    toText s = VarE 'T.pack `AppE` LitE (StringL s)
 
 
 mkRouteToPattern :: Name -> [ResourceTree String] -> Q [Dec]
@@ -178,16 +178,16 @@ renderPattern FlatResource {..} =
               ]
           Subsite {} -> []
       ]
- where
-  routePortionSection :: Piece String -> [String]
-  routePortionSection (Static t) = ["/", t]
-  routePortionSection (Dynamic t) = ["/#{", t, "}"]
+  where
+    routePortionSection :: Piece String -> [String]
+    routePortionSection (Static t) = ["/", t]
+    routePortionSection (Dynamic t) = ["/#{", t, "}"]
 
-  formattedParentPieces :: [String]
-  formattedParentPieces = do
-    (_parentName, pieces) <- frParentPieces
-    piece <- pieces
-    routePortionSection piece
+    formattedParentPieces :: [String]
+    formattedParentPieces = do
+      (_parentName, pieces) <- frParentPieces
+      piece <- pieces
+      routePortionSection piece
 
 
 data RouteRenderer site = RouteRenderer

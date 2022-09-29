@@ -303,13 +303,13 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         Drop -> pure $ Dropped ctxtForSpan
         RecordOnly -> mkRecordingSpan
         RecordAndSample -> mkRecordingSpan
- where
-  freezeLink :: NewLink -> Link
-  freezeLink NewLink {..} =
-    Link
-      { frozenLinkContext = linkContext
-      , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
-      }
+  where
+    freezeLink :: NewLink -> Link
+    freezeLink NewLink {..} =
+      Link
+        { frozenLinkContext = linkContext
+        , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
+        }
 
 
 {- | The simplest function for annotating code with trace information.
@@ -645,15 +645,15 @@ limitBy t countF =
     { attributeCountLimit = countLimit
     , attributeLengthLimit = lengthLimit
     }
- where
-  countLimit =
-    countF (tracerProviderSpanLimits $ tracerProvider t)
-      <|> attributeCountLimit
-        (tracerProviderAttributeLimits $ tracerProvider t)
-  lengthLimit =
-    spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t)
-      <|> attributeLengthLimit
-        (tracerProviderAttributeLimits $ tracerProvider t)
+  where
+    countLimit =
+      countF (tracerProviderSpanLimits $ tracerProvider t)
+        <|> attributeCountLimit
+          (tracerProviderAttributeLimits $ tracerProvider t)
+    lengthLimit =
+      spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t)
+        <|> attributeLengthLimit
+          (tracerProviderAttributeLimits $ tracerProvider t)
 
 
 globalTracer :: IORef TracerProvider

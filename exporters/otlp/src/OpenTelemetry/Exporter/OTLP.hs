@@ -182,11 +182,11 @@ loadExporterEnvironmentVariables = liftIO $ do
     <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"
     pure Nothing
- where
-  decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
-    Left _ -> mempty
-    Right baggageFmt ->
-      (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
+  where
+    decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
+      Left _ -> mempty
+      Right baggageFmt ->
+        (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
 
 
 protobufMimeType :: C.ByteString
@@ -236,63 +236,63 @@ otlpExporter conf = do
             else pure Success
       , exporterShutdown = pure ()
       }
- where
-  retryDelay = 100_000 -- 100ms
-  maxRetryCount = 5
-  isRetryableStatusCode status_ =
-    status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
-  isRetryableException = \case
-    ResponseTimeout -> True
-    ConnectionTimeout -> True
-    ConnectionFailure _ -> True
-    ConnectionClosed -> True
-    _ -> False
+  where
+    retryDelay = 100_000 -- 100ms
+    maxRetryCount = 5
+    isRetryableStatusCode status_ =
+      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
+    isRetryableException = \case
+      ResponseTimeout -> True
+      ConnectionTimeout -> True
+      ConnectionFailure _ -> True
+      ConnectionClosed -> True
+      _ -> False
 
-  exporterExportCall encoder baseReq spans_ = do
-    msg <- encodeMessage <$> immutableSpansToProtobuf spans_
-    -- TODO handle server disconnect
-    let req =
-          baseReq
-            { requestBody =
-                RequestBodyLBS $ encoder $ L.fromStrict msg
-            }
-    sendReq req 0 -- TODO =<< getTime for maximum cutoff
-  sendReq req backoffCount = do
-    eResp <- try $ httpBS req
+    exporterExportCall encoder baseReq spans_ = do
+      msg <- encodeMessage <$> immutableSpansToProtobuf spans_
+      -- TODO handle server disconnect
+      let req =
+            baseReq
+              { requestBody =
+                  RequestBodyLBS $ encoder $ L.fromStrict msg
+              }
+      sendReq req 0 -- TODO =<< getTime for maximum cutoff
+    sendReq req backoffCount = do
+      eResp <- try $ httpBS req
 
-    let exponentialBackoff =
-          if backoffCount == maxRetryCount
-            then pure $ Failure Nothing
-            else do
-              threadDelay (retryDelay `shiftL` backoffCount)
-              sendReq req (backoffCount + 1)
+      let exponentialBackoff =
+            if backoffCount == maxRetryCount
+              then pure $ Failure Nothing
+              else do
+                threadDelay (retryDelay `shiftL` backoffCount)
+                sendReq req (backoffCount + 1)
 
-    either print (\_ -> pure ()) eResp
+      either print (\_ -> pure ()) eResp
 
-    case eResp of
-      Left err@(HttpExceptionRequest _ e) ->
-        if isRetryableException e
-          then exponentialBackoff
-          else pure $ Failure $ Just $ SomeException err
-      Left err -> do
-        pure $ Failure $ Just $ SomeException err
-      Right resp ->
-        if isRetryableStatusCode (responseStatus resp)
-          then case lookup hRetryAfter $ responseHeaders resp of
-            Nothing -> exponentialBackoff
-            Just retryAfter -> do
-              -- TODO support date in retry-after header
-              case readMaybe $ C.unpack retryAfter of
-                Nothing -> exponentialBackoff
-                Just seconds -> do
-                  threadDelay (seconds * 1_000_000)
-                  sendReq req (backoffCount + 1)
-          else
-            if statusCode (responseStatus resp) >= 300
-              then do
-                print resp
-                pure $ Failure Nothing
-              else pure Success
+      case eResp of
+        Left err@(HttpExceptionRequest _ e) ->
+          if isRetryableException e
+            then exponentialBackoff
+            else pure $ Failure $ Just $ SomeException err
+        Left err -> do
+          pure $ Failure $ Just $ SomeException err
+        Right resp ->
+          if isRetryableStatusCode (responseStatus resp)
+            then case lookup hRetryAfter $ responseHeaders resp of
+              Nothing -> exponentialBackoff
+              Just retryAfter -> do
+                -- TODO support date in retry-after header
+                case readMaybe $ C.unpack retryAfter of
+                  Nothing -> exponentialBackoff
+                  Just seconds -> do
+                    threadDelay (seconds * 1_000_000)
+                    sendReq req (backoffCount + 1)
+            else
+              if statusCode (responseStatus resp) >= 300
+                then do
+                  print resp
+                  pure $ Failure Nothing
+                else pure Success
 
 
 attributesToProto :: Attributes -> Vector KeyValue
@@ -302,23 +302,23 @@ attributesToProto =
     . H.toList
     . snd
     . getAttributes
- where
-  primAttributeToAnyValue = \case
-    TextAttribute t -> defMessage & stringValue .~ t
-    BoolAttribute b -> defMessage & boolValue .~ b
-    DoubleAttribute d -> defMessage & doubleValue .~ d
-    IntAttribute i -> defMessage & intValue .~ i
-  attributeToKeyValue :: (Text, Attribute) -> KeyValue
-  attributeToKeyValue (k, v) =
-    defMessage
-      & key .~ k
-      & value
-        .~ ( case v of
-              AttributeValue a -> primAttributeToAnyValue a
-              AttributeArray a ->
-                defMessage
-                  & arrayValue .~ (defMessage & values .~ fmap primAttributeToAnyValue a)
-           )
+  where
+    primAttributeToAnyValue = \case
+      TextAttribute t -> defMessage & stringValue .~ t
+      BoolAttribute b -> defMessage & boolValue .~ b
+      DoubleAttribute d -> defMessage & doubleValue .~ d
+      IntAttribute i -> defMessage & intValue .~ i
+    attributeToKeyValue :: (Text, Attribute) -> KeyValue
+    attributeToKeyValue (k, v) =
+      defMessage
+        & key .~ k
+        & value
+          .~ ( case v of
+                AttributeValue a -> primAttributeToAnyValue a
+                AttributeArray a ->
+                  defMessage
+                    & arrayValue .~ (defMessage & values .~ fmap primAttributeToAnyValue a)
+             )
 
 
 immutableSpansToProtobuf :: MonadIO m => HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> m ExportTraceServiceRequest
@@ -339,27 +339,27 @@ immutableSpansToProtobuf completedSpans = do
               -- that lets us keep them grouped by instrumentation originator
               & instrumentationLibrarySpans .~ spansByLibrary
           )
- where
-  -- TODO this won't work right if multiple TracerProviders are exporting to a single OTLP exporter with different resources
-  someResourceGroup = case spanGroupList of
-    [] -> emptyMaterializedResources
-    ((_, r) : _) -> case r V.!? 0 of
-      Nothing -> emptyMaterializedResources
-      Just s -> OT.getTracerProviderResources $ OT.getTracerTracerProvider $ OT.spanTracer s
+  where
+    -- TODO this won't work right if multiple TracerProviders are exporting to a single OTLP exporter with different resources
+    someResourceGroup = case spanGroupList of
+      [] -> emptyMaterializedResources
+      ((_, r) : _) -> case r V.!? 0 of
+        Nothing -> emptyMaterializedResources
+        Just s -> OT.getTracerProviderResources $ OT.getTracerTracerProvider $ OT.spanTracer s
 
-  spanGroupList = H.toList completedSpans
+    spanGroupList = H.toList completedSpans
 
-  makeInstrumentationLibrarySpans :: MonadIO m => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m InstrumentationLibrarySpans
-  makeInstrumentationLibrarySpans (library, completedSpans_) = do
-    spans_ <- mapM makeSpan completedSpans_
-    pure $
-      defMessage
-        & instrumentationLibrary
-          .~ ( defMessage
-                & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.libraryName library
-                & version .~ OT.libraryVersion library
-             )
-        & vec'spans .~ spans_
+    makeInstrumentationLibrarySpans :: MonadIO m => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m InstrumentationLibrarySpans
+    makeInstrumentationLibrarySpans (library, completedSpans_) = do
+      spans_ <- mapM makeSpan completedSpans_
+      pure $
+        defMessage
+          & instrumentationLibrary
+            .~ ( defMessage
+                  & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.libraryName library
+                  & version .~ OT.libraryVersion library
+               )
+          & vec'spans .~ spans_
 
 
 -- & schemaUrl .~ "" -- TODO

@@ -33,13 +33,13 @@ cloudflareInstrumentationMiddleware app req sendResp = do
           )
           headers
   app req sendResp
- where
-  headers =
-    [ "cf-connecting-ip"
-    , "true-client-ip"
-    , "cf-ray"
-    , -- CF-Visitor
-      "cf-ipcountry"
-    , -- CDN-Loop
-      "cf-worker"
-    ]
+  where
+    headers =
+      [ "cf-connecting-ip"
+      , "true-client-ip"
+      , "cf-ray"
+      , -- CF-Visitor
+        "cf-ipcountry"
+      , -- CDN-Loop
+        "cf-worker"
+      ]
