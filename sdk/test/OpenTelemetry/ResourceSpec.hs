@@ -2,6 +2,7 @@ module OpenTelemetry.ResourceSpec where
 
 import Test.Hspec
 
+
 spec :: Spec
 spec = describe "Resource" $ do
   specify "Create from Attributes" pending

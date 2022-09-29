@@ -1,30 +1,35 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Resource.FaaS
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Resource information about a "function as a service" aka "serverless function" instance
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
+
 -----------------------------------------------------------------------------
+
+{- |
+ Module      :  OpenTelemetry.Resource.FaaS
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Resource information about a "function as a service" aka "serverless function" instance
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+-}
 module OpenTelemetry.Resource.FaaS where
+
 import Data.Text (Text)
 import OpenTelemetry.Resource
+
 
 -- | A "function as a service" aka "serverless function" instance.
 data FaaS = FaaS
   { faasName :: Text
-  -- ^ The name of the single function that this runtime instance executes.  
+  -- ^ The name of the single function that this runtime instance executes.
   --
   --  This is the name of the function as configured/deployed on the FaaS platform and is usually different from the name of the callback function (which may be stored in the code.namespace/code.function span attributes).
   --
   -- Examples: 'my-function'
   , faasId :: Maybe Text
-  -- ^ The unique ID of the single function that this runtime instance executes. 
+  -- ^ The unique ID of the single function that this runtime instance executes.
   --
   -- Depending on the cloud provider, use:
   --
@@ -58,12 +63,14 @@ data FaaS = FaaS
   -- Examples: '128'
   }
 
+
 instance ToResource FaaS where
   type ResourceSchema FaaS = 'Nothing
-  toResource FaaS{..} = mkResource
-    [ "faas.name" .= faasName
-    , "faas.id" .=? faasId
-    , "faas.version" .=? faasVersion
-    , "faas.instance" .=? faasInstance
-    , "faas.max_memory" .=? faasMaxMemory
-    ]
+  toResource FaaS {..} =
+    mkResource
+      [ "faas.name" .= faasName
+      , "faas.id" .=? faasId
+      , "faas.version" .=? faasVersion
+      , "faas.instance" .=? faasInstance
+      , "faas.max_memory" .=? faasMaxMemory
+      ]

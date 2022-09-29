@@ -2,6 +2,7 @@ module OpenTelemetry.BaggageSpec where
 
 import Test.Hspec
 
+
 spec :: Spec
 spec = describe "Baggage" $ do
   specify "Basic support" pending

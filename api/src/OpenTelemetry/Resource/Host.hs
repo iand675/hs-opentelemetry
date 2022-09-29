@@ -1,21 +1,26 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+
 -----------------------------------------------------------------------------
--- |
--- Module      :  OpenTelemetry.Resource.Host
--- Copyright   :  (c) Ian Duncan, 2021
--- License     :  BSD-3
--- Description :  Information about the underlying general computing instance
--- Maintainer  :  Ian Duncan
--- Stability   :  experimental
--- Portability :  non-portable (GHC extensions)
---
+
 -----------------------------------------------------------------------------
-module OpenTelemetry.Resource.Host 
-  ( Host (..)
-  ) where
+
+{- |
+ Module      :  OpenTelemetry.Resource.Host
+ Copyright   :  (c) Ian Duncan, 2021
+ License     :  BSD-3
+ Description :  Information about the underlying general computing instance
+ Maintainer  :  Ian Duncan
+ Stability   :  experimental
+ Portability :  non-portable (GHC extensions)
+-}
+module OpenTelemetry.Resource.Host (
+  Host (..),
+) where
+
 import Data.Text (Text)
-import OpenTelemetry.Resource (ToResource(..), mkResource, (.=?))
+import OpenTelemetry.Resource (ToResource (..), mkResource, (.=?))
+
 
 -- | A host is defined as a general computing instance.
 data Host = Host
@@ -35,14 +40,16 @@ data Host = Host
   -- ^ The version string of the VM image as defined in Version Attributes.
   }
 
+
 instance ToResource Host where
   type ResourceSchema Host = 'Nothing
-  toResource Host{..} = mkResource
-    [ "host.id" .=? hostId
-    , "host.name" .=? hostName
-    , "host.type" .=? hostType
-    , "host.arch" .=? hostArch
-    , "host.image.name" .=? hostImageName
-    , "host.image.id" .=? hostImageId
-    , "host.image.version" .=? hostImageVersion
-    ]
+  toResource Host {..} =
+    mkResource
+      [ "host.id" .=? hostId
+      , "host.name" .=? hostName
+      , "host.type" .=? hostType
+      , "host.arch" .=? hostArch
+      , "host.image.name" .=? hostImageName
+      , "host.image.id" .=? hostImageId
+      , "host.image.version" .=? hostImageVersion
+      ]

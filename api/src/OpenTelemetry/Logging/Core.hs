@@ -1,20 +1,23 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module OpenTelemetry.Logging.Core where
-import OpenTelemetry.Common
-import OpenTelemetry.Trace.Id (TraceId, SpanId)
-import OpenTelemetry.Attributes ( Attribute )
+
+import Data.Int (Int32, Int64)
 import Data.Text (Text)
-import Data.Int (Int64, Int32)
+import OpenTelemetry.Attributes (Attribute)
+import OpenTelemetry.Common
 import OpenTelemetry.Resource (MaterializedResources)
+import OpenTelemetry.Trace.Id (SpanId, TraceId)
+
 
 data Log body = Log
   { timestamp :: Maybe Timestamp
   -- ^ Time when the event occurred measured by the origin clock. This field is optional, it may be missing if the timestamp is unknown.
   , tracingDetails :: Maybe (TraceId, SpanId, TraceFlags)
   -- ^ Tuple contains three fields:
-  -- 
+  --
   -- - Request trace id as defined in W3C Trace Context. Can be set for logs that are part of request processing and have an assigned trace id.
   -- - Span id. Can be set for logs that are part of a particular processing span.
   -- - Trace flag as defined in W3C Trace Context specification. At the time of writing the specification defines one flag - the SAMPLED flag.
@@ -38,28 +41,30 @@ data Log body = Log
   -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
   -- | 21-24                 | FATAL       | A fatal error such as application or system crash.                                       |
   -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
-  --
   , name :: Maybe Text
   -- ^ Short low cardinality event type that does not contain varying parts. Name describes what happened (e.g. "ProcessStarted"). Recommended to be no longer than 50 characters. Typically used for filtering and grouping purposes in backends.
   , body :: body
-  {-
-  Type any
-    Value of type any can be one of the following:
-
-    A scalar value: number, string or boolean,
-
-    A byte array,
-
-    An array (a list) of any values,
-
-    A map<string, any>.
-  -}
   -- ^ A value containing the body of the log record. Can be for example a human-readable string message (including multi-line) describing the event in a free form or it can be a structured data composed of arrays and maps of other values. First-party Applications SHOULD use a string message. However, a structured body may be necessary to preserve the semantics of some existing log formats. Can vary for each occurrence of the event coming from the same source. This field is optional.
-  , resource :: Maybe MaterializedResources
+  , {-
+    Type any
+      Value of type any can be one of the following:
+
+      A scalar value: number, string or boolean,
+
+      A byte array,
+
+      An array (a list) of any values,
+
+      A map<string, any>.
+    -}
+
+    resource :: Maybe MaterializedResources
   -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource. Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources. This field is optional.
   , attributes :: Maybe [(Text, Attribute)]
   -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source. Can contain information about the request context (other than TraceId/SpanId). SHOULD follow OpenTelemetry semantic conventions for Log Attributes or semantic conventions for Span Attributes. This field is optional.
-  } deriving stock (Functor)
+  }
+  deriving stock (Functor)
+
 
 data SeverityNumber
   = Trace
