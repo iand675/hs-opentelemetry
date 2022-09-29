@@ -1,4 +1,5 @@
 module TestTarget where
 
+
 addTwo :: Int -> Int
-addTwo = (+2)
+addTwo = (+ 2)

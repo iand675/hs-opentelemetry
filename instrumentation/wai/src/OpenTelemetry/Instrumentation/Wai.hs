@@ -1,38 +1,42 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
-module OpenTelemetry.Instrumentation.Wai 
-  ( newOpenTelemetryWaiMiddleware
-  , newOpenTelemetryWaiMiddleware'
-  , requestContext
-  ) where
+{-# LANGUAGE OverloadedStrings #-}
 
+module OpenTelemetry.Instrumentation.Wai (
+  newOpenTelemetryWaiMiddleware,
+  newOpenTelemetryWaiMiddleware',
+  requestContext,
+) where
+
+import Control.Exception (bracket)
+import Control.Monad
+import Data.IP (fromHostAddress, fromHostAddress6)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Vault.Lazy as Vault
 import Network.HTTP.Types
+import Network.Socket
 import Network.Wai
+import OpenTelemetry.Attributes (lookupAttribute)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
 import OpenTelemetry.Trace.Core
 import System.IO.Unsafe
-import qualified Data.Text.Encoding as T
-import qualified Data.Text as T
-import Control.Monad
-import Network.Socket
-import Data.IP (fromHostAddress, fromHostAddress6)
-import OpenTelemetry.Attributes (lookupAttribute)
-import Control.Exception (bracket)
+
 
 newOpenTelemetryWaiMiddleware :: IO Middleware
 newOpenTelemetryWaiMiddleware = getGlobalTracerProvider >>= newOpenTelemetryWaiMiddleware'
 
-newOpenTelemetryWaiMiddleware'
-  :: TracerProvider 
-  -> IO Middleware
+
+newOpenTelemetryWaiMiddleware' ::
+  TracerProvider ->
+  IO Middleware
 newOpenTelemetryWaiMiddleware' tp = do
-  waiTracer <- getTracer 
-    tp
-    "opentelemetry-instrumentation-wai" 
-    (TracerOptions Nothing)
+  waiTracer <-
+    getTracer
+      tp
+      "opentelemetry-instrumentation-wai"
+      (TracerOptions Nothing)
   pure $ middleware waiTracer
   where
     middleware :: Tracer -> Middleware
@@ -43,35 +47,38 @@ newOpenTelemetryWaiMiddleware' tp = do
             ctxt <- extract propagator (requestHeaders req) ctx
             attachContext ctxt
       let path_ = T.decodeUtf8 $ rawPathInfo req
-          -- peer = remoteHost req
-      bracket 
+      -- peer = remoteHost req
+      bracket
         parentContextM
-        (\case
-          Nothing -> void detachContext
-          Just p -> void (attachContext p)
+        ( \case
+            Nothing -> void detachContext
+            Just p -> void (attachContext p)
         )
         $ \_ -> do
-          inSpan' tracer path_ (defaultSpanArguments { kind = Server }) $ \requestSpan -> do
+          inSpan' tracer path_ (defaultSpanArguments {kind = Server}) $ \requestSpan -> do
             ctxt <- getContext
-            addAttributes requestSpan
-              [ ( "http.method", toAttribute $ T.decodeUtf8 $ requestMethod req)
-              -- , ( "http.url",
-              --     toAttribute $
-              --     T.decodeUtf8
-              --     ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
-              --   )
-              , ( "http.target", toAttribute $ T.decodeUtf8 (rawPathInfo req <> rawQueryString req))
-              -- , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
-              -- , ( "http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
-              , ( "http.flavor"
+            addAttributes
+              requestSpan
+              [ ("http.method", toAttribute $ T.decodeUtf8 $ requestMethod req)
+              , -- , ( "http.url",
+                --     toAttribute $
+                --     T.decodeUtf8
+                --     ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
+                --   )
+                ("http.target", toAttribute $ T.decodeUtf8 (rawPathInfo req <> rawQueryString req))
+              , -- , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
+                -- , ( "http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
+
+                ( "http.flavor"
                 , toAttribute $ case httpVersion req of
                     (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
                 )
-              , ( "http.user_agent"
+              ,
+                ( "http.user_agent"
                 , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
                 )
-              -- TODO HTTP/3 will require detecting this dynamically
-              , ( "net.transport", toAttribute ("ip_tcp" :: T.Text))
+              , -- TODO HTTP/3 will require detecting this dynamically
+                ("net.transport", toAttribute ("ip_tcp" :: T.Text))
               ]
 
             -- TODO this is warp dependent, probably.
@@ -90,23 +97,26 @@ newOpenTelemetryWaiMiddleware' tp = do
               SockAddrUnix path ->
                 [ ("net.peer.name", toAttribute $ T.pack path)
                 ]
-            let req' = req 
-                  { vault = Vault.insert 
-                      contextKey 
-                      ctxt
-                      (vault req) 
-                  }
+            let req' =
+                  req
+                    { vault =
+                        Vault.insert
+                          contextKey
+                          ctxt
+                          (vault req)
+                    }
             app req' $ \resp -> do
               ctxt' <- getContext
               hs <- inject propagator (Context.insertSpan requestSpan ctxt') []
               let resp' = mapResponseHeaders (hs ++) resp
               attrs <- spanGetAttributes requestSpan
               forM_ (lookupAttribute attrs "http.route") $ \case
-                AttributeValue (TextAttribute route) -> updateName requestSpan route 
+                AttributeValue (TextAttribute route) -> updateName requestSpan route
                 _ -> pure ()
 
-              addAttributes requestSpan
-                [ ( "http.status_code", toAttribute $ statusCode $ responseStatus resp)
+              addAttributes
+                requestSpan
+                [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
                 ]
               when (statusCode (responseStatus resp) >= 500) $ do
                 setStatus requestSpan (Error "")
@@ -115,11 +125,13 @@ newOpenTelemetryWaiMiddleware' tp = do
               endSpan requestSpan (Just ts)
               pure respReceived
 
+
 contextKey :: Vault.Key Context.Context
 contextKey = unsafePerformIO Vault.newKey
 {-# NOINLINE contextKey #-}
 
+
 requestContext :: Request -> Maybe Context.Context
-requestContext = 
-  Vault.lookup contextKey . 
-  vault
+requestContext =
+  Vault.lookup contextKey
+    . vault
