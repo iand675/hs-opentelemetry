@@ -324,7 +324,7 @@ getTracerProviderInitializationOptions :: IO ([Processor], TracerProviderOptions
 getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
 
 
-{- | Detect ptions for initializing a tracer provider from the app environment, taking additional supported resources as well.
+{- | Detect options for initializing a tracer provider from the app environment, taking additional supported resources as well.
 
  @since 0.0.3.1
 -}
