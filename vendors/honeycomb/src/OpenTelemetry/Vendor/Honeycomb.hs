@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
@@ -145,8 +146,8 @@ data DatasetInfo
 
 -- | Context of which Honeycomb dataset we're sending events to.
 data HoneycombTarget = HoneycombTarget
-  { ctxTeam :: HoneycombTeam
-  , ctxDataset :: DatasetInfo
+  { targetTeam :: HoneycombTeam
+  , targetDataset :: DatasetInfo
   }
   deriving stock (Show, Eq)
 
@@ -155,14 +156,10 @@ data HoneycombTarget = HoneycombTarget
 
  "http://ui.honeycomb.io/<team>/datasets/<dataset>/trace
     ?trace_id=<traceId>&trace_start_ts=<ts>&trace_end_ts=<ts>"
-
- FIXME(jadel): We omit the start_ts because the honeycomb redirector
- defaults to "look since 2h ago" and it is somewhat of a pain to get that
- timestamp, and it works fine as-is.
 -}
-makeDirectTraceLink :: HoneycombTeam -> DatasetInfo -> UTCTime -> TraceId -> ByteString
-makeDirectTraceLink team dsInfo timestamp traceId =
-  case dsInfo of
+makeDirectTraceLink :: HoneycombTarget -> UTCTime -> TraceId -> ByteString
+makeDirectTraceLink HoneycombTarget {..} timestamp traceId =
+  case targetDataset of
     Current env ds ->
       teamPrefix
         <> "/environments/"
@@ -170,6 +167,7 @@ makeDirectTraceLink team dsInfo timestamp traceId =
         <> "/datasets/"
         <> (encodeUtf8 . fromDatasetName $ ds)
         <> "/trace"
+        <> query
     Classic ds -> teamPrefix <> "/datasets/" <> (encodeUtf8 . fromDatasetName $ ds) <> "/trace" <> query
   where
     -- XXX(jadel): I feel like there's not really any way to know what these
@@ -182,7 +180,7 @@ makeDirectTraceLink team dsInfo timestamp traceId =
     guessedEnd = addUTCTime (-oneHour) timestamp
     convertTimestamp = BS8.pack . show @Integer . truncate . nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
 
-    teamPrefix = "https://ui.honeycomb.io/" <> encodeUtf8 (unHoneycombTeam team)
+    teamPrefix = "https://ui.honeycomb.io/" <> encodeUtf8 (unHoneycombTeam targetTeam)
     query =
       serializeQuery' httpNormalization $
         Query
@@ -193,13 +191,13 @@ makeDirectTraceLink team dsInfo timestamp traceId =
 
 
 -- | Gets a trace link for the current trace.
-getHoneycombLink :: MonadIO m => HoneycombTeam -> DatasetInfo -> m (Maybe ByteString)
-getHoneycombLink team dataset = do
+getHoneycombLink :: MonadIO m => HoneycombTarget -> m (Maybe ByteString)
+getHoneycombLink target = do
   theSpan <- lookupSpan <$> getContext
   inTraceId <- traceIdForSpan theSpan
   time <- liftIO getCurrentTime
 
-  pure $ makeDirectTraceLink team dataset time <$> inTraceId
+  pure $ makeDirectTraceLink target time <$> inTraceId
   where
     traceIdForSpan = \case
       Just s -> do
