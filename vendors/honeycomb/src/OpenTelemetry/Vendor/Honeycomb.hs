@@ -7,6 +7,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- | Vendor integration for Honeycomb.
 
@@ -18,7 +19,7 @@ module OpenTelemetry.Vendor.Honeycomb
     EnvironmentName (..),
     getConfigPartsFromEnv,
     getHoneycombData,
-    getDatasetInfo,
+    resolveHoneycombTarget,
     DatasetInfo (..),
     HoneycombTarget (..),
     makeDirectTraceLink,
@@ -32,6 +33,7 @@ import Control.Monad.Reader (MonadIO (..), ReaderT (runReaderT))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.HashMap.Strict as HM
+import Data.String (IsString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -51,9 +53,15 @@ import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Resource
   ( getMaterializedResourcesAttributes,
   )
-import OpenTelemetry.Trace.Core (getSpanContext, getTracerProviderResources, getTracerTracerProvider, isSampled, traceFlags, traceId)
+import OpenTelemetry.Trace.Core
+  ( TracerProvider,
+    getSpanContext,
+    getTracerProviderResources,
+    isSampled,
+    traceFlags,
+    traceId,
+  )
 import OpenTelemetry.Trace.Id (Base (..), TraceId, traceIdBaseEncodedByteString)
-import OpenTelemetry.Trace.Monad (MonadTracer (..))
 import System.Environment (lookupEnv)
 import URI.ByteString (Query (..), httpNormalization, serializeQuery')
 import Prelude
@@ -69,10 +77,12 @@ headerHoneycombLegacyDataset = [Baggage.token|x-honeycomb-dataset|]
 
 newtype HoneycombTeam = HoneycombTeam {unHoneycombTeam :: Text}
   deriving stock (Show, Eq)
+  deriving newtype (IsString)
 
 
 newtype EnvironmentName = EnvironmentName {unEnvironmentName :: Text}
   deriving stock (Show, Eq)
+  deriving newtype (IsString)
 
 
 {- | Gets the Honeycomb configuration from the environment.
@@ -81,11 +91,11 @@ newtype EnvironmentName = EnvironmentName {unEnvironmentName :: Text}
 
  FIXME(jadel): This should ideally fetch this from the tracer provider, but
  it's nonobvious how to architect being able to do that (requires changes in
- hs-opentelemetry-api). For now let's use a MonadTracer constraint such that we
+ hs-opentelemetry-api). For now let's take a Tracer such that we
  can fix it later, then do it the obvious way.
 -}
-getConfigPartsFromEnv :: (MonadIO m, MonadTracer m) => m (Maybe (Text, DatasetName))
-getConfigPartsFromEnv = do
+getConfigPartsFromEnv :: (MonadIO m) => TracerProvider -> m (Maybe (Text, DatasetName))
+getConfigPartsFromEnv _ = do
   mheaders <- liftIO $ lookupEnv "OTEL_EXPORTER_OTLP_HEADERS"
   pure $ getValues =<< mheaders
   where
@@ -122,11 +132,10 @@ getHoneycombData cfg = do
 {- | Takes a 'Config.Config' and pokes around both Honeycomb HTTP API and the
  trace environment to figure out where events will land in Honeycomb.
 -}
-getDatasetInfo :: (MonadTracer m, MonadIO m) => Config.Config -> m (Maybe HoneycombTarget)
-getDatasetInfo cfg = do
+resolveHoneycombTarget :: (MonadIO m) => TracerProvider -> Config.Config -> m (Maybe HoneycombTarget)
+resolveHoneycombTarget tracer cfg = do
   (team, mEnvName) <- getHoneycombData cfg
-  tracer <- getTracer
-  let resources = getMaterializedResourcesAttributes . getTracerProviderResources . getTracerTracerProvider $ tracer
+  let resources = getMaterializedResourcesAttributes . getTracerProviderResources $ tracer
   pure $
     HoneycombTarget team <$> case mEnvName of
       -- There is an env name -> Current-Honeycomb
