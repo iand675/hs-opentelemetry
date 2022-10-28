@@ -22,12 +22,11 @@ module OpenTelemetry.Processor.Batch (
   -- , BatchProcessorOperations
 ) where
 
+import Control.Concurrent.STM
 import Control.Concurrent.Async
-import Control.Concurrent.MVar (newEmptyMVar, takeMVar, tryPutMVar)
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Except
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
@@ -36,7 +35,6 @@ import OpenTelemetry.Exporter (Exporter)
 import qualified OpenTelemetry.Exporter as Exporter
 import OpenTelemetry.Processor
 import OpenTelemetry.Trace.Core
-import System.Timeout
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder
 
@@ -197,14 +195,30 @@ buildExport m =
   , Builder.build <$> itemMap m
   )
 
-
--- | Exitable forever loop
-loop :: Monad m => ExceptT e m a -> m e
-loop = liftM (either id id) . runExceptT . forever
-
-
 data ProcessorMessage = Flush | Shutdown
 
+-- note: [Unmasking Asyncs]
+--
+-- It is possible to create unkillable asyncs. Behold:
+--
+-- ```
+-- a <- uninterruptibleMask_ $ do
+--     async $ do
+--         forever $ do
+--             threadDelay 10_000
+--             putStrLn "still alive"
+-- cancel a
+-- ```
+--
+-- The prior code block will never successfully cancel `a` and will be
+-- blocked forever. The reason is that `cancel` sends an async exception to
+-- the thread performing the action, but the `uninterruptibleMask` state is
+-- inherited by the forked thread. This means that *no async exceptions*
+-- can reach it, and `cancel` will therefore run forever.
+--
+-- This also affects `timeout`, which uses an async exception to kill the
+-- running job. If the action is done in an uninterruptible masked state,
+-- then the timeout will not successfully kill the running action.
 
 {- |
  The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections
@@ -213,20 +227,37 @@ data ProcessorMessage = Flush | Shutdown
 batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   batch <- newIORef $ boundedMap maxQueueSize
-  workSignal <- newEmptyMVar
-  worker <- async $ loop $ do
-    req <-
-      liftIO $
-        timeout (millisToMicros scheduledDelayMillis) $
-          takeMVar workSignal
-    batchToProcess <- liftIO $ atomicModifyIORef' batch buildExport
-    res <- liftIO $ Exporter.exporterExport exporter batchToProcess
+  workSignal <- newEmptyTMVarIO
+  shutdownSignal <- newEmptyTMVarIO
+  let workerAction = do
+        delay <- registerDelay (millisToMicros scheduledDelayMillis)
+        req <- atomically $ do
+          msum
+            [ const Flush <$> do
+                continue <- readTVar delay
+                check continue
+            , const Flush <$> takeTMVar workSignal
+            , const Shutdown <$> takeTMVar shutdownSignal
+            ]
+        batchToProcess <- atomicModifyIORef' batch buildExport
+        -- we mask async exceptions in this, so that a buggy exporter that
+        -- catches async exceptions won't swallow them. since we use
+        -- an interruptible mask, blocking calls can still be killed, like
+        -- `threadDelay` or `putMVar` or most file I/O operations.
+        --
+        -- if we've received a shutdown, then we should be expecting
+        -- a `cancel` anytime now.
+        res <- mask_ $ Exporter.exporterExport exporter batchToProcess
 
-    -- if we were asked to shutdown, quit cleanly after this batch
-    -- FIXME: this could lose batches if there's more than one in queue?
-    case req of
-      Just Shutdown -> throwE res
-      _ -> pure ()
+        -- if we were asked to shutdown, quit cleanly after this batch
+        -- FIXME: this could lose batches if there's more than one in queue?
+        case req of
+          Shutdown ->
+            pure res
+          _ ->
+            workerAction
+  -- see note [Unmasking Asyncs]
+  worker <- asyncWithUnmask $ \unmask -> unmask workerAction
 
   pure $
     Processor
@@ -237,26 +268,65 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
             case push span_ builder of
               Nothing -> (builder, True)
               Just b' -> (b', False)
-          when appendFailed $ void $ tryPutMVar workSignal Flush
-      , processorForceFlush = void $ tryPutMVar workSignal Flush
+          when appendFailed $ void $ atomically $ tryPutTMVar workSignal ()
+      , processorForceFlush = void $ atomically $ tryPutTMVar workSignal ()
       , -- TODO where to call restore, if anywhere?
-        processorShutdown = async $ mask $ \_restore -> do
-          -- flush remaining messages
-          void $ tryPutMVar workSignal Shutdown
+        processorShutdown =
+          asyncWithUnmask $ \unmask -> unmask $ do
+            -- we call asyncWithUnmask here because the shutdown action is
+            -- likely to happen inside of a `finally` or `bracket`. the
+            -- @safe-exceptions@ pattern (followed by unliftio as well)
+            -- will use uninterruptibleMask in an exception cleanup. the
+            -- uninterruptibleMask state means that the `timeout` call
+            -- below will never exit, because `wait worker` will be in the
+            -- `uninterruptibleMasked` state, and the timeout async
+            -- exception will not be delivered.
+            --
+            -- see note [Unmasking Asyncs]
+            mask $ \_restore -> do
+              -- is it a little silly that we unmask and remask? seems
+              -- silly! but the `mask` here is doing an interruptible mask.
+              -- which means that async exceptions can still be delivered
+              -- if a process is blocking.
 
-          shutdownResult <-
-            timeout (millisToMicros exportTimeoutMillis) $
-              wait worker
-          -- make sure the worker comes down
-          uninterruptibleCancel worker
-          -- TODO, not convinced we should shut down processor here
+              -- flush remaining messages and signal the worker to shutdown
+              void $ atomically $ putTMVar shutdownSignal Shutdown
 
-          case shutdownResult of
-            Nothing -> pure ShutdownFailure
-            Just _ -> pure ShutdownSuccess
+              -- gracefully wait for the worker to stop. we may be in
+              -- a `bracket` or responding to an async exception, so we
+              -- must be very careful not to wait too long. the following
+              -- STM action will block, so we'll be susceptible to an async
+              -- exception.
+              delay <- registerDelay (millisToMicros exportTimeoutMillis)
+              shutdownResult <-
+                atomically $
+                  msum
+                    [ Just <$> waitCatchSTM worker
+                    , const Nothing <$> do
+                        shouldStop <- readTVar delay
+                        check shouldStop
+                    ]
+
+              -- make sure the worker comes down. does not wait for the
+              -- worker thread to complete. wraps in SomeAsyncException to
+              -- ensure that any exception handler in the worker know sit
+              -- is an async exception.
+              throwTo (asyncThreadId worker) (SomeAsyncException AsyncCancelled)
+              -- TODO, not convinced we should shut down processor here
+
+              pure $ case shutdownResult of
+                Nothing ->
+                  ShutdownTimeout
+                Just er ->
+                  case er of
+                    Left _ ->
+                      ShutdownFailure
+                    Right _ ->
+                      ShutdownSuccess
       }
   where
     millisToMicros = (* 1000)
+
 
 {-
 buffer <- newGreenBlueBuffer _ _
