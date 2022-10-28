@@ -327,7 +327,6 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   where
     millisToMicros = (* 1000)
 
-
 {-
 buffer <- newGreenBlueBuffer _ _
 batchProcessorAction <- async $ forever $ do
