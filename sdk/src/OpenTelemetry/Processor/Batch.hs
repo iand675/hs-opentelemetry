@@ -290,7 +290,7 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
               -- if a process is blocking.
 
               -- flush remaining messages and signal the worker to shutdown
-              void $ atomically $ putTMVar shutdownSignal Shutdown
+              void $ atomically $ putTMVar shutdownSignal ()
 
               -- gracefully wait for the worker to stop. we may be in
               -- a `bracket` or responding to an async exception, so we
