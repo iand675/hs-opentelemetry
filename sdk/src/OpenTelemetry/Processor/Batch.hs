@@ -231,17 +231,7 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   batch <- newIORef $ boundedMap maxQueueSize
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
-  let workerAction = do
-        delay <- registerDelay (millisToMicros scheduledDelayMillis)
-        req <- atomically $ do
-          msum
-            [ const Flush <$> do
-                continue <- readTVar delay
-                check continue
-            , const Flush <$> takeTMVar workSignal
-            , const Shutdown <$> takeTMVar shutdownSignal
-            ]
-        batchToProcess <- atomicModifyIORef' batch buildExport
+  let publish batchToProcess = mask_ $ do
         -- we mask async exceptions in this, so that a buggy exporter that
         -- catches async exceptions won't swallow them. since we use
         -- an interruptible mask, blocking calls can still be killed, like
@@ -249,13 +239,37 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
         --
         -- if we've received a shutdown, then we should be expecting
         -- a `cancel` anytime now.
-        res <- mask_ $ Exporter.exporterExport exporter batchToProcess
+        Exporter.exporterExport exporter batchToProcess
 
-        -- if we were asked to shutdown, quit cleanly after this batch
-        -- FIXME: this could lose batches if there's more than one in queue?
+  let flushQueueImmediately ret = do
+        batchToProcess <- atomicModifyIORef' batch buildExport
+        if null batchToProcess
+          then do
+            pure ret
+          else do
+            ret' <- publish batchToProcess
+            flushQueueImmediately ret'
+
+  let waiting = do
+        delay <- registerDelay (millisToMicros scheduledDelayMillis)
+        atomically $ do
+          msum
+            [ Flush <$ do
+                continue <- readTVar delay
+                check continue
+            , Flush <$ takeTMVar workSignal
+            , Shutdown <$ takeTMVar shutdownSignal
+            ]
+
+  let workerAction = do
+        req <- waiting
+        batchToProcess <- atomicModifyIORef' batch buildExport
+        res <- publish batchToProcess
+
+        -- if we were asked to shutdown, stop waiting and flush it all out
         case req of
           Shutdown ->
-            pure res
+            flushQueueImmediately res
           _ ->
             workerAction
   -- see note [Unmasking Asyncs]
