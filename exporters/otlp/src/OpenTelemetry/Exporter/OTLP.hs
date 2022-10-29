@@ -47,7 +47,7 @@ module OpenTelemetry.Exporter.OTLP (
 import Codec.Compression.GZip
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
-import Control.Exception (SomeException (..), SomeAsyncException(..), fromException, throwIO, try)
+import Control.Exception (SomeAsyncException(..), SomeException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class
 import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
