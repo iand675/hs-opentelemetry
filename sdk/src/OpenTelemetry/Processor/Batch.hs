@@ -309,11 +309,8 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
                         check shouldStop
                     ]
 
-              -- make sure the worker comes down. does not wait for the
-              -- worker thread to complete. wraps in SomeAsyncException to
-              -- ensure that any exception handler in the worker know sit
-              -- is an async exception.
-              throwTo (asyncThreadId worker) (SomeAsyncException AsyncCancelled)
+              -- make sure the worker comes down.
+              cancel worker
               -- TODO, not convinced we should shut down processor here
 
               pure $ case shutdownResult of
