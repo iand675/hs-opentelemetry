@@ -22,8 +22,8 @@ module OpenTelemetry.Processor.Batch (
   -- , BatchProcessorOperations
 ) where
 
-import Control.Concurrent.STM
 import Control.Concurrent.Async
+import Control.Concurrent.STM
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
@@ -195,7 +195,9 @@ buildExport m =
   , Builder.build <$> itemMap m
   )
 
+
 data ProcessorMessage = Flush | Shutdown
+
 
 -- note: [Unmasking Asyncs]
 --
