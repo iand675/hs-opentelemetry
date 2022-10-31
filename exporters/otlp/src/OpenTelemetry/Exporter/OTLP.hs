@@ -238,8 +238,7 @@ otlpExporter conf = do
                     Just (SomeAsyncException _) ->
                       throwIO err
                     Nothing ->
-                      pure ()
-                  pure $ Failure $ Just err
+                      pure $ Failure $ Just err
                 Right ok -> pure ok
             else pure Success
       , exporterShutdown = pure ()
