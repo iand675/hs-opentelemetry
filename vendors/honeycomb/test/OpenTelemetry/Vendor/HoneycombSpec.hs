@@ -17,8 +17,8 @@ spec = describe "Honeycomb vendor integration" $ do
       fakeUTCTime = UTCTime (fromOrdinalDate 2022 10) 0
   it "generates valid trace links for classic" $ do
     makeDirectTraceLink (HoneycombTarget team_ (Classic "datasetName")) fakeUTCTime fakeTraceId
-      `shouldBe` "https://ui.honeycomb.io/teamName/datasets/datasetName/trace?trace_id=000102030405060708090a0b0c0d0e0f&trace_start_ts=1641776400&trace_end_ts=1641769200"
+      `shouldBe` "https://ui.honeycomb.io/teamName/datasets/datasetName/trace?trace_id=000102030405060708090a0b0c0d0e0f&trace_start_ts=1641769200&trace_end_ts=1641776400"
   it "generates valid trace links for current" $ do
     makeDirectTraceLink (HoneycombTarget team_ (Current (EnvironmentName "environmentName") "datasetName")) fakeUTCTime fakeTraceId
-      `shouldBe` "https://ui.honeycomb.io/teamName/environments/environmentName/datasets/datasetName/trace?trace_id=000102030405060708090a0b0c0d0e0f&trace_start_ts=1641776400&trace_end_ts=1641769200"
+      `shouldBe` "https://ui.honeycomb.io/teamName/environments/environmentName/datasets/datasetName/trace?trace_id=000102030405060708090a0b0c0d0e0f&trace_start_ts=1641769200&trace_end_ts=1641776400"
 
