@@ -185,8 +185,8 @@ makeDirectTraceLink HoneycombTarget {..} timestamp traceId =
     -- trace started. So it's kind of a fool's errand. Let's just give ± 1hr and
     -- call it a day.
     oneHour = secondsToNominalDiffTime 3600
-    guessedStart = addUTCTime oneHour timestamp
-    guessedEnd = addUTCTime (-oneHour) timestamp
+    guessedStart = addUTCTime (-oneHour) timestamp
+    guessedEnd = addUTCTime oneHour timestamp
     convertTimestamp = BS8.pack . show @Integer . truncate . nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
 
     teamPrefix = "https://ui.honeycomb.io/" <> encodeUtf8 (unHoneycombTeam targetTeam)
