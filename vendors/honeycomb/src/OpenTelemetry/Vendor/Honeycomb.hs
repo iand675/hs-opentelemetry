@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,7 +8,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- | Vendor integration for Honeycomb.
 
@@ -15,21 +15,32 @@
    for which @hs-opentelemetry-exporter-otlp@ is suitable.
 -}
 module OpenTelemetry.Vendor.Honeycomb
-  ( HoneycombTeam (..),
+  ( -- * Types
+    HoneycombTeam (..),
     EnvironmentName (..),
+
+    -- * Getting the Honeycomb target dataset/team name
+    honeycombTargetFromGlobalTracer,
+
+    -- ** Detailed API
     getConfigPartsFromEnv,
     getHoneycombData,
     resolveHoneycombTarget,
     DatasetInfo (..),
     HoneycombTarget (..),
+
+    -- * Making trace links
     makeDirectTraceLink,
     getHoneycombLink,
+
+    -- * Performing manual Honeycomb requests
     module Auth,
     module Config,
   )
 where
 
-import Control.Monad.Reader (MonadIO (..), ReaderT (runReaderT))
+import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT))
+import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.HashMap.Strict as HM
@@ -55,6 +66,7 @@ import OpenTelemetry.Resource
   )
 import OpenTelemetry.Trace.Core
   ( TracerProvider,
+    getGlobalTracerProvider,
     getSpanContext,
     getTracerProviderResources,
     isSampled,
@@ -75,11 +87,16 @@ headerHoneycombLegacyDataset :: Baggage.Token
 headerHoneycombLegacyDataset = [Baggage.token|x-honeycomb-dataset|]
 
 
+-- | Honeycomb team name; generally appears in the URL after @ui.honeycomb.io/@.
 newtype HoneycombTeam = HoneycombTeam {unHoneycombTeam :: Text}
   deriving stock (Show, Eq)
   deriving newtype (IsString)
 
 
+-- | Environment name in the Environments & Services data model (referred to as
+-- \"Current\" in this package).
+--
+-- See https://docs.honeycomb.io/honeycomb-classic/ for more details.
 newtype EnvironmentName = EnvironmentName {unEnvironmentName :: Text}
   deriving stock (Show, Eq)
   deriving newtype (IsString)
@@ -147,13 +164,14 @@ resolveHoneycombTarget tracer cfg = do
         pure $ Classic (Config.defaultDataset cfg)
 
 
+-- | Either a current-Honeycomb environment+dataset pair, or a Honeycomb Classic dataset
 data DatasetInfo
   = Current EnvironmentName DatasetName
   | Classic DatasetName
   deriving stock (Show, Eq)
 
 
--- | Context of which Honeycomb dataset we're sending events to.
+-- | A fully qualified Honeycomb dataset, possibly with environment.
 data HoneycombTarget = HoneycombTarget
   { targetTeam :: HoneycombTeam
   , targetDataset :: DatasetInfo
@@ -161,10 +179,27 @@ data HoneycombTarget = HoneycombTarget
   deriving stock (Show, Eq)
 
 
-{- | See https://docs.honeycomb.io/api/direct-trace-links/
+{- | Formats a direct link to a trace.
 
- "http://ui.honeycomb.io/<team>/datasets/<dataset>/trace
-    ?trace_id=<traceId>&trace_start_ts=<ts>&trace_end_ts=<ts>"
+See https://docs.honeycomb.io/api/direct-trace-links/ for more details.
+
+The URLs generated will look like the following:
+
+Honeycomb Current:
+
+
+> https://ui.honeycomb.io/<team>/environments/<environment>/datasets/<dataset>/trace
+>   ?trace_id=<traceId>
+>   &trace_start_ts=<ts>
+>   &trace_end_ts=<ts>
+
+Honeycomb Classic:
+
+
+> https://ui.honeycomb.io/<team>/datasets/<dataset>/trace
+>   ?trace_id=<traceId>
+>   &trace_start_ts=<ts>
+>   &trace_end_ts=<ts>
 -}
 makeDirectTraceLink :: HoneycombTarget -> UTCTime -> TraceId -> ByteString
 makeDirectTraceLink HoneycombTarget {..} timestamp traceId =
@@ -197,6 +232,18 @@ makeDirectTraceLink HoneycombTarget {..} timestamp traceId =
           , ("trace_start_ts", convertTimestamp guessedStart)
           , ("trace_end_ts", convertTimestamp guessedEnd)
           ]
+
+
+{- | Simple function to get the Honeycomb target based on the global tracer
+ provider.
+
+ This is the right function for most use cases.
+-}
+honeycombTargetFromGlobalTracer :: MonadIO m => m (Maybe HoneycombTarget)
+honeycombTargetFromGlobalTracer = runMaybeT $ do
+  tracer <- lift getGlobalTracerProvider
+  theConfig <- uncurry config <$> MaybeT (getConfigPartsFromEnv tracer)
+  MaybeT $ resolveHoneycombTarget tracer theConfig
 
 
 -- | Gets a trace link for the current trace.

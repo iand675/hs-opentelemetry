@@ -53,6 +53,7 @@ dependencies:
 - text
 - mtl
 - time
+- transformers
 - uri-bytestring
 
 library:
