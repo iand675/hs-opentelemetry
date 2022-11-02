@@ -48,7 +48,7 @@ dependencies:
 - base >= 4.7 && < 5
 - bytestring
 - hs-opentelemetry-api
-- honeycomb
+- honeycomb >= 0.1
 - unordered-containers
 - text
 - mtl

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.7.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -36,7 +36,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , honeycomb
+    , honeycomb >=0.1
     , hs-opentelemetry-api
     , mtl
     , text
@@ -61,7 +61,7 @@ test-suite test
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , honeycomb
+    , honeycomb >=0.1
     , hs-opentelemetry-api
     , hs-opentelemetry-vendor-honeycomb
     , hspec

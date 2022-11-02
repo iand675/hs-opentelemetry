@@ -20,7 +20,8 @@ module OpenTelemetry.Vendor.Honeycomb
     EnvironmentName (..),
 
     -- * Getting the Honeycomb target dataset/team name
-    honeycombTargetFromGlobalTracer,
+    getOrInitializeHoneycombTargetInContext,
+    getHoneycombTargetInContext,
 
     -- ** Detailed API
     getConfigPartsFromEnv,
@@ -32,6 +33,7 @@ module OpenTelemetry.Vendor.Honeycomb
     -- * Making trace links
     makeDirectTraceLink,
     getHoneycombLink,
+    getHoneycombLink',
 
     -- * Performing manual Honeycomb requests
     module Auth,
@@ -39,7 +41,7 @@ module OpenTelemetry.Vendor.Honeycomb
   )
 where
 
-import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT))
+import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT), join)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
@@ -60,7 +62,8 @@ import OpenTelemetry.Attributes
   )
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (lookupSpan)
-import OpenTelemetry.Context.ThreadLocal (getContext)
+import qualified OpenTelemetry.Context as Context
+import qualified OpenTelemetry.Context.ThreadLocal as TLContext
 import OpenTelemetry.Resource
   ( getMaterializedResourcesAttributes,
   )
@@ -75,6 +78,8 @@ import OpenTelemetry.Trace.Core
   )
 import OpenTelemetry.Trace.Id (Base (..), TraceId, traceIdBaseEncodedByteString)
 import System.Environment (lookupEnv)
+import System.IO.Unsafe (unsafePerformIO)
+import System.Timeout (timeout)
 import URI.ByteString (Query (..), httpNormalization, serializeQuery')
 import Prelude
 
@@ -93,10 +98,11 @@ newtype HoneycombTeam = HoneycombTeam {unHoneycombTeam :: Text}
   deriving newtype (IsString)
 
 
--- | Environment name in the Environments & Services data model (referred to as
--- \"Current\" in this package).
---
--- See https://docs.honeycomb.io/honeycomb-classic/ for more details.
+{- | Environment name in the Environments & Services data model (referred to as
+ \"Current\" in this package).
+
+ See https://docs.honeycomb.io/honeycomb-classic/ for more details.
+-}
 newtype EnvironmentName = EnvironmentName {unEnvironmentName :: Text}
   deriving stock (Show, Eq)
   deriving newtype (IsString)
@@ -234,22 +240,80 @@ makeDirectTraceLink HoneycombTarget {..} timestamp traceId =
           ]
 
 
-{- | Simple function to get the Honeycomb target based on the global tracer
- provider.
+honeycombTargetKey :: Context.Key (Maybe HoneycombTarget)
+honeycombTargetKey = unsafePerformIO $ Context.newKey "honeycombTarget"
+{-# NOINLINE honeycombTargetKey #-}
+
+
+{- | Gets or initializes the Honeycomb target in the thread-local
+ 'Context.Context'.
+
+ This should be called inside the root span at application startup in order to
+ ensure that this context is the parent of all child contexts in which you might
+ want to get the target (for instance to generate Honeycomb links).
+-}
+getOrInitializeHoneycombTargetInContext ::
+  MonadIO m =>
+  -- | Timeout for the operation before assuming Honeycomb is inaccessible
+  NominalDiffTime ->
+  m (Maybe HoneycombTarget)
+getOrInitializeHoneycombTargetInContext theTimeout = do
+  mmTarget <- getHoneycombTargetInContext'
+  case mmTarget of
+    -- It was fetched before (and possibly was Nothing)
+    Just t -> pure t
+    -- It has not been fetched yet
+    Nothing -> do
+      mTarget <- join <$> liftIO (timeoutMicroseconds theTimeout getTarget)
+      TLContext.adjustContext (Context.insert honeycombTargetKey mTarget)
+      pure mTarget
+  where
+    microsecondsPerSecond = 1000 * 1000
+    timeoutMicroseconds :: NominalDiffTime -> IO a -> IO (Maybe a)
+    timeoutMicroseconds limit = timeout (truncate $ nominalDiffTimeToSeconds limit * microsecondsPerSecond)
+
+    getTarget :: IO (Maybe HoneycombTarget)
+    getTarget = runMaybeT $ do
+      tracer <- lift getGlobalTracerProvider
+      theConfig <- uncurry config <$> MaybeT (getConfigPartsFromEnv tracer)
+      MaybeT $ resolveHoneycombTarget tracer theConfig
+
+
+{- | Simple function to get the Honeycomb target out of the global context.
+
+ At application startup, run 'getOrInitializeHoneycombTargetInContext' before
+ calling this, or else you will get 'Nothing'.
 
  This is the right function for most use cases.
 -}
-honeycombTargetFromGlobalTracer :: MonadIO m => m (Maybe HoneycombTarget)
-honeycombTargetFromGlobalTracer = runMaybeT $ do
-  tracer <- lift getGlobalTracerProvider
-  theConfig <- uncurry config <$> MaybeT (getConfigPartsFromEnv tracer)
-  MaybeT $ resolveHoneycombTarget tracer theConfig
+getHoneycombTargetInContext :: MonadIO m => m (Maybe HoneycombTarget)
+getHoneycombTargetInContext = do
+  join <$> getHoneycombTargetInContext'
 
 
--- | Gets a trace link for the current trace.
-getHoneycombLink :: MonadIO m => HoneycombTarget -> m (Maybe ByteString)
-getHoneycombLink target = do
-  theSpan <- lookupSpan <$> getContext
+-- | Gets the thread-local context. The outer Maybe represents whether one has been set yet.
+getHoneycombTargetInContext' :: MonadIO m => m (Maybe (Maybe HoneycombTarget))
+getHoneycombTargetInContext' = do
+  Context.lookup honeycombTargetKey <$> TLContext.getContext
+
+
+{- | Gets a trace link for the current trace.
+
+ Needs to have the thread-local target initialized; see
+ 'getOrInitializeHoneycombTargetInContext'.
+-}
+getHoneycombLink :: MonadIO m => m (Maybe ByteString)
+getHoneycombLink = do
+  mTarget <- getHoneycombTargetInContext
+  case mTarget of
+    Just target -> getHoneycombLink' target
+    Nothing -> pure Nothing
+
+
+-- | Gets a trace link for the current trace with an explicitly provided target.
+getHoneycombLink' :: MonadIO m => HoneycombTarget -> m (Maybe ByteString)
+getHoneycombLink' target = do
+  theSpan <- lookupSpan <$> TLContext.getContext
   inTraceId <- traceIdForSpan theSpan
   time <- liftIO getCurrentTime
 
