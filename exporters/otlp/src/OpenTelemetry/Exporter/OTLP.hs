@@ -47,7 +47,7 @@ module OpenTelemetry.Exporter.OTLP (
 import Codec.Compression.GZip
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
-import Control.Exception (SomeException (..), try)
+import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class
 import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
@@ -230,8 +230,15 @@ otlpExporter conf = do
               result <- try $ exporterExportCall encoder baseReq spans_
               case result of
                 Left err -> do
-                  print err
-                  pure $ Failure $ Just err
+                  -- If the exception is async, then we need to rethrow it
+                  -- here. Otherwise, there's a good chance that the
+                  -- calling code will swallow the exception and cause
+                  -- a problem.
+                  case fromException err of
+                    Just (SomeAsyncException _) ->
+                      throwIO err
+                    Nothing ->
+                      pure $ Failure $ Just err
                 Right ok -> pure ok
             else pure Success
       , exporterShutdown = pure ()
