@@ -14,32 +14,31 @@
    This lets you link to traces. You don't need this to send data to Honeycomb,
    for which @hs-opentelemetry-exporter-otlp@ is suitable.
 -}
-module OpenTelemetry.Vendor.Honeycomb
-  ( -- * Types
-    HoneycombTeam (..),
-    EnvironmentName (..),
+module OpenTelemetry.Vendor.Honeycomb (
+  -- * Types
+  HoneycombTeam (..),
+  EnvironmentName (..),
 
-    -- * Getting the Honeycomb target dataset/team name
-    getOrInitializeHoneycombTargetInContext,
-    getHoneycombTargetInContext,
+  -- * Getting the Honeycomb target dataset/team name
+  getOrInitializeHoneycombTargetInContext,
+  getHoneycombTargetInContext,
 
-    -- ** Detailed API
-    getConfigPartsFromEnv,
-    getHoneycombData,
-    resolveHoneycombTarget,
-    DatasetInfo (..),
-    HoneycombTarget (..),
+  -- ** Detailed API
+  getConfigPartsFromEnv,
+  getHoneycombData,
+  resolveHoneycombTarget,
+  DatasetInfo (..),
+  HoneycombTarget (..),
 
-    -- * Making trace links
-    makeDirectTraceLink,
-    getHoneycombLink,
-    getHoneycombLink',
+  -- * Making trace links
+  makeDirectTraceLink,
+  getHoneycombLink,
+  getHoneycombLink',
 
-    -- * Performing manual Honeycomb requests
-    module Auth,
-    module Config,
-  )
-where
+  -- * Performing manual Honeycomb requests
+  module Auth,
+  module Config,
+) where
 
 import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT), join)
 import Control.Monad.Trans.Maybe (MaybeT (..))
@@ -55,27 +54,27 @@ import Data.Time.Clock.POSIX
 import Honeycomb.API.Auth as Auth
 import Honeycomb.Config as Config
 import Honeycomb.Types (DatasetName (..))
-import OpenTelemetry.Attributes
-  ( Attribute (AttributeValue),
-    PrimitiveAttribute (TextAttribute),
-    lookupAttribute,
-  )
+import OpenTelemetry.Attributes (
+  Attribute (AttributeValue),
+  PrimitiveAttribute (TextAttribute),
+  lookupAttribute,
+ )
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (lookupSpan)
 import qualified OpenTelemetry.Context as Context
 import qualified OpenTelemetry.Context.ThreadLocal as TLContext
-import OpenTelemetry.Resource
-  ( getMaterializedResourcesAttributes,
-  )
-import OpenTelemetry.Trace.Core
-  ( TracerProvider,
-    getGlobalTracerProvider,
-    getSpanContext,
-    getTracerProviderResources,
-    isSampled,
-    traceFlags,
-    traceId,
-  )
+import OpenTelemetry.Resource (
+  getMaterializedResourcesAttributes,
+ )
+import OpenTelemetry.Trace.Core (
+  TracerProvider,
+  getGlobalTracerProvider,
+  getSpanContext,
+  getTracerProviderResources,
+  isSampled,
+  traceFlags,
+  traceId,
+ )
 import OpenTelemetry.Trace.Id (Base (..), TraceId, traceIdBaseEncodedByteString)
 import System.Environment (lookupEnv)
 import System.IO.Unsafe (unsafePerformIO)
