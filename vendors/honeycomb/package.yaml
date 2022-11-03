@@ -1,0 +1,82 @@
+_common/lib: !include "../../package-common.yaml"
+
+name:                hs-opentelemetry-vendor-honeycomb
+version:             0.0.1.0
+
+<<: *preface
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            Optional OpenTelemetry integration for Honeycomb
+category:            OpenTelemetry
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
+
+ghc-options:
+  - -Weverything
+  # missing-exported-signatures turns off the more strict -Wmissing-signatures. See https://ghc.haskell.org/trac/ghc/ticket/14794#ticket
+  - -Wno-missing-exported-signatures
+  # Requires explicit export lists for every module, a pain for large modules
+  - -Wno-missing-export-lists
+  # Requires explicit imports of _every_ function (e.g. '$'); too strict
+  - -Wno-missing-import-lists
+  # When GHC can't specialize a polymorphic function. No big deal and requires fixing underlying libraries to solve.
+  - -Wno-missed-specialisations
+  # See missed-specialisations
+  - -Wno-all-missed-specialisations
+  # Don't use Safe Haskell warnings
+  - -Wno-unsafe
+  # Warning for polymorphic local bindings. Don't think this is an issue
+  - -Wno-missing-local-signatures
+  # Don't warn if the monomorphism restriction is used
+  - -Wno-monomorphism-restriction
+  #  Cabal isn’t setting this currently (introduced in GHC 8.10)
+  - -Wno-missing-safe-haskell-mode
+  #  Cabal’s generate Path_*.hs doesn’t do this (fixed in https://github.com/haskell/cabal/pull/7352)
+  - -Wno-prepositive-qualified-module
+  # Some tooling gives this error
+  - -Wno-unused-packages
+  # Warns on every single data declaration
+  - -Wno-missing-kind-signatures
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- hs-opentelemetry-api
+- honeycomb >= 0.1
+- unordered-containers
+- text
+- mtl
+- time
+- transformers
+- uri-bytestring
+
+library:
+  source-dirs: src
+
+
+tests:
+  test:
+    main: Main.hs
+    source-dirs:
+      - test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -Wno-incomplete-uni-patterns # Failing at runtime just means failing the test, which is ok
+      - -O0
+
+    build-tools:
+      hspec-discover
+
+    dependencies:
+      - hspec
+      - hspec-core
+      - hspec-expectations
+      - hs-opentelemetry-vendor-honeycomb
