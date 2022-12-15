@@ -22,6 +22,7 @@ module OpenTelemetry.Processor.Batch (
   -- , BatchProcessorOperations
 ) where
 
+import Control.Concurrent (rtsSupportsBoundThreads)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception
@@ -228,6 +229,7 @@ data ProcessorMessage = Flush | Shutdown
 -}
 batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
+  unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch processor does not work without the -threaded GHC flag!"
   batch <- newIORef $ boundedMap maxQueueSize
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
