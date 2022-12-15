@@ -43,6 +43,9 @@ dependencies:
 - ghc-prim
 - unliftio-core
 - vector-builder
+- discover-instances
+- th-compat
+- template-haskell
 
 library:
   source-dirs: src
