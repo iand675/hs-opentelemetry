@@ -226,6 +226,9 @@ data ProcessorMessage = Flush | Shutdown
 {- |
  The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections
  required to transmit the data. This processor supports both size and time based batching.
+
+ NOTE: this function requires the program be compiled with the @-threaded@ GHC
+ option and will throw an error if this is not the case.
 -}
 batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
