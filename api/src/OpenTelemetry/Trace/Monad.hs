@@ -89,5 +89,5 @@ instance MonadTracer m => MonadTracer (IdentityT m) where
   getTracer = lift getTracer
 
 
-instance MonadTracer m => MonadTracer (ReaderT r m) where
+instance {-# OVERLAPPABLE #-} MonadTracer m => MonadTracer (ReaderT r m) where
   getTracer = lift getTracer
