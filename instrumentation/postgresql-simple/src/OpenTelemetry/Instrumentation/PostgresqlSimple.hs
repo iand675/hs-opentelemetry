@@ -23,22 +23,18 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
   foldWithOptions,
   fold_,
   foldWithOptions_,
-  {-
-  , forEach
-  , forEach_
-  , returning
-  -}
+  forEach,
+  forEach_,
+  -- returning,
 
   -- ** Queries that stream results taking a parser as an argument
   foldWith,
   foldWithOptionsAndParser,
   foldWith_,
   foldWithOptionsAndParser_,
-  {-
-  , forEachWith
-  , forEachWith_
-  , returningWith
-  -}
+  forEachWith,
+  forEachWith_,
+  -- returningWith,
 
   -- * Statements that do not return results
   execute,
@@ -229,46 +225,32 @@ foldWithOptionsAndParser_ opts parser conn q a f = withRunInIO $ \runInIO -> do
   pgsSpan conn statement $ Simple.foldWithOptionsAndParser_ opts parser conn q a (\a' r -> runInIO (f a' r))
 
 
-{-
--- | A version of 'fold' that does not transform a state value.
-forEach :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, ToRow q, FromRow r) =>
-           Connection
-        -> Query                -- ^ Query template.
-        -> q                    -- ^ Query parameters.
-        -> (r -> m ())         -- ^ Result consumer.
-        -> m ()
-forEach = _
+{- | Instrumented version of 'Simple.forEach'
+ forEach :: (MonadUnliftIO m, ToRow q, FromRow r) => Connection -> Query -> q -> (r -> m ()) -> m ()
+-}
+forEach conn template qs f = forEachWith Simple.fromRow
 {-# INLINE forEach #-}
 
--- | A version of 'forEach' taking a parser as an argument
-forEachWith :: (MonadBracketError m, MonadLocalContext m, ToRow q)
-            => Simple.RowParser r
-            -> Connection
-            -> Query
-            -> q
-            -> (r -> m ())
-            -> m ()
-forEachWith parser conn template qs = _
+
+-- | Instrumented version of 'Simple.forEachWith'
+forEachWith :: (MonadUnliftIO m, ToRow q) => Simple.RowParser r -> Connection -> Query -> q -> (r -> m ()) -> m ()
+forEachWith parser conn template qs = foldWith parser conn template qs () . const
 {-# INLINE forEachWith #-}
 
--- | A version of 'forEach' that does not perform query substitution.
-forEach_ :: (MonadBracketError m, MonadLocalContext m, FromRow r) =>
-            Connection
-         -> Query                -- ^ Query template.
-         -> (r -> m ())         -- ^ Result consumer.
-         -> m ()
-forEach_ = _
+
+-- | Instrumented version of 'Simple.forEach_'
+forEach_ :: (MonadUnliftIO m, FromRow r) => Connection -> Query -> (r -> m ()) -> m ()
+forEach_ = forEachWith_ Simple.fromRow
 {-# INLINE forEach_ #-}
 
-forEachWith_ :: (MonadBracketError m, MonadLocalContext m) =>
-                Simple.RowParser r
-             -> Connection
-             -> Query
-             -> (r -> m ())
-             -> m ()
-forEachWith_ parser conn template = _
+
+-- | Instrumented version of 'Simple.forEachWith_'
+forEachWith_ :: MonadUnliftIO m => Simple.RowParser r -> Connection -> Query -> (r -> m ()) -> m ()
+forEachWith_ parser conn template = foldWith_ parser conn template () . const
 {-# INLINE forEachWith_ #-}
 
+
+{-
 -- | Execute @INSERT ... RETURNING@, @UPDATE ... RETURNING@, or other SQL
 -- query that accepts multi-row input and is expected to return results.
 -- Note that it is possible to write
