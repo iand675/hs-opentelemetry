@@ -17,20 +17,24 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
   -- ** Queries taking parser as argument
   queryWith,
   queryWith_,
-  {-
+
   -- * Queries that stream results
-  , fold
-  , foldWithOptions
-  , fold_
-  , foldWithOptions_
+  fold,
+  foldWithOptions,
+  fold_,
+  foldWithOptions_,
+  {-
   , forEach
   , forEach_
   , returning
+  -}
+
   -- ** Queries that stream results taking a parser as an argument
-  , foldWith
-  , foldWithOptionsAndParser
-  , foldWith_
-  , foldWithOptionsAndParser_
+  foldWith,
+  foldWithOptionsAndParser,
+  foldWith_,
+  foldWithOptionsAndParser_,
+  {-
   , forEachWith
   , forEachWith_
   , returningWith
@@ -40,13 +44,13 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
   execute,
   execute_,
   executeMany,
-  {-
+
   -- * Reexported functions
-  , module X
-  -}
+  module X,
 ) where
 
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import qualified Data.ByteString.Char8 as C
 import qualified Data.HashMap.Strict as H
 import Data.IP
@@ -181,119 +185,51 @@ queryWith_ parser conn query = liftIO $ do
   pgsSpan conn statement $ Simple.queryWith_ parser conn query
 
 
+-- | Instrumented version of 'Simple.fold'
+fold :: (MonadUnliftIO m, FromRow row, ToRow params) => Connection -> Query -> params -> a -> (a -> row -> m a) -> m a
+fold = foldWithOptionsAndParser Simple.defaultFoldOptions Simple.fromRow
+
+
+-- | Instrumented version of 'Simple.foldWith'
+foldWith :: (MonadUnliftIO m, ToRow params) => Simple.RowParser row -> Connection -> Query -> params -> a -> (a -> row -> m a) -> m a
+foldWith = foldWithOptionsAndParser Simple.defaultFoldOptions
+
+
+-- | Instrumented version of 'Simple.foldWithOptions'
+foldWithOptions :: (MonadUnliftIO m, FromRow row, ToRow params) => FoldOptions -> Connection -> Query -> params -> a -> (a -> row -> m a) -> m a
+foldWithOptions opts = foldWithOptionsAndParser opts Simple.fromRow
+
+
+-- | Instrumented version of 'Simple.foldWithOptionsAndParser'
+foldWithOptionsAndParser :: (MonadUnliftIO m, ToRow params) => FoldOptions -> Simple.RowParser row -> Connection -> Query -> params -> a -> (a -> row -> m a) -> m a
+foldWithOptionsAndParser opts parser conn template qs a f = withRunInIO $ \runInIO -> do
+  statement <- formatQuery conn template qs
+  pgsSpan conn statement $ Simple.foldWithOptionsAndParser opts parser conn template qs a (\a' r -> runInIO (f a' r))
+
+
+-- | Instrumented version of 'Simple.fold_'
+fold_ :: (MonadUnliftIO m, FromRow r) => Connection -> Query -> a -> (a -> r -> m a) -> m a
+fold_ = foldWithOptionsAndParser_ Simple.defaultFoldOptions Simple.fromRow
+
+
+-- | Instrumented version of 'Simple.foldWith_'
+foldWith_ :: MonadUnliftIO m => Simple.RowParser r -> Connection -> Query -> a -> (a -> r -> m a) -> m a
+foldWith_ = foldWithOptionsAndParser_ Simple.defaultFoldOptions
+
+
+-- | Instrumented version of 'Simple.foldWithOptions_'
+foldWithOptions_ :: (MonadUnliftIO m, FromRow r) => FoldOptions -> Connection -> Query -> a -> (a -> r -> m a) -> m a
+foldWithOptions_ opts = foldWithOptionsAndParser_ opts Simple.fromRow
+
+
+-- | Instrumented version of 'Simple.foldWithOptionsAndParser_'
+foldWithOptionsAndParser_ :: MonadUnliftIO m => FoldOptions -> Simple.RowParser r -> Connection -> Query -> a -> (a -> r -> m a) -> m a
+foldWithOptionsAndParser_ opts parser conn q a f = withRunInIO $ \runInIO -> do
+  statement <- formatQuery conn q ()
+  pgsSpan conn statement $ Simple.foldWithOptionsAndParser_ opts parser conn q a (\a' r -> runInIO (f a' r))
+
+
 {-
--- | Perform a @SELECT@ or other SQL query that is expected to return
--- results. Results are streamed incrementally from the server, and
--- consumed via a left fold.
---
--- When dealing with small results, it may be simpler (and perhaps
--- faster) to use 'query' instead.
---
--- This fold is /not/ strict. The stream consumer is responsible for
--- forcing the evaluation of its result to avoid space leaks.
---
--- This is implemented using a database cursor.    As such,  this requires
--- a transaction.   This function will detect whether or not there is a
--- transaction in progress,  and will create a 'ReadCommitted' 'ReadOnly'
--- transaction if needed.   The cursor is given a unique temporary name,
--- so the consumer may itself call fold.
---
--- Exceptions that may be thrown:
---
--- * 'FormatError': the query string could not be formatted correctly.
---
--- * 'QueryError': the result contains no columns (i.e. you should be
---   using 'execute' instead of 'query').
---
--- * 'ResultError': result conversion failed.
---
--- * 'SqlError':  the postgresql backend returned an error,  e.g.
---   a syntax or type error,  or an incorrect table or column name.
-fold            :: (MonadBracketError m, MonadLocalContext m, FromRow row, ToRow params)
-                => Connection
-                -> Query
-                -> params
-                -> a
-                -> (a -> row -> m a)
-                -> m a
-fold = _
-
--- | A version of 'fold' taking a parser as an argument
-foldWith        :: (MonadBracketError m, MonadLocalContext m, ToRow params)
-                => Simple.RowParser row
-                -> Connection
-                -> Query
-                -> params
-                -> a
-                -> (a -> row -> m a)
-                -> m a
-foldWith = _
--- | The same as 'fold',  but this provides a bit more control over
---   lower-level details.  Currently,  the number of rows fetched per
---   round-trip to the server and the transaction mode may be adjusted
---   accordingly.    If the connection is already in a transaction,
---   then the existing transaction is used and thus the 'transactionMode'
---   option is ignored.
-foldWithOptions :: (MonadBracketError m, MonadLocalContext m, FromRow row, ToRow params)
-                => FoldOptions
-                -> Connection
-                -> Query
-                -> params
-                -> a
-                -> (a -> row -> m a)
-                -> m a
-foldWithOptions opts = _
-
--- | A version of 'foldWithOptions' taking a parser as an argument
-foldWithOptionsAndParser :: (MonadBracketError m, MonadLocalContext m, ToRow params)
-                         => FoldOptions
-                         -> Simple.RowParser row
-                         -> Connection
-                         -> Query
-                         -> params
-                         -> a
-                         -> (a -> row -> m a)
-                         -> m a
-foldWithOptionsAndParser opts parser conn template qs a f = _
-
--- | A version of 'fold' that does not perform query substitution.
-fold_ :: (MonadBracketError m, MonadLocalContext m, FromRow r) =>
-         Connection
-      -> Query                  -- ^ Query.
-      -> a                      -- ^ Initial state for result consumer.
-      -> (a -> r -> m a)       -- ^ Result consumer.
-      -> m a
-fold_ = _
-
--- | A version of 'fold_' taking a parser as an argument
-foldWith_ :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m) =>
-             Simple.RowParser r
-          -> Connection
-          -> Query
-          -> a
-          -> (a -> r -> m a)
-          -> m a
-foldWith_ = _
-
-foldWithOptions_ :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, FromRow r) =>
-                    FoldOptions
-                 -> Connection
-                 -> Query             -- ^ Query.
-                 -> a                 -- ^ Initial state for result consumer.
-                 -> (a -> r -> m a)  -- ^ Result consumer.
-                 -> m a
-foldWithOptions_ opts conn query' a f = Simple.foldWithOptions_ opts conn query' a f
-
--- | A version of 'foldWithOptions_' taking a parser as an argument
-foldWithOptionsAndParser_ :: FoldOptions
-                          -> Simple.RowParser r
-                          -> Connection
-                          -> Query             -- ^ Query.
-                          -> a                 -- ^ Initial state for result consumer.
-                          -> (a -> r -> IO a)  -- ^ Result consumer.
-                          -> IO a
-foldWithOptionsAndParser_ opts parser conn query' a f = _
-
 -- | A version of 'fold' that does not transform a state value.
 forEach :: (MonadUnliftIO m, MonadBracketError m, MonadLocalContext m, ToRow q, FromRow r) =>
            Connection
