@@ -72,9 +72,10 @@ import qualified Database.PostgreSQL.Simple.FromRow as Simple
 import Database.PostgreSQL.Simple.Internal (
   Connection (Connection, connectionHandle),
  )
+import qualified Database.PostgreSQL.Simple.Internal as Simple (withConnection)
 import GHC.Stack
 import OpenTelemetry.Resource ((.=), (.=?))
-import OpenTelemetry.Trace.Core
+import OpenTelemetry.Trace.Core as TC
 import OpenTelemetry.Trace.Monad
 import Text.Read (readMaybe)
 import UnliftIO
@@ -104,6 +105,20 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
             Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
             Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
         ]
+
+
+-- | Function to help with wrapping functions in postgresql-simple
+pgsSpan :: Connection -> C.ByteString -> IO a -> IO a
+pgsSpan conn statement f = do
+  connAttr <- staticConnectionAttributes conn
+  dbName <- maybe "unknown db" TE.decodeUtf8 <$> Simple.withConnection conn LibPQ.db
+  let callAttr = [("db.statement", toAttribute $ TE.decodeUtf8 statement)] :: [(T.Text, Attribute)]
+      attrs = connAttr <> callAttr
+      spanArgs = SpanArguments Client attrs [] Nothing
+  tracerProvider <- getGlobalTracerProvider
+  let tracer = makeTracer tracerProvider "hs-opentelemetry-postgresql-simple" tracerOptions
+  TC.inSpan tracer dbName spanArgs f
+
 
 {-
 -- | Perform a @SELECT@ or other SQL query that is expected to return
