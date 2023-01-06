@@ -25,7 +25,7 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
   foldWithOptions_,
   forEach,
   forEach_,
-  -- returning,
+  returning,
 
   -- ** Queries that stream results taking a parser as an argument
   foldWith,
@@ -34,7 +34,7 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
   foldWithOptionsAndParser_,
   forEachWith,
   forEachWith_,
-  -- returningWith,
+  returningWith,
 
   -- * Statements that do not return results
   execute,
@@ -250,26 +250,17 @@ forEachWith_ parser conn template = foldWith_ parser conn template () . const
 {-# INLINE forEachWith_ #-}
 
 
-{-
--- | Execute @INSERT ... RETURNING@, @UPDATE ... RETURNING@, or other SQL
--- query that accepts multi-row input and is expected to return results.
--- Note that it is possible to write
---    @'query' conn "INSERT ... RETURNING ..." ...@
--- in cases where you are only inserting a single row,  and do not need
--- functionality analogous to 'executeMany'.
---
--- If the list of parameters is empty,  this function will simply return @[]@
--- without issuing the query to the backend.   If this is not desired,
--- consider using the 'Values' constructor instead.
---
--- Throws 'FormatError' if the query could not be formatted correctly.
-returning :: (MonadIO m, MonadGetContext m, ToRow q, FromRow r) => Connection -> Query -> [q] -> m [r]
-returning = _
+-- | Instrumented version of 'Simple.returning'
+returning :: (MonadIO m, ToRow q, FromRow r) => Connection -> Query -> [q] -> m [r]
+returning = returningWith Simple.fromRow
+
 
 -- | A version of 'returning' taking parser as argument
-returningWith :: (MonadIO m, MonadGetContext m, ToRow q) => Simple.RowParser r -> Connection -> Query -> [q] -> m [r]
-returningWith = _
--}
+returningWith :: (MonadIO m, ToRow q) => Simple.RowParser r -> Connection -> Query -> [q] -> m [r]
+returningWith parser conn q qs = liftIO $ do
+  statement <- formatMany conn q qs
+  pgsSpan conn statement $ Simple.returningWith parser conn q qs
+
 
 -- | Instrumented version of 'Simple.execute'
 execute :: (MonadIO m, ToRow q) => Connection -> Query -> q -> m Int64
