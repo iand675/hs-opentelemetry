@@ -40,6 +40,7 @@ packages:
 - exporters/otlp
 # - exporters/prometheus
 # - propagators/b3
+- propagators/datadog
 # - propagators/jaeger
 - propagators/w3c
 - instrumentation/conduit
