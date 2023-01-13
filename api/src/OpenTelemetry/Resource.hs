@@ -123,9 +123,9 @@ instance Monoid (Resource s) where
 -}
 type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
   ResourceMerge 'Nothing 'Nothing = 'Nothing
-  ResourceMerge 'Nothing ( 'Just s) = 'Just s
-  ResourceMerge ( 'Just s) 'Nothing = 'Just s
-  ResourceMerge ( 'Just s) ( 'Just s) = 'Just s
+  ResourceMerge 'Nothing ('Just s) = 'Just s
+  ResourceMerge ('Just s) 'Nothing = 'Just s
+  ResourceMerge ('Just s) ('Just s) = 'Just s
 
 
 {- | Combine two 'Resource' values into a new 'Resource' that contains the
@@ -167,7 +167,7 @@ instance MaterializeResource 'Nothing where
   materializeResources (Resource attrs) = MaterializedResources Nothing attrs
 
 
-instance KnownSymbol s => MaterializeResource ( 'Just s) where
+instance KnownSymbol s => MaterializeResource ('Just s) where
   materializeResources (Resource attrs) = MaterializedResources (Just $ symbolVal (Proxy @s)) attrs
 
 
