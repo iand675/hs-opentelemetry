@@ -19,7 +19,7 @@
  for more details.
 -}
 module OpenTelemetry.Trace.TraceState (
-  TraceState,
+  TraceState (TraceState),
   Key (..),
   Value (..),
   empty,

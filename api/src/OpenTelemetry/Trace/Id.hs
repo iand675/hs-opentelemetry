@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MagicHash #-}
@@ -25,7 +26,7 @@
 -}
 module OpenTelemetry.Trace.Id (
   -- * Working with 'TraceId's
-  TraceId,
+  TraceId (TraceId),
 
   -- ** Creating 'TraceId's
   newTraceId,
@@ -44,7 +45,7 @@ module OpenTelemetry.Trace.Id (
   traceIdBaseEncodedText,
 
   -- * Working with 'SpanId's
-  SpanId,
+  SpanId (SpanId),
 
   -- ** Creating 'SpanId's
   newSpanId,
@@ -75,7 +76,7 @@ import Data.Hashable (Hashable)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Exts
-import GHC.ST
+import GHC.Generics (Generic)
 import OpenTelemetry.Trace.Id.Generator
 import Prelude hiding (length)
 
@@ -85,7 +86,7 @@ import Prelude hiding (length)
 
 -- | A valid trace identifier is a 16-byte array with at least one non-zero byte.
 newtype TraceId = TraceId ShortByteString
-  deriving stock (Ord, Eq)
+  deriving stock (Ord, Eq, Generic)
   deriving newtype (Hashable)
 
 
