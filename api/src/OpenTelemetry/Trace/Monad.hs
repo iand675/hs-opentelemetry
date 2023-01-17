@@ -37,6 +37,9 @@ module OpenTelemetry.Trace.Monad (
 ) where
 
 import Control.Monad.IO.Unlift
+import Control.Monad.Identity (IdentityT)
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.Trans (MonadTrans (lift))
 import Data.Text (Text)
 import GHC.Stack
 import OpenTelemetry.Trace.Core (
@@ -80,3 +83,11 @@ inSpan'' ::
 inSpan'' cs n args f = do
   t <- getTracer
   OpenTelemetry.Trace.Core.inSpan'' t cs n args f
+
+
+instance MonadTracer m => MonadTracer (IdentityT m) where
+  getTracer = lift getTracer
+
+
+instance {-# OVERLAPPABLE #-} MonadTracer m => MonadTracer (ReaderT r m) where
+  getTracer = lift getTracer

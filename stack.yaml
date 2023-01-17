@@ -98,4 +98,4 @@ extra-deps:
 
 nix:
   enable: true
-  packages: [postgresql, zlib]
+  packages: [postgresql, zlib, libffi]

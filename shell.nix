@@ -20,5 +20,6 @@ in
 
       postgresql
       zlib
+      libffi
     ];
   }

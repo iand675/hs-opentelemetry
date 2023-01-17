@@ -83,6 +83,7 @@ library
     , template-haskell
     , text
     , thread-utils-context ==0.2.*
+    , transformers
     , unliftio-core
     , unordered-containers
     , vault
@@ -122,6 +123,7 @@ test-suite hs-opentelemetry-api-test
     , template-haskell
     , text
     , thread-utils-context ==0.2.*
+    , transformers
     , unliftio-core
     , unordered-containers
     , vault
