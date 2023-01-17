@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -33,6 +33,7 @@ library
       OpenTelemetry.Context
       OpenTelemetry.Context.ThreadLocal
       OpenTelemetry.Exporter
+      OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.Logging.Core
       OpenTelemetry.Processor
       OpenTelemetry.Propagator
