@@ -6,8 +6,8 @@ module OpenTelemetry.Propagator.DatadogSpec where
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Short as SB
+import OpenTelemetry.Internal.Trace.Id
 import OpenTelemetry.Propagator.Datadog
-import OpenTelemetry.Trace.Id
 import Test.Hspec
 import Test.QuickCheck
 

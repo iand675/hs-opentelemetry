@@ -24,6 +24,10 @@ import OpenTelemetry.Context (
   insertSpan,
   lookupSpan,
  )
+import OpenTelemetry.Internal.Trace.Id (
+  SpanId (SpanId),
+  TraceId (TraceId),
+ )
 import OpenTelemetry.Propagator (Propagator (Propagator, extractor, injector, propagatorNames))
 import OpenTelemetry.Propagator.Datadog.Internal (
   indexByteArrayNbo,
@@ -36,10 +40,6 @@ import OpenTelemetry.Trace (SpanContext (SpanContext, isRemote, spanId, traceFla
 import OpenTelemetry.Trace.Core (
   getSpanContext,
   wrapSpanContext,
- )
-import OpenTelemetry.Trace.Id (
-  SpanId (SpanId),
-  TraceId (TraceId),
  )
 import OpenTelemetry.Trace.TraceState (TraceState (TraceState))
 import qualified OpenTelemetry.Trace.TraceState as TS
