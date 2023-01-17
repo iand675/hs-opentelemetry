@@ -84,6 +84,18 @@ cradle:
     - path: "otlp/src"
       component: "hs-opentelemetry-otlp:lib"
 
+    - path: "propagators/datadog/src"
+      component: "hs-opentelemetry-propagator-datadog:lib"
+
+    - path: "propagators/datadog/test/spec"
+      component: "hs-opentelemetry-propagator-datadog:test:spec"
+
+    - path: "propagators/datadog/old-src"
+      component: "hs-opentelemetry-propagator-datadog:test:spec"
+
+    - path: "propagators/datadog/benchmark/header-codec/main.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
     - path: "propagators/w3c/src"
       component: "hs-opentelemetry-propagator-w3c:lib"
 
