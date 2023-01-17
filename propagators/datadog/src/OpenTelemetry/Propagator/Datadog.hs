@@ -63,9 +63,9 @@ datadogTraceContextPropagator =
                 { traceId
                 , spanId = parentId
                 , isRemote = True
-                -- when 0, not sampled
-                -- refer: OpenTelemetry.Internal.Trace.Types.isSampled
-                , traceFlags = TraceFlags 1
+                , -- when 0, not sampled
+                  -- refer: OpenTelemetry.Internal.Trace.Types.isSampled
+                  traceFlags = TraceFlags 1
                 , traceState = TraceState [(TS.Key samplingPriorityKey, TS.Value samplingPriority)]
                 }
         case spanContext' of
