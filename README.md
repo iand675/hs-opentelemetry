@@ -31,7 +31,7 @@ If you're instrumenting an application, use the [hs-opentelemetry-sdk](sdk/) pac
 
 ## Examples
 
-Fully instrumented application examples are available in the [examples](examples/) folder. 
+Fully instrumented application examples are available in the [examples](examples/) folder.
 
 - [Yesod application](examples/yesod-minimal)
 
@@ -59,12 +59,13 @@ Fully instrumented application examples are available in the [examples](examples
 
 ## Provided Propagators
 
-| Propagator      | OpenTelemetry Package                                    | Module                                   | Support            |
-|-----------------|----------------------------------------------------------|------------------------------------------|--------------------|
-| W3CBaggage      | [hs-opentelemetry-propagator-w3c](propagators/w3c)       | OpenTelemetry.Propagator.W3CBaggage      | :white_check_mark: |
-| W3CTraceContext | [hs-opentelemetry-propagator-w3c](propagators/w3c)       | OpenTelemetry.Propagator.W3CTraceContext | :white_check_mark: |
-| B3              | [hs-opentelemetry-propagator-b3](propagators/b3)         | OpenTelemetry.Propagator.B3              | Not implemented.   |
-| Jaeger          | [hs-opentelemetry-propagator-jaeger](propagators/jaeger) | OpenTelemetry.Propagator.Jaeger          | Not implemented.   |
+| Propagator      | OpenTelemetry Package                                      | Module                                   | Support            |
+|-----------------|------------------------------------------------------------|------------------------------------------|--------------------|
+| W3CBaggage      | [hs-opentelemetry-propagator-w3c](propagators/w3c)         | OpenTelemetry.Propagator.W3CBaggage      | :white_check_mark: |
+| W3CTraceContext | [hs-opentelemetry-propagator-w3c](propagators/w3c)         | OpenTelemetry.Propagator.W3CTraceContext | :white_check_mark: |
+| B3              | [hs-opentelemetry-propagator-b3](propagators/b3)           | OpenTelemetry.Propagator.B3              | Not implemented.   |
+| Jaeger          | [hs-opentelemetry-propagator-jaeger](propagators/jaeger)   | OpenTelemetry.Propagator.Jaeger          | Not implemented.   |
+| Datadog         | [hs-opentelemetry-propagator-datadog](propagators/datadog) | OpenTelemetry.Propagator.Datadog         | :white_check_mark: |
 
 ## Contributing
 
