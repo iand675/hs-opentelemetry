@@ -1,0 +1,57 @@
+cabal-version: 2.4
+
+name: hs-opentelemetry-instrumentation-persistent-mysql
+version: 0.0.0.0
+author: Kazuki Okamoto (岡本和樹)
+maintainer: kazuki.okamoto@herp.co.jp
+
+common common
+  build-depends: base >= 4 && < 5
+  ghc-options: -Wall
+  if impl(ghc >= 8.0)
+    ghc-options: -Wcompat
+  default-language: Haskell2010
+
+library
+  import: common
+  hs-source-dirs: src
+  exposed-modules: OpenTelemetry.Instrumentation.Persistent.MySQL
+  build-depends: hs-opentelemetry-api,
+                 hs-opentelemetry-instrumentation-persistent,
+                 monad-logger,
+                 mysql,
+                 mysql-simple,
+                 persistent,
+                 persistent-mysql,
+                 resource-pool,
+                 text,
+                 unliftio-core
+  ghc-options: -Wcompat
+               -Wno-name-shadowing
+  if impl(ghc >= 6.4)
+    ghc-options: -Wincomplete-record-updates
+  if impl(ghc >= 6.8)
+    ghc-options: -Wmonomorphism-restriction
+  if impl(ghc >= 7.0)
+    ghc-options: -Wmissing-import-lists
+  if impl(ghc >= 7.2)
+    ghc-options: -Wincomplete-uni-patterns
+                 -Widentities
+  if impl(ghc >= 8.0)
+    ghc-options: -Wmissing-exported-signatures
+                 -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options: -Wmissing-home-modules
+  if impl(ghc >= 8.4)
+    ghc-options: -Wmissing-export-lists
+                 -Wpartial-fields
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
+  if impl(ghc >= 8.10)
+    ghc-options: -Wunused-packages
+  if impl(ghc >= 9.0)
+    ghc-options: -Winvalid-haddock
+  if impl(ghc >= 9.2)
+    ghc-options: -Wmissing-kind-signatures
+                 -Woperator-whitespace
+                 -Wredundant-bang-patterns

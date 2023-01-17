@@ -47,6 +47,7 @@ packages:
 - instrumentation/cloudflare
 - instrumentation/http-client
 - instrumentation/persistent
+- instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
@@ -97,4 +98,4 @@ extra-deps:
 
 nix:
   enable: true
-  packages: [postgresql, zlib, libffi]
+  packages: [libffi, mysql80, openssl, pcre, postgresql, zlib, zstd]
