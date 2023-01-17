@@ -18,8 +18,12 @@ in
       haskell.packages.${compiler}.hspec-discover
       # haskell.packages.${compiler}.fourmolu
 
+      libffi
+      mysql80
+      openssl
+      pcre
       postgresql
       zlib
-      libffi
+      zstd
     ];
   }
