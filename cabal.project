@@ -5,6 +5,7 @@ packages:
   , exporters/handle
   , exporters/in-memory
   , exporters/otlp
+  , propagators/datadog
   , propagators/w3c
   , instrumentation/conduit
   , instrumentation/cloudflare
