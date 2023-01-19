@@ -43,6 +43,9 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
 
   -- * Reexported functions
   module X,
+
+  -- * Utility functions
+  pgsSpan
 ) where
 
 import Control.Monad.IO.Class
