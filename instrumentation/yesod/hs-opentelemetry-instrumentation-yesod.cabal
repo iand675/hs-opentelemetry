@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -35,6 +35,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
+    , containers
     , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-instrumentation-wai ==0.0.1.*
     , microlens
@@ -42,6 +43,7 @@ library
     , template-haskell
     , text
     , unliftio
+    , vault
     , wai
     , yesod-core
   default-language: Haskell2010
@@ -56,6 +58,7 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-instrumentation-wai ==0.0.1.*
     , hs-opentelemetry-instrumentation-yesod
@@ -64,6 +67,7 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
     , template-haskell
     , text
     , unliftio
+    , vault
     , wai
     , yesod-core
   default-language: Haskell2010
