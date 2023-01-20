@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "4318:4318" # otelcol HTTP/JSON
+      - "16686:16686" # UI and API
+
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=otel
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"

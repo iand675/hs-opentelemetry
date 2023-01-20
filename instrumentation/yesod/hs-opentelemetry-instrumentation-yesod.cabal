@@ -35,6 +35,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
+    , containers
     , hs-opentelemetry-api ==0.2.*
     , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
     , microlens
@@ -42,6 +43,7 @@ library
     , text
     , unliftio
     , unordered-containers
+    , vault
     , wai
     , yesod-core
   default-language: Haskell2010
