@@ -1,42 +1,44 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE InstanceSigs #-}
-
 -- an option for Template Haskell
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 import qualified Data.Map as M
 import Data.Text (Text, pack)
 import Network.Wai.Handler.Warp (run)
-import OpenTelemetry.Instrumentation.Wai    ( newOpenTelemetryWaiMiddleware' )
-import OpenTelemetry.Instrumentation.Yesod
-    ( mkRouteToPattern,
-      mkRouteToRenderer,
-      openTelemetryYesodMiddleware,
-      RouteRenderer(RouteRenderer),
-      YesodOpenTelemetryTrace(getTracerProvider) )
-import OpenTelemetry.Trace
-    ( TracerProvider,
-      shutdownTracerProvider,
-      initializeTracerProvider )
+import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware')
+import OpenTelemetry.Instrumentation.Yesod (
+  RouteRenderer (RouteRenderer),
+  YesodOpenTelemetryTrace (getTracerProvider),
+  mkRouteToPattern,
+  mkRouteToRenderer,
+  openTelemetryYesodMiddleware,
+ )
+import OpenTelemetry.Trace (
+  TracerProvider,
+  initializeTracerProvider,
+  shutdownTracerProvider,
+ )
 import Subsite (Subsite (Subsite))
 import qualified Subsite
-import UnliftIO ( bracket )
+import UnliftIO (bracket)
 import Yesod.Core (
   RenderRoute (renderRoute),
-  Yesod (yesodMiddleware,errorHandler),
+  Yesod (errorHandler, yesodMiddleware),
   defaultYesodMiddleware,
   mkYesod,
   parseRoutes,
   toWaiApp,
  )
-import Yesod.Core.Handler ( provideRep, selectRep )
+import Yesod.Core.Handler (provideRep, selectRep)
 import Yesod.Routes.TH.Types (ResourceTree)
+
 
 -- | This is my data type. There are many like it, but this one is mine.
 data Site = Site
@@ -66,14 +68,12 @@ instance Yesod Site where
   errorHandler err = selectRep $ provideRep $ pure $ pack $ show err
 
 
-
 instance YesodOpenTelemetryTrace Site where
   getTracerProvider = tracerProvider
 
 
 getRootR :: Handler Text
 getRootR = pure "GET /"
-
 
 
 main :: IO ()

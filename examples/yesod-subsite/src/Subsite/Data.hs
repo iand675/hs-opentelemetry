@@ -4,22 +4,26 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Subsite.Data (
-  Subsite(Subsite),
+  Subsite (Subsite),
   getSubHomeR,
   getFooR,
   routeToPattern,
   routeToRenderer,
   resourcesSubsite,
-  Route(FooR,SubHomeR))where
+  Route (FooR, SubHomeR),
+) where
 
 import Data.Text (Text)
-import OpenTelemetry.Instrumentation.Yesod
-    ( mkRouteToPattern, mkRouteToRenderer )
-import Yesod.Core
-    ( mkYesodSubData,
-      parseRoutes,
-      SubHandlerFor,
-      RenderRoute(renderRoute) )
+import OpenTelemetry.Instrumentation.Yesod (
+  mkRouteToPattern,
+  mkRouteToRenderer,
+ )
+import Yesod.Core (
+  RenderRoute (renderRoute),
+  SubHandlerFor,
+  mkYesodSubData,
+  parseRoutes,
+ )
 import Yesod.Core.Types (Route)
 
 

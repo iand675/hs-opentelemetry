@@ -7,15 +7,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
--- | This module makes it easier to use hs-opentelemetry-sdk with yesod.
-module OpenTelemetry.Instrumentation.Yesod (
-{-
+{- | This module makes it easier to use hs-opentelemetry-sdk with yesod.
+
 Let @Site@ be following to use in examples:
 
 @
 newtype Site = Site { siteTracerProvider :: TracerProvider }
 @
 -}
+module OpenTelemetry.Instrumentation.Yesod (
   openTelemetryYesodMiddleware,
   RouteRenderer (..),
   mkRouteToRenderer,
@@ -58,12 +58,14 @@ import Language.Haskell.TH (
   varE,
   varP,
   wildP,
-#if MIN_VERSION_template_haskell(2, 17, 0)
-  Quote (newName),
-#else
-  newName,
-#endif
  )
+
+
+#if MIN_VERSION_template_haskell(2, 17, 0)
+import Language.Haskell.TH (Quote (newName))
+#else
+import Language.Haskell.TH (newName)
+#endif
 import Lens.Micro (Lens', lens)
 import Network.Wai (Request (vault), requestHeaders)
 import qualified OpenTelemetry.Context as Context
@@ -115,8 +117,6 @@ import Yesod.Routes.TH.Types (
   ResourceTree (ResourceLeaf, ResourceParent),
   flatten,
  )
-
-
 
 
 handlerEnvL :: Lens' (HandlerData child site) (RunHandlerEnv child site)

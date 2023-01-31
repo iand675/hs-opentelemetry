@@ -2,7 +2,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-
 -- an option for Template Haskell stage restriction
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -11,15 +10,18 @@ module Subsite (
 ) where
 
 import Subsite.Data (
-  Subsite(Subsite),
-  getSubHomeR,
+  Route (FooR, SubHomeR),
+  Subsite (Subsite),
   getFooR,
+  getSubHomeR,
+  resourcesSubsite,
   routeToPattern,
   routeToRenderer,
-  resourcesSubsite,
-  Route(FooR,SubHomeR))
-import Yesod.Core
-    ( mkYesodSubDispatch, YesodSubDispatch(yesodSubDispatch   ),  )
+ )
+import Yesod.Core (
+  YesodSubDispatch (yesodSubDispatch),
+  mkYesodSubDispatch,
+ )
 
 
 instance YesodSubDispatch Subsite master where
