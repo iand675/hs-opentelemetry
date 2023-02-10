@@ -18,6 +18,7 @@ library
   exposed-modules: OpenTelemetry.Instrumentation.Persistent.MySQL
   build-depends: hs-opentelemetry-api,
                  hs-opentelemetry-instrumentation-persistent,
+                 iproute,
                  monad-logger,
                  mysql,
                  mysql-simple,
