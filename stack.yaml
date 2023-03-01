@@ -53,6 +53,7 @@ packages:
 - instrumentation/yesod
 - instrumentation/wai
 - examples/hspec
+- examples/http-server
 - examples/yesod-minimal
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
