@@ -6,6 +6,9 @@ cradle:
     - path: "api/test"
       component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
 
+    - path: "examples/http-server/./main.hs"
+      component: "http-server:exe:http-server"
+
     - path: "examples/yesod-minimal/src"
       component: "yesod-minimal:lib"
 
