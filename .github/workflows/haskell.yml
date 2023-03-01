@@ -77,7 +77,7 @@ jobs:
       - run: stack --stack-yaml stack-ghc-9.2.yaml build
       - run: stack --stack-yaml stack-ghc-9.2.yaml test
       - run: stack --stack-yaml stack-ghc-9.2.yaml bench --no-run-benchmarks
-  cabal-ghc-9_2:
+  cabal-ghc-9_0:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ~/.cabal
-          key: cabal-${{ runner.os }}-9.2-${{ hashFiles('cabal.project.freeze') }}
+          key: cabal-${{ runner.os }}-9.0-${{ hashFiles('cabal.project.freeze') }}
       - run: nix-shell --run 'cabal update'
       - run: nix-shell --run 'cabal v2-build --only-dependencies all'
       - run: nix-shell --run 'cabal v2-build all'
