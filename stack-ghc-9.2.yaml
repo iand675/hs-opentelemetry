@@ -45,12 +45,14 @@ packages:
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/postgresql-simple
 - instrumentation/yesod
 - instrumentation/wai
 - examples/yesod-minimal
+- utils/exceptions
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
@@ -62,11 +64,10 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- thread-utils-context-0.2.0.0
-- thread-utils-finalizers-0.1.0.0
-- proto-lens-0.7.1.1
-- proto-lens-runtime-0.7.0.2
-
+- proto-lens-0.7.1.1@sha256:8419e86fd7f521206a991c3ccb1777332a07a8250b380b06694f9f301b1ff38d,2972
+- proto-lens-runtime-0.7.0.2@sha256:25d11fd08b56025c89e6be5da46f40a82bd845218b235b9e0114253b45caa074,3051
+- thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
+- thread-utils-finalizers-0.1.0.0@sha256:a8435240bfc0ae96c94704d2986699a11a395c496f9a7f2e5f5d729a0b967549,1381
 # just for testing
 # - mwc-random-0.14.0.0
 # - random-1.1

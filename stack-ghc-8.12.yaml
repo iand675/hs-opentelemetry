@@ -45,6 +45,7 @@ packages:
 - propagators/w3c
 - instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/postgresql-simple
@@ -62,12 +63,12 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- thread-utils-context-0.2.0.0
-- thread-utils-finalizers-0.1.0.0
-- persistent-2.13.3.0
-- persistent-postgresql-2.13.4.0
-- proto-lens-0.7.1.0
-- proto-lens-runtime-0.7.0.1
+- persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
+- persistent-postgresql-2.13.4.0@sha256:7fc0ffc4a591c0355c8ad793bc6de08c13321c81a3fb748c9a23448ac88d987a,3686
+- proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
+- proto-lens-runtime-0.7.0.1@sha256:703f327422b2e204f8ea13c5e178edd8ab42ccd01c7a5a89fcb1b37ab474c68a,3038
+- thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
+- thread-utils-finalizers-0.1.0.0@sha256:a8435240bfc0ae96c94704d2986699a11a395c496f9a7f2e5f5d729a0b967549,1381
 # just for testing
 # - mwc-random-0.14.0.0
 # - random-1.1

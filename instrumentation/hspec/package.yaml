@@ -21,8 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 - hs-opentelemetry-api == 0.0.3.*
-- hspec >= 2.9.4
-- hspec-core >= 2.9.4
+- hspec >= 2.7
+- hspec-core >= 2.7
 - text
 - vault
 - resourcet

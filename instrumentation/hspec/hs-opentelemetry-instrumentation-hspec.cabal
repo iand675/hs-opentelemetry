@@ -33,8 +33,8 @@ library
   build-depends:
       base >=4.7 && <5
     , hs-opentelemetry-api ==0.0.3.*
-    , hspec >=2.9.4
-    , hspec-core >=2.9.4
+    , hspec >=2.7
+    , hspec-core >=2.7
     , mtl
     , resourcet
     , text
@@ -54,8 +54,8 @@ test-suite hs-opentelemetry-hspec-test
       base >=4.7 && <5
     , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-instrumentation-hspec
-    , hspec >=2.9.4
-    , hspec-core >=2.9.4
+    , hspec >=2.7
+    , hspec-core >=2.7
     , mtl
     , resourcet
     , text
