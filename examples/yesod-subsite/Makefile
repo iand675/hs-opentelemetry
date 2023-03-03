@@ -4,7 +4,7 @@ server.run:
 
 .PHONY: app.run
 app.run: bin/yesod-subsite
-	bin/yesod-subsite $(YESOD_MINIMAL_OPTS)
+	OTEL_SERVICE_NAME=yesod-subsite bin/yesod-subsite $(YESOD_MINIMAL_OPTS)
 
 bin/yesod-subsite:
 	stack install --local-bin-path ./bin $(CABAL_OPTS) yesod-subsite:exe:yesod-subsite
