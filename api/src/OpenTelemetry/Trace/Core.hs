@@ -426,15 +426,16 @@ addAttribute ::
   -- | Attribute value
   a ->
   m ()
-addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i ->
-  i
-    { spanAttributes =
-        OpenTelemetry.Attributes.addAttribute
-          (limitBy (spanTracer i) spanAttributeCountLimit)
-          (spanAttributes i)
-          k
-          v
-    }
+addAttribute (Span s) k v = liftIO $ modifyIORef' s $ \i ->
+  i `seq`
+    i
+      { spanAttributes =
+          OpenTelemetry.Attributes.addAttribute
+            (limitBy (spanTracer i) spanAttributeCountLimit)
+            (spanAttributes i)
+            k
+            v
+      }
 addAttribute (FrozenSpan _) _ _ = pure ()
 addAttribute (Dropped _) _ _ = pure ()
 
@@ -446,14 +447,15 @@ addAttribute (Dropped _) _ _ = pure ()
  @since 0.0.1.0
 -}
 addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
-addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i ->
-  i
-    { spanAttributes =
-        OpenTelemetry.Attributes.addAttributes
-          (limitBy (spanTracer i) spanAttributeCountLimit)
-          (spanAttributes i)
-          attrs
-    }
+addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \i ->
+  i `seq`
+    i
+      { spanAttributes =
+          OpenTelemetry.Attributes.addAttributes
+            (limitBy (spanTracer i) spanAttributeCountLimit)
+            (spanAttributes i)
+            attrs
+      }
 addAttributes (FrozenSpan _) _ = pure ()
 addAttributes (Dropped _) _ = pure ()
 
@@ -465,20 +467,21 @@ addAttributes (Dropped _) _ = pure ()
 addEvent :: MonadIO m => Span -> NewEvent -> m ()
 addEvent (Span s) NewEvent {..} = liftIO $ do
   t <- maybe getTimestamp pure newEventTimestamp
-  modifyIORef s $ \i ->
-    i
-      { spanEvents =
-          appendToBoundedCollection (spanEvents i) $
-            Event
-              { eventName = newEventName
-              , eventAttributes =
-                  A.addAttributes
-                    (limitBy (spanTracer i) eventAttributeCountLimit)
-                    emptyAttributes
-                    newEventAttributes
-              , eventTimestamp = t
-              }
-      }
+  modifyIORef' s $ \i ->
+    i `seq`
+      i
+        { spanEvents =
+            appendToBoundedCollection (spanEvents i) $
+              Event
+                { eventName = newEventName
+                , eventAttributes =
+                    A.addAttributes
+                      (limitBy (spanTracer i) eventAttributeCountLimit)
+                      emptyAttributes
+                      newEventAttributes
+                , eventTimestamp = t
+                }
+        }
 addEvent (FrozenSpan _) _ = pure ()
 addEvent (Dropped _) _ = pure ()
 
@@ -490,13 +493,14 @@ addEvent (Dropped _) _ = pure ()
  @since 0.0.1.0
 -}
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
-setStatus (Span s) st = liftIO $ modifyIORef s $ \i ->
-  i
-    { spanStatus =
-        if st > spanStatus i
-          then st
-          else spanStatus i
-    }
+setStatus (Span s) st = liftIO $ modifyIORef' s $ \i ->
+  i `seq`
+    i
+      { spanStatus =
+          if st > spanStatus i
+            then st
+            else spanStatus i
+      }
 setStatus (FrozenSpan _) _ = pure ()
 setStatus (Dropped _) _ = pure ()
 
@@ -516,7 +520,7 @@ updateName ::
   -- | The new span name, which supersedes whatever was passed in when the Span was started
   Text ->
   m ()
-updateName (Span s) n = liftIO $ modifyIORef s $ \i -> i {spanName = n}
+updateName (Span s) n = liftIO $ modifyIORef' s $ \i -> i `sew` i {spanName = n}
 updateName (FrozenSpan _) _ = pure ()
 updateName (Dropped _) _ = pure ()
 
@@ -539,9 +543,10 @@ endSpan ::
   m ()
 endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
-  (alreadyFinished, frozenS) <- atomicModifyIORef s $ \i ->
-    let ref = i {spanEnd = spanEnd i <|> Just ts}
-     in (ref, (isJust $ spanEnd i, ref))
+  (alreadyFinished, frozenS) <- atomicModifyIORef' s $ \i ->
+    i `seq`
+      let ref = i {spanEnd = spanEnd i <|> Just ts}
+       in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
     eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
