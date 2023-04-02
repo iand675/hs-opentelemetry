@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -75,6 +75,7 @@ library
     , bytestring
     , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-exporter-otlp ==0.0.1.*
+    , hs-opentelemetry-propagator-b3
     , hs-opentelemetry-propagator-w3c ==0.0.1.*
     , http-types
     , mwc-random
@@ -110,6 +111,7 @@ test-suite hs-opentelemetry-sdk-test
     , clock
     , hs-opentelemetry-api
     , hs-opentelemetry-exporter-otlp ==0.0.1.*
+    , hs-opentelemetry-propagator-b3
     , hs-opentelemetry-propagator-w3c ==0.0.1.*
     , hs-opentelemetry-sdk
     , hspec
