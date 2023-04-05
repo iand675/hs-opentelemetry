@@ -63,7 +63,7 @@ Fully instrumented application examples are available in the [examples](examples
 |-----------------|------------------------------------------------------------|------------------------------------------|--------------------|
 | W3CBaggage      | [hs-opentelemetry-propagator-w3c](propagators/w3c)         | OpenTelemetry.Propagator.W3CBaggage      | :white_check_mark: |
 | W3CTraceContext | [hs-opentelemetry-propagator-w3c](propagators/w3c)         | OpenTelemetry.Propagator.W3CTraceContext | :white_check_mark: |
-| B3              | [hs-opentelemetry-propagator-b3](propagators/b3)           | OpenTelemetry.Propagator.B3              | Not implemented.   |
+| B3              | [hs-opentelemetry-propagator-b3](propagators/b3)           | OpenTelemetry.Propagator.B3              | :white_check_mark: |
 | Jaeger          | [hs-opentelemetry-propagator-jaeger](propagators/jaeger)   | OpenTelemetry.Propagator.Jaeger          | Not implemented.   |
 | Datadog         | [hs-opentelemetry-propagator-datadog](propagators/datadog) | OpenTelemetry.Propagator.Datadog         | :white_check_mark: |
 

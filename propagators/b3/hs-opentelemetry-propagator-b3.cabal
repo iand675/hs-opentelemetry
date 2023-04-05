@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-propagator-b3
 version:        0.0.1.0
+synopsis:       Trace propagation via HTTP headers following the b3 tracestate spec.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
+category:       OpenTelemetry, Tracing, Web
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan
@@ -24,12 +26,23 @@ source-repository head
   location: https://github.com/iand675/hs-opentelemetry
 
 library
+  exposed-modules:
+      OpenTelemetry.Propagator.B3
+      OpenTelemetry.Propagator.B3.Internal
   other-modules:
       Paths_hs_opentelemetry_propagator_b3
   hs-source-dirs:
       src
+  ghc-options: -Wall
   build-depends:
-      base >=4.7 && <5
+      attoparsec
+    , base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api ==0.0.3.*
+    , http-types
+    , memory
+    , primitive
+    , text
   default-language: Haskell2010
 
 test-suite hs-opentelemetry-propagator-b3-test
@@ -41,6 +54,13 @@ test-suite hs-opentelemetry-propagator-b3-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      attoparsec
+    , base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api ==0.0.3.*
     , hs-opentelemetry-propagator-b3
+    , http-types
+    , memory
+    , primitive
+    , text
   default-language: Haskell2010
