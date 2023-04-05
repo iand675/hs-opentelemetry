@@ -11,8 +11,8 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            Trace propagation via HTTP headers following the b3 tracestate spec.
+category:            OpenTelemetry, Tracing, Web
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -20,9 +20,18 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+- attoparsec
+- base >=4.7 && <5
+- bytestring
+- case-insensitive
+- hs-opentelemetry-api ==0.0.3.*
+- http-types
+- memory
+- primitive
+- text
 
 library:
+  ghc-options: -Wall
   source-dirs: src
 
 tests:
