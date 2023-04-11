@@ -40,7 +40,8 @@ module OpenTelemetry.Vendor.Honeycomb (
   module Config,
 ) where
 
-import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT), join)
+import Control.Monad (join)
+import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT))
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BS8
