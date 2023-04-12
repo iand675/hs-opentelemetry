@@ -165,6 +165,7 @@ import OpenTelemetry.Exporter.OTLP (loadExporterEnvironmentVariables, otlpExport
 import OpenTelemetry.Processor (Processor)
 import OpenTelemetry.Processor.Batch (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Resource
@@ -287,8 +288,8 @@ knownPropagators :: [(T.Text, Propagator Context RequestHeaders ResponseHeaders)
 knownPropagators =
   [ ("tracecontext", w3cTraceContextPropagator)
   , ("baggage", w3cBaggagePropagator)
-  , ("b3", error "B3 not yet implemented")
-  , ("b3multi", error "B3 multi not yet implemented")
+  , ("b3", b3TraceContextPropagator)
+  , ("b3multi", b3MultiTraceContextPropagator)
   , ("jaeger", error "Jaeger not yet implemented")
   ]
 
