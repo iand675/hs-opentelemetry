@@ -165,7 +165,7 @@ import OpenTelemetry.Exporter.OTLP (loadExporterEnvironmentVariables, otlpExport
 import OpenTelemetry.Processor (Processor)
 import OpenTelemetry.Processor.Batch (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Propagator (Propagator)
-import OpenTelemetry.Propagator.B3 (b3TraceContextPropagator, b3MultiTraceContextPropagator)
+import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Resource
