@@ -4,13 +4,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 
--- | B3 Propagation Requirements:
--- https://github.com/openzipkin/b3-propagation
--- https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#b3-requirements
-module OpenTelemetry.Propagator.B3
-  ( b3TraceContextPropagator
-  , b3MultiTraceContextPropagator
-  ) where
+{- | B3 Propagation Requirements:
+ https://github.com/openzipkin/b3-propagation
+ https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#b3-requirements
+-}
+module OpenTelemetry.Propagator.B3 (
+  b3TraceContextPropagator,
+  b3MultiTraceContextPropagator,
+) where
 
 --------------------------------------------------------------------------------
 
@@ -29,18 +30,18 @@ import qualified OpenTelemetry.Trace.Core as Core
 import qualified OpenTelemetry.Trace.TraceState as TS
 import Prelude
 
+
 --------------------------------------------------------------------------------
 
 b3TraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
 b3TraceContextPropagator =
   Propagator
-    { propagatorNames = ["B3 Trace Context"],
-      extractor = \hs c -> 
+    { propagatorNames = ["B3 Trace Context"]
+    , extractor = \hs c ->
         case b3Extractor hs of
           Nothing -> pure c
-          Just spanContext' -> pure $ Context.insertSpan (Core.wrapSpanContext spanContext') c,
-
-      injector = \c hs ->
+          Just spanContext' -> pure $ Context.insertSpan (Core.wrapSpanContext spanContext') c
+    , injector = \c hs ->
         case Context.lookupSpan c of
           Nothing -> pure hs
           Just span' -> do
@@ -53,15 +54,16 @@ b3TraceContextPropagator =
             pure $ (b3Header, value) : hs
     }
 
+
 b3MultiTraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
 b3MultiTraceContextPropagator =
   Propagator
-    { propagatorNames = ["B3 Multi Trace Context"],
-      extractor = \hs c -> do
+    { propagatorNames = ["B3 Multi Trace Context"]
+    , extractor = \hs c -> do
         case b3Extractor hs of
           Nothing -> pure c
-          Just spanContext' -> pure $ Context.insertSpan (Core.wrapSpanContext spanContext') c,
-      injector = \c hs ->
+          Just spanContext' -> pure $ Context.insertSpan (Core.wrapSpanContext spanContext') c
+    , injector = \c hs ->
         case Context.lookupSpan c of
           Nothing -> pure hs
           Just span' -> do
@@ -77,13 +79,16 @@ b3MultiTraceContextPropagator =
                 ++ catMaybes [fmap Text.encodeUtf8 <$> samplingStateValue]
     }
 
+
 --------------------------------------------------------------------------------
 
--- | For both @B3@ and @B3 Multi@ formats, we must attempt single and
--- multi header extraction:
--- https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#configuration
+{- | For both @B3@ and @B3 Multi@ formats, we must attempt single and
+ multi header extraction:
+ https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#configuration
+-}
 b3Extractor :: [(HeaderName, ByteString)] -> Maybe Core.SpanContext
 b3Extractor hs = b3SingleExtractor hs <|> b3MultiExtractor hs
+
 
 b3SingleExtractor :: [(HeaderName, ByteString)] -> Maybe Core.SpanContext
 b3SingleExtractor hs = do
@@ -97,8 +102,9 @@ b3SingleExtractor hs = do
       , spanId = spanId
       , isRemote = True
       , traceFlags = traceFlags
-      , traceState = TS.TraceState [(TS.Key "sampling-state", samplingStateToValue samplingState)] 
+      , traceState = TS.TraceState [(TS.Key "sampling-state", samplingStateToValue samplingState)]
       }
+
 
 b3MultiExtractor :: [(HeaderName, ByteString)] -> Maybe Core.SpanContext
 b3MultiExtractor hs = do
@@ -110,7 +116,6 @@ b3MultiExtractor hs = do
       -- NOTE: Debug implies Accept (https://github.com/openzipkin/b3-propagation#debug-flag)
       samplingState = fromMaybe Defer $ sampled <|> debug
   let traceFlags = if samplingState == Accept || samplingState == Debug then TraceFlags 1 else TraceFlags 0
-      
 
   pure $
     Core.SpanContext
@@ -118,5 +123,5 @@ b3MultiExtractor hs = do
       , spanId = spanId
       , isRemote = True
       , traceFlags = traceFlags
-      , traceState = TS.TraceState [(TS.Key "sampling-state", samplingStateToValue samplingState)] 
+      , traceState = TS.TraceState [(TS.Key "sampling-state", samplingStateToValue samplingState)]
       }
