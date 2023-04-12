@@ -23,7 +23,6 @@ dependencies:
 - attoparsec
 - base >=4.7 && <5
 - bytestring
-- case-insensitive
 - hs-opentelemetry-api ==0.0.3.*
 - http-types
 - memory
