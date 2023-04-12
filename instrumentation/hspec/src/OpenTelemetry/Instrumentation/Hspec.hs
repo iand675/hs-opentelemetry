@@ -6,6 +6,7 @@ module OpenTelemetry.Instrumentation.Hspec (
   wrapExampleInSpan,
 ) where
 
+import Control.Monad (void)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Text (Text)
