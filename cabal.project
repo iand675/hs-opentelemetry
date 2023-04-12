@@ -2,11 +2,13 @@ packages:
     api
   , sdk
   , otlp
+  , examples/yesod-minimal
   , exporters/handle
   , exporters/in-memory
   , exporters/otlp
   , propagators/datadog
   , propagators/w3c
+  , propagators/b3
   , instrumentation/conduit
   , instrumentation/cloudflare
   , instrumentation/hspec
