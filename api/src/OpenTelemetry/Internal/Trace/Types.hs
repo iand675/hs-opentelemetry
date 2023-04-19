@@ -151,7 +151,7 @@ data Tracer = Tracer
 
 
 instance Show Tracer where
-  show Tracer {tracerName = name} = "Tracer { tracerName = " <> show name <> "}"
+  showsPrec d Tracer {tracerName = name} = showParen (d > 10) $ showString "Tracer {tracerName = " . shows name . showString "}"
 
 
 {- |
@@ -370,9 +370,9 @@ data Span
 
 
 instance Show Span where
-  show (Span _ioref) = "(mutable span)"
-  show (FrozenSpan ctx) = show ctx
-  show (Dropped ctx) = show ctx
+  showsPrec d (Span _ioref) = showParen (d > 10) $ showString "Span _ioref"
+  showsPrec d (FrozenSpan ctx) = showParen (d > 10) $ showString "FrozenSpan " . showsPrec 11 ctx
+  showsPrec d (Dropped ctx) = showParen (d > 10) $ showString "Dropped " . showsPrec 11 ctx
 
 
 {- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
