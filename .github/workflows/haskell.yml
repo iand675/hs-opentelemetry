@@ -20,9 +20,8 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-8.12-${{ hashFiles('stack-ghc-8.12.yaml.lock') }}
+          key: stack-${{ runner.os }}-8.12-${{ hashFiles('stack-ghc-8.12.yaml.lock') }}-2
           restore-keys: |
-            stack-${{ runner.os }}-8.12
       - run: stack --stack-yaml stack-ghc-8.12.yaml build --only-dependencies
       - run: stack --stack-yaml stack-ghc-8.12.yaml build
       - run: stack --stack-yaml stack-ghc-8.12.yaml test
@@ -45,9 +44,8 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.lock') }}-2
           restore-keys: |
-            stack-${{ runner.os }}
       - run: stack build --only-dependencies
       - run: stack build
       - run: stack test
@@ -70,9 +68,8 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-9.2-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}
+          key: stack-${{ runner.os }}-9.2-${{ hashFiles('stack-ghc-9.2.yaml.lock') }}-2
           restore-keys: |
-            stack-${{ runner.os }}-9.2
       - run: stack --stack-yaml stack-ghc-9.2.yaml build --only-dependencies
       - run: stack --stack-yaml stack-ghc-9.2.yaml build
       - run: stack --stack-yaml stack-ghc-9.2.yaml test
