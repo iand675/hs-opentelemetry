@@ -76,7 +76,7 @@ newtype SpanId = SpanId ShortByteString
 
 
 instance Show TraceId where
-  show = show . traceIdBaseEncodedText Base16
+  showsPrec d i = showParen (d > 10) $ showString "TraceId " . showsPrec 11 (traceIdBaseEncodedText Base16 i)
 
 
 instance IsString TraceId where
@@ -86,7 +86,7 @@ instance IsString TraceId where
 
 
 instance Show SpanId where
-  show = show . spanIdBaseEncodedText Base16
+  showsPrec d i = showParen (d > 10) $ showString "SpanId " . showsPrec 11 (spanIdBaseEncodedText Base16 i)
 
 
 instance IsString SpanId where
