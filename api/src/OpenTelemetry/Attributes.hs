@@ -114,7 +114,7 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
 
 addAttributes :: ToAttribute a => AttributeLimits -> Attributes -> [(Text, a)] -> Attributes
 -- TODO, this could be done more efficiently
-addAttributes limits = foldl' (\!attrs' (!k, !v) -> addAttribute limits attrs' k v)
+addAttributes limits = foldl' (\(!attrs') (!k, !v) -> addAttribute limits attrs' k v)
 {-# INLINE addAttributes #-}
 
 
