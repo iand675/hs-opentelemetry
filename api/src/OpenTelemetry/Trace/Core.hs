@@ -520,7 +520,7 @@ updateName ::
   -- | The new span name, which supersedes whatever was passed in when the Span was started
   Text ->
   m ()
-updateName (Span s) n = liftIO $ modifyIORef' s $ \i -> i `sew` i {spanName = n}
+updateName (Span s) n = liftIO $ modifyIORef' s $ \i -> i `seq` i {spanName = n}
 updateName (FrozenSpan _) _ = pure ()
 updateName (Dropped _) _ = pure ()
 
