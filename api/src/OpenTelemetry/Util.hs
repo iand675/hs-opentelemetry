@@ -49,12 +49,13 @@ import Data.Foldable
 import Data.Kind
 import qualified Data.Vector as V
 import Foreign.C (CInt (..))
-import GHC.Base (ThreadId#)
+import GHC.Base (Addr#)
 import GHC.Conc (ThreadId (ThreadId))
 import GHC.Generics
 import VectorBuilder.Builder (Builder)
 import qualified VectorBuilder.Builder as Builder
 import qualified VectorBuilder.Vector as Builder
+import Unsafe.Coerce (unsafeCoerce#)
 
 
 {- | Useful for annotating which constructor in an ADT was chosen
@@ -80,15 +81,13 @@ instance (HasConstructor x, HasConstructor y) => HasConstructor (x :+: y) where
 
 
 instance Constructor c => HasConstructor (C1 c f) where
-  genericConstrName x = conName x
+  genericConstrName = conName
 
-
-foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: ThreadId# -> CInt
-
+foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: Addr# -> CInt
 
 -- | Get an int representation of a thread id
 getThreadId :: ThreadId -> Int
-getThreadId (ThreadId tid#) = fromIntegral (c_getThreadId tid#)
+getThreadId (ThreadId tid#) = fromIntegral $ c_getThreadId (unsafeCoerce# tid#)
 {-# INLINE getThreadId #-}
 
 
