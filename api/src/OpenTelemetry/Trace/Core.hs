@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
@@ -426,7 +427,7 @@ addAttribute ::
   -- | Attribute value
   a ->
   m ()
-addAttribute (Span s) k v = liftIO $ modifyIORef s $ \i ->
+addAttribute (Span s) k v = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
         OpenTelemetry.Attributes.addAttribute
@@ -446,7 +447,7 @@ addAttribute (Dropped _) _ _ = pure ()
  @since 0.0.1.0
 -}
 addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
-addAttributes (Span s) attrs = liftIO $ modifyIORef s $ \i ->
+addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
         OpenTelemetry.Attributes.addAttributes
@@ -465,7 +466,7 @@ addAttributes (Dropped _) _ = pure ()
 addEvent :: MonadIO m => Span -> NewEvent -> m ()
 addEvent (Span s) NewEvent {..} = liftIO $ do
   t <- maybe getTimestamp pure newEventTimestamp
-  modifyIORef s $ \i ->
+  modifyIORef' s $ \(!i) ->
     i
       { spanEvents =
           appendToBoundedCollection (spanEvents i) $
@@ -490,7 +491,7 @@ addEvent (Dropped _) _ = pure ()
  @since 0.0.1.0
 -}
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
-setStatus (Span s) st = liftIO $ modifyIORef s $ \i ->
+setStatus (Span s) st = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanStatus =
         if st > spanStatus i
@@ -516,7 +517,7 @@ updateName ::
   -- | The new span name, which supersedes whatever was passed in when the Span was started
   Text ->
   m ()
-updateName (Span s) n = liftIO $ modifyIORef s $ \i -> i {spanName = n}
+updateName (Span s) n = liftIO $ modifyIORef' s $ \(!i) -> i {spanName = n}
 updateName (FrozenSpan _) _ = pure ()
 updateName (Dropped _) _ = pure ()
 
@@ -539,7 +540,7 @@ endSpan ::
   m ()
 endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
-  (alreadyFinished, frozenS) <- atomicModifyIORef s $ \i ->
+  (alreadyFinished, frozenS) <- atomicModifyIORef' s $ \(!i) ->
     let ref = i {spanEnd = spanEnd i <|> Just ts}
      in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do

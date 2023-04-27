@@ -1,9 +1,11 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE StrictData #-}
 
 -----------------------------------------------------------------------------
 
@@ -51,6 +53,7 @@ import Data.Data
 import qualified Data.HashMap.Strict as H
 import Data.Hashable
 import Data.Int (Int64)
+import Data.List (foldl')
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -85,7 +88,7 @@ emptyAttributes = Attributes mempty 0 0
 
 
 addAttribute :: ToAttribute a => AttributeLimits -> Attributes -> Text -> a -> Attributes
-addAttribute AttributeLimits {..} Attributes {..} k v = case attributeCountLimit of
+addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLimit of
   Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ ->
     if newCount > limit_
@@ -111,7 +114,7 @@ addAttribute AttributeLimits {..} Attributes {..} k v = case attributeCountLimit
 
 addAttributes :: ToAttribute a => AttributeLimits -> Attributes -> [(Text, a)] -> Attributes
 -- TODO, this could be done more efficiently
-addAttributes limits = foldl (\attrs' (k, v) -> addAttribute limits attrs' k v)
+addAttributes limits = foldl' (\(!attrs') (!k, !v) -> addAttribute limits attrs' k v)
 {-# INLINE addAttributes #-}
 
 
