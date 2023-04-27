@@ -10,8 +10,7 @@
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems =
-        [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
+      systems = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" ];
       imports = [
         inputs.haskell-flake.flakeModule
         inputs.flake-root.flakeModule
@@ -30,16 +29,10 @@
             packages.hs-opentelemetry-exporter-handle.root = ./exporters/handle;
             packages.hs-opentelemetry-exporter-in-memory.root =
               ./exporters/in-memory;
-            packages.hs-opentelemetry-exporter-jaeger.root = ./exporters/jaeger;
             packages.hs-opentelemetry-exporter-otlp.root = ./exporters/otlp;
-            packages.hs-opentelemetry-exporter-prometheus.root =
-              ./exporters/prometheus;
-            packages.hs-opentelemetry-exporter-zipkin.root = ./exporters/zipkin;
             packages.hs-opentelemetry-propagator-b3.root = ./propagators/b3;
             packages.hs-opentelemetry-propagator-datadog.root =
               ./propagators/datadog;
-            packages.hs-opentelemetry-propagator-jaeger.root =
-              ./propagators/jaeger;
             packages.hs-opentelemetry-propagator-w3c.root = ./propagators/w3c;
             packages.hs-opentelemetry-utils-exceptions.root =
               ./utils/exceptions;
@@ -99,6 +92,10 @@
               config.mission-control.devShell
             ];
           };
+
+          packages.default = pkgs.linkFarmFromDrvs "all-hs-packages"
+            (builtins.attrValues (removeAttrs self'.packages [ "default" ]));
+
           treefmt = {
             inherit (config.flake-root) projectRootFile;
             programs.nixpkgs-fmt.enable = true;
