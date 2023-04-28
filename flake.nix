@@ -13,9 +13,7 @@
 
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "aarch64-darwin" "x86_64-darwin" "x86_64-linux"
-      ];
+      systems = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" ];
       imports = [
         inputs.haskell-flake.flakeModule
         inputs.flake-root.flakeModule
@@ -171,6 +169,9 @@
               hooks = {
                 shellcheck.enable = true;
                 hlint.enable = true;
+                nixfmt.enable = true;
+                fourmolu.enable = true;
+                hpack.enable = true;
               };
             };
           };
