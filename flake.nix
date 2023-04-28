@@ -88,34 +88,15 @@
           # source-overrides = { };
 
           devShell = {
-            #  # Enabled by default
-            #  enable = true;
-            #
-            #  # Programs you want to make available in the shell.  #  # Default programs can be disabled by setting to 'null'
+            #  Defaults provided by the haskell-flake tooling are cabal, hlint, haskell-language-server, and ghcid.
+            #  Everything else we want can be added here.
             tools = hp:
               {
-                # Not fully working yet.
-                stack = pkgs.symlinkJoin {
-                  name = "stack";
-                  paths = [hp.stack];
-                  buildInputs = [pkgs.makeWrapper];
-                  postBuild = ''
-                    wrapProgram $out/bin/stack \
-                      --add-flags "\
-                        --no-nix \
-                        --system-ghc \
-                        --no-install-ghc \
-                        --skip-ghc-check \
-                      "
-                  '';
-                };
-                hlint = hp.hlint;
                 implicit-hie = hp.implicit-hie;
-                haskell-language-server = hp.haskell-language-server;
-                hspec-discover = hp.hspec-discover;
                 hpack = hp.hpack;
                 treefmt = config.treefmt.build.wrapper;
                 steeloverseer = hp.steeloverseer;
+                ghcid = null; # Glitchy on Nix for GHC 9.4
               }
               // config.treefmt.build.programs;
           };
@@ -161,7 +142,6 @@
                   self.callCabal2nix "hourglass" inputs.hs-hourglass {};
                 bsb-http-chunked = dontCheck super.bsb-http-chunked;
                 microlens-th = dontCheck super.microlens-th;
-                ghcid = dontCheck super.ghcid;
               };
           };
         ghc96 =
@@ -213,7 +193,34 @@
             config.pre-commit.devShell
           ];
         };
-
+        devShells.ghc810 = pkgs.mkShell {
+          inputsFrom = [
+            config.haskellProjects.ghc810.outputs.devShell
+            config.mission-control.devShell
+            config.pre-commit.devShell
+          ];
+        };
+        devShells.ghc92 = pkgs.mkShell {
+          inputsFrom = [
+            config.haskellProjects.ghc92.outputs.devShell
+            config.mission-control.devShell
+            config.pre-commit.devShell
+          ];
+        };
+        devShells.ghc94 = pkgs.mkShell {
+          inputsFrom = [
+            config.haskellProjects.ghc94.outputs.devShell
+            config.mission-control.devShell
+            config.pre-commit.devShell
+          ];
+        };
+        devShells.ghc96 = pkgs.mkShell {
+          inputsFrom = [
+            config.haskellProjects.ghc96.outputs.devShell
+            config.mission-control.devShell
+            config.pre-commit.devShell
+          ];
+        };
         # TODO, I really want to get this to build all packages for all GHC versions that are supported,
         # but it seems to currently only builds for the default GHC version.
         packages.default =
