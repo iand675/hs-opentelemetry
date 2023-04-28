@@ -66,7 +66,7 @@
               #  # Programs you want to make available in the shell.  #  # Default programs can be disabled by setting to 'null'
               tools = hp:
                 {
-                  # Mostly used for better fast rebuilds.
+                  # Not fully working yet.
                   stack = pkgs.symlinkJoin {
                     name = "stack";
                     paths = [ hp.stack ];
@@ -160,6 +160,13 @@
               '';
               category = "Dev Tools";
             };
+            format = {
+              description = "Format all files";
+              exec = ''
+                treefmt
+              '';
+              category = "Dev Tools";
+            };
           };
 
           pre-commit = {
@@ -173,6 +180,10 @@
                 fourmolu.enable = true;
                 hpack.enable = true;
               };
+
+              # This is really for fourmolu, but the current version of pre-commit
+              # shares the same configuration for fourmolu & ormolu.
+              settings.ormolu.defaultExtensions = [ "ImportQualifiedPost" ];
             };
           };
 
