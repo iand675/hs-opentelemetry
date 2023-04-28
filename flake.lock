@@ -247,7 +247,25 @@
         "mission-control": "mission-control",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks-nix": "pre-commit-hooks-nix",
+        "streaming": "streaming",
         "treefmt-nix": "treefmt-nix"
+      }
+    },
+    "streaming": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1679892428,
+        "narHash": "sha256-kxMmrKl03eOWpGl09abeH/FnBG5nm2kb4l048dSuAWA=",
+        "owner": "haskell-streaming",
+        "repo": "streaming",
+        "rev": "0c815bf9043d0f0cbda92b80ef791892e2b7fb43",
+        "type": "github"
+      },
+      "original": {
+        "owner": "haskell-streaming",
+        "repo": "streaming",
+        "rev": "0c815bf9043d0f0cbda92b80ef791892e2b7fb43",
+        "type": "github"
       }
     },
     "treefmt-nix": {
