@@ -1,22 +1,22 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
-name:           hs-opentelemetry-api
-version:        0.0.3.6
-synopsis:       OpenTelemetry API for use by libraries for direct instrumentation or wrapper packages.
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/api#readme>
-category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
-homepage:       https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
-maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name:               hs-opentelemetry-api
+version:            0.0.3.6
+synopsis:           OpenTelemetry API for use by libraries for direct instrumentation or wrapper packages.
+description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/api#readme>
+category:           OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan, Jade Lovelace
+maintainer:         ian@iankduncan.com
+copyright:          2023 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
 extra-source-files:
     README.md
     ChangeLog.md
