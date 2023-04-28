@@ -1,4 +1,5 @@
 {
+  nixConfig.bash-prompt = "[nix]\\e[38;5;172mλ \\e[m";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -9,9 +10,12 @@
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks-nix.url = "github:cachix/pre-commit-hooks.nix";
   };
+
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [ "aarch64-darwin" /* "x86_64-darwin" "x86_64-linux" */];
+      systems = [
+        "aarch64-darwin" "x86_64-darwin" "x86_64-linux"
+      ];
       imports = [
         inputs.haskell-flake.flakeModule
         inputs.flake-root.flakeModule
@@ -30,17 +34,13 @@
               hs-opentelemetry-api.root = ./api;
               hs-opentelemetry-otlp.root = ./otlp;
               hs-opentelemetry-exporter-handle.root = ./exporters/handle;
-              hs-opentelemetry-exporter-in-memory.root =
-                ./exporters/in-memory;
+              hs-opentelemetry-exporter-in-memory.root = ./exporters/in-memory;
               hs-opentelemetry-exporter-otlp.root = ./exporters/otlp;
               hs-opentelemetry-propagator-b3.root = ./propagators/b3;
-              hs-opentelemetry-propagator-datadog.root =
-                ./propagators/datadog;
+              hs-opentelemetry-propagator-datadog.root = ./propagators/datadog;
               hs-opentelemetry-propagator-w3c.root = ./propagators/w3c;
-              hs-opentelemetry-utils-exceptions.root =
-                ./utils/exceptions;
-              hs-opentelemetry-vendor-honeycomb.root =
-                ./vendors/honeycomb;
+              hs-opentelemetry-utils-exceptions.root = ./utils/exceptions;
+              hs-opentelemetry-vendor-honeycomb.root = ./vendors/honeycomb;
               hs-opentelemetry-instrumentation-cloudflare.root =
                 ./instrumentation/cloudflare;
               hs-opentelemetry-instrumentation-conduit.root =
@@ -55,8 +55,7 @@
                 ./instrumentation/postgresql-simple;
               hs-opentelemetry-instrumentation-yesod.root =
                 ./instrumentation/yesod;
-              hs-opentelemetry-instrumentation-wai.root =
-                ./instrumentation/wai;
+              hs-opentelemetry-instrumentation-wai.root = ./instrumentation/wai;
             };
 
             # Dependency overrides go here. See https://haskell.flake.page/dependency
@@ -67,33 +66,31 @@
               #  enable = true;
               #
               #  # Programs you want to make available in the shell.  #  # Default programs can be disabled by setting to 'null'
-              tools = hp: {
-                fourmolu = hp.fourmolu;
-                # Mostly used for better fast rebuilds.
-                stack = pkgs.symlinkJoin {
-                  name = "stack";
-                  paths = [ hp.stack ];
-                  buildInputs = [ pkgs.makeWrapper ];
-                  postBuild = ''
-                    wrapProgram $out/bin/stack \
-                      --add-flags "\
-                        --no-nix \
-                        --system-ghc \
-                        --no-install-ghc \
-                        --skip-ghc-check \
-                      "
-                  '';
-                };
-                hlint = hp.hlint;
-                implicit-hie = hp.implicit-hie;
-                haskell-language-server = hp.haskell-language-server;
-                hspec-discover = hp.hspec-discover;
-                hpack = hp.hpack;
-                steeloverseer = hp.steeloverseer;
-              };
-
-              #
-              # hlsCheck.enable = true;
+              tools = hp:
+                {
+                  # Mostly used for better fast rebuilds.
+                  stack = pkgs.symlinkJoin {
+                    name = "stack";
+                    paths = [ hp.stack ];
+                    buildInputs = [ pkgs.makeWrapper ];
+                    postBuild = ''
+                      wrapProgram $out/bin/stack \
+                        --add-flags "\
+                          --no-nix \
+                          --system-ghc \
+                          --no-install-ghc \
+                          --skip-ghc-check \
+                        "
+                    '';
+                  };
+                  hlint = hp.hlint;
+                  implicit-hie = hp.implicit-hie;
+                  haskell-language-server = hp.haskell-language-server;
+                  hspec-discover = hp.hspec-discover;
+                  hpack = hp.hpack;
+                  treefmt = config.treefmt.build.wrapper;
+                  steeloverseer = hp.steeloverseer;
+                } // config.treefmt.build.programs;
             };
 
             # devShell omitted in order to provide our own default.
@@ -143,6 +140,12 @@
                 hlint --ignore-glob "otlp/**/*.hs" .
               '';
               category = "Dev Tools";
+            };
+            hpack-all = {
+              description = "Run hpack on all packages";
+              exec = ''
+                find . -name "package.yaml" -exec hpack {} \;
+              '';
             };
             docs = {
               description = "Start Hoogle server for project dependencies";
@@ -201,12 +204,14 @@
                 hedgehog = "1.2";
                 tasty-hedgehog = "1.4.0.1";
               };
-              overrides = self: super: with pkgs.haskell.lib; {
-                retry = dontCheck super.retry;
-                # Persistent doesn't have an official GHC 9.6-compatible release yet,
-                # so we have to lift the restriction on the template-haskell version.
-                persistent = doJailbreak (self.callHackage "persistent" "2.14.5.0" {});
-              };
+              overrides = self: super:
+                with pkgs.haskell.lib; {
+                  retry = dontCheck super.retry;
+                  # Persistent doesn't have an official GHC 9.6-compatible release yet,
+                  # so we have to lift the restriction on the template-haskell version.
+                  persistent =
+                    doJailbreak (self.callHackage "persistent" "2.14.5.0" { });
+                };
             };
             # TODO
             # ghcHEAD = ghc96 // {
