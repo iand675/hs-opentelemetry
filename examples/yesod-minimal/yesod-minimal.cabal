@@ -1,12 +1,12 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
-name:           yesod-minimal
-version:        0.0.0
-build-type:     Simple
+name:          yesod-minimal
+version:       0.0.0
+build-type:    Simple
 
 library
   exposed-modules:
