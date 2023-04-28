@@ -100,6 +100,40 @@
         "type": "github"
       }
     },
+    "hs-crypto-random": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1679082817,
+        "narHash": "sha256-SvjVr8TK6Od8c7LAwui/RZyc3JyePCiUNNuuvQTrEfA=",
+        "owner": "9999years",
+        "repo": "hs-crypto-random",
+        "rev": "a4bbb57c5fb17c029f2810dc2a47c5f289e5df8d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "9999years",
+        "repo": "hs-crypto-random",
+        "rev": "a4bbb57c5fb17c029f2810dc2a47c5f289e5df8d",
+        "type": "github"
+      }
+    },
+    "hs-hourglass": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1681320934,
+        "narHash": "sha256-ZeBrm7enxJfa48gVUp3NA+v/Xk8vQ7c0THBA3ukhOpM=",
+        "owner": "k0001",
+        "repo": "hs-hourglass",
+        "rev": "cfc2a4b01f9993b1b51432f0a95fa6730d9a558a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "k0001",
+        "repo": "hs-hourglass",
+        "rev": "cfc2a4b01f9993b1b51432f0a95fa6730d9a558a",
+        "type": "github"
+      }
+    },
     "mission-control": {
       "locked": {
         "lastModified": 1682001320,
@@ -208,6 +242,8 @@
         "flake-parts": "flake-parts",
         "flake-root": "flake-root",
         "haskell-flake": "haskell-flake",
+        "hs-crypto-random": "hs-crypto-random",
+        "hs-hourglass": "hs-hourglass",
         "mission-control": "mission-control",
         "nixpkgs": "nixpkgs",
         "pre-commit-hooks-nix": "pre-commit-hooks-nix",
