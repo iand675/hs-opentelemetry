@@ -54,6 +54,8 @@
               hs-opentelemetry-instrumentation-yesod.root =
                 ./instrumentation/yesod;
               hs-opentelemetry-instrumentation-wai.root = ./instrumentation/wai;
+              example-yesod-minimal.root = ./examples/yesod-minimal;
+              example-hspec.root = ./examples/hspec;
             };
 
             # Dependency overrides go here. See https://haskell.flake.page/dependency
