@@ -2,6 +2,7 @@ packages:
     api
   , sdk
   , otlp
+  , examples/hspec
   , examples/yesod-minimal
   , exporters/handle
   , exporters/in-memory
