@@ -199,14 +199,31 @@
             ghc92 = baseConfiguration // {
               basePackages = pkgs.haskell.packages.ghc92;
             };
-            # TODO, there is a failing assertion in Nix's haskell-modules/configuration-common.nix
-            # for GHC 9.4. I need help figuring out how to fix it.
-            # ghc94 = baseConfiguration // {
-            #   basePackages = pkgs.haskell.packages.ghc94;
-            #   source-overrides = {
-            #     hspec = "2.9.7";
-            #   };
-            # };
+            # There are failing assertions in Nix's haskell-modules/configuration-common.nix
+            # for GHC 9.4 + the hspec >= 2.10. It seems like removing the offending
+            # packages from the build fixes the issue, but the tests don't pass for older
+            # versions of hspec, so we have to override those as well.
+            ghc94 = baseConfiguration // {
+              basePackages = (removeAttrs pkgs.haskell.packages.ghc944 [
+                "graphql"
+                "wai-token-bucket-ratelimiter"
+              ]);
+              source-overrides = {
+                hspec-discover = "2.9.7";
+                hspec-meta = "2.9.3";
+              };
+              overrides = self: super:
+                with pkgs.haskell.lib; {
+                  hspec = dontCheck (self.callHackage "hspec" "2.9.7" { });
+                  hspec-core =
+                    dontCheck (self.callHackage "hspec-core" "2.9.7" { });
+                  # Persistent doesn't have an official GHC 9.6-compatible release yet,
+                  # so we have to lift the restriction on the template-haskell version.
+                  persistent =
+                    doJailbreak (self.callHackage "persistent" "2.14.5.0" { });
+                };
+
+            };
             ghc96 = baseConfiguration // {
               basePackages = pkgs.haskell.packages.ghc96;
               source-overrides = {
@@ -224,12 +241,6 @@
                     doJailbreak (self.callHackage "persistent" "2.14.5.0" { });
                 };
             };
-            # TODO
-            # ghcHEAD = ghc96 // {
-            #   basePackages = pkgs.haskell.packages.ghcHEAD;
-            #   overrides = self: super: with pkgs.haskell.lib; {
-            #   };
-            # };
           };
         };
     };
