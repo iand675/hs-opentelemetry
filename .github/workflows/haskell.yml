@@ -85,9 +85,9 @@ jobs:
       #   with:
       #     path: ~/.cabal
       #     key: cabal-${{ runner.os }}-9.0-${{ hashFiles('cabal.project.freeze') }}
-      - run: nix develop --command 'cabal v2-build all'
-      - run: nix develop --command 'cabal v2-test all'
-      - run: nix develop --command 'cabal v2-build --enable-benchmarks all'
+      - run: nix develop --command cabal v2-build all
+      - run: nix develop --command cabal v2-test all
+      - run: nix develop --command cabal v2-build --enable-benchmarks all
   format:
     runs-on: ubuntu-latest
     steps:
