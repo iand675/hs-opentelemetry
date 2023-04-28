@@ -120,7 +120,6 @@
             settings.formatter.ormolu = {
               options = [ "--ghc-opt" "-XImportQualifiedPost" ];
             };
-            programs.cabal-fmt.enable = true;
           };
 
           mission-control.scripts = {
