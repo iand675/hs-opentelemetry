@@ -1,5 +1,4 @@
 {
-  nixConfig.bash-prompt = "[nix]\\e[38;5;172mλ \\e[m";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -9,6 +8,19 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks-nix.url = "github:cachix/pre-commit-hooks.nix";
+
+    # TODO: remove this once hourglass merges https://github.com/vincenthz/hs-hourglass/pull/56
+    hs-hourglass = {
+      url =
+        "github:k0001/hs-hourglass/cfc2a4b01f9993b1b51432f0a95fa6730d9a558a";
+      flake = false;
+    };
+    # TODO: remove this once https://github.com/vincenthz/hs-crypto-random/pull/14 is merged
+    hs-crypto-random = {
+      url =
+        "github:9999years/hs-crypto-random/a4bbb57c5fb17c029f2810dc2a47c5f289e5df8d";
+      flake = false;
+    };
   };
 
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
@@ -113,9 +125,8 @@
 
           treefmt = {
             inherit (config.flake-root) projectRootFile;
-            programs.nixpkgs-fmt.enable = true;
             # Here you can specify the formatters to use
-            programs.nixfmt.enable = true;
+            programs.alejandra.enable = true;
             programs.ormolu.enable = true;
             programs.ormolu.package =
               haskellProjects.default.basePackages.fourmolu;
@@ -177,7 +188,7 @@
               hooks = {
                 shellcheck.enable = true;
                 hlint.enable = true;
-                nixfmt.enable = true;
+                alejandra.enable = true;
                 fourmolu.enable = true;
                 hpack.enable = true;
               };
@@ -200,6 +211,13 @@
             };
             ghc92 = baseConfiguration // {
               basePackages = pkgs.haskell.packages.ghc92;
+              overrides = self: super:
+                with pkgs.haskell.lib; {
+                  hourglass =
+                    (self.callCabal2nix "hourglass" inputs.hs-hourglass { });
+                  bsb-http-chunked = dontCheck super.bsb-http-chunked;
+                  microlens-th = dontCheck super.microlens-th;
+                };
             };
             # There are failing assertions in Nix's haskell-modules/configuration-common.nix
             # for GHC 9.4 + the hspec >= 2.10. It seems like removing the offending
@@ -223,6 +241,11 @@
                   # so we have to lift the restriction on the template-haskell version.
                   persistent =
                     doJailbreak (self.callHackage "persistent" "2.14.5.0" { });
+
+                  hourglass =
+                    (self.callCabal2nix "hourglass" inputs.hs-hourglass { });
+                  bsb-http-chunked = dontCheck super.bsb-http-chunked;
+                  microlens-th = dontCheck super.microlens-th;
                 };
 
             };
@@ -233,6 +256,10 @@
                 attoparsec-iso8601 = "1.1.0.0";
                 hedgehog = "1.2";
                 tasty-hedgehog = "1.4.0.1";
+                proto-lens = "0.7.1.3";
+                proto-lens-runtime = "0.7.0.4";
+                postgresql-simple = "0.6.5";
+                recv = "0.1.0";
               };
               overrides = self: super:
                 with pkgs.haskell.lib; {
@@ -241,6 +268,17 @@
                   # so we have to lift the restriction on the template-haskell version.
                   persistent =
                     doJailbreak (self.callHackage "persistent" "2.14.5.0" { });
+
+                  hourglass =
+                    (self.callCabal2nix "hourglass" inputs.hs-hourglass { });
+                  crypto-random =
+                    (self.callCabal2nix "crypto-random" inputs.hs-crypto-random
+                      { });
+                  bsb-http-chunked = dontCheck super.bsb-http-chunked;
+                  microlens-th = doJailbreak super.microlens-th;
+                  persistent-qq =
+                    dontCheck (self.callHackage "persistent-qq" "2.12.0.5" { });
+                  warp = dontCheck (self.callHackage "warp" "3.3.25" { });
                 };
             };
           };
