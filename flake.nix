@@ -7,6 +7,7 @@
     flake-root.url = "github:srid/flake-root";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+    pre-commit-hooks-nix.url = "github:cachix/pre-commit-hooks.nix";
   };
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -16,49 +17,47 @@
         inputs.flake-root.flakeModule
         inputs.mission-control.flakeModule
         inputs.treefmt-nix.flakeModule
+        inputs.pre-commit-hooks-nix.flakeModule
       ];
 
-      perSystem = { self', config, pkgs, ... }:
+      perSystem = { self', config, pkgs, system, ... }:
         let
           baseConfiguration = {
             # If you have a .cabal file in the root, this option is determined
             # automatically. Otherwise, specify all your local packages here.
-            packages.hs-opentelemetry-sdk.root = ./sdk;
-            packages.hs-opentelemetry-api.root = ./api;
-            packages.hs-opentelemetry-otlp.root = ./otlp;
-            packages.hs-opentelemetry-exporter-handle.root = ./exporters/handle;
-            packages.hs-opentelemetry-exporter-in-memory.root =
-              ./exporters/in-memory;
-            packages.hs-opentelemetry-exporter-otlp.root = ./exporters/otlp;
-            packages.hs-opentelemetry-propagator-b3.root = ./propagators/b3;
-            packages.hs-opentelemetry-propagator-datadog.root =
-              ./propagators/datadog;
-            packages.hs-opentelemetry-propagator-w3c.root = ./propagators/w3c;
-            packages.hs-opentelemetry-utils-exceptions.root =
-              ./utils/exceptions;
-            packages.hs-opentelemetry-vendor-honeycomb.root =
-              ./vendors/honeycomb;
-            packages.hs-opentelemetry-instrumentation-cloudflare.root =
-              ./instrumentation/cloudflare;
-            packages.hs-opentelemetry-instrumentation-conduit.root =
-              ./instrumentation/conduit;
-            packages.hs-opentelemetry-instrumentation-hspec.root =
-              ./instrumentation/hspec;
-            packages.hs-opentelemetry-instrumentation-http-client.root =
-              ./instrumentation/http-client;
-            packages.hs-opentelemetry-instrumentation-persistent.root =
-              ./instrumentation/persistent;
-            packages.hs-opentelemetry-instrumentation-postgresql-simple.root =
-              ./instrumentation/postgresql-simple;
-            packages.hs-opentelemetry-instrumentation-yesod.root =
-              ./instrumentation/yesod;
-            packages.hs-opentelemetry-instrumentation-wai.root =
-              ./instrumentation/wai;
-
-            # The base package set representing a specific GHC version.
-            # By default, this is pkgs.haskellPackages.
-            # You may also create your own. See https://haskell.flake.page/package-set
-            basePackages = pkgs.haskell.packages.ghc90;
+            packages = {
+              hs-opentelemetry-sdk.root = ./sdk;
+              hs-opentelemetry-api.root = ./api;
+              hs-opentelemetry-otlp.root = ./otlp;
+              hs-opentelemetry-exporter-handle.root = ./exporters/handle;
+              hs-opentelemetry-exporter-in-memory.root =
+                ./exporters/in-memory;
+              hs-opentelemetry-exporter-otlp.root = ./exporters/otlp;
+              hs-opentelemetry-propagator-b3.root = ./propagators/b3;
+              hs-opentelemetry-propagator-datadog.root =
+                ./propagators/datadog;
+              hs-opentelemetry-propagator-w3c.root = ./propagators/w3c;
+              hs-opentelemetry-utils-exceptions.root =
+                ./utils/exceptions;
+              hs-opentelemetry-vendor-honeycomb.root =
+                ./vendors/honeycomb;
+              hs-opentelemetry-instrumentation-cloudflare.root =
+                ./instrumentation/cloudflare;
+              hs-opentelemetry-instrumentation-conduit.root =
+                ./instrumentation/conduit;
+              hs-opentelemetry-instrumentation-hspec.root =
+                ./instrumentation/hspec;
+              hs-opentelemetry-instrumentation-http-client.root =
+                ./instrumentation/http-client;
+              hs-opentelemetry-instrumentation-persistent.root =
+                ./instrumentation/persistent;
+              hs-opentelemetry-instrumentation-postgresql-simple.root =
+                ./instrumentation/postgresql-simple;
+              hs-opentelemetry-instrumentation-yesod.root =
+                ./instrumentation/yesod;
+              hs-opentelemetry-instrumentation-wai.root =
+                ./instrumentation/wai;
+            };
 
             # Dependency overrides go here. See https://haskell.flake.page/dependency
             # source-overrides = { };
@@ -70,11 +69,27 @@
               #  # Programs you want to make available in the shell.  #  # Default programs can be disabled by setting to 'null'
               tools = hp: {
                 fourmolu = hp.fourmolu;
-                stack = hp.stack;
+                # Mostly used for better fast rebuilds.
+                stack = pkgs.symlinkJoin {
+                  name = "stack";
+                  paths = [ hp.stack ];
+                  buildInputs = [ pkgs.makeWrapper ];
+                  postBuild = ''
+                    wrapProgram $out/bin/stack \
+                      --add-flags "\
+                        --no-nix \
+                        --system-ghc \
+                        --no-install-ghc \
+                        --skip-ghc-check \
+                      "
+                  '';
+                };
                 hlint = hp.hlint;
                 implicit-hie = hp.implicit-hie;
                 haskell-language-server = hp.haskell-language-server;
                 hspec-discover = hp.hspec-discover;
+                hpack = hp.hpack;
+                steeloverseer = hp.steeloverseer;
               };
 
               #
@@ -93,6 +108,8 @@
             ];
           };
 
+          # TODO, I really want to get this to build all packages for all GHC versions that are supported,
+          # but it seems to currently only builds for the default GHC version.
           packages.default = pkgs.linkFarmFromDrvs "all-hs-packages"
             (builtins.attrValues (removeAttrs self'.packages [ "default" ]));
 
@@ -103,12 +120,16 @@
             programs.nixfmt.enable = true;
             programs.ormolu.enable = true;
             programs.ormolu.package =
-              haskellProjects.default.basePackages.ormolu;
+              haskellProjects.default.basePackages.fourmolu;
+            settings.formatter.ormolu = {
+              options = [ "--ghc-opt" "-XImportQualifiedPost" ];
+            };
             programs.cabal-fmt.enable = true;
           };
+
           mission-control.scripts = {
             repl = {
-              description = "Start the cabal repl";
+              description = "Start the repl";
               exec = ''
                 cabal repl "$@"
               '';
@@ -130,7 +151,25 @@
               '';
               category = "Dev Tools";
             };
+            oversee = {
+              description = "Start feedback loops for development";
+              exec = ''
+                sos
+              '';
+              category = "Dev Tools";
+            };
           };
+
+          pre-commit = {
+            check.enable = true;
+
+            settings = {
+              hooks = {
+                shellcheck.enable = true;
+              };
+            };
+          };
+
           # Typically, you just want a single project named "default". But
           # multiple projects are also possible, each using different GHC version.
           haskellProjects = rec {
@@ -144,19 +183,36 @@
             ghc92 = baseConfiguration // {
               basePackages = pkgs.haskell.packages.ghc92;
             };
+            # TODO, there is a failing assertion in Nix's haskell-modules/configuration-common.nix
+            # for GHC 9.4. I need help figuring out how to fix it.
             # ghc94 = baseConfiguration // {
-            #   basePackages = removeAttrs pkgs.haskell.packages.ghc94 ["graphql" "wai-token-bucket-ratelimiter"];
+            #   basePackages = pkgs.haskell.packages.ghc94;
+            #   source-overrides = {
+            #     hspec = "2.9.7";
+            #   };
             # };
-            # ghc96 = baseConfiguration // {
-            #   basePackages = pkgs.haskell.packages.ghc96;
-            # };
-            # ghcHEAD = baseConfiguration // {
+            ghc96 = baseConfiguration // {
+              basePackages = pkgs.haskell.packages.ghc96;
+              source-overrides = {
+                http-api-data = "0.5.1";
+                attoparsec-iso8601 = "1.1.0.0";
+                hedgehog = "1.2";
+                tasty-hedgehog = "1.4.0.1";
+              };
+              overrides = self: super: with pkgs.haskell.lib; {
+                retry = dontCheck super.retry;
+                # Persistent doesn't have an official GHC 9.6-compatible release yet,
+                # so we have to lift the restriction on the template-haskell version.
+                persistent = doJailbreak (self.callHackage "persistent" "2.14.5.0" {});
+              };
+            };
+            # TODO
+            # ghcHEAD = ghc96 // {
             #   basePackages = pkgs.haskell.packages.ghcHEAD;
+            #   overrides = self: super: with pkgs.haskell.lib; {
+            #   };
             # };
           };
-
-          # haskell-flake doesn't set the default package, but you can do it here.
-          # packages.default = self'.packages.hs-opentelemetry-sdk;
         };
     };
 }
