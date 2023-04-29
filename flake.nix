@@ -142,6 +142,8 @@
                   self.callCabal2nix "hourglass" inputs.hs-hourglass {};
                 bsb-http-chunked = dontCheck super.bsb-http-chunked;
                 microlens-th = dontCheck super.microlens-th;
+                persistent-qq =
+                  dontCheck (self.callHackage "persistent-qq" "2.12.0.5" {});
               };
           };
         ghc96 =
@@ -181,6 +183,8 @@
                 persistent-qq =
                   dontCheck (self.callHackage "persistent-qq" "2.12.0.5" {});
                 warp = dontCheck (self.callHackage "warp" "3.3.25" {});
+                bytebuild = doJailbreak (self.callHackage "bytebuild" "0.3.12.0" {});
+                chronos = doJailbreak (self.callHackage "chronos" "1.1.5" {});
               };
           };
         defaultProject = ghc92;
@@ -193,33 +197,49 @@
             config.pre-commit.devShell
           ];
         };
-        devShells.ghc810 = pkgs.mkShell {
-          inputsFrom = [
-            config.haskellProjects.ghc810.outputs.devShell
-            config.mission-control.devShell
-            config.pre-commit.devShell
-          ];
+        # devShells.ghc810 = pkgs.mkShell {
+        #   inputsFrom = [
+        #     config.haskellProjects.ghc810.outputs.devShell
+        #     config.mission-control.devShell
+        #     config.pre-commit.devShell
+        #   ];
+        # };
+        # devShells.ghc92 = pkgs.mkShell {
+        #   inputsFrom = [
+        #     config.haskellProjects.ghc92.outputs.devShell
+        #     config.mission-control.devShell
+        #     config.pre-commit.devShell
+        #   ];
+        # };
+        # devShells.ghc94 = pkgs.mkShell {
+        #   inputsFrom = [
+        #     config.haskellProjects.ghc94.outputs.devShell
+        #     config.mission-control.devShell
+        #     config.pre-commit.devShell
+        #   ];
+        # };
+        # devShells.ghc96 = pkgs.mkShell {
+        #   inputsFrom = [
+        #     config.haskellProjects.ghc96.outputs.devShell
+        #     config.mission-control.devShell
+        #     config.pre-commit.devShell
+        #   ];
+        # };
+
+        devShells.ci-ghc810 = config.haskellProjects.ghc810.outputs.finalPackages.shellFor {
+          packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc810.outputs.packages);
         };
-        devShells.ghc92 = pkgs.mkShell {
-          inputsFrom = [
-            config.haskellProjects.ghc92.outputs.devShell
-            config.mission-control.devShell
-            config.pre-commit.devShell
-          ];
+        # devShells.ci-ghc90 = config.haskellProjects.ghc90.outputs.finalPackages.shellFor {
+        #   packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc90.outputs.packages);
+        # };
+        devShells.ci-ghc92 = config.haskellProjects.ghc92.outputs.finalPackages.shellFor {
+          packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc92.outputs.packages);
         };
-        devShells.ghc94 = pkgs.mkShell {
-          inputsFrom = [
-            config.haskellProjects.ghc94.outputs.devShell
-            config.mission-control.devShell
-            config.pre-commit.devShell
-          ];
+        devShells.ci-ghc94 = config.haskellProjects.ghc94.outputs.finalPackages.shellFor {
+          packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc94.outputs.packages);
         };
-        devShells.ghc96 = pkgs.mkShell {
-          inputsFrom = [
-            config.haskellProjects.ghc96.outputs.devShell
-            config.mission-control.devShell
-            config.pre-commit.devShell
-          ];
+        devShells.ci-ghc96 = config.haskellProjects.ghc96.outputs.finalPackages.shellFor {
+          packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc96.outputs.packages);
         };
         # TODO, I really want to get this to build all packages for all GHC versions that are supported,
         # but it seems to currently only builds for the default GHC version.
