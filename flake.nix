@@ -228,18 +228,22 @@
 
         devShells.ci-ghc810 = config.haskellProjects.ghc810.outputs.finalPackages.shellFor {
           packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc810.outputs.packages);
+          nativeBuildInputs = [pkgs.cabal-install];
         };
         # devShells.ci-ghc90 = config.haskellProjects.ghc90.outputs.finalPackages.shellFor {
         #   packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc90.outputs.packages);
         # };
         devShells.ci-ghc92 = config.haskellProjects.ghc92.outputs.finalPackages.shellFor {
           packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc92.outputs.packages);
+          nativeBuildInputs = [pkgs.cabal-install];
         };
         devShells.ci-ghc94 = config.haskellProjects.ghc94.outputs.finalPackages.shellFor {
           packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc94.outputs.packages);
+          nativeBuildInputs = [pkgs.cabal-install];
         };
         devShells.ci-ghc96 = config.haskellProjects.ghc96.outputs.finalPackages.shellFor {
           packages = p: map (name: p."${name}") (builtins.attrNames config.haskellProjects.ghc96.outputs.packages);
+          nativeBuildInputs = [pkgs.cabal-install];
         };
         # TODO, I really want to get this to build all packages for all GHC versions that are supported,
         # but it seems to currently only builds for the default GHC version.
