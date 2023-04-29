@@ -26,6 +26,3 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
-
-constraints:
-    postgresql-simple == 0.6.4
