@@ -91,7 +91,7 @@
               sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
               rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
             }) { };
-          }
+          };
 
           # Dependency overrides go here. See https://haskell.flake.page/dependency
           # source-overrides = { };
