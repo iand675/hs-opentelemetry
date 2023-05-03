@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-vendor-honeycomb
-version:             0.0.1.0
+version:             0.0.1.1
 
 <<: *preface
 
@@ -48,7 +48,7 @@ dependencies:
 - base >= 4.7 && < 5
 - bytestring
 - hs-opentelemetry-api
-- honeycomb >= 0.1
+- honeycomb >= 0.1.0.1
 - unordered-containers
 - text
 - mtl

@@ -48,6 +48,9 @@ module OpenTelemetry.Context.ThreadLocal (
   attachContextOnThread,
   detachContextFromThread,
   adjustContextOnThread,
+
+  -- ** Debugging tools
+  threadContextMap,
 ) where
 
 import Control.Concurrent
@@ -66,6 +69,9 @@ import Prelude hiding (lookup)
 type ThreadContextMap = ThreadStorageMap Context
 
 
+{- | This is a global variable that is used to store the thread-local context map.
+ It is not intended to be used directly for production purposes, but is exposed for debugging purposes.
+-}
 threadContextMap :: ThreadContextMap
 threadContextMap = unsafePerformIO newThreadStorageMap
 {-# NOINLINE threadContextMap #-}

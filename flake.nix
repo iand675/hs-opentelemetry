@@ -84,6 +84,15 @@
             example-hspec.root = ./examples/hspec;
           };
 
+          overrides = self: super: with pkgs.haskell.lib; {
+            # Pending hackage index updates within Nix covering 0.1.0.1 release;
+            honeycomb = self.callCabal2nix "honeycomb" (pkgs.fetchgit {
+              url = "https://github.com/iand675/hs-honeycomb.git";
+              sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
+              rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
+            }) { };
+          }
+
           # Dependency overrides go here. See https://haskell.flake.page/dependency
           # source-overrides = { };
 
@@ -116,6 +125,11 @@
                   self.callCabal2nix "hourglass" inputs.hs-hourglass {};
                 bsb-http-chunked = dontCheck super.bsb-http-chunked;
                 microlens-th = dontCheck super.microlens-th;
+                honeycomb = self.callCabal2nix "honeycomb" (pkgs.fetchgit {
+                  url = "https://github.com/iand675/hs-honeycomb.git";
+                  sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
+                  rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
+                }) { };
               };
           };
         # There are failing assertions in Nix's haskell-modules/configuration-common.nix
@@ -129,6 +143,8 @@
               hspec-discover = "2.9.7";
               hspec-meta = "2.9.3";
               postgresql-simple = "0.6.5";
+              aeson = "2.1.1.0";
+              th-abstraction = "0.4.5.0";
             };
             overrides = self: super:
               with pkgs.haskell.lib; {
@@ -144,6 +160,13 @@
                 microlens-th = dontCheck super.microlens-th;
                 persistent-qq =
                   dontCheck (self.callHackage "persistent-qq" "2.12.0.5" {});
+                example-yesod-minimal = enableLibraryProfiling super.example-yesod-minimal;
+
+                honeycomb = self.callCabal2nix "honeycomb" (pkgs.fetchgit {
+                  url = "https://github.com/iand675/hs-honeycomb.git";
+                  sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
+                  rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
+                }) { };
               };
           };
         ghc96 =
@@ -158,6 +181,7 @@
               proto-lens-runtime = "0.7.0.4";
               postgresql-simple = "0.6.5";
               recv = "0.1.0";
+              aeson = "2.1.1.0";
             };
             overrides = self: super:
               with pkgs.haskell.lib; {
@@ -185,9 +209,14 @@
                 warp = dontCheck (self.callHackage "warp" "3.3.25" {});
                 bytebuild = doJailbreak (self.callHackage "bytebuild" "0.3.12.0" {});
                 chronos = doJailbreak (self.callHackage "chronos" "1.1.5" {});
+                honeycomb = self.callCabal2nix "honeycomb" (pkgs.fetchgit {
+                  url = "https://github.com/iand675/hs-honeycomb.git";
+                  sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
+                  rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
+                }) { };
               };
           };
-        defaultProject = ghc92;
+        defaultProject = ghc94;
       in {
         # Default shell.
         devShells.default = pkgs.mkShell {
