@@ -10,14 +10,14 @@ module OpenTelemetry.Instrumentation.Wai (
 import Control.Exception (bracket)
 import Control.Monad
 import Data.IP (fromHostAddress, fromHostAddress6)
-import Data.Text qualified as T
-import Data.Text.Encoding qualified as T
-import Data.Vault.Lazy qualified as Vault
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Vault.Lazy as Vault
 import Network.HTTP.Types
 import Network.Socket
 import Network.Wai
 import OpenTelemetry.Attributes (lookupAttribute)
-import OpenTelemetry.Context qualified as Context
+import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
 import OpenTelemetry.Trace.Core

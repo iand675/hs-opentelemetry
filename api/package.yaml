@@ -20,7 +20,6 @@ description:         Please see the README on GitHub at <https://github.com/iand
 default-extensions:
 - OverloadedStrings
 - RecordWildCards
-- ImportPostQualified
 
 dependencies:
 - base >= 4.7 && < 5
