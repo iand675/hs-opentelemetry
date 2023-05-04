@@ -288,7 +288,6 @@
           programs.ormolu.package =
             defaultProject.basePackages.fourmolu;
           settings.formatter.ormolu = {
-            options = ["--ghc-opt" "-XImportQualifiedPost"];
           };
         };
 
@@ -351,7 +350,7 @@
 
             # This is really for fourmolu, but the current version of pre-commit
             # shares the same configuration for fourmolu & ormolu.
-            settings.ormolu.defaultExtensions = ["ImportQualifiedPost"];
+            settings.ormolu.defaultExtensions = [];
           };
         };
 
