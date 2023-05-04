@@ -32,6 +32,8 @@ library
       Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:
       src
+  default-extensions:
+      ImportPostQualified
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
@@ -52,6 +54,8 @@ test-suite hs-opentelemetry-instrumentation-wai-test
       Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:
       test
+  default-extensions:
+      ImportPostQualified
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5

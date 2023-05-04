@@ -66,6 +66,7 @@ library
   default-extensions:
       OverloadedStrings
       RecordWildCards
+      ImportPostQualified
   ghc-options: -Wall
   build-depends:
       async
@@ -104,6 +105,7 @@ test-suite hs-opentelemetry-api-test
   default-extensions:
       OverloadedStrings
       RecordWildCards
+      ImportPostQualified
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       async
