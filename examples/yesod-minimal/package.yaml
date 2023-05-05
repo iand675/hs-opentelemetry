@@ -40,6 +40,7 @@ executables:
     source-dirs: src
     dependencies:
     - yesod-minimal
+    ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
 
 library:
     source-dirs: src
