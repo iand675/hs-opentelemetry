@@ -19,6 +19,7 @@ packages:
   , instrumentation/yesod
   , instrumentation/wai
   , utils/exceptions
+  , vendors/honeycomb
 
 allow-newer:
     http-api-data:base
