@@ -122,6 +122,11 @@ attachContextOnThread = attachOnThread threadContextMap
 
 {- | Remove a stored 'Context' for the current thread, returning any context previously stored.
 
+The detach functions don't generally need to be called manually, because finalizers will automatically
+clean up contexts when a thread has completed and been garbage collected. If you are replacing a context
+on a long-lived thread by detaching and attaching, use `adjustContext (const newContext)` instead to avoid
+registering additional finalizer functions to be called on thread exit.
+
  @since 0.0.1.0
 -}
 detachContext :: MonadIO m => m (Maybe Context)
@@ -130,25 +135,36 @@ detachContext = detach threadContextMap
 
 {- | Remove a stored 'Context' for the provided 'ThreadId', returning any context previously stored.
 
+The detach functions don't generally need to be called manually, because finalizers will automatically
+clean up contexts when a thread has completed and been garbage collected. If you are replacing a context
+on a long-lived thread by detaching and attaching, use `adjustContext (const newContext)` instead to avoid
+registering additional finalizer functions to be called on thread exit.
+
  @since 0.0.1.0
 -}
 detachContextFromThread :: MonadIO m => ThreadId -> m (Maybe Context)
 detachContextFromThread = detachFromThread threadContextMap
 
 
-{- | Alter the context on the current thread using the provided function
+{- | Alter the context on the current thread using the provided function.
+
+If there is not a context associated with the current thread, the function will
+be applied to an empty context and the result will be stored
 
  @since 0.0.1.0
 -}
 adjustContext :: MonadIO m => (Context -> Context) -> m ()
-adjustContext f = liftIO $ do
-  ctxt <- getContext
-  void $ attachContext $ f ctxt
+adjustContext f = update threadContextMap $ \mctx ->
+  (f $ fromMaybe empty mctx, ())
 
 
 {- | Alter the context
 
+If there is not a context associated with the provided thread, the function will
+be applied to an empty context and the result will be stored
+
  @since 0.0.1.0
 -}
 adjustContextOnThread :: MonadIO m => ThreadId -> (Context -> Context) -> m ()
-adjustContextOnThread = adjustOnThread threadContextMap
+adjustContextOnThread tid = updateOnThread threadContextMap tid $ \mctx ->
+  (f $ fromMaybe empty mctx, ())
