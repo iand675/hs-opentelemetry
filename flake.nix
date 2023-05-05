@@ -182,7 +182,10 @@
               proto-lens-runtime = "0.7.0.4";
               postgresql-simple = "0.6.5";
               recv = "0.1.0";
-              aeson = "2.1.1.0";
+              aeson = "2.1.2.1";
+              OneTuple = "0.4.1.1";
+              th-abstraction = "0.5.0.0";
+
             };
             overrides = self: super:
               with pkgs.haskell.lib; {
