@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-sdk
-version:             0.0.3.4
+version:             0.0.3.5
 
 <<: *preface
 
