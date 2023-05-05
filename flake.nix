@@ -84,14 +84,15 @@
             example-hspec.root = ./examples/hspec;
           };
 
-          overrides = self: super: with pkgs.haskell.lib; {
-            # Pending hackage index updates within Nix covering 0.1.0.1 release;
-            honeycomb = self.callCabal2nix "honeycomb" (pkgs.fetchgit {
-              url = "https://github.com/iand675/hs-honeycomb.git";
-              sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
-              rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
-            }) { };
-          };
+          overrides = self: super:
+            with pkgs.haskell.lib; {
+              # Pending hackage index updates within Nix covering 0.1.0.1 release;
+              honeycomb = self.callCabal2nix "honeycomb" (pkgs.fetchgit {
+                url = "https://github.com/iand675/hs-honeycomb.git";
+                sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
+                rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
+              }) {};
+            };
 
           # Dependency overrides go here. See https://haskell.flake.page/dependency
           # source-overrides = { };
@@ -129,7 +130,7 @@
                   url = "https://github.com/iand675/hs-honeycomb.git";
                   sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
                   rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
-                }) { };
+                }) {};
               };
           };
         # There are failing assertions in Nix's haskell-modules/configuration-common.nix
@@ -166,7 +167,7 @@
                   url = "https://github.com/iand675/hs-honeycomb.git";
                   sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
                   rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
-                }) { };
+                }) {};
               };
           };
         ghc96 =
@@ -213,7 +214,7 @@
                   url = "https://github.com/iand675/hs-honeycomb.git";
                   sha256 = "sha256-mr0jjSQAITwdEBAUqpcn0C3NspPlbCDJM4tH53ab8ck=";
                   rev = "94f2d9471afe0320d9bb6a6dc3b504e1e9ee4141";
-                }) { };
+                }) {};
               };
           };
         defaultProject = ghc94;
