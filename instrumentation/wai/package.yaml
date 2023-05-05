@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-wai
-version:             0.0.1.3
+version:             0.0.1.4
 
 <<: *preface
 
