@@ -155,7 +155,7 @@ be applied to an empty context and the result will be stored
 -}
 adjustContext :: MonadIO m => (Context -> Context) -> m ()
 adjustContext f = update threadContextMap $ \mctx ->
-  (f $ fromMaybe empty mctx, ())
+  (pure $ f $ fromMaybe empty mctx, ())
 
 
 {- | Alter the context
@@ -166,5 +166,5 @@ be applied to an empty context and the result will be stored
  @since 0.0.1.0
 -}
 adjustContextOnThread :: MonadIO m => ThreadId -> (Context -> Context) -> m ()
-adjustContextOnThread tid = updateOnThread threadContextMap tid $ \mctx ->
-  (f $ fromMaybe empty mctx, ())
+adjustContextOnThread tid f = updateOnThread threadContextMap tid $ \mctx ->
+  (pure $ f $ fromMaybe empty mctx, ())
