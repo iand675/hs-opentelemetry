@@ -94,13 +94,14 @@ main = withTracer $ \tracer -> do
   -- your existing code here...
   pure ()
   where
+    withTracer :: ((TracerOptions -> Tracer) -> IO c) -> IO c
     withTracer f = bracket 
       -- Install the SDK, pulling configuration from the environment
       initializeGlobalTracerProvider
       -- Ensure that any spans that haven't been exported yet are flushed
       shutdownTracerProvider
       -- Get a tracer so you can create spans
-      (\tracerProvider -> f makeTracer tracerProvider "your-app-name-or-subsystem")
+      (\tracerProvider -> f $ makeTracer tracerProvider "your-app-name-or-subsystem")
 ```
 
 The primary configuration mechanism for `initializeGlobalTracerProvider` is via the environment variables listed in the official [OpenTelemetry specification](https://github.com/open-telemetry/opentelemetry-specification/blob/6ad485b743553099476d676f1f0369bae0304547/specification/sdk-environment-variables.md).
