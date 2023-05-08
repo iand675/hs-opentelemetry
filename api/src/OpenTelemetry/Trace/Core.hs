@@ -86,6 +86,7 @@ module OpenTelemetry.Trace.Core (
   inSpan,
   inSpan',
   inSpan'',
+  inSpan_,
   createSpan,
   createSpanWithoutCallStack,
   wrapSpanContext,
@@ -130,6 +131,7 @@ module OpenTelemetry.Trace.Core (
   timestampNanoseconds,
   unsafeReadSpan,
   whenSpanIsRecording,
+  limitBy,
 
   -- * Limits
   SpanLimits (..),
@@ -384,6 +386,32 @@ inSpan'' t cs n args f = do
           maybe (removeSpan ctx) (`insertSpan` ctx) parent
     )
     (\(_, s) -> f s)
+
+
+{- | The simplest function for annotating code with trace information.
+
+Takes a 'CallStack' so that it may be used to build your own 'inSpan' functions
+that pass in your tracer implicitly.
+
+ @since 0.0.2.0
+-}
+inSpan_ ::
+  (MonadUnliftIO m, HasCallStack) =>
+  -- | Record the location of the span in the codebase using the provided
+  -- callstack for source location info.
+  CallStack ->
+  Tracer ->
+  -- | The name of the span. This may be updated later via 'updateName'
+  Text ->
+  -- | Additional options for creating the span, such as 'SpanKind',
+  -- span links, starting attributes, etc.
+  SpanArguments ->
+  -- | The action to perform. 'inSpan' will record the time spent on the
+  -- action without forcing strict evaluation of the result. Any uncaught
+  -- exceptions will be recorded and rethrown.
+  m a ->
+  m a
+inSpan_ = undefined
 
 
 {- | Returns whether the the @Span@ is currently recording. If a span

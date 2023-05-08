@@ -35,6 +35,7 @@ module OpenTelemetry.Attributes (
   addAttributes,
   getAttributes,
   lookupAttribute,
+  showAttribute,
   Attribute (..),
   ToAttribute (..),
   PrimitiveAttribute (..),
@@ -124,6 +125,18 @@ getAttributes Attributes {..} = (attributesCount, attributes)
 
 lookupAttribute :: Attributes -> Text -> Maybe Attribute
 lookupAttribute Attributes {..} k = H.lookup k attributes
+
+
+showAttribute :: Attribute -> Text
+showAttribute = \case
+  AttributeValue a -> showA a
+  AttributeArray vs -> T.concat (showA <$> vs)
+  where
+    showA = \case
+      TextAttribute t -> t
+      BoolAttribute b -> T.pack $ show b
+      DoubleAttribute d -> T.pack $ show d
+      IntAttribute i -> T.pack $ show i
 
 
 {- | It is possible when adding attributes that a programming error might cause too many
