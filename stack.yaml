@@ -67,11 +67,8 @@ extra-deps:
 - hspec-2.10.6@sha256:c90dbcc629e88e5f56021c7dba26a97109a0c441aeece6ead217ee3fc83dcb68,1712
 - hspec-core-2.10.6@sha256:68a74267974fee22f4bc57b5d353391e8dc943b0d7ffaf5d47dab691765ee772,6659
 - hspec-discover-2.10.6@sha256:df63254c5aa8c5c2b9233b0067728394936b6c9af7e3a5d3d44df78d888dcefd,2167
-- thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
-- thread-utils-finalizers-0.1.0.0@sha256:a8435240bfc0ae96c94704d2986699a11a395c496f9a7f2e5f5d729a0b967549,1381
-# just for testing
-# - mwc-random-0.14.0.0
-# - random-1.1
+- thread-utils-context-0.3.0.3
+- thread-utils-finalizers-0.1.1.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

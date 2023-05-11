@@ -9,6 +9,7 @@ module OpenTelemetry.Instrumentation.Persistent (
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Acquire.Internal
+import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -25,6 +26,14 @@ import OpenTelemetry.Trace.Monad (MonadTracer (..))
 import System.IO.Unsafe (unsafePerformIO)
 import UnliftIO.Exception
 
+
+{-
+Design notes:
+
+In some OTel export destinations like Honeycomb, the cost is per-span. Consquently, we want to minimize the number of spans we create. In particular, we want to avoid creating a span for every query, since they add up cost-wise.
+
+However, we also want to capture transactions as spans. Therefore, for pool acquisitions we track the time between trying to acquire the connection and the time the connection is obtained as an attribute on the initial span.
+-}
 
 instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
@@ -59,15 +68,22 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
  so that queries are tracked appropriately in the tracing hierarchy.
 -}
-wrapSqlBackend ::
-  MonadIO m =>
-  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  [(Text, Attribute)] ->
-  SqlBackend ->
-  m SqlBackend
+wrapSqlBackend
+  :: (MonadIO m)
+  => [(Text, Attribute)]
+  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  -> SqlBackend
+  -> m SqlBackend
 wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
+  {- A connection is acquired when the connection pool is asked for a connection. The runSqlPool function in Persistent then
+    immediately begins a transaction and ensures the transaction is committed or rolled back. Since we want to capture the
+    transaction as a span, we have to use track the current Span in flight. We do this because we can't hand off
+    the Span between connBegin/connCommit/connRollback as return values.
+  -}
+  connParentSpan <- liftIO $ newIORef Nothing
+  connSpanInFlight <- liftIO $ newIORef Nothing
   -- TODO add schema to tracerOptions?
   let t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
   let hooks =
@@ -98,7 +114,7 @@ wrapSqlBackend attrs conn_ = do
                         Acquire stmtQueryAcquireF -> Acquire $ \f ->
                           handleAny
                             ( \(SomeException err) -> do
-                                recordException child [] Nothing err
+                                recordException child [("exception.escaped", toAttribute True)] Nothing err
                                 endSpan child Nothing
                                 throwIO err
                             )
@@ -116,26 +132,54 @@ wrapSqlBackend attrs conn_ = do
         conn
           { connHooks = hooks
           , connBegin = \f mIso -> do
-              let statement =
-                    "begin transaction" <> case mIso of
-                      Nothing -> mempty
-                      Just ReadUncommitted -> " isolation level read uncommitted"
-                      Just ReadCommitted -> " isolation level read committed"
-                      Just RepeatableRead -> " isolation level repeatable read"
-                      Just Serializable -> " isolation level serializable"
-              let attrs' = ("db.statement", toAttribute statement) : attrs
-              inSpan' t statement (defaultSpanArguments {kind = Client, attributes = attrs'}) $ \s -> do
-                annotateBasics s conn
-                connBegin conn f mIso
+              ctxt <- getContext
+              s <- createSpan t ctxt "transaction" (defaultSpanArguments {kind = Client, attributes = attrs})
+              annotateBasics s conn
+              writeIORef connSpanInFlight (Just s)
+              writeIORef connParentSpan (lookupSpan ctxt)
+              adjustContext (insertSpan s)
+              case mIso of
+                Nothing -> pure ()
+                Just iso -> addAttribute s "db.transaction.isolation" $ case iso of
+                  ReadUncommitted -> "read uncommitted" :: Text
+                  ReadCommitted -> "read committed"
+                  RepeatableRead -> "repeatable read"
+                  Serializable -> "serializable"
+              connBegin conn f mIso
           , connCommit = \f -> do
-              inSpan' t "commit" (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute ("commit" :: Text)) : attrs}) $ \s -> do
-                annotateBasics s conn
-                connCommit conn f
+              spanInFlight <- readIORef connSpanInFlight
+              parentSpan <- readIORef connParentSpan
+              let act = do
+                    result <- tryAny $ connCommit conn f
+                    forM_ spanInFlight $ \s -> do
+                      addAttribute s "db.transaction.outcome" ("committed" :: Text) >> endSpan s Nothing
+                      case result of
+                        Left (SomeException err) -> do
+                          recordException s [("exception.escaped", toAttribute True)] Nothing err
+                          throwIO err
+                        Right _ -> pure ()
+              act `finally` do
+                adjustContext $ \ctx ->
+                  maybe (removeSpan ctx) (`insertSpan` ctx) parentSpan
+                forM_ spanInFlight $ \s -> endSpan s Nothing
           , connRollback = \f -> do
-              inSpan' t "rollback" (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute ("rollback" :: Text)) : attrs}) $ \s -> do
-                annotateBasics s conn
-                connRollback conn f
-          , connClose = do
+              spanInFlight <- readIORef connSpanInFlight
+              parentSpan <- readIORef connParentSpan
+              let act = do
+                    result <- tryAny $ connRollback conn f
+                    forM_ spanInFlight $ \s -> do
+                      addAttribute s "db.transaction.outcome" ("rolled back" :: Text) >> endSpan s Nothing
+                      case result of
+                        Left (SomeException err) -> do
+                          recordException s [("exception.escaped", toAttribute True)] Nothing err
+                          throwIO err
+                        Right _ -> pure ()
+              act `finally` do
+                adjustContext $ \ctx ->
+                  maybe (removeSpan ctx) (`insertSpan` ctx) parentSpan
+                forM_ spanInFlight $ \s -> endSpan s Nothing
+          , -- TODO: This doesn't work when we wrap the connections for the pool.
+            connClose = do
               inSpan' t "close connection" (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
                 annotateBasics s conn
                 connClose conn
