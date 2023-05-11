@@ -13,6 +13,7 @@ import Data.IP (fromHostAddress, fromHostAddress6)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vault.Lazy as Vault
+import GHC.Stack (HasCallStack, callStack, popCallStack)
 import Network.HTTP.Types
 import Network.Socket
 import Network.Wai
@@ -24,12 +25,13 @@ import OpenTelemetry.Trace.Core
 import System.IO.Unsafe
 
 
-newOpenTelemetryWaiMiddleware :: IO Middleware
+newOpenTelemetryWaiMiddleware :: HasCallStack => IO Middleware
 newOpenTelemetryWaiMiddleware = getGlobalTracerProvider >>= newOpenTelemetryWaiMiddleware'
 
 
 newOpenTelemetryWaiMiddleware'
-  :: TracerProvider
+  :: HasCallStack
+  => TracerProvider
   -> IO Middleware
 newOpenTelemetryWaiMiddleware' tp = do
   let waiTracer =
@@ -39,6 +41,7 @@ newOpenTelemetryWaiMiddleware' tp = do
           (TracerOptions Nothing)
   pure $ middleware waiTracer
   where
+    usefulCallsite = callerAttributes
     middleware :: Tracer -> Middleware
     middleware tracer app req sendResp = do
       let propagator = getTracerProviderPropagators $ getTracerTracerProvider tracer
@@ -49,7 +52,7 @@ newOpenTelemetryWaiMiddleware' tp = do
       let path_ = T.decodeUtf8 $ rawPathInfo req
       -- peer = remoteHost req
       parentContextM
-      inSpan' tracer path_ (defaultSpanArguments {kind = Server}) $ \requestSpan -> do
+      inSpan'' tracer path_ (defaultSpanArguments {kind = Server, attributes = usefulCallsite}) $ \requestSpan -> do
         ctxt <- getContext
         addAttributes
           requestSpan

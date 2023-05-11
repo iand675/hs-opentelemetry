@@ -146,6 +146,8 @@
               postgresql-simple = "0.6.5";
               aeson = "2.1.1.0";
               th-abstraction = "0.4.5.0";
+              # thread-utils-context = "0.3.0.3";
+              # thread-utils-finalizers = "0.1.1.0";
             };
             overrides = self: super:
               with pkgs.haskell.lib; {
@@ -185,7 +187,7 @@
               aeson = "2.1.2.1";
               OneTuple = "0.4.1.1";
               th-abstraction = "0.5.0.0";
-
+              # thread-utils-context = "0.3.0.3";
             };
             overrides = self: super:
               with pkgs.haskell.lib; {

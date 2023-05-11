@@ -21,6 +21,7 @@ import Database.Persist.Sql
 import Database.Persist.Sql.Raw.QQ
 import Database.Persist.SqlBackend
 import Database.Persist.SqlBackend.SqlPoolHooks
+import GHC.Stack
 import Lens.Micro (lens)
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
@@ -84,9 +85,9 @@ instance Yesod Minimal where
 instance YesodPersist Minimal where
   type YesodPersistBackend Minimal = SqlBackend
   runDB m = do
-    inSpan "yesod.runDB" defaultSpanArguments $ do
-      app <- getYesod
-      runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $ setAlterBackend defaultSqlPoolHooks $ \conn -> do
+    app <- getYesod
+    runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $
+      setAlterBackend defaultSqlPoolHooks $ \conn -> do
         -- TODO, could probably not do this on each runDB call.
         staticAttrs <- case getSimpleConn conn of
           Nothing -> pure []
@@ -94,7 +95,7 @@ instance YesodPersist Minimal where
         wrapSqlBackend staticAttrs conn
 
 
-getRootR :: Handler Text
+getRootR :: HasCallStack => Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
@@ -105,7 +106,7 @@ getRootR = do
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 
-getApiR :: Handler Text
+getApiR :: HasCallStack => Handler Text
 getApiR = do
   inSpan "annotatedFunction" defaultSpanArguments $ do
     res <- runDB $ do

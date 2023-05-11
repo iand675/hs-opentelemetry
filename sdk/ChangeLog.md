@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-sdk
 
+## 0.0.3.6
+
+- Raise minimum version bounds for `random` to 1.2.0. This fixes duplicate ID generation issues in highly concurrent systems.
+
 ## 0.0.3.3
 
 - Fix batch processor flush behavior on shutdown to not drop spans

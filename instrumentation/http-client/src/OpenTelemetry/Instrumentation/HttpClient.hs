@@ -19,6 +19,7 @@ module OpenTelemetry.Instrumentation.HttpClient (
 
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.ByteString.Lazy as L
+import GHC.Stack
 import Network.HTTP.Client as X hiding (httpLbs, httpNoBody, responseOpen, withResponse)
 import qualified Network.HTTP.Client as Client
 import OpenTelemetry.Context.ThreadLocal
@@ -32,8 +33,10 @@ import OpenTelemetry.Instrumentation.HttpClient.Raw (
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
   SpanKind (Client),
+  addAttributesToSpanArguments,
+  callerAttributes,
   defaultSpanArguments,
-  inSpan',
+  inSpan'',
  )
 import UnliftIO (MonadUnliftIO, askRunInIO)
 
@@ -57,16 +60,16 @@ spanArgs = defaultSpanArguments {kind = Client}
  You will need to use functions such as 'brRead' to consume the response
  body.
 -}
-withResponse ::
-  (MonadUnliftIO m) =>
-  HttpClientInstrumentationConfig ->
-  Client.Request ->
-  Client.Manager ->
-  (Client.Response Client.BodyReader -> m a) ->
-  m a
+withResponse
+  :: (MonadUnliftIO m, HasCallStack)
+  => HttpClientInstrumentationConfig
+  -> Client.Request
+  -> Client.Manager
+  -> (Client.Response Client.BodyReader -> m a)
+  -> m a
 withResponse httpConf req man f = do
   t <- httpTracerProvider
-  inSpan' t "withResponse" spanArgs $ \_wrSpan -> do
+  inSpan'' t "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
     ctxt <- getContext
     -- TODO would like to capture the req/resp time specifically
     -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
@@ -83,10 +86,10 @@ withResponse httpConf req man f = do
  for memory efficiency. If you are anticipating a large response body, you
  are encouraged to use 'withResponse' and 'brRead' instead.
 -}
-httpLbs :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
+httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = do
   t <- httpTracerProvider
-  inSpan' t "httpLbs" spanArgs $ \_ -> do
+  inSpan'' t "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.httpLbs req' man
@@ -97,10 +100,10 @@ httpLbs httpConf req man = do
 {- | A convenient wrapper around 'withResponse' which ignores the response
  body. This is useful, for example, when performing a HEAD request.
 -}
-httpNoBody :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
+httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = do
   t <- httpTracerProvider
-  inSpan' t "httpNoBody" spanArgs $ \_ -> do
+  inSpan'' t "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.httpNoBody req' man
@@ -136,10 +139,10 @@ httpNoBody httpConf req man = do
  Content-Encoding: and Accept-Encoding: from request and response
  headers to be relayed.
 -}
-responseOpen :: (MonadUnliftIO m) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
+responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = do
   t <- httpTracerProvider
-  inSpan' t "responseOpen" spanArgs $ \_ -> do
+  inSpan'' t "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.responseOpen req' man
