@@ -6,6 +6,7 @@ module OpenTelemetry.Instrumentation.Persistent (
   wrapSqlBackend,
 ) where
 
+import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Acquire.Internal
