@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module OpenTelemetry.Instrumentation.Persistent (
@@ -19,11 +20,13 @@ import Database.Persist.Sql
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
 import OpenTelemetry.Attributes (Attributes)
+import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad (MonadTracer (..))
+import System.Clock
 import System.IO.Unsafe (unsafePerformIO)
 import UnliftIO.Exception
 
@@ -151,9 +154,16 @@ wrapSqlBackend attrs conn_ = do
               spanInFlight <- readIORef connSpanInFlight
               parentSpan <- readIORef connParentSpan
               let act = do
+                    (Timestamp tsStart) <- getTimestamp
                     result <- tryAny $ connCommit conn f
+                    (Timestamp tsEnd) <- getTimestamp
                     forM_ spanInFlight $ \s -> do
-                      addAttribute s "db.transaction.outcome" ("committed" :: Text) >> endSpan s Nothing
+                      addAttributes
+                        s
+                        [ ("db.transaction.outcome", toAttribute ("committed" :: Text))
+                        , ("db.transaction.commit_duration_ns", toAttribute $ fromIntegral @Integer @Int $ toNanoSecs (diffTimeSpec tsStart tsEnd) `div` 1000)
+                        ]
+                      endSpan s Nothing
                       case result of
                         Left (SomeException err) -> do
                           recordException s [("exception.escaped", toAttribute True)] Nothing err
@@ -167,9 +177,16 @@ wrapSqlBackend attrs conn_ = do
               spanInFlight <- readIORef connSpanInFlight
               parentSpan <- readIORef connParentSpan
               let act = do
+                    (Timestamp tsStart) <- getTimestamp
                     result <- tryAny $ connRollback conn f
+                    e@(Timestamp tsEnd) <- getTimestamp
                     forM_ spanInFlight $ \s -> do
-                      addAttribute s "db.transaction.outcome" ("rolled back" :: Text) >> endSpan s Nothing
+                      addAttributes
+                        s
+                        [ ("db.transaction.outcome", toAttribute ("rolled back" :: Text))
+                        , ("db.transaction.commit_duration_microseconds", toAttribute $ fromIntegral @Integer @Int $ toNanoSecs (diffTimeSpec tsStart tsEnd `div` 1000))
+                        ]
+                      endSpan s (Just e)
                       case result of
                         Left (SomeException err) -> do
                           recordException s [("exception.escaped", toAttribute True)] Nothing err

@@ -358,7 +358,7 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' t n args f = inSpan'' t n (args {attributes = attributes args ++ callerAttributes}) f
+inSpan' t n args = inSpan'' t n (args {attributes = attributes args ++ callerAttributes})
 
 
 inSpan''
@@ -495,13 +495,22 @@ addEvent (Dropped _) _ = pure ()
 setStatus :: MonadIO m => Span -> SpanStatus -> m ()
 setStatus (Span s) st = liftIO $ modifyIORef' s $ \(!i) ->
   i
-    { spanStatus =
-        if st > spanStatus i
-          then st
-          else spanStatus i
+    { spanStatus = max st (spanStatus i)
     }
 setStatus (FrozenSpan _) _ = pure ()
 setStatus (Dropped _) _ = pure ()
+
+
+alterFlags :: MonadIO m => Span -> (TraceFlags -> TraceFlags) -> m ()
+alterFlags (Span s) f = liftIO $ modifyIORef' s $ \(!i) ->
+  i
+    { spanContext =
+        (spanContext i)
+          { traceFlags = f $ traceFlags $ spanContext i
+          }
+    }
+alterFlags (FrozenSpan _) _ = pure ()
+alterFlags (Dropped _) _ = pure ()
 
 
 {- |
