@@ -90,7 +90,9 @@ module OpenTelemetry.Trace (
   TracerProvider,
   initializeGlobalTracerProvider,
   initializeTracerProvider,
+  initializeTracerProviderCustomService,
   getTracerProviderInitializationOptions,
+  getTracerProviderInitializationOptionsCustomService,
   getTracerProviderInitializationOptions',
   shutdownTracerProvider,
 
@@ -320,24 +322,33 @@ initializeTracerProvider = do
   (processors, opts) <- getTracerProviderInitializationOptions
   createTracerProvider processors opts
 
+initializeTracerProviderCustomService :: T.Text -> IO TracerProvider
+initializeTracerProviderCustomService serviceName = do
+  (processors, opts) <- getTracerProviderInitializationOptionsCustomService serviceName
+  createTracerProvider processors opts
+
 
 getTracerProviderInitializationOptions :: IO ([Processor], TracerProviderOptions)
-getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
+getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' Nothing (mempty :: Resource 'Nothing)
+
+
+getTracerProviderInitializationOptionsCustomService :: T.Text -> IO ([Processor], TracerProviderOptions)
+getTracerProviderInitializationOptionsCustomService customName = getTracerProviderInitializationOptions' (Just customName) (mempty :: Resource 'Nothing)
 
 
 {- | Detect options for initializing a tracer provider from the app environment, taking additional supported resources as well.
 
  @since 0.0.3.1
 -}
-getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Resource any -> IO ([Processor], TracerProviderOptions)
-getTracerProviderInitializationOptions' rs = do
+getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Maybe T.Text -> Resource any -> IO ([Processor], TracerProviderOptions)
+getTracerProviderInitializationOptions' customName rs = do
   sampler <- detectSampler
   attrLimits <- detectAttributeLimits
   spanLimits <- detectSpanLimits
   propagators <- detectPropagators
   processorConf <- detectBatchProcessorConfig
   exporters <- detectExporters
-  builtInRs <- detectBuiltInResources
+  builtInRs <- detectBuiltInResources customName
   envVarRs <- mkResource . map Just <$> detectResourceAttributes
   let allRs = mergeResources (builtInRs <> envVarRs) rs
   processors <- case exporters of
@@ -512,9 +523,9 @@ readEnv k = (>>= readMaybe) <$> lookupEnv k
 
  @since 0.0.1.0
 -}
-detectBuiltInResources :: IO (Resource 'Nothing)
-detectBuiltInResources = do
-  svc <- detectService
+detectBuiltInResources :: Maybe T.Text -> IO (Resource 'Nothing)
+detectBuiltInResources customName= do
+  svc <- detectService customName
   processInfo <- detectProcess
   osInfo <- detectOperatingSystem
   host <- detectHost
