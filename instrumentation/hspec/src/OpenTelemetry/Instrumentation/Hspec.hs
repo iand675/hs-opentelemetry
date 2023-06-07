@@ -10,14 +10,14 @@ module OpenTelemetry.Instrumentation.Hspec (
 import Control.Monad (void)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import qualified Data.List as List
 import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, attachContext, getContext)
 import OpenTelemetry.Trace.Core
-import Test.Hspec.Core.Spec (ActionWith, Item (..), Tree(..), Spec, SpecWith, mapSpecItem_, mapSpecForest)
-import qualified Data.List as List
+import Test.Hspec.Core.Spec (ActionWith, Item (..), Spec, SpecWith, Tree (..), mapSpecForest, mapSpecItem_)
 
 
 {- | Creates a wrapper function that you can pass a spec into.
@@ -55,19 +55,22 @@ wrapExampleInSpan tp traceContext item@Item {itemExample = ex, itemRequirement =
         ex params aroundAction' pcb
     }
 
--- | Instrument each test case. Each 'describe' and friends will add
--- a span, and the final test will be in a span described by 'it'.
+
+{- | Instrument each test case. Each 'describe' and friends will add
+ a span, and the final test will be in a span described by 'it'.
+-}
 instrumentSpec :: Tracer -> Context -> SpecWith a -> SpecWith a
 instrumentSpec tracer traceContext spec = do
   mapSpecForest (map (go [])) spec
-    where
-      go spans t = case t of
-        Node str rest ->
-          Node str (map (go (str : spans)) rest)
-        NodeWithCleanup mloc c rest ->
-          NodeWithCleanup mloc c (map (go spans) rest)
-        Leaf item ->
-          Leaf item
+  where
+    go spans t = case t of
+      Node str rest ->
+        Node str (map (go (str : spans)) rest)
+      NodeWithCleanup mloc c rest ->
+        NodeWithCleanup mloc c (map (go spans) rest)
+      Leaf item ->
+        Leaf
+          item
             { itemExample = \params aroundAction pcb -> do
                 let aroundAction' a = do
                       -- we need to reattach the context, since we are on a forked thread
@@ -77,5 +80,5 @@ instrumentSpec tracer traceContext spec = do
                 itemExample item params aroundAction' pcb
             }
 
-      addSpans spans k =
-        List.foldl' (\acc x -> inSpan tracer (T.pack x) defaultSpanArguments acc) k spans
+    addSpans spans k =
+      List.foldl' (\acc x -> inSpan tracer (T.pack x) defaultSpanArguments acc) k spans
