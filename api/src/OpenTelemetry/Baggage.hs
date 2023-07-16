@@ -249,7 +249,7 @@ decodeBaggageHeaderP = do
           ]
     tokenP :: P.Parser Token
     tokenP = Token <$> P.takeWhile1 (`C.member` tokenCharacters)
-    valP = decodeUtf8 <$> P.takeWhile (`C.member` valueSet)
+    valP = decodeUtf8 . urlDecode False <$> P.takeWhile (`C.member` valueSet)
     propertyP :: P.Parser Property
     propertyP = do
       key <- tokenP

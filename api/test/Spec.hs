@@ -13,6 +13,7 @@ import OpenTelemetry.Context
 import OpenTelemetry.Trace.Core
 -- Specs
 
+import qualified OpenTelemetry.BaggageSpec as Baggage
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import OpenTelemetry.Util
@@ -50,5 +51,6 @@ main = hspec $ do
   -- describe "inSpan" $ do
   --   it "records exceptions" $ do
   --     exceptionTest
+  Baggage.spec
   Sampler.spec
   TraceFlags.spec
