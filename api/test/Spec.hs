@@ -9,11 +9,11 @@ import Data.IORef
 import Data.Maybe (isJust)
 import qualified Data.Vector as V
 import OpenTelemetry.Attributes (lookupAttribute)
-import OpenTelemetry.Context
-import OpenTelemetry.Trace.Core
 -- Specs
 
 import qualified OpenTelemetry.BaggageSpec as Baggage
+import OpenTelemetry.Context
+import OpenTelemetry.Trace.Core
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import OpenTelemetry.Util
