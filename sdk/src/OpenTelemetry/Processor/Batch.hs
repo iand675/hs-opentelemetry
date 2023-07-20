@@ -164,13 +164,14 @@ will be incremented.
 
 data BoundedMap a = BoundedMap
   { itemBounds :: !Int
+  , itemMaxExportBounds :: !Int
   , itemCount :: !Int
   , itemMap :: HashMap InstrumentationLibrary (Builder.Builder a)
   }
 
 
-boundedMap :: Int -> BoundedMap a
-boundedMap bounds = BoundedMap bounds 0 mempty
+boundedMap :: Int -> Int -> BoundedMap a
+boundedMap bounds exportBounds = BoundedMap bounds exportBounds 0 mempty
 
 
 push :: ImmutableSpan -> BoundedMap ImmutableSpan -> Maybe (BoundedMap ImmutableSpan)
@@ -197,7 +198,7 @@ buildExport m =
   )
 
 
-data ProcessorMessage = Flush | Shutdown
+data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
 
 
 -- note: [Unmasking Asyncs]
@@ -233,7 +234,7 @@ data ProcessorMessage = Flush | Shutdown
 batchProcessor :: MonadIO m => BatchTimeoutConfig -> Exporter ImmutableSpan -> m Processor
 batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch processor does not work without the -threaded GHC flag!"
-  batch <- newIORef $ boundedMap maxQueueSize
+  batch <- newIORef $ boundedMap maxQueueSize maxExportBatchSize
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
   let publish batchToProcess = mask_ $ do
@@ -259,10 +260,11 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
         delay <- registerDelay (millisToMicros scheduledDelayMillis)
         atomically $ do
           msum
-            [ Flush <$ do
+            -- Flush every scheduled delay time, when we've reached the max export size, or when the shutdown signal is received.
+            [ ScheduledFlush <$ do
                 continue <- readTVar delay
                 check continue
-            , Flush <$ takeTMVar workSignal
+            , MaxExportFlush <$ takeTMVar workSignal
             , Shutdown <$ takeTMVar shutdownSignal
             ]
 
@@ -285,11 +287,15 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
       { processorOnStart = \_ _ -> pure ()
       , processorOnEnd = \s -> do
           span_ <- readIORef s
-          appendFailed <- atomicModifyIORef' batch $ \builder ->
+          appendFailedOrExportNeeded <- atomicModifyIORef' batch $ \builder ->
             case push span_ builder of
               Nothing -> (builder, True)
-              Just b' -> (b', False)
-          when appendFailed $ void $ atomically $ tryPutTMVar workSignal ()
+              Just b' ->
+                if itemCount b' >= itemMaxExportBounds b'
+                  then -- If the batch has grown to the maximum export size, prompt the worker to export it.
+                    (b', True)
+                  else (b', False)
+          when appendFailedOrExportNeeded $ void $ atomically $ tryPutTMVar workSignal ()
       , processorForceFlush = void $ atomically $ tryPutTMVar workSignal ()
       , -- TODO where to call restore, if anywhere?
         processorShutdown =
@@ -323,12 +329,12 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
                 atomically $
                   msum
                     [ Just <$> waitCatchSTM worker
-                    , const Nothing <$> do
+                    , Nothing <$ do
                         shouldStop <- readTVar delay
                         check shouldStop
                     ]
 
-              -- make sure the worker comes down.
+              -- make sure the worker comes down if we timed out.
               cancel worker
               -- TODO, not convinced we should shut down processor here
 
