@@ -37,6 +37,7 @@ library
     , hs-opentelemetry-instrumentation-wai
     , http-types
     , text
+    , unordered-containers
     , wai
   default-language: Haskell2010
 
@@ -56,5 +57,6 @@ test-suite cloudflare-test
     , hs-opentelemetry-instrumentation-wai
     , http-types
     , text
+    , unordered-containers
     , wai
   default-language: Haskell2010

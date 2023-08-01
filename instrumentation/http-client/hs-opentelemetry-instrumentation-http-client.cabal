@@ -47,6 +47,7 @@ library
     , http-types
     , text
     , unliftio
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite hs-opentelemetry-instrumentation-http-client-test
@@ -72,4 +73,5 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , http-types
     , text
     , unliftio
+    , unordered-containers
   default-language: Haskell2010

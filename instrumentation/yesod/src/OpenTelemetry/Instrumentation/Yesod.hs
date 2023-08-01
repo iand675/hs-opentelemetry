@@ -16,6 +16,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
+import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
@@ -207,14 +208,15 @@ openTelemetryYesodMiddleware rr m = do
   mspan <- Context.lookupSpan <$> getContext
   mr <- getCurrentRoute
   let sharedAttributes =
-        catMaybes
-          [ do
-              r <- mr
-              pure ("http.route", toAttribute $ pathRender rr r)
-          , do
-              ff <- lookup "X-Forwarded-For" $ requestHeaders req
-              pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-          ]
+        H.fromList $
+          catMaybes
+            [ do
+                r <- mr
+                pure ("http.route", toAttribute $ pathRender rr r)
+            , do
+                ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+            ]
       args =
         defaultSpanArguments
           { kind = maybe Server (const Internal) mspan
