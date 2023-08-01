@@ -27,6 +27,7 @@ dependencies:
 - resourcet
 - unliftio # TODO, unliftio-core
 - mtl
+- unordered-containers
 
 library:
   # ghc-options: -Wall

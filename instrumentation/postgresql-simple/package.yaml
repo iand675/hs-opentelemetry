@@ -28,6 +28,7 @@ dependencies:
 - text
 - bytestring
 - unliftio # todo, unliftio-core
+- unordered-containers
 
 library:
   source-dirs: src

@@ -29,6 +29,7 @@ dependencies:
 - text
 - template-haskell
 - wai
+- unordered-containers
 
 library:
   ghc-options: -Wall
