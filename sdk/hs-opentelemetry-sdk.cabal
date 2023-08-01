@@ -5,7 +5,7 @@ cabal-version: 1.22
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-sdk
-version:        0.0.3.4
+version:        0.0.3.5
 synopsis:       OpenTelemetry SDK for use in applications.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
 category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
@@ -73,7 +73,7 @@ library
       async
     , base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api ==0.0.3.*
+    , hs-opentelemetry-api >=0.0.3 && <0.2
     , hs-opentelemetry-exporter-otlp ==0.0.1.*
     , hs-opentelemetry-propagator-b3 ==0.0.1.*
     , hs-opentelemetry-propagator-w3c ==0.0.1.*

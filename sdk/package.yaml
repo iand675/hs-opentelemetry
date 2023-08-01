@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-sdk
-version:             0.0.3.4
+version:             0.0.3.5
 
 <<: *preface
 
@@ -24,7 +24,7 @@ dependencies:
 - bytestring
 - text
 # These are "distribution" packages
-- hs-opentelemetry-api == 0.0.3.*
+- hs-opentelemetry-api >= 0.0.3 && < 0.2
 - hs-opentelemetry-propagator-w3c == 0.0.1.*
 - hs-opentelemetry-exporter-otlp == 0.0.1.*
 - hs-opentelemetry-propagator-b3 ==0.0.1.*
