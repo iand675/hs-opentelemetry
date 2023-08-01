@@ -26,19 +26,18 @@ import System.IO.Unsafe
 
 
 newOpenTelemetryWaiMiddleware :: IO Middleware
-newOpenTelemetryWaiMiddleware = getGlobalTracerProvider >>= newOpenTelemetryWaiMiddleware'
+newOpenTelemetryWaiMiddleware = newOpenTelemetryWaiMiddleware' <$> getGlobalTracerProvider
 
 
 newOpenTelemetryWaiMiddleware' ::
   TracerProvider ->
-  IO Middleware
-newOpenTelemetryWaiMiddleware' tp = do
-  waiTracer <-
-    getTracer
+  Middleware
+newOpenTelemetryWaiMiddleware' tp =
+  middleware $
+    makeTracer
       tp
       "opentelemetry-instrumentation-wai"
       (TracerOptions Nothing)
-  pure $ middleware waiTracer
   where
     middleware :: Tracer -> Middleware
     middleware tracer app req sendResp = do
