@@ -83,5 +83,5 @@ main = do
     shutdownTracerProvider
     $ \tp -> do
       waiApp <- toWaiApp $ Site tp Subsite
-      openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware' tp
+      let openTelemetryWaiMiddleware = newOpenTelemetryWaiMiddleware' tp
       run 3000 $ openTelemetryWaiMiddleware waiApp
