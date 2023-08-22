@@ -37,6 +37,7 @@ build.all.stack-9.2:
 build.all.cabal-9.0:
 	cabal build --jobs --enable-tests --enable-benchmarks all
 
+# format requires fourmolu 0.13.1.0 or later
 .PHONY: format
 format:
 	fourmolu --mode inplace $$(git ls-files | grep -E "\.hs$$")
