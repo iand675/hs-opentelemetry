@@ -2,7 +2,10 @@
 
 ## Unreleased changes
 
+### Breaking changes
+
 - Change a type of `newOpenTelemetryWaiMiddleware'` from `TracerProvider -> IO Middleware` to `TracerProvider -> Middleware` #86
+- Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes
 
 ## 0.0.1.1
 
