@@ -5,6 +5,7 @@
 
 module OpenTelemetry.Instrumentation.Persistent (
   wrapSqlBackend,
+  wrapSqlBackend',
 ) where
 
 import Control.Monad.IO.Class
@@ -69,10 +70,23 @@ wrapSqlBackend ::
   m SqlBackend
 wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
+  pure $ wrapSqlBackend' tp attrs conn_
+
+
+{- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
+so that queries are tracked appropriately in the tracing hierarchy.
+-}
+wrapSqlBackend' ::
+  TracerProvider ->
+  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  H.HashMap Text Attribute ->
+  SqlBackend ->
+  SqlBackend
+wrapSqlBackend' tp attrs conn_ =
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
-  -- TODO add schema to tracerOptions?
-  let t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
-  let hooks =
+      -- TODO add schema to tracerOptions?
+      t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
+      hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do
               pure $
@@ -114,7 +128,7 @@ wrapSqlBackend attrs conn_ = do
                   }
           }
 
-  let conn' =
+      conn' =
         conn
           { connHooks = hooks
           , connBegin = \f mIso -> do
@@ -142,7 +156,7 @@ wrapSqlBackend attrs conn_ = do
                 annotateBasics s conn
                 connClose conn
           }
-  pure $ insertOriginalConnection conn' conn
+   in insertOriginalConnection conn' conn
 
 
 annotateBasics :: MonadIO m => Span -> SqlBackend -> m ()
