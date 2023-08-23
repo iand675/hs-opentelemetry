@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-http-client
-version:             0.0.2.0
+version:             0.1.0.0
 
 <<: *preface
 
@@ -26,12 +26,13 @@ dependencies:
 - http-client-tls
 - http-conduit
 - http-types
-- hs-opentelemetry-api == 0.0.3.*
+- hs-opentelemetry-api == 0.1.*
 - text
 - bytestring
 - unliftio
 - aeson
-- hs-opentelemetry-instrumentation-conduit == 0.0.1.*
+- hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
+- unordered-containers
 
 library:
   ghc-options: -Wall

@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module OpenTelemetry.Instrumentation.Cloudflare where
 
 import Control.Monad (forM_)
 import qualified Data.CaseInsensitive as CI
+import qualified Data.HashMap.Strict as H
 import qualified Data.List
 import Data.Maybe
 import qualified Data.Text as T
@@ -21,17 +23,18 @@ cloudflareInstrumentationMiddleware app req sendResp = do
   forM_ mCtxt $ \ctxt -> do
     forM_ (lookupSpan ctxt) $ \span_ -> do
       addAttributes span_ $
-        concatMap
-          ( \hn -> case Data.List.lookup hn $ requestHeaders req of
-              Nothing -> []
-              Just val ->
-                [
-                  ( "http.request.header." <> T.decodeUtf8 (CI.foldedCase hn)
-                  , toAttribute $ T.decodeUtf8 val
-                  )
-                ]
-          )
-          headers
+        H.unions $
+          fmap
+            ( \hn -> case Data.List.lookup hn $ requestHeaders req of
+                Nothing -> []
+                Just val ->
+                  [
+                    ( "http.request.header." <> T.decodeUtf8 (CI.foldedCase hn)
+                    , toAttribute $ T.decodeUtf8 val
+                    )
+                  ]
+            )
+            headers
   app req sendResp
   where
     headers =

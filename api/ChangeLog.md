@@ -1,5 +1,11 @@
 # Changelog for hs-opentelemetry-api
 
+## Unreleased changes
+
+### Breaking changes
+
+- Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes
+
 ## 0.0.3.6
 
 - GHC 9.4 support
@@ -23,5 +29,3 @@
 ## 0.0.1.0
 
 - Initial release
-
-## Unreleased changes

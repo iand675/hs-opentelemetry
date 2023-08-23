@@ -2,7 +2,7 @@ on:
   push:
   pull_request:
 jobs:
-  stack-ghc-8_12:
+  stack-ghc-8_10:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,12 +20,12 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-8.12-${{ hashFiles('stack-ghc-8.12.yaml.lock') }}-2
+          key: stack-${{ runner.os }}-8.10-${{ hashFiles('stack-ghc-8.10.yaml.lock') }}-2
           restore-keys: |
-      - run: stack --stack-yaml stack-ghc-8.12.yaml build --only-dependencies
-      - run: stack --stack-yaml stack-ghc-8.12.yaml build
-      - run: stack --stack-yaml stack-ghc-8.12.yaml test
-      - run: stack --stack-yaml stack-ghc-8.12.yaml bench --no-run-benchmarks
+      - run: stack --stack-yaml stack-ghc-8.10.yaml build --only-dependencies
+      - run: stack --stack-yaml stack-ghc-8.10.yaml build
+      - run: stack --stack-yaml stack-ghc-8.10.yaml test
+      - run: stack --stack-yaml stack-ghc-8.10.yaml bench --no-run-benchmarks
   stack-ghc-9_0:
     runs-on: ubuntu-latest
     steps:
@@ -94,4 +94,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: fourmolu/fourmolu-action@v6
+      - uses: fourmolu/fourmolu-action@v9
+        with:
+          version: "0.13.1.0"
