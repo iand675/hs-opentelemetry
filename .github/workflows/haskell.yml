@@ -12,9 +12,6 @@ jobs:
       - uses: haskell/actions/setup@v2
         with:
           enable-stack: true
-      - if: ${{ runner.os == 'Linux' }}
-        # https://github.com/actions/runner-images/issues/7061
-        run: sudo chown -R $USER /usr/local/.ghcup
       - uses: actions/cache@v3
         with:
           path: |
@@ -36,9 +33,6 @@ jobs:
       - uses: haskell/actions/setup@v2
         with:
           enable-stack: true
-      - if: ${{ runner.os == 'Linux' }}
-        # https://github.com/actions/runner-images/issues/7061
-        run: sudo chown -R $USER /usr/local/.ghcup
       - uses: actions/cache@v3
         with:
           path: |
@@ -60,9 +54,6 @@ jobs:
       - uses: haskell/actions/setup@v2
         with:
           enable-stack: true
-      - if: ${{ runner.os == 'Linux' }}
-        # https://github.com/actions/runner-images/issues/7061
-        run: sudo chown -R $USER /usr/local/.ghcup
       - uses: actions/cache@v3
         with:
           path: |
