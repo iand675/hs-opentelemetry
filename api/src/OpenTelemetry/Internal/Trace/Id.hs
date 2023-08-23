@@ -52,6 +52,9 @@ import GHC.Exts (
   int2Word#,
   isTrue#,
   or#,
+#if MIN_VERSION_base(4,17,0)
+  word64ToWord#,
+#endif
  )
 
 
