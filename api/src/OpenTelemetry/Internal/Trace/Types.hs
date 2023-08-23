@@ -8,7 +8,7 @@
 module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
-import Control.Exception (SomeException)
+import Control.Exception (SomeException, Exception)
 import Control.Monad.IO.Class
 import Data.Bits
 import Data.HashMap.Strict (HashMap)
@@ -119,6 +119,13 @@ data Processor = Processor
   -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
   }
 
+-- | Similar to 'Control.Exception.Handler` but solely used for the purpose of
+-- extracting additional information from exceptions to attach to the spans that
+-- contain the thrown exception.
+data ExceptionEnricher = forall e. Exception e => ExceptionEnricher
+  { exceptionEnricherAdditionalFields :: e -> [(Text, Attribute)]
+  , exceptionEnricherName :: Text
+  }
 
 {- |
 'Tracer's can be created from a 'TracerProvider'.
@@ -132,6 +139,7 @@ data TracerProvider = TracerProvider
   , tracerProviderSpanLimits :: !SpanLimits
   , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
   , tracerProviderLogger :: Log Text -> IO ()
+  , tracerProviderExceptionEnrichers :: !(Vector ExceptionEnricher)
   }
 
 

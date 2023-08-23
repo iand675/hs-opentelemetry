@@ -76,6 +76,7 @@ library
     , charset
     , clock
     , containers
+    , discover-instances
     , ghc-prim
     , hashable
     , http-types
@@ -83,6 +84,7 @@ library
     , mtl
     , template-haskell
     , text
+    , th-compat
     , thread-utils-context ==0.2.*
     , transformers
     , unliftio-core
@@ -115,6 +117,7 @@ test-suite hs-opentelemetry-api-test
     , charset
     , clock
     , containers
+    , discover-instances
     , ghc-prim
     , hashable
     , hs-opentelemetry-api
@@ -124,6 +127,7 @@ test-suite hs-opentelemetry-api-test
     , mtl
     , template-haskell
     , text
+    , th-compat
     , thread-utils-context ==0.2.*
     , transformers
     , unliftio-core

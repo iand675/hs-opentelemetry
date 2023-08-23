@@ -4,6 +4,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -67,6 +68,8 @@ module OpenTelemetry.Trace.Core (
   InstrumentationLibrary (..),
   TracerOptions (..),
   tracerOptions,
+  ExceptionEnricher(..),
+  discoverExceptionEnrichers,
 
   -- * Span operations
   Span,
@@ -154,7 +157,10 @@ import qualified Data.Text as T
 import Data.Typeable
 import qualified Data.Vector as V
 import Data.Word (Word64)
+import DiscoverInstances
 import GHC.Stack
+import Language.Haskell.TH (Q)
+import Language.Haskell.TH.Syntax.Compat (SpliceQ, bindCode)
 import Network.HTTP.Types
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Attributes as A
@@ -348,6 +354,13 @@ inSpan' ::
   m a
 inSpan' t = inSpan'' t callStack
 
+catchesHandler :: ExceptionEnricher -> SomeException -> [(Text, Attribute)]
+catchesHandler handler e = tryHandler handler
+  where 
+    tryHandler (ExceptionEnricher handler _)
+      = case fromException e of
+          Just e' -> handler e'
+          Nothing -> []
 
 inSpan'' ::
   (MonadUnliftIO m, HasCallStack) =>
@@ -381,9 +394,11 @@ inSpan'' t cs n args f = do
         pure (lookupSpan ctx, s)
     )
     ( \e (parent, s) -> liftIO $ do
-        forM_ e $ \(SomeException inner) -> do
+        forM_ e $ \anException@(SomeException inner) -> do
           setStatus s $ Error $ T.pack $ displayException inner
-          recordException s [] Nothing inner
+          let exceptionAttributes = concatMap (\enricher -> catchesHandler enricher anException) $
+                V.toList (tracerProviderExceptionEnrichers $ tracerProvider t)
+          recordException s exceptionAttributes Nothing inner
         endSpan s Nothing
         adjustContext $ \ctx ->
           maybe (removeSpan ctx) (`insertSpan` ctx) parent
@@ -672,6 +687,19 @@ globalTracer = unsafePerformIO $ do
   newIORef p
 {-# NOINLINE globalTracer #-}
 
+-- | This type class allows library authors and users to enrich the
+-- contents of an exception with additional attributes.
+class Exception e => HasExceptionEnricher e where
+  exceptionEnricher :: Proxy e -> ExceptionEnricher
+
+-- Find all in-scope enrichers that are provided by the @HasExceptionEnricher@ type class.
+--
+-- > emptyTracerProviderOptions 
+-- >   { tracerProviderExceptionEnrichers = $$discoverExceptionEnrichers 
+-- >   }
+discoverExceptionEnrichers :: SpliceQ [ExceptionEnricher]
+discoverExceptionEnrichers = 
+  [||map (\(SomeDictOf proxy) -> exceptionEnricher proxy) $$(discoverInstances @HasExceptionEnricher)||]
 
 data TracerProviderOptions = TracerProviderOptions
   { tracerProviderOptionsIdGenerator :: IdGenerator
@@ -681,6 +709,7 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
   , tracerProviderOptionsLogger :: Log Text -> IO ()
+  , tracerProviderOptionsExceptionEnrichers :: [ExceptionEnricher]
   }
 
 
@@ -700,6 +729,7 @@ emptyTracerProviderOptions =
     defaultSpanLimits
     mempty
     (\_ -> pure ())
+    []
 
 
 {- | Initialize a new tracer provider
@@ -708,17 +738,17 @@ emptyTracerProviderOptions =
 -}
 createTracerProvider :: MonadIO m => [Processor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
-  let g = tracerProviderOptionsIdGenerator opts
   pure $
     TracerProvider
       (V.fromList ps)
-      g
+      (tracerProviderOptionsIdGenerator opts)
       (tracerProviderOptionsSampler opts)
       (tracerProviderOptionsResources opts)
       (tracerProviderOptionsAttributeLimits opts)
       (tracerProviderOptionsSpanLimits opts)
       (tracerProviderOptionsPropagators opts)
       (tracerProviderOptionsLogger opts)
+      (V.fromList $ tracerProviderOptionsExceptionEnrichers opts)
 
 
 {- | Access the globally configured 'TracerProvider'. Once the
