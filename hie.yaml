@@ -63,6 +63,9 @@ cradle:
     - path: "instrumentation/persistent/test"
       component: "hs-opentelemetry-instrumentation-persistent:test:hs-opentelemetry-persistent-test"
 
+    - path: "instrumentation/persistent-mysql/src"
+      component: "hs-opentelemetry-instrumentation-persistent-mysql:lib"
+
     - path: "instrumentation/postgresql-simple/src"
       component: "hs-opentelemetry-instrumentation-postgresql-simple:lib"
 
