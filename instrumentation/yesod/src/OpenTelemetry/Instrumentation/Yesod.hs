@@ -29,8 +29,8 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
-import qualified Data.HashMap.Strict as H
 import Control.Monad.IO.Class (MonadIO)
+import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as M
