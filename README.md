@@ -43,6 +43,7 @@ Fully instrumented application examples are available in the [examples](examples
 | yesod-core        | [hs-opentelemetry-instrumentation-yesod](instrumentation/yesod)                         |
 | persistent        | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent)               |
 | esqueleto         | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent)               |
+| persistent-mysql  | [hs-opentelemetry-instrumentation-persistent-mysql](instrumentation/persistent-mysql)   |
 | postgresql-simple | [hs-opentelemetry-instrumentation-postgresql-simple](instrumentation/postgresql-simple) |
 | http-client       | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
 | http-conduit      | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |

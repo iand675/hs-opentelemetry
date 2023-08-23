@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedLists #-}
+
 module OpenTelemetry.Instrumentation.Conduit where
 
 import Conduit

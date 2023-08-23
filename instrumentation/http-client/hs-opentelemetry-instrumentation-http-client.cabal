@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-instrumentation-http-client
-version:        0.0.2.0
+version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client#readme>
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
@@ -39,14 +39,15 @@ library
     , bytestring
     , case-insensitive
     , conduit
-    , hs-opentelemetry-api ==0.0.3.*
-    , hs-opentelemetry-instrumentation-conduit ==0.0.1.*
+    , hs-opentelemetry-api ==0.1.*
+    , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
     , http-client
     , http-client-tls
     , http-conduit
     , http-types
     , text
     , unliftio
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite hs-opentelemetry-instrumentation-http-client-test
@@ -63,8 +64,8 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , bytestring
     , case-insensitive
     , conduit
-    , hs-opentelemetry-api ==0.0.3.*
-    , hs-opentelemetry-instrumentation-conduit ==0.0.1.*
+    , hs-opentelemetry-api ==0.1.*
+    , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
     , hs-opentelemetry-instrumentation-http-client
     , http-client
     , http-client-tls
@@ -72,4 +73,5 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , http-types
     , text
     , unliftio
+    , unordered-containers
   default-language: Haskell2010

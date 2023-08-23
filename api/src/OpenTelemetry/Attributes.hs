@@ -7,10 +7,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE StrictData #-}
 
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Attributes
  Copyright   :  (c) Ian Duncan, 2021
@@ -49,15 +45,14 @@ module OpenTelemetry.Attributes (
   unsafeMergeAttributesIgnoringLimits,
 ) where
 
-import Data.Data
+import Data.Data (Data)
 import qualified Data.HashMap.Strict as H
-import Data.Hashable
+import Data.Hashable (Hashable)
 import Data.Int (Int64)
-import Data.List (foldl')
-import Data.String
+import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Generics
+import GHC.Generics (Generic)
 
 
 {- | Default attribute limits used in the global attribute limit configuration if no environment variables are set.
@@ -95,27 +90,32 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
       then Attributes attributes attributesCount (attributesDropped + 1)
       else Attributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.insert k (limitLengths $ toAttribute v) attributes
-    newCount =
-      if H.member k attributes
-        then attributesCount
-        else attributesCount + 1
-
-    limitPrimAttr limit_ (TextAttribute t) = TextAttribute (T.take limit_ t)
-    limitPrimAttr _ attr = attr
-
-    limitLengths attr = case attributeLengthLimit of
-      Nothing -> attr
-      Just limit_ -> case attr of
-        AttributeValue val -> AttributeValue $ limitPrimAttr limit_ val
-        AttributeArray arr -> AttributeArray $ fmap (limitPrimAttr limit_) arr
+    newAttrs = H.insert k (maybe id limitLengths attributeCountLimit $ toAttribute v) attributes
+    newCount = H.size newAttrs
 {-# INLINE addAttribute #-}
 
 
-addAttributes :: ToAttribute a => AttributeLimits -> Attributes -> [(Text, a)] -> Attributes
--- TODO, this could be done more efficiently
-addAttributes limits = foldl' (\(!attrs') (!k, !v) -> addAttribute limits attrs' k v)
+addAttributes :: (ToAttribute a) => AttributeLimits -> Attributes -> H.HashMap Text a -> Attributes
+addAttributes AttributeLimits {..} Attributes {..} attrs = case attributeCountLimit of
+  Nothing -> Attributes newAttrs newCount attributesDropped
+  Just limit_ ->
+    if newCount > limit_
+      then Attributes attributes attributesCount (attributesDropped + H.size attrs)
+      else Attributes newAttrs newCount attributesDropped
+  where
+    newAttrs = H.union attributes $ H.map toAttribute attrs
+    newCount = H.size newAttrs
 {-# INLINE addAttributes #-}
+
+
+limitPrimAttr :: Int -> PrimitiveAttribute -> PrimitiveAttribute
+limitPrimAttr limit (TextAttribute t) = TextAttribute (T.take limit t)
+limitPrimAttr _ attr = attr
+
+
+limitLengths :: Int -> Attribute -> Attribute
+limitLengths limit (AttributeValue val) = AttributeValue $ limitPrimAttr limit val
+limitLengths limit (AttributeArray arr) = AttributeArray $ fmap (limitPrimAttr limit) arr
 
 
 getAttributes :: Attributes -> (Int, H.HashMap Text Attribute)

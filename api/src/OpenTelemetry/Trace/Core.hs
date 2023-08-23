@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -145,6 +146,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Data.Coerce
+import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -203,18 +205,21 @@ createSpan t c n args = do
   createSpanWithoutCallStack t c n $ case getCallStack callStack of
     [] -> args
     (_, loc) : rest ->
-      let addFunction = case rest of
-            (fn, _) : _ -> (("code.function", toAttribute $ T.pack fn) :)
-            [] -> id
-       in args
-            { attributes =
-                addFunction $
-                  ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-                    : ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-                    : ("code.lineno", toAttribute $ srcLocStartLine loc)
-                    : ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-                    : attributes args
-            }
+      args
+        { attributes =
+            H.unions
+              [
+                [ ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+                , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+                , ("code.lineno", toAttribute $ srcLocStartLine loc)
+                , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+                ]
+              , case rest of
+                  (fn, _) : _ -> [("code.function", toAttribute $ T.pack fn)]
+                  [] -> []
+              , attributes args
+              ]
+        }
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -283,7 +288,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                         A.addAttributes
                           (limitBy t spanAttributeCountLimit)
                           emptyAttributes
-                          (concat [additionalInfo, attrs, attributes])
+                          (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                          in frozenBoundedCollection limitedLinks $ fmap freezeLink links
@@ -446,7 +451,7 @@ addAttribute (Dropped _) _ _ = pure ()
 
  @since 0.0.1.0
 -}
-addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
+addAttributes :: (MonadIO m) => Span -> H.HashMap Text A.Attribute -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
@@ -490,7 +495,7 @@ addEvent (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-setStatus :: MonadIO m => Span -> SpanStatus -> m ()
+setStatus :: (MonadIO m) => Span -> SpanStatus -> m ()
 setStatus (Span s) st = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanStatus =
@@ -558,7 +563,7 @@ endSpan (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-recordException :: (MonadIO m, Exception e) => Span -> [(Text, Attribute)] -> Maybe Timestamp -> e -> m ()
+recordException :: (MonadIO m, Exception e) => Span -> H.HashMap Text Attribute -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
@@ -566,11 +571,12 @@ recordException s attrs ts e = liftIO $ do
     NewEvent
       { newEventName = "exception"
       , newEventAttributes =
-          attrs
-            ++ [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
-               , ("exception.message", A.toAttribute message)
-               , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
-               ]
+          H.union
+            attrs
+            [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
+            , ("exception.message", A.toAttribute message)
+            , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
+            ]
       , newEventTimestamp = ts
       }
 

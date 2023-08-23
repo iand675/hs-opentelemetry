@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.7.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-propagator-b3
-version:        0.0.1.0
+version:        0.0.1.1
 synopsis:       Trace propagation via HTTP headers following the b3 tracestate spec.
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
 category:       OpenTelemetry, Tracing, Web
@@ -38,7 +38,7 @@ library
       attoparsec
     , base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api ==0.0.3.*
+    , hs-opentelemetry-api >=0.0.3 && <0.2
     , http-types
     , memory
     , primitive
@@ -57,7 +57,7 @@ test-suite hs-opentelemetry-propagator-b3-test
       attoparsec
     , base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api ==0.0.3.*
+    , hs-opentelemetry-api >=0.0.3 && <0.2
     , hs-opentelemetry-propagator-b3
     , http-types
     , memory
