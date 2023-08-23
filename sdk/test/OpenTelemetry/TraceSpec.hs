@@ -197,7 +197,7 @@ spec = describe "Trace" $ do
       addEvent s $
         NewEvent
           { newEventName = "EVENT"
-          , newEventAttributes = []
+          , newEventAttributes = mempty
           , newEventTimestamp = Nothing
           }
     specify "Add order preserved" pending

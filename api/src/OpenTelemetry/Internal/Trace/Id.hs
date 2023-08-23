@@ -53,6 +53,12 @@ import GHC.Exts (
   isTrue#,
   or#,
  )
+
+
+#if MIN_VERSION_base(4,17,0)
+import GHC.Exts (word64ToWord#)
+#endif
+
 import GHC.Generics (Generic)
 import OpenTelemetry.Trace.Id.Generator (
   IdGenerator (generateSpanIdBytes, generateTraceIdBytes),
