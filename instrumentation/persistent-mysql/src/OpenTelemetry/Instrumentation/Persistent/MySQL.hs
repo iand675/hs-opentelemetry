@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- option for module re-export
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
@@ -31,6 +32,7 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLoggerIO)
 import Data.Foldable (Foldable (fold))
 import Data.Functor ((<&>))
+import qualified Data.HashMap.Strict as H
 import Data.IP (IP)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Last (Last, getLast))
@@ -54,7 +56,7 @@ createMySQLPool ::
   (MonadUnliftIO m, MonadLoggerIO m) =>
   Otel.TracerProvider ->
   -- | Additional attributes.
-  [(Text, Otel.Attribute)] ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   -- | Number of connections to be kept open in the pool.
@@ -72,7 +74,7 @@ withMySQLPool ::
   (MonadLoggerIO m, MonadUnliftIO m) =>
   Otel.TracerProvider ->
   -- | Additional attributes.
-  [(Text, Otel.Attribute)] ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   -- | Number of connections to be kept open in the pool.
@@ -91,7 +93,7 @@ About attributes, see https://opentelemetry.io/docs/reference/specification/trac
 openMySQLConn ::
   Otel.TracerProvider ->
   -- | Additional attributes.
-  [(Text, Otel.Attribute)] ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   LogFunc ->
@@ -114,15 +116,17 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
               _ -> Last Nothing
     -- "net.sock.family" is unnecessary because it must be "inet" when "net.sock.peer.addr" or "net.sock.host.addr" is set.
     attrs' =
-      ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 ci "")
-        : ("db.user", fromString connectUser)
-        : ("net.peer.port", portAttr)
-        : ("net.sock.peer.port", portAttr)
-        : ("net.transport", transportAttr)
-        : (maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost)
-        : attrs
+      H.union
+        [ ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 ci "")
+        , ("db.user", fromString connectUser)
+        , ("net.peer.port", portAttr)
+        , ("net.sock.peer.port", portAttr)
+        , ("net.transport", transportAttr)
+        , (maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost)
+        ]
+        attrs
   (conn, backend) <- Orig.openMySQLConn ci logFunc
-  backend' <- Otel.wrapSqlBackend' tp attrs' backend
+  let backend' = Otel.wrapSqlBackend' tp attrs' backend
   pure (conn, backend')
 
 
@@ -133,7 +137,7 @@ withMySQLConn ::
   (MonadUnliftIO m, MonadLoggerIO m) =>
   Otel.TracerProvider ->
   -- | Additional attributes.
-  [(Text, Otel.Attribute)] ->
+  H.HashMap Text Otel.Attribute ->
   -- | Connection information.
   MySQL.ConnectInfo ->
   -- | Action to be executed that uses the connection.
