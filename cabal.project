@@ -18,7 +18,8 @@ packages:
   , instrumentation/postgresql-simple
   , instrumentation/yesod
   , instrumentation/wai
-  -- , examples/yesod-minimal
+  , examples/yesod-minimal
+  , examples/yesod-subsite
   , utils/exceptions
 
 -- https://github.com/vincenthz/hs-memory/pull/93
