@@ -6,7 +6,7 @@ build-type: Simple
 
 executable http-server
   hs-source-dirs: .
-  main-is: main.hs
+  main-is: Main.hs
   build-depends: base == 4.*,
                  hs-opentelemetry-api,
                  hs-opentelemetry-sdk,
