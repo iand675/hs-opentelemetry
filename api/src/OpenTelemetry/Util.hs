@@ -52,7 +52,7 @@ import Foreign.C (CInt (..))
 import GHC.Base (Addr#)
 import GHC.Conc (ThreadId (ThreadId))
 import GHC.Generics
-import Unsafe.Coerce (unsafeCoerce#)
+import GHC.Exts (unsafeCoerce#)
 import VectorBuilder.Builder (Builder)
 import qualified VectorBuilder.Builder as Builder
 import qualified VectorBuilder.Vector as Builder
