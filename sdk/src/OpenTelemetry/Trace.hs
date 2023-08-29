@@ -488,12 +488,12 @@ detectResourceAttributes = do
               Baggage.values ok
 
 
-readEnvDefault :: forall a. Read a => String -> a -> IO a
+readEnvDefault :: forall a. (Read a) => String -> a -> IO a
 readEnvDefault k defaultValue =
   fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
 
 
-readEnv :: forall a. Read a => String -> IO (Maybe a)
+readEnv :: forall a. (Read a) => String -> IO (Maybe a)
 readEnv k = (>>= readMaybe) <$> lookupEnv k
 
 

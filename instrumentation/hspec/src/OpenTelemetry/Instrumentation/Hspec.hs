@@ -28,7 +28,7 @@ import Test.Hspec.Core.Spec (ActionWith, Item (..), Spec, SpecWith, Tree (..), m
    The context in which this is called determines the parent span of all of
    the spec items.
 -}
-wrapSpec :: MonadIO m => m (SpecWith a -> SpecWith a)
+wrapSpec :: (MonadIO m) => m (SpecWith a -> SpecWith a)
 wrapSpec = do
   tp <- getGlobalTracerProvider
   let tracer = makeTracer tp "hs-opentelemetry-instrumentation-hspec" tracerOptions

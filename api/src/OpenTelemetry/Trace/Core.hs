@@ -207,7 +207,7 @@ createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
 createSpanWithoutCallStack
-  :: MonadIO m
+  :: (MonadIO m)
   => Tracer
   -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
   -- used for the lifecycle of the created 'Span'
@@ -301,13 +301,13 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         }
 
 
-ownCodeAttributes :: HasCallStack => [(Text, Attribute)]
+ownCodeAttributes :: (HasCallStack) => [(Text, Attribute)]
 ownCodeAttributes = case getCallStack callStack of
   _ : caller : _ -> srcAttributes caller
   _ -> mempty
 
 
-callerAttributes :: HasCallStack => [(Text, Attribute)]
+callerAttributes :: (HasCallStack) => [(Text, Attribute)]
 callerAttributes = case getCallStack callStack of
   _ : _ : caller : _ -> srcAttributes caller
   _ -> mempty
@@ -394,7 +394,7 @@ inSpan'' t n args f = do
  created by this process, the span will return True until endSpan
  is called.
 -}
-isRecording :: MonadIO m => Span -> m Bool
+isRecording :: (MonadIO m) => Span -> m Bool
 isRecording (Span s) = liftIO (isNothing . spanEnd <$> readIORef s)
 isRecording (FrozenSpan _) = pure True
 isRecording (Dropped _) = pure False
@@ -448,7 +448,7 @@ addAttribute (Dropped _) _ _ = pure ()
 
  @since 0.0.1.0
 -}
-addAttributes :: MonadIO m => Span -> [(Text, A.Attribute)] -> m ()
+addAttributes :: (MonadIO m) => Span -> [(Text, A.Attribute)] -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
@@ -465,7 +465,7 @@ addAttributes (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-addEvent :: MonadIO m => Span -> NewEvent -> m ()
+addEvent :: (MonadIO m) => Span -> NewEvent -> m ()
 addEvent (Span s) NewEvent {..} = liftIO $ do
   t <- maybe getTimestamp pure newEventTimestamp
   modifyIORef' s $ \(!i) ->
@@ -492,7 +492,7 @@ addEvent (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-setStatus :: MonadIO m => Span -> SpanStatus -> m ()
+setStatus :: (MonadIO m) => Span -> SpanStatus -> m ()
 setStatus (Span s) st = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanStatus = max st (spanStatus i)
@@ -501,7 +501,7 @@ setStatus (FrozenSpan _) _ = pure ()
 setStatus (Dropped _) _ = pure ()
 
 
-alterFlags :: MonadIO m => Span -> (TraceFlags -> TraceFlags) -> m ()
+alterFlags :: (MonadIO m) => Span -> (TraceFlags -> TraceFlags) -> m ()
 alterFlags (Span s) f = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanContext =
@@ -523,7 +523,7 @@ Alternatives for the name update may be late Span creation, when Span is started
 @since 0.0.1.0
 -}
 updateName
-  :: MonadIO m
+  :: (MonadIO m)
   => Span
   -> Text
   -- ^ The new span name, which supersedes whatever was passed in when the Span was started
@@ -544,7 +544,7 @@ parent via a Context it is contained in. Also, putting the Span into a Context w
 @since 0.0.1.0
 -}
 endSpan
-  :: MonadIO m
+  :: (MonadIO m)
   => Span
   -> Maybe Timestamp
   -- ^ Optional @Timestamp@ signalling the end time of the span. If not provided, the current time will be used.
@@ -599,7 +599,7 @@ Returns @True@ if the @SpanContext@ was propagated from a remote parent,
 When extracting a SpanContext through the Propagators API, isRemote MUST return @True@,
 whereas for the SpanContext of any child spans it MUST return @False@.
 -}
-spanIsRemote :: MonadIO m => Span -> m Bool
+spanIsRemote :: (MonadIO m) => Span -> m Bool
 spanIsRemote (Span s) = liftIO $ do
   i <- readIORef s
   pure $ Types.isRemote $ Types.spanContext i
@@ -610,7 +610,7 @@ spanIsRemote (Dropped _) = pure False
 {- | Really only intended for tests, this function does not conform
  to semantic versioning .
 -}
-unsafeReadSpan :: MonadIO m => Span -> m ImmutableSpan
+unsafeReadSpan :: (MonadIO m) => Span -> m ImmutableSpan
 unsafeReadSpan = \case
   Span ref -> liftIO $ readIORef ref
   FrozenSpan _s -> error "This span is from another process"
@@ -625,7 +625,7 @@ wrapSpanContext = FrozenSpan
  using it to copy / otherwise use the data to further enrich
  instrumentation.
 -}
-spanGetAttributes :: MonadIO m => Span -> m A.Attributes
+spanGetAttributes :: (MonadIO m) => Span -> m A.Attributes
 spanGetAttributes = \case
   Span ref -> do
     s <- liftIO $ readIORef ref
@@ -643,7 +643,7 @@ spanGetAttributes = \case
 
  @since 0.0.1.0
 -}
-getTimestamp :: MonadIO m => m Timestamp
+getTimestamp :: (MonadIO m) => m Timestamp
 getTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
 
@@ -711,7 +711,7 @@ emptyTracerProviderOptions =
 
  You should generally use 'getGlobalTracerProvider' for most applications.
 -}
-createTracerProvider :: MonadIO m => [Processor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: (MonadIO m) => [Processor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
   pure $
@@ -734,7 +734,7 @@ createTracerProvider ps opts = liftIO $ do
 
  @since 0.0.1.0
 -}
-getGlobalTracerProvider :: MonadIO m => m TracerProvider
+getGlobalTracerProvider :: (MonadIO m) => m TracerProvider
 getGlobalTracerProvider = liftIO $ readIORef globalTracer
 
 
@@ -746,7 +746,7 @@ getGlobalTracerProvider = liftIO $ readIORef globalTracer
 
  @since 0.0.1.0
 -}
-setGlobalTracerProvider :: MonadIO m => TracerProvider -> m ()
+setGlobalTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 setGlobalTracerProvider = liftIO . writeIORef globalTracer
 
 
@@ -788,7 +788,7 @@ makeTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Trace
 makeTracer tp n TracerOptions {} = Tracer n tp
 
 
-getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
+getTracer :: (MonadIO m) => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
 getTracer tp n TracerOptions {} = liftIO $ do
   pure $ Tracer n tp
 {-# DEPRECATED getTracer "use makeTracer" #-}
@@ -828,7 +828,7 @@ defaultSpanArguments =
 
  @since 0.0.1.0
 -}
-shutdownTracerProvider :: MonadIO m => TracerProvider -> m ()
+shutdownTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
     processorShutdown processor
@@ -839,7 +839,7 @@ shutdownTracerProvider TracerProvider {..} = liftIO $ do
  been exported for all the internal processors.
 -}
 forceFlushTracerProvider
-  :: MonadIO m
+  :: (MonadIO m)
   => TracerProvider
   -> Maybe Int
   -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
@@ -867,7 +867,7 @@ forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
 {- | Utility function to only perform costly attribute annotations
  for spans that are actually
 -}
-whenSpanIsRecording :: MonadIO m => Span -> m () -> m ()
+whenSpanIsRecording :: (MonadIO m) => Span -> m () -> m ()
 whenSpanIsRecording (Span ref) m = do
   span_ <- liftIO $ readIORef ref
   case spanEnd span_ of

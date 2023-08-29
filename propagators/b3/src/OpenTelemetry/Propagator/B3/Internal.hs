@@ -64,17 +64,17 @@ import OpenTelemetry.Trace.TraceState (Value (..))
 
 --------------------------------------------------------------------------------
 
-encodeTraceId ::
-  TraceId ->
-  -- | ASCII text of 64-bit integer
-  ByteString
+encodeTraceId
+  :: TraceId
+  -> ByteString
+  -- ^ ASCII text of 64-bit integer
 encodeTraceId = BL.toStrict . BB.toLazyByteString . traceIdBaseEncodedBuilder Base16
 
 
-encodeSpanId ::
-  SpanId ->
-  -- | ASCII text of 64-bit integer
-  ByteString
+encodeSpanId
+  :: SpanId
+  -> ByteString
+  -- ^ ASCII text of 64-bit integer
 encodeSpanId = BL.toStrict . BB.toLazyByteString . spanIdBaseEncodedBuilder Base16
 
 

@@ -53,7 +53,7 @@ import System.IO.Unsafe
 import Prelude hiding (lookup)
 
 
-newKey :: MonadIO m => Text -> m (Key a)
+newKey :: (MonadIO m) => Text -> m (Key a)
 newKey n = liftIO (Key n <$> V.newKey)
 
 

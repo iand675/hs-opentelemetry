@@ -59,180 +59,180 @@ import qualified Data.ProtoLens.Runtime.Prelude as Prelude
 import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
 
 
-arrayValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "arrayValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+arrayValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "arrayValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 arrayValue = Data.ProtoLens.Field.field @"arrayValue"
 
 
-boolValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "boolValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+boolValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "boolValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 boolValue = Data.ProtoLens.Field.field @"boolValue"
 
 
-bytesValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "bytesValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+bytesValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "bytesValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 bytesValue = Data.ProtoLens.Field.field @"bytesValue"
 
 
-doubleValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "doubleValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+doubleValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "doubleValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 doubleValue = Data.ProtoLens.Field.field @"doubleValue"
 
 
-intValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "intValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+intValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "intValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 intValue = Data.ProtoLens.Field.field @"intValue"
 
 
-key ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "key" a) =>
-  Lens.Family2.LensLike' f s a
+key
+  :: forall f s a
+   . (Prelude.Functor f, Data.ProtoLens.Field.HasField s "key" a)
+  => Lens.Family2.LensLike' f s a
 key = Data.ProtoLens.Field.field @"key"
 
 
-kvlistValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "kvlistValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+kvlistValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "kvlistValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 kvlistValue = Data.ProtoLens.Field.field @"kvlistValue"
 
 
-maybe'arrayValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'arrayValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'arrayValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'arrayValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'arrayValue = Data.ProtoLens.Field.field @"maybe'arrayValue"
 
 
-maybe'boolValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'boolValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'boolValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'boolValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'boolValue = Data.ProtoLens.Field.field @"maybe'boolValue"
 
 
-maybe'bytesValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'bytesValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'bytesValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'bytesValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'bytesValue = Data.ProtoLens.Field.field @"maybe'bytesValue"
 
 
-maybe'doubleValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'doubleValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'doubleValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'doubleValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'doubleValue = Data.ProtoLens.Field.field @"maybe'doubleValue"
 
 
-maybe'intValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'intValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'intValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'intValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'intValue = Data.ProtoLens.Field.field @"maybe'intValue"
 
 
-maybe'kvlistValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'kvlistValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'kvlistValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'kvlistValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'kvlistValue = Data.ProtoLens.Field.field @"maybe'kvlistValue"
 
 
-maybe'stringValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'stringValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'stringValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'stringValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'stringValue = Data.ProtoLens.Field.field @"maybe'stringValue"
 
 
-maybe'value ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'value" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'value
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'value" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'value = Data.ProtoLens.Field.field @"maybe'value"
 
 
-name ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "name" a) =>
-  Lens.Family2.LensLike' f s a
+name
+  :: forall f s a
+   . (Prelude.Functor f, Data.ProtoLens.Field.HasField s "name" a)
+  => Lens.Family2.LensLike' f s a
 name = Data.ProtoLens.Field.field @"name"
 
 
-stringValue ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "stringValue" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+stringValue
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "stringValue" a
+     )
+  => Lens.Family2.LensLike' f s a
 stringValue = Data.ProtoLens.Field.field @"stringValue"
 
 
-value ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "value" a) =>
-  Lens.Family2.LensLike' f s a
+value
+  :: forall f s a
+   . (Prelude.Functor f, Data.ProtoLens.Field.HasField s "value" a)
+  => Lens.Family2.LensLike' f s a
 value = Data.ProtoLens.Field.field @"value"
 
 
-values ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "values" a) =>
-  Lens.Family2.LensLike' f s a
+values
+  :: forall f s a
+   . (Prelude.Functor f, Data.ProtoLens.Field.HasField s "values" a)
+  => Lens.Family2.LensLike' f s a
 values = Data.ProtoLens.Field.field @"values"
 
 
-vec'values ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "vec'values" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+vec'values
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "vec'values" a
+     )
+  => Lens.Family2.LensLike' f s a
 vec'values = Data.ProtoLens.Field.field @"vec'values"
 
 
-version ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "version" a) =>
-  Lens.Family2.LensLike' f s a
+version
+  :: forall f s a
+   . (Prelude.Functor f, Data.ProtoLens.Field.HasField s "version" a)
+  => Lens.Family2.LensLike' f s a
 version = Data.ProtoLens.Field.field @"version"

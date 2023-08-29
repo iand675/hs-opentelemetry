@@ -95,7 +95,7 @@ instance YesodPersist Minimal where
         wrapSqlBackend staticAttrs conn
 
 
-getRootR :: HasCallStack => Handler Text
+getRootR :: (HasCallStack) => Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
@@ -106,7 +106,7 @@ getRootR = do
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 
-getApiR :: HasCallStack => Handler Text
+getApiR :: (HasCallStack) => Handler Text
 getApiR = do
   inSpan "annotatedFunction" defaultSpanArguments $ do
     res <- runDB $ do

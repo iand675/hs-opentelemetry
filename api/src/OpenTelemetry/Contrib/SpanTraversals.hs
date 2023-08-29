@@ -16,7 +16,7 @@ data IterationInstruction a = Continue a | Halt
  The step value indicates whether the desired topmost span has been reached or not. This function will continue to iterate
  upwards until either a span that cannot be mutated has been reached, or there are no more parent spans remaining.
 -}
-alterSpansUpwards :: MonadIO m => Span -> st -> (st -> ImmutableSpan -> (IterationInstruction st, ImmutableSpan)) -> m st
+alterSpansUpwards :: (MonadIO m) => Span -> st -> (st -> ImmutableSpan -> (IterationInstruction st, ImmutableSpan)) -> m st
 alterSpansUpwards (Span immutableSpanRef) st f = liftIO $ do
   (step, a') <- atomicModifyIORef' immutableSpanRef (\a -> let (step, a') = f st a in (a', (step, a')))
   case step of

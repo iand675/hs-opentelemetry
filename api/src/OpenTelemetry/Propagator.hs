@@ -63,23 +63,23 @@ Extracts the value from an incoming request. For example, from the headers of an
 
 If a value can not be parsed from the carrier, for a cross-cutting concern, the implementation MUST NOT throw an exception and MUST NOT store a new value in the Context, in order to preserve any previously existing valid value.
 -}
-extract ::
-  (MonadIO m) =>
-  Propagator context i o ->
-  -- | The carrier that holds the propagation fields. For example, an incoming message or HTTP request.
-  i ->
-  context ->
-  -- | a new Context derived from the Context passed as argument, containing the extracted value, which can be a SpanContext, Baggage or another cross-cutting concern context.
-  m context
+extract
+  :: (MonadIO m)
+  => Propagator context i o
+  -> i
+  -- ^ The carrier that holds the propagation fields. For example, an incoming message or HTTP request.
+  -> context
+  -> m context
+  -- ^ a new Context derived from the Context passed as argument, containing the extracted value, which can be a SpanContext, Baggage or another cross-cutting concern context.
 extract (Propagator _ extractor _) i = liftIO . extractor i
 
 
 -- | Injects the value into a carrier. For example, into the headers of an HTTP request.
-inject ::
-  (MonadIO m) =>
-  Propagator context i o ->
-  context ->
-  -- | The carrier that holds the propagation fields. For example, an outgoing message or HTTP request.
-  o ->
-  m o
+inject
+  :: (MonadIO m)
+  => Propagator context i o
+  -> context
+  -> o
+  -- ^ The carrier that holds the propagation fields. For example, an outgoing message or HTTP request.
+  -> m o
 inject (Propagator _ _ injector) c = liftIO . injector c

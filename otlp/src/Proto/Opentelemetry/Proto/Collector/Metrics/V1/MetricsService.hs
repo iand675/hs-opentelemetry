@@ -128,14 +128,14 @@ instance Data.ProtoLens.Message ExportMetricsServiceRequest where
     let resourceMetrics__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource_metrics"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Metrics.V1.Metrics.ResourceMetrics
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Metrics.V1.Metrics.ResourceMetrics
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"resourceMetrics")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExportMetricsServiceRequest
+            )
+            :: Data.ProtoLens.FieldDescriptor ExportMetricsServiceRequest
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, resourceMetrics__field_descriptor)]
   unknownFields =
@@ -150,10 +150,10 @@ instance Data.ProtoLens.Message ExportMetricsServiceRequest where
       , _ExportMetricsServiceRequest'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExportMetricsServiceRequest ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Metrics.V1.Metrics.ResourceMetrics ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExportMetricsServiceRequest
+    let loop
+          :: ExportMetricsServiceRequest
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Metrics.V1.Metrics.ResourceMetrics
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExportMetricsServiceRequest
         loop x mutable'resourceMetrics =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -300,9 +300,9 @@ instance Data.ProtoLens.Message ExportMetricsServiceResponse where
       { _ExportMetricsServiceResponse'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExportMetricsServiceResponse ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExportMetricsServiceResponse
+    let loop
+          :: ExportMetricsServiceResponse
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExportMetricsServiceResponse
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd

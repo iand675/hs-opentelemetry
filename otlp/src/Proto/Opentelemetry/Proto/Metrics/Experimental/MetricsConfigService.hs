@@ -141,24 +141,24 @@ instance Data.ProtoLens.Message MetricConfigRequest where
     let resource__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Resource.V1.Resource.Resource
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Resource.V1.Resource.Resource
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'resource")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigRequest
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigRequest
         lastKnownFingerprint__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "last_known_fingerprint"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"lastKnownFingerprint")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigRequest
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigRequest
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
           , (Data.ProtoLens.Tag 2, lastKnownFingerprint__field_descriptor)
@@ -174,9 +174,9 @@ instance Data.ProtoLens.Message MetricConfigRequest where
       , _MetricConfigRequest'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          MetricConfigRequest ->
-          Data.ProtoLens.Encoding.Bytes.Parser MetricConfigRequest
+    let loop
+          :: MetricConfigRequest
+          -> Data.ProtoLens.Encoding.Bytes.Parser MetricConfigRequest
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -400,36 +400,36 @@ instance Data.ProtoLens.Message MetricConfigResponse where
     let fingerprint__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "fingerprint"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"fingerprint")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse
         schedules__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "schedules"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor MetricConfigResponse'Schedule
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor MetricConfigResponse'Schedule
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"schedules")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse
         suggestedWaitTimeSec__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "suggested_wait_time_sec"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"suggestedWaitTimeSec")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, fingerprint__field_descriptor)
           , (Data.ProtoLens.Tag 2, schedules__field_descriptor)
@@ -447,10 +447,10 @@ instance Data.ProtoLens.Message MetricConfigResponse where
       , _MetricConfigResponse'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          MetricConfigResponse ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld MetricConfigResponse'Schedule ->
-          Data.ProtoLens.Encoding.Bytes.Parser MetricConfigResponse
+    let loop
+          :: MetricConfigResponse
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld MetricConfigResponse'Schedule
+          -> Data.ProtoLens.Encoding.Bytes.Parser MetricConfigResponse
         loop x mutable'schedules =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -744,36 +744,36 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule where
     let exclusionPatterns__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exclusion_patterns"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor MetricConfigResponse'Schedule'Pattern
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor MetricConfigResponse'Schedule'Pattern
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"exclusionPatterns")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
         inclusionPatterns__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "inclusion_patterns"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor MetricConfigResponse'Schedule'Pattern
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor MetricConfigResponse'Schedule'Pattern
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"inclusionPatterns")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
         periodSec__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "period_sec"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"periodSec")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, exclusionPatterns__field_descriptor)
           , (Data.ProtoLens.Tag 2, inclusionPatterns__field_descriptor)
@@ -793,11 +793,11 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule where
       , _MetricConfigResponse'Schedule'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          MetricConfigResponse'Schedule ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld MetricConfigResponse'Schedule'Pattern ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld MetricConfigResponse'Schedule'Pattern ->
-          Data.ProtoLens.Encoding.Bytes.Parser MetricConfigResponse'Schedule
+    let loop
+          :: MetricConfigResponse'Schedule
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld MetricConfigResponse'Schedule'Pattern
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld MetricConfigResponse'Schedule'Pattern
+          -> Data.ProtoLens.Encoding.Bytes.Parser MetricConfigResponse'Schedule
         loop x mutable'exclusionPatterns mutable'inclusionPatterns =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1156,23 +1156,23 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule'Pattern where
     let equals__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "equals"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'equals")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule'Pattern
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule'Pattern
         startsWith__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "starts_with"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'startsWith")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule'Pattern
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule'Pattern
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, equals__field_descriptor)
           , (Data.ProtoLens.Tag 2, startsWith__field_descriptor)
@@ -1191,9 +1191,9 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule'Pattern where
       , _MetricConfigResponse'Schedule'Pattern'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          MetricConfigResponse'Schedule'Pattern ->
-          Data.ProtoLens.Encoding.Bytes.Parser MetricConfigResponse'Schedule'Pattern
+    let loop
+          :: MetricConfigResponse'Schedule'Pattern
+          -> Data.ProtoLens.Encoding.Bytes.Parser MetricConfigResponse'Schedule'Pattern
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1326,8 +1326,8 @@ instance Control.DeepSeq.NFData MetricConfigResponse'Schedule'Pattern'Match wher
     Control.DeepSeq.rnf x__
 
 
-_MetricConfigResponse'Schedule'Pattern'Equals ::
-  Data.ProtoLens.Prism.Prism' MetricConfigResponse'Schedule'Pattern'Match Data.Text.Text
+_MetricConfigResponse'Schedule'Pattern'Equals
+  :: Data.ProtoLens.Prism.Prism' MetricConfigResponse'Schedule'Pattern'Match Data.Text.Text
 _MetricConfigResponse'Schedule'Pattern'Equals =
   Data.ProtoLens.Prism.prism'
     MetricConfigResponse'Schedule'Pattern'Equals
@@ -1339,8 +1339,8 @@ _MetricConfigResponse'Schedule'Pattern'Equals =
     )
 
 
-_MetricConfigResponse'Schedule'Pattern'StartsWith ::
-  Data.ProtoLens.Prism.Prism' MetricConfigResponse'Schedule'Pattern'Match Data.Text.Text
+_MetricConfigResponse'Schedule'Pattern'StartsWith
+  :: Data.ProtoLens.Prism.Prism' MetricConfigResponse'Schedule'Pattern'Match Data.Text.Text
 _MetricConfigResponse'Schedule'Pattern'StartsWith =
   Data.ProtoLens.Prism.prism'
     MetricConfigResponse'Schedule'Pattern'StartsWith

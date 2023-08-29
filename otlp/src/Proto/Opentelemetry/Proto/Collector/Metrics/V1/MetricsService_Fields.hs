@@ -60,20 +60,20 @@ import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics
 
 
-resourceMetrics ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "resourceMetrics" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+resourceMetrics
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "resourceMetrics" a
+     )
+  => Lens.Family2.LensLike' f s a
 resourceMetrics = Data.ProtoLens.Field.field @"resourceMetrics"
 
 
-vec'resourceMetrics ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "vec'resourceMetrics" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+vec'resourceMetrics
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "vec'resourceMetrics" a
+     )
+  => Lens.Family2.LensLike' f s a
 vec'resourceMetrics =
   Data.ProtoLens.Field.field @"vec'resourceMetrics"

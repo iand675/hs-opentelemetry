@@ -60,19 +60,19 @@ import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
 import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace
 
 
-resourceSpans ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "resourceSpans" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+resourceSpans
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "resourceSpans" a
+     )
+  => Lens.Family2.LensLike' f s a
 resourceSpans = Data.ProtoLens.Field.field @"resourceSpans"
 
 
-vec'resourceSpans ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "vec'resourceSpans" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+vec'resourceSpans
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "vec'resourceSpans" a
+     )
+  => Lens.Family2.LensLike' f s a
 vec'resourceSpans = Data.ProtoLens.Field.field @"vec'resourceSpans"
