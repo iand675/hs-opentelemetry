@@ -134,7 +134,7 @@ tokenCharacters = C.fromList "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxy
 
 
 -- Ripped from file-embed-0.0.13
-bsToExp :: Monad m => ByteString -> m Exp
+bsToExp :: (Monad m) => ByteString -> m Exp
 #if MIN_VERSION_template_haskell(2, 5, 0)
 bsToExp bs =
     return $ ConE 'Token
@@ -266,13 +266,13 @@ empty :: Baggage
 empty = Baggage H.empty
 
 
-insert ::
-  -- | The name for which to set the value
-  Token ->
-  -- | The value to set. Use 'element' to construct a well-formed element value.
-  Element ->
-  Baggage ->
-  Baggage
+insert
+  :: Token
+  -- ^ The name for which to set the value
+  -> Element
+  -- ^ The value to set. Use 'element' to construct a well-formed element value.
+  -> Baggage
+  -> Baggage
 insert k v (Baggage c) = Baggage (H.insert k v c)
 
 

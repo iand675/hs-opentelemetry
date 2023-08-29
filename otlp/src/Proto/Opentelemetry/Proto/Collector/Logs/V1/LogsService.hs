@@ -124,14 +124,14 @@ instance Data.ProtoLens.Message ExportLogsServiceRequest where
     let resourceLogs__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource_logs"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Logs.V1.Logs.ResourceLogs
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Logs.V1.Logs.ResourceLogs
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"resourceLogs")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExportLogsServiceRequest
+            )
+            :: Data.ProtoLens.FieldDescriptor ExportLogsServiceRequest
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, resourceLogs__field_descriptor)]
   unknownFields =
@@ -144,10 +144,10 @@ instance Data.ProtoLens.Message ExportLogsServiceRequest where
       , _ExportLogsServiceRequest'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExportLogsServiceRequest ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Logs.V1.Logs.ResourceLogs ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExportLogsServiceRequest
+    let loop
+          :: ExportLogsServiceRequest
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Logs.V1.Logs.ResourceLogs
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExportLogsServiceRequest
         loop x mutable'resourceLogs =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -294,9 +294,9 @@ instance Data.ProtoLens.Message ExportLogsServiceResponse where
       { _ExportLogsServiceResponse'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExportLogsServiceResponse ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExportLogsServiceResponse
+    let loop
+          :: ExportLogsServiceResponse
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExportLogsServiceResponse
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd

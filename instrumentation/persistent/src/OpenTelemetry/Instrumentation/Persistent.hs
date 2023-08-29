@@ -39,15 +39,15 @@ In some OTel export destinations like Honeycomb, the cost is per-span. Consquent
 However, we also want to capture transactions as spans. Therefore, for pool acquisitions we track the time between trying to acquire the connection and the time the connection is obtained as an attribute on the initial span.
 -}
 
-instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlBackend m) where
+instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 
 
-instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlReadBackend m) where
+instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlReadBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 
 
-instance {-# OVERLAPS #-} MonadTracer m => MonadTracer (ReaderT SqlWriteBackend m) where
+instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlWriteBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
 
 
@@ -205,7 +205,7 @@ wrapSqlBackend attrs conn_ = do
   pure $ insertOriginalConnection conn' conn
 
 
-annotateBasics :: MonadIO m => Span -> SqlBackend -> m ()
+annotateBasics :: (MonadIO m) => Span -> SqlBackend -> m ()
 annotateBasics span conn = do
   addAttributes
     span

@@ -53,6 +53,7 @@ import GHC.Exts (
   isTrue#,
   or#,
  )
+
 #if MIN_VERSION_base(4,17,0)
 import GHC.Exts (word64ToWord#)
 #endif
@@ -105,7 +106,7 @@ instance IsString SpanId where
 
  @since 0.1.0.0
 -}
-newTraceId :: MonadIO m => IdGenerator -> m TraceId
+newTraceId :: (MonadIO m) => IdGenerator -> m TraceId
 newTraceId gen = liftIO (TraceId . toShort <$> generateTraceIdBytes gen)
 
 
@@ -195,7 +196,7 @@ traceIdBaseEncodedText b = decodeUtf8 . traceIdBaseEncodedByteString b
 
  @since 0.1.0.0
 -}
-newSpanId :: MonadIO m => IdGenerator -> m SpanId
+newSpanId :: (MonadIO m) => IdGenerator -> m SpanId
 newSpanId gen = liftIO (SpanId . toShort <$> generateSpanIdBytes gen)
 
 

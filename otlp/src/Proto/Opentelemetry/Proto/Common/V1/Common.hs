@@ -413,73 +413,73 @@ instance Data.ProtoLens.Message AnyValue where
     let stringValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "string_value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'stringValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
         boolValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "bool_value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BoolField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Bool
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BoolField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Bool
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'boolValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
         intValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "int_value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'intValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
         doubleValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "double_value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'doubleValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
         arrayValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "array_value"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ArrayValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ArrayValue
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'arrayValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
         kvlistValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "kvlist_value"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor KeyValueList
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor KeyValueList
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'kvlistValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
         bytesValue__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "bytes_value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'bytesValue")
-            ) ::
-            Data.ProtoLens.FieldDescriptor AnyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor AnyValue
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, stringValue__field_descriptor)
           , (Data.ProtoLens.Tag 2, boolValue__field_descriptor)
@@ -735,8 +735,8 @@ instance Control.DeepSeq.NFData AnyValue'Value where
   rnf (AnyValue'BytesValue x__) = Control.DeepSeq.rnf x__
 
 
-_AnyValue'StringValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Text.Text
+_AnyValue'StringValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Text.Text
 _AnyValue'StringValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'StringValue
@@ -747,8 +747,8 @@ _AnyValue'StringValue =
     )
 
 
-_AnyValue'BoolValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value Prelude.Bool
+_AnyValue'BoolValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value Prelude.Bool
 _AnyValue'BoolValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'BoolValue
@@ -759,8 +759,8 @@ _AnyValue'BoolValue =
     )
 
 
-_AnyValue'IntValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Int.Int64
+_AnyValue'IntValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Int.Int64
 _AnyValue'IntValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'IntValue
@@ -771,8 +771,8 @@ _AnyValue'IntValue =
     )
 
 
-_AnyValue'DoubleValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value Prelude.Double
+_AnyValue'DoubleValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value Prelude.Double
 _AnyValue'DoubleValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'DoubleValue
@@ -783,8 +783,8 @@ _AnyValue'DoubleValue =
     )
 
 
-_AnyValue'ArrayValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value ArrayValue
+_AnyValue'ArrayValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value ArrayValue
 _AnyValue'ArrayValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'ArrayValue
@@ -795,8 +795,8 @@ _AnyValue'ArrayValue =
     )
 
 
-_AnyValue'KvlistValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value KeyValueList
+_AnyValue'KvlistValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value KeyValueList
 _AnyValue'KvlistValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'KvlistValue
@@ -807,8 +807,8 @@ _AnyValue'KvlistValue =
     )
 
 
-_AnyValue'BytesValue ::
-  Data.ProtoLens.Prism.Prism' AnyValue'Value Data.ByteString.ByteString
+_AnyValue'BytesValue
+  :: Data.ProtoLens.Prism.Prism' AnyValue'Value Data.ByteString.ByteString
 _AnyValue'BytesValue =
   Data.ProtoLens.Prism.prism'
     AnyValue'BytesValue
@@ -877,14 +877,14 @@ instance Data.ProtoLens.Message ArrayValue where
     let values__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "values"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor AnyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor AnyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"values")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ArrayValue
+            )
+            :: Data.ProtoLens.FieldDescriptor ArrayValue
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, values__field_descriptor)]
   unknownFields =
@@ -897,10 +897,10 @@ instance Data.ProtoLens.Message ArrayValue where
       , _ArrayValue'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ArrayValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld AnyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser ArrayValue
+    let loop
+          :: ArrayValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld AnyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser ArrayValue
         loop x mutable'values =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1060,25 +1060,25 @@ instance Data.ProtoLens.Message InstrumentationLibrary where
     let name__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "name"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"name")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibrary
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibrary
         version__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "version"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"version")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibrary
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibrary
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, name__field_descriptor)
           , (Data.ProtoLens.Tag 2, version__field_descriptor)
@@ -1094,9 +1094,9 @@ instance Data.ProtoLens.Message InstrumentationLibrary where
       , _InstrumentationLibrary'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          InstrumentationLibrary ->
-          Data.ProtoLens.Encoding.Bytes.Parser InstrumentationLibrary
+    let loop
+          :: InstrumentationLibrary
+          -> Data.ProtoLens.Encoding.Bytes.Parser InstrumentationLibrary
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1295,24 +1295,24 @@ instance Data.ProtoLens.Message KeyValue where
     let key__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "key"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"key")
-            ) ::
-            Data.ProtoLens.FieldDescriptor KeyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor KeyValue
         value__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "value"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor AnyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor AnyValue
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'value")
-            ) ::
-            Data.ProtoLens.FieldDescriptor KeyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor KeyValue
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, key__field_descriptor)
           , (Data.ProtoLens.Tag 2, value__field_descriptor)
@@ -1510,14 +1510,14 @@ instance Data.ProtoLens.Message KeyValueList where
     let values__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "values"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"values")
-            ) ::
-            Data.ProtoLens.FieldDescriptor KeyValueList
+            )
+            :: Data.ProtoLens.FieldDescriptor KeyValueList
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, values__field_descriptor)]
   unknownFields =
@@ -1530,10 +1530,10 @@ instance Data.ProtoLens.Message KeyValueList where
       , _KeyValueList'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          KeyValueList ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld KeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser KeyValueList
+    let loop
+          :: KeyValueList
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld KeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser KeyValueList
         loop x mutable'values =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1692,25 +1692,25 @@ instance Data.ProtoLens.Message StringKeyValue where
     let key__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "key"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"key")
-            ) ::
-            Data.ProtoLens.FieldDescriptor StringKeyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor StringKeyValue
         value__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"value")
-            ) ::
-            Data.ProtoLens.FieldDescriptor StringKeyValue
+            )
+            :: Data.ProtoLens.FieldDescriptor StringKeyValue
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, key__field_descriptor)
           , (Data.ProtoLens.Tag 2, value__field_descriptor)
@@ -1726,9 +1726,9 @@ instance Data.ProtoLens.Message StringKeyValue where
       , _StringKeyValue'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser StringKeyValue
+    let loop
+          :: StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser StringKeyValue
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd

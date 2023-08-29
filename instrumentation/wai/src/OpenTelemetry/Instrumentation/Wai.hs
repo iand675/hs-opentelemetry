@@ -25,12 +25,12 @@ import OpenTelemetry.Trace.Core
 import System.IO.Unsafe
 
 
-newOpenTelemetryWaiMiddleware :: HasCallStack => IO Middleware
+newOpenTelemetryWaiMiddleware :: (HasCallStack) => IO Middleware
 newOpenTelemetryWaiMiddleware = getGlobalTracerProvider >>= newOpenTelemetryWaiMiddleware'
 
 
 newOpenTelemetryWaiMiddleware'
-  :: HasCallStack
+  :: (HasCallStack)
   => TracerProvider
   -> IO Middleware
 newOpenTelemetryWaiMiddleware' tp = do

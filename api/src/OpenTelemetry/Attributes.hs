@@ -87,7 +87,7 @@ emptyAttributes :: Attributes
 emptyAttributes = Attributes mempty 0 0
 
 
-addAttribute :: ToAttribute a => AttributeLimits -> Attributes -> Text -> a -> Attributes
+addAttribute :: (ToAttribute a) => AttributeLimits -> Attributes -> Text -> a -> Attributes
 addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLimit of
   Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ ->
@@ -112,7 +112,7 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
 {-# INLINE addAttribute #-}
 
 
-addAttributes :: ToAttribute a => AttributeLimits -> Attributes -> [(Text, a)] -> Attributes
+addAttributes :: (ToAttribute a) => AttributeLimits -> Attributes -> [(Text, a)] -> Attributes
 -- TODO, this could be done more efficiently
 addAttributes limits = foldl' (\(!attrs') (!k, !v) -> addAttribute limits attrs' k v)
 {-# INLINE addAttributes #-}
@@ -203,7 +203,7 @@ data PrimitiveAttribute
 -}
 class ToAttribute a where
   toAttribute :: a -> Attribute
-  default toAttribute :: ToPrimitiveAttribute a => a -> Attribute
+  default toAttribute :: (ToPrimitiveAttribute a) => a -> Attribute
   toAttribute = AttributeValue . toPrimitiveAttribute
 
 
@@ -254,7 +254,7 @@ instance ToAttribute Attribute where
   toAttribute = id
 
 
-instance ToPrimitiveAttribute a => ToAttribute [a] where
+instance (ToPrimitiveAttribute a) => ToAttribute [a] where
   toAttribute = AttributeArray . map toPrimitiveAttribute
 
 

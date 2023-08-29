@@ -21,7 +21,7 @@ carryOnKey = unsafePerformIO $ newKey "carryOn"
 {-# NOINLINE carryOnKey #-}
 
 
-alterCarryOns :: MonadIO m => ([(Text, Attribute)] -> [(Text, Attribute)]) -> m ()
+alterCarryOns :: (MonadIO m) => ([(Text, Attribute)] -> [(Text, Attribute)]) -> m ()
 alterCarryOns f = adjustContext $ \ctxt ->
   Context.insert carryOnKey (f $ fromMaybe [] $ Context.lookup carryOnKey ctxt) ctxt
 
