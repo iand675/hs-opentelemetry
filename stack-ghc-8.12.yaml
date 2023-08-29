@@ -62,7 +62,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- thread-utils-context-0.3.0.3
+- thread-utils-context-0.3.0.4
 - thread-utils-finalizers-0.1.1.0
 - persistent-2.13.3.0
 - persistent-postgresql-2.13.4.0
