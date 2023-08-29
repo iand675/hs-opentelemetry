@@ -67,7 +67,7 @@ extra-deps:
 - hspec-2.10.6@sha256:c90dbcc629e88e5f56021c7dba26a97109a0c441aeece6ead217ee3fc83dcb68,1712
 - hspec-core-2.10.6@sha256:68a74267974fee22f4bc57b5d353391e8dc943b0d7ffaf5d47dab691765ee772,6659
 - hspec-discover-2.10.6@sha256:df63254c5aa8c5c2b9233b0067728394936b6c9af7e3a5d3d44df78d888dcefd,2167
-- thread-utils-context-0.3.0.3
+- thread-utils-context-0.3.0.4
 - thread-utils-finalizers-0.1.1.0
 
 # Override default flag values for local packages and extra-deps
