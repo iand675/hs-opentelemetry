@@ -2,7 +2,7 @@ on:
   push:
   pull_request:
 jobs:
-  stack-ghc-8_12:
+  stack-ghc-8_10:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,12 +20,12 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-8.12-${{ hashFiles('stack-ghc-8.12.yaml.lock') }}-2
+          key: stack-${{ runner.os }}-8.10-${{ hashFiles('stack-ghc-8.10.yaml.lock') }}-2
           restore-keys: |
-      - run: stack --stack-yaml stack-ghc-8.12.yaml build --only-dependencies
-      - run: stack --stack-yaml stack-ghc-8.12.yaml build
-      - run: stack --stack-yaml stack-ghc-8.12.yaml test
-      - run: stack --stack-yaml stack-ghc-8.12.yaml bench --no-run-benchmarks
+      - run: stack --stack-yaml stack-ghc-8.10.yaml build --only-dependencies
+      - run: stack --stack-yaml stack-ghc-8.10.yaml build
+      - run: stack --stack-yaml stack-ghc-8.10.yaml test
+      - run: stack --stack-yaml stack-ghc-8.10.yaml bench --no-run-benchmarks
   stack-ghc-9_0:
     runs-on: ubuntu-latest
     steps:
@@ -81,15 +81,19 @@ jobs:
       - uses: cachix/install-nix-action@v17
         with:
           nix_path: nixpkgs=channel:nixos-22.11
-      # - uses: actions/cache@v3
-      #   with:
-      #     path: ~/.cabal
-      #     key: cabal-${{ runner.os }}-9.0-${{ hashFiles('cabal.project.freeze') }}
-      - run: nix develop --command cabal v2-build all
-      - run: nix develop --command cabal v2-test all
-      - run: nix develop --command cabal v2-build --enable-benchmarks all
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cabal
+          key: cabal-${{ runner.os }}-9.0-${{ hashFiles('cabal.project.freeze') }}
+      - run: nix-shell --run 'cabal update'
+      - run: nix-shell --run 'cabal v2-build --only-dependencies all'
+      - run: nix-shell --run 'cabal v2-build all'
+      - run: nix-shell --run 'cabal v2-test all'
+      - run: nix-shell --run 'cabal v2-build --enable-benchmarks all'
   format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: fourmolu/fourmolu-action@v6
+      - uses: fourmolu/fourmolu-action@v9
+        with:
+          version: "0.13.1.0"
