@@ -20,7 +20,7 @@ import OpenTelemetry.Trace.Core (ToAttribute (..), endSpan, recordException, set
 import qualified OpenTelemetry.Trace.Core as TraceCore
 
 
-bracketError' :: MonadMask m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+bracketError' :: (MonadMask m) => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 bracketError' before after thing = MonadMask.mask $ \restore -> do
   x <- before
   res1 <- MonadMask.try $ restore $ thing x

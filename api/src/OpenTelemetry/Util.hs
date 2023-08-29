@@ -51,8 +51,8 @@ import qualified Data.Vector as V
 import Foreign.C (CInt (..))
 import GHC.Base (Addr#)
 import GHC.Conc (ThreadId (ThreadId))
-import GHC.Generics
 import GHC.Exts (unsafeCoerce#)
+import GHC.Generics
 import VectorBuilder.Builder (Builder)
 import qualified VectorBuilder.Builder as Builder
 import qualified VectorBuilder.Vector as Builder

@@ -142,7 +142,7 @@ getConfigPartsFromEnv _ = do
  N.B. The EnvironmentName will be Nothing if the API key is for a Honeycomb
  Classic instance.
 -}
-getHoneycombData :: MonadIO m => Config.Config -> m (HoneycombTeam, Maybe EnvironmentName)
+getHoneycombData :: (MonadIO m) => Config.Config -> m (HoneycombTeam, Maybe EnvironmentName)
 getHoneycombData cfg = do
   auth <- runReaderT Auth.getAuth cfg
   let envSlug = Auth.slug . Auth.environment $ auth
@@ -252,11 +252,11 @@ honeycombTargetKey = unsafePerformIO $ Context.newKey "honeycombTarget"
  ensure that this context is the parent of all child contexts in which you might
  want to get the target (for instance to generate Honeycomb links).
 -}
-getOrInitializeHoneycombTargetInContext ::
-  MonadIO m =>
-  -- | Timeout for the operation before assuming Honeycomb is inaccessible
-  NominalDiffTime ->
-  m (Maybe HoneycombTarget)
+getOrInitializeHoneycombTargetInContext
+  :: (MonadIO m)
+  => NominalDiffTime
+  -- ^ Timeout for the operation before assuming Honeycomb is inaccessible
+  -> m (Maybe HoneycombTarget)
 getOrInitializeHoneycombTargetInContext theTimeout = do
   mmTarget <- getHoneycombTargetInContext'
   case mmTarget of
@@ -286,13 +286,13 @@ getOrInitializeHoneycombTargetInContext theTimeout = do
 
  This is the right function for most use cases.
 -}
-getHoneycombTargetInContext :: MonadIO m => m (Maybe HoneycombTarget)
+getHoneycombTargetInContext :: (MonadIO m) => m (Maybe HoneycombTarget)
 getHoneycombTargetInContext = do
   join <$> getHoneycombTargetInContext'
 
 
 -- | Gets the thread-local context. The outer Maybe represents whether one has been set yet.
-getHoneycombTargetInContext' :: MonadIO m => m (Maybe (Maybe HoneycombTarget))
+getHoneycombTargetInContext' :: (MonadIO m) => m (Maybe (Maybe HoneycombTarget))
 getHoneycombTargetInContext' = do
   Context.lookup honeycombTargetKey <$> TLContext.getContext
 
@@ -302,7 +302,7 @@ getHoneycombTargetInContext' = do
  Needs to have the thread-local target initialized; see
  'getOrInitializeHoneycombTargetInContext'.
 -}
-getHoneycombLink :: MonadIO m => m (Maybe ByteString)
+getHoneycombLink :: (MonadIO m) => m (Maybe ByteString)
 getHoneycombLink = do
   mTarget <- getHoneycombTargetInContext
   case mTarget of
@@ -311,7 +311,7 @@ getHoneycombLink = do
 
 
 -- | Gets a trace link for the current trace with an explicitly provided target.
-getHoneycombLink' :: MonadIO m => HoneycombTarget -> m (Maybe ByteString)
+getHoneycombLink' :: (MonadIO m) => HoneycombTarget -> m (Maybe ByteString)
 getHoneycombLink' target = do
   theSpan <- lookupSpan <$> TLContext.getContext
   inTraceId <- traceIdForSpan theSpan
