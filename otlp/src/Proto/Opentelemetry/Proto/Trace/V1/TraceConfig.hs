@@ -121,14 +121,14 @@ instance Data.ProtoLens.Message ConstantSampler where
     let decision__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "decision"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor ConstantSampler'ConstantDecision
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor ConstantSampler'ConstantDecision
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"decision")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ConstantSampler
+            )
+            :: Data.ProtoLens.FieldDescriptor ConstantSampler
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, decision__field_descriptor)]
   unknownFields =
@@ -141,9 +141,9 @@ instance Data.ProtoLens.Message ConstantSampler where
       , _ConstantSampler'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ConstantSampler ->
-          Data.ProtoLens.Encoding.Bytes.Parser ConstantSampler
+    let loop
+          :: ConstantSampler
+          -> Data.ProtoLens.Encoding.Bytes.Parser ConstantSampler
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -362,14 +362,14 @@ instance Data.ProtoLens.Message RateLimitingSampler where
     let qps__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "qps"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"qps")
-            ) ::
-            Data.ProtoLens.FieldDescriptor RateLimitingSampler
+            )
+            :: Data.ProtoLens.FieldDescriptor RateLimitingSampler
      in Data.Map.fromList [(Data.ProtoLens.Tag 1, qps__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
@@ -381,9 +381,9 @@ instance Data.ProtoLens.Message RateLimitingSampler where
       , _RateLimitingSampler'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          RateLimitingSampler ->
-          Data.ProtoLens.Encoding.Bytes.Parser RateLimitingSampler
+    let loop
+          :: RateLimitingSampler
+          -> Data.ProtoLens.Encoding.Bytes.Parser RateLimitingSampler
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -704,90 +704,90 @@ instance Data.ProtoLens.Message TraceConfig where
     let maxNumberOfAttributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "max_number_of_attributes"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"maxNumberOfAttributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         maxNumberOfTimedEvents__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "max_number_of_timed_events"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"maxNumberOfTimedEvents")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         maxNumberOfAttributesPerTimedEvent__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "max_number_of_attributes_per_timed_event"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 ( Data.ProtoLens.Field.field
                     @"maxNumberOfAttributesPerTimedEvent"
                 )
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         maxNumberOfLinks__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "max_number_of_links"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"maxNumberOfLinks")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         maxNumberOfAttributesPerLink__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "max_number_of_attributes_per_link"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"maxNumberOfAttributesPerLink")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         constantSampler__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "constant_sampler"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ConstantSampler
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ConstantSampler
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'constantSampler")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         traceIdRatioBased__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_id_ratio_based"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor TraceIdRatioBased
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor TraceIdRatioBased
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'traceIdRatioBased")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
         rateLimitingSampler__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "rate_limiting_sampler"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor RateLimitingSampler
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor RateLimitingSampler
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'rateLimitingSampler")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceConfig
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceConfig
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 4, maxNumberOfAttributes__field_descriptor)
           , (Data.ProtoLens.Tag 5, maxNumberOfTimedEvents__field_descriptor)
@@ -819,8 +819,8 @@ instance Data.ProtoLens.Message TraceConfig where
       , _TraceConfig'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          TraceConfig -> Data.ProtoLens.Encoding.Bytes.Parser TraceConfig
+    let loop
+          :: TraceConfig -> Data.ProtoLens.Encoding.Bytes.Parser TraceConfig
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1160,8 +1160,8 @@ instance Control.DeepSeq.NFData TraceConfig'Sampler where
   rnf (TraceConfig'RateLimitingSampler x__) = Control.DeepSeq.rnf x__
 
 
-_TraceConfig'ConstantSampler ::
-  Data.ProtoLens.Prism.Prism' TraceConfig'Sampler ConstantSampler
+_TraceConfig'ConstantSampler
+  :: Data.ProtoLens.Prism.Prism' TraceConfig'Sampler ConstantSampler
 _TraceConfig'ConstantSampler =
   Data.ProtoLens.Prism.prism'
     TraceConfig'ConstantSampler
@@ -1172,8 +1172,8 @@ _TraceConfig'ConstantSampler =
     )
 
 
-_TraceConfig'TraceIdRatioBased ::
-  Data.ProtoLens.Prism.Prism' TraceConfig'Sampler TraceIdRatioBased
+_TraceConfig'TraceIdRatioBased
+  :: Data.ProtoLens.Prism.Prism' TraceConfig'Sampler TraceIdRatioBased
 _TraceConfig'TraceIdRatioBased =
   Data.ProtoLens.Prism.prism'
     TraceConfig'TraceIdRatioBased
@@ -1184,8 +1184,8 @@ _TraceConfig'TraceIdRatioBased =
     )
 
 
-_TraceConfig'RateLimitingSampler ::
-  Data.ProtoLens.Prism.Prism' TraceConfig'Sampler RateLimitingSampler
+_TraceConfig'RateLimitingSampler
+  :: Data.ProtoLens.Prism.Prism' TraceConfig'Sampler RateLimitingSampler
 _TraceConfig'RateLimitingSampler =
   Data.ProtoLens.Prism.prism'
     TraceConfig'RateLimitingSampler
@@ -1239,14 +1239,14 @@ instance Data.ProtoLens.Message TraceIdRatioBased where
     let samplingRatio__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "samplingRatio"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"samplingRatio")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TraceIdRatioBased
+            )
+            :: Data.ProtoLens.FieldDescriptor TraceIdRatioBased
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, samplingRatio__field_descriptor)]
   unknownFields =
@@ -1259,9 +1259,9 @@ instance Data.ProtoLens.Message TraceIdRatioBased where
       , _TraceIdRatioBased'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          TraceIdRatioBased ->
-          Data.ProtoLens.Encoding.Bytes.Parser TraceIdRatioBased
+    let loop
+          :: TraceIdRatioBased
+          -> Data.ProtoLens.Encoding.Bytes.Parser TraceIdRatioBased
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
