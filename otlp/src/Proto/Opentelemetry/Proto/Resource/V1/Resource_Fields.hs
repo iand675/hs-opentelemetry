@@ -60,29 +60,29 @@ import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common
 
 
-attributes ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "attributes" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+attributes
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "attributes" a
+     )
+  => Lens.Family2.LensLike' f s a
 attributes = Data.ProtoLens.Field.field @"attributes"
 
 
-droppedAttributesCount ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "droppedAttributesCount" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+droppedAttributesCount
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "droppedAttributesCount" a
+     )
+  => Lens.Family2.LensLike' f s a
 droppedAttributesCount =
   Data.ProtoLens.Field.field @"droppedAttributesCount"
 
 
-vec'attributes ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "vec'attributes" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+vec'attributes
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "vec'attributes" a
+     )
+  => Lens.Family2.LensLike' f s a
 vec'attributes = Data.ProtoLens.Field.field @"vec'attributes"

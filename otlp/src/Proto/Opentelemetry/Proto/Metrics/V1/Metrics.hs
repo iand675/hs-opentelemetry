@@ -511,78 +511,78 @@ instance Data.ProtoLens.Message Exemplar where
     let filteredAttributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "filtered_attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"filteredAttributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
         filteredLabels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "filtered_labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"filteredLabels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
         spanId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "span_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"spanId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
         traceId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"traceId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
         asDouble__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "as_double"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'asDouble")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
         asInt__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "as_int"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'asInt")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Exemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor Exemplar
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 7, filteredAttributes__field_descriptor)
           , (Data.ProtoLens.Tag 1, filteredLabels__field_descriptor)
@@ -607,11 +607,11 @@ instance Data.ProtoLens.Message Exemplar where
       , _Exemplar'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Exemplar ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser Exemplar
+    let loop
+          :: Exemplar
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser Exemplar
         loop x mutable'filteredAttributes mutable'filteredLabels =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -933,8 +933,8 @@ instance Control.DeepSeq.NFData Exemplar'Value where
   rnf (Exemplar'AsInt x__) = Control.DeepSeq.rnf x__
 
 
-_Exemplar'AsDouble ::
-  Data.ProtoLens.Prism.Prism' Exemplar'Value Prelude.Double
+_Exemplar'AsDouble
+  :: Data.ProtoLens.Prism.Prism' Exemplar'Value Prelude.Double
 _Exemplar'AsDouble =
   Data.ProtoLens.Prism.prism'
     Exemplar'AsDouble
@@ -945,8 +945,8 @@ _Exemplar'AsDouble =
     )
 
 
-_Exemplar'AsInt ::
-  Data.ProtoLens.Prism.Prism' Exemplar'Value Data.Int.Int64
+_Exemplar'AsInt
+  :: Data.ProtoLens.Prism.Prism' Exemplar'Value Data.Int.Int64
 _Exemplar'AsInt =
   Data.ProtoLens.Prism.prism'
     Exemplar'AsInt
@@ -1031,25 +1031,25 @@ instance Data.ProtoLens.Message ExponentialHistogram where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ExponentialHistogramDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ExponentialHistogramDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogram
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogram
         aggregationTemporality__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "aggregation_temporality"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"aggregationTemporality")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogram
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogram
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, dataPoints__field_descriptor)
           , (Data.ProtoLens.Tag 2, aggregationTemporality__field_descriptor)
@@ -1065,10 +1065,10 @@ instance Data.ProtoLens.Message ExponentialHistogram where
       , _ExponentialHistogram'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExponentialHistogram ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld ExponentialHistogramDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExponentialHistogram
+    let loop
+          :: ExponentialHistogram
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld ExponentialHistogramDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExponentialHistogram
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1464,122 +1464,122 @@ instance Data.ProtoLens.Message ExponentialHistogramDataPoint where
     let attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         count__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"count")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         sum__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "sum"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"sum")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         scale__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "scale"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"scale")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         zeroCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "zero_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"zeroCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         positive__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "positive"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ExponentialHistogramDataPoint'Buckets
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ExponentialHistogramDataPoint'Buckets
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'positive")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         negative__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "negative"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ExponentialHistogramDataPoint'Buckets
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ExponentialHistogramDataPoint'Buckets
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'negative")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         flags__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "flags"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"flags")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
         exemplars__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exemplars"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Exemplar
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Exemplar
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"exemplars")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, attributes__field_descriptor)
           , (Data.ProtoLens.Tag 2, startTimeUnixNano__field_descriptor)
@@ -1615,11 +1615,11 @@ instance Data.ProtoLens.Message ExponentialHistogramDataPoint where
       , _ExponentialHistogramDataPoint'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExponentialHistogramDataPoint ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Exemplar ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExponentialHistogramDataPoint
+    let loop
+          :: ExponentialHistogramDataPoint
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Exemplar
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExponentialHistogramDataPoint
         loop x mutable'attributes mutable'exemplars =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -2161,25 +2161,25 @@ instance Data.ProtoLens.Message ExponentialHistogramDataPoint'Buckets where
     let offset__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "offset"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"offset")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint'Buckets
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint'Buckets
         bucketCounts__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "bucket_counts"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Packed
                 (Data.ProtoLens.Field.field @"bucketCounts")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint'Buckets
+            )
+            :: Data.ProtoLens.FieldDescriptor ExponentialHistogramDataPoint'Buckets
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, offset__field_descriptor)
           , (Data.ProtoLens.Tag 2, bucketCounts__field_descriptor)
@@ -2199,10 +2199,10 @@ instance Data.ProtoLens.Message ExponentialHistogramDataPoint'Buckets where
       , _ExponentialHistogramDataPoint'Buckets'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExponentialHistogramDataPoint'Buckets ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Word.Word64 ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExponentialHistogramDataPoint'Buckets
+    let loop
+          :: ExponentialHistogramDataPoint'Buckets
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Word.Word64
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExponentialHistogramDataPoint'Buckets
         loop x mutable'bucketCounts =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -2432,14 +2432,14 @@ instance Data.ProtoLens.Message Gauge where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor NumberDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor NumberDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Gauge
+            )
+            :: Data.ProtoLens.FieldDescriptor Gauge
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, dataPoints__field_descriptor)]
   unknownFields =
@@ -2452,10 +2452,10 @@ instance Data.ProtoLens.Message Gauge where
       , _Gauge'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Gauge ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld NumberDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser Gauge
+    let loop
+          :: Gauge
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld NumberDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser Gauge
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -2632,25 +2632,25 @@ instance Data.ProtoLens.Message Histogram where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor HistogramDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor HistogramDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Histogram
+            )
+            :: Data.ProtoLens.FieldDescriptor Histogram
         aggregationTemporality__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "aggregation_temporality"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"aggregationTemporality")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Histogram
+            )
+            :: Data.ProtoLens.FieldDescriptor Histogram
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, dataPoints__field_descriptor)
           , (Data.ProtoLens.Tag 2, aggregationTemporality__field_descriptor)
@@ -2666,10 +2666,10 @@ instance Data.ProtoLens.Message Histogram where
       , _Histogram'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Histogram ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld HistogramDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser Histogram
+    let loop
+          :: Histogram
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld HistogramDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser Histogram
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -3054,113 +3054,113 @@ instance Data.ProtoLens.Message HistogramDataPoint where
     let attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         labels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"labels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         count__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"count")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         sum__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "sum"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"sum")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         bucketCounts__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "bucket_counts"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Packed
                 (Data.ProtoLens.Field.field @"bucketCounts")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         explicitBounds__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "explicit_bounds"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Packed
                 (Data.ProtoLens.Field.field @"explicitBounds")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         exemplars__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exemplars"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Exemplar
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Exemplar
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"exemplars")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
         flags__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "flags"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"flags")
-            ) ::
-            Data.ProtoLens.FieldDescriptor HistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor HistogramDataPoint
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 9, attributes__field_descriptor)
           , (Data.ProtoLens.Tag 1, labels__field_descriptor)
@@ -3192,14 +3192,14 @@ instance Data.ProtoLens.Message HistogramDataPoint where
       , _HistogramDataPoint'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          HistogramDataPoint ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Word.Word64 ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Exemplar ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Prelude.Double ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser HistogramDataPoint
+    let loop
+          :: HistogramDataPoint
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Word.Word64
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Exemplar
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Prelude.Double
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser HistogramDataPoint
         loop
           x
           mutable'attributes
@@ -3918,35 +3918,35 @@ instance Data.ProtoLens.Message InstrumentationLibraryMetrics where
     let instrumentationLibrary__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "instrumentation_library"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.InstrumentationLibrary
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.InstrumentationLibrary
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'instrumentationLibrary")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibraryMetrics
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibraryMetrics
         metrics__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "metrics"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Metric
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Metric
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"metrics")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibraryMetrics
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibraryMetrics
         schemaUrl__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "schema_url"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"schemaUrl")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibraryMetrics
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibraryMetrics
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, instrumentationLibrary__field_descriptor)
           , (Data.ProtoLens.Tag 2, metrics__field_descriptor)
@@ -3966,10 +3966,10 @@ instance Data.ProtoLens.Message InstrumentationLibraryMetrics where
       , _InstrumentationLibraryMetrics'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          InstrumentationLibraryMetrics ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Metric ->
-          Data.ProtoLens.Encoding.Bytes.Parser InstrumentationLibraryMetrics
+    let loop
+          :: InstrumentationLibraryMetrics
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Metric
+          -> Data.ProtoLens.Encoding.Bytes.Parser InstrumentationLibraryMetrics
         loop x mutable'metrics =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -4283,58 +4283,58 @@ instance Data.ProtoLens.Message IntDataPoint where
     let labels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"labels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntDataPoint
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntDataPoint
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntDataPoint
         value__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"value")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntDataPoint
         exemplars__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exemplars"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntExemplar
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntExemplar
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"exemplars")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntDataPoint
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, labels__field_descriptor)
           , (Data.ProtoLens.Tag 2, startTimeUnixNano__field_descriptor)
@@ -4356,11 +4356,11 @@ instance Data.ProtoLens.Message IntDataPoint where
       , _IntDataPoint'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          IntDataPoint ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntExemplar ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser IntDataPoint
+    let loop
+          :: IntDataPoint
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntExemplar
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser IntDataPoint
         loop x mutable'exemplars mutable'labels =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -4716,58 +4716,58 @@ instance Data.ProtoLens.Message IntExemplar where
     let filteredLabels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "filtered_labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"filteredLabels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntExemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor IntExemplar
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntExemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor IntExemplar
         value__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"value")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntExemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor IntExemplar
         spanId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "span_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"spanId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntExemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor IntExemplar
         traceId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"traceId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntExemplar
+            )
+            :: Data.ProtoLens.FieldDescriptor IntExemplar
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, filteredLabels__field_descriptor)
           , (Data.ProtoLens.Tag 2, timeUnixNano__field_descriptor)
@@ -4789,10 +4789,10 @@ instance Data.ProtoLens.Message IntExemplar where
       , _IntExemplar'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          IntExemplar ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser IntExemplar
+    let loop
+          :: IntExemplar
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser IntExemplar
         loop x mutable'filteredLabels =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -5083,14 +5083,14 @@ instance Data.ProtoLens.Message IntGauge where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntGauge
+            )
+            :: Data.ProtoLens.FieldDescriptor IntGauge
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, dataPoints__field_descriptor)]
   unknownFields =
@@ -5103,10 +5103,10 @@ instance Data.ProtoLens.Message IntGauge where
       , _IntGauge'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          IntGauge ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser IntGauge
+    let loop
+          :: IntGauge
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser IntGauge
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -5283,25 +5283,25 @@ instance Data.ProtoLens.Message IntHistogram where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntHistogramDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntHistogramDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogram
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogram
         aggregationTemporality__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "aggregation_temporality"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"aggregationTemporality")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogram
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogram
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, dataPoints__field_descriptor)
           , (Data.ProtoLens.Tag 2, aggregationTemporality__field_descriptor)
@@ -5317,10 +5317,10 @@ instance Data.ProtoLens.Message IntHistogram where
       , _IntHistogram'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          IntHistogram ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntHistogramDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser IntHistogram
+    let loop
+          :: IntHistogram
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntHistogramDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser IntHistogram
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -5664,91 +5664,91 @@ instance Data.ProtoLens.Message IntHistogramDataPoint where
     let labels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"labels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         count__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"count")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         sum__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "sum"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"sum")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         bucketCounts__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "bucket_counts"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Packed
                 (Data.ProtoLens.Field.field @"bucketCounts")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         explicitBounds__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "explicit_bounds"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Packed
                 (Data.ProtoLens.Field.field @"explicitBounds")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
         exemplars__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exemplars"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntExemplar
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntExemplar
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"exemplars")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor IntHistogramDataPoint
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, labels__field_descriptor)
           , (Data.ProtoLens.Tag 2, startTimeUnixNano__field_descriptor)
@@ -5776,13 +5776,13 @@ instance Data.ProtoLens.Message IntHistogramDataPoint where
       , _IntHistogramDataPoint'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          IntHistogramDataPoint ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Word.Word64 ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntExemplar ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Prelude.Double ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser IntHistogramDataPoint
+    let loop
+          :: IntHistogramDataPoint
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Word.Word64
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntExemplar
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Unboxed.Vector Data.ProtoLens.Encoding.Growing.RealWorld Prelude.Double
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser IntHistogramDataPoint
         loop
           x
           mutable'bucketCounts
@@ -6339,36 +6339,36 @@ instance Data.ProtoLens.Message IntSum where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntSum
+            )
+            :: Data.ProtoLens.FieldDescriptor IntSum
         aggregationTemporality__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "aggregation_temporality"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"aggregationTemporality")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntSum
+            )
+            :: Data.ProtoLens.FieldDescriptor IntSum
         isMonotonic__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "is_monotonic"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BoolField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Bool
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BoolField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Bool
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"isMonotonic")
-            ) ::
-            Data.ProtoLens.FieldDescriptor IntSum
+            )
+            :: Data.ProtoLens.FieldDescriptor IntSum
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, dataPoints__field_descriptor)
           , (Data.ProtoLens.Tag 2, aggregationTemporality__field_descriptor)
@@ -6386,10 +6386,10 @@ instance Data.ProtoLens.Message IntSum where
       , _IntSum'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          IntSum ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser IntSum
+    let loop
+          :: IntSum
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld IntDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser IntSum
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -6984,116 +6984,116 @@ instance Data.ProtoLens.Message Metric where
     let name__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "name"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"name")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         description__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "description"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"description")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         unit__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "unit"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"unit")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         intGauge__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "int_gauge"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntGauge
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntGauge
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'intGauge")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         gauge__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "gauge"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Gauge
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Gauge
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'gauge")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         intSum__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "int_sum"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntSum
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntSum
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'intSum")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         sum__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "sum"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Sum
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Sum
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'sum")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         intHistogram__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "int_histogram"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor IntHistogram
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor IntHistogram
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'intHistogram")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         histogram__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "histogram"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Histogram
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Histogram
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'histogram")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         exponentialHistogram__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exponential_histogram"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ExponentialHistogram
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ExponentialHistogram
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'exponentialHistogram")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
         summary__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "summary"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Summary
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Summary
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'summary")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Metric
+            )
+            :: Data.ProtoLens.FieldDescriptor Metric
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, name__field_descriptor)
           , (Data.ProtoLens.Tag 2, description__field_descriptor)
@@ -7534,8 +7534,8 @@ instance Control.DeepSeq.NFData Metric'Data where
   rnf (Metric'Summary x__) = Control.DeepSeq.rnf x__
 
 
-_Metric'IntGauge ::
-  Data.ProtoLens.Prism.Prism' Metric'Data IntGauge
+_Metric'IntGauge
+  :: Data.ProtoLens.Prism.Prism' Metric'Data IntGauge
 _Metric'IntGauge =
   Data.ProtoLens.Prism.prism'
     Metric'IntGauge
@@ -7579,8 +7579,8 @@ _Metric'Sum =
     )
 
 
-_Metric'IntHistogram ::
-  Data.ProtoLens.Prism.Prism' Metric'Data IntHistogram
+_Metric'IntHistogram
+  :: Data.ProtoLens.Prism.Prism' Metric'Data IntHistogram
 _Metric'IntHistogram =
   Data.ProtoLens.Prism.prism'
     Metric'IntHistogram
@@ -7591,8 +7591,8 @@ _Metric'IntHistogram =
     )
 
 
-_Metric'Histogram ::
-  Data.ProtoLens.Prism.Prism' Metric'Data Histogram
+_Metric'Histogram
+  :: Data.ProtoLens.Prism.Prism' Metric'Data Histogram
 _Metric'Histogram =
   Data.ProtoLens.Prism.prism'
     Metric'Histogram
@@ -7603,8 +7603,8 @@ _Metric'Histogram =
     )
 
 
-_Metric'ExponentialHistogram ::
-  Data.ProtoLens.Prism.Prism' Metric'Data ExponentialHistogram
+_Metric'ExponentialHistogram
+  :: Data.ProtoLens.Prism.Prism' Metric'Data ExponentialHistogram
 _Metric'ExponentialHistogram =
   Data.ProtoLens.Prism.prism'
     Metric'ExponentialHistogram
@@ -7683,14 +7683,14 @@ instance Data.ProtoLens.Message MetricsData where
     let resourceMetrics__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource_metrics"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ResourceMetrics
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ResourceMetrics
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"resourceMetrics")
-            ) ::
-            Data.ProtoLens.FieldDescriptor MetricsData
+            )
+            :: Data.ProtoLens.FieldDescriptor MetricsData
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, resourceMetrics__field_descriptor)]
   unknownFields =
@@ -7703,10 +7703,10 @@ instance Data.ProtoLens.Message MetricsData where
       , _MetricsData'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          MetricsData ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld ResourceMetrics ->
-          Data.ProtoLens.Encoding.Bytes.Parser MetricsData
+    let loop
+          :: MetricsData
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld ResourceMetrics
+          -> Data.ProtoLens.Encoding.Bytes.Parser MetricsData
         loop x mutable'resourceMetrics =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -8070,89 +8070,89 @@ instance Data.ProtoLens.Message NumberDataPoint where
     let attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         labels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"labels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         exemplars__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "exemplars"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Exemplar
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Exemplar
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"exemplars")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         flags__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "flags"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"flags")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         asDouble__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "as_double"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'asDouble")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
         asInt__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "as_int"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.SFixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'asInt")
-            ) ::
-            Data.ProtoLens.FieldDescriptor NumberDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor NumberDataPoint
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 7, attributes__field_descriptor)
           , (Data.ProtoLens.Tag 1, labels__field_descriptor)
@@ -8179,12 +8179,12 @@ instance Data.ProtoLens.Message NumberDataPoint where
       , _NumberDataPoint'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          NumberDataPoint ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Exemplar ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser NumberDataPoint
+    let loop
+          :: NumberDataPoint
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Exemplar
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser NumberDataPoint
         loop x mutable'attributes mutable'exemplars mutable'labels =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -8549,8 +8549,8 @@ instance Control.DeepSeq.NFData NumberDataPoint'Value where
   rnf (NumberDataPoint'AsInt x__) = Control.DeepSeq.rnf x__
 
 
-_NumberDataPoint'AsDouble ::
-  Data.ProtoLens.Prism.Prism' NumberDataPoint'Value Prelude.Double
+_NumberDataPoint'AsDouble
+  :: Data.ProtoLens.Prism.Prism' NumberDataPoint'Value Prelude.Double
 _NumberDataPoint'AsDouble =
   Data.ProtoLens.Prism.prism'
     NumberDataPoint'AsDouble
@@ -8561,8 +8561,8 @@ _NumberDataPoint'AsDouble =
     )
 
 
-_NumberDataPoint'AsInt ::
-  Data.ProtoLens.Prism.Prism' NumberDataPoint'Value Data.Int.Int64
+_NumberDataPoint'AsInt
+  :: Data.ProtoLens.Prism.Prism' NumberDataPoint'Value Data.Int.Int64
 _NumberDataPoint'AsInt =
   Data.ProtoLens.Prism.prism'
     NumberDataPoint'AsInt
@@ -8672,35 +8672,35 @@ instance Data.ProtoLens.Message ResourceMetrics where
     let resource__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Resource.V1.Resource.Resource
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Resource.V1.Resource.Resource
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'resource")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ResourceMetrics
+            )
+            :: Data.ProtoLens.FieldDescriptor ResourceMetrics
         instrumentationLibraryMetrics__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "instrumentation_library_metrics"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor InstrumentationLibraryMetrics
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor InstrumentationLibraryMetrics
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"instrumentationLibraryMetrics")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ResourceMetrics
+            )
+            :: Data.ProtoLens.FieldDescriptor ResourceMetrics
         schemaUrl__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "schema_url"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"schemaUrl")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ResourceMetrics
+            )
+            :: Data.ProtoLens.FieldDescriptor ResourceMetrics
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
           ,
@@ -8721,10 +8721,10 @@ instance Data.ProtoLens.Message ResourceMetrics where
       , _ResourceMetrics'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ResourceMetrics ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld InstrumentationLibraryMetrics ->
-          Data.ProtoLens.Encoding.Bytes.Parser ResourceMetrics
+    let loop
+          :: ResourceMetrics
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld InstrumentationLibraryMetrics
+          -> Data.ProtoLens.Encoding.Bytes.Parser ResourceMetrics
         loop x mutable'instrumentationLibraryMetrics =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -8997,36 +8997,36 @@ instance Data.ProtoLens.Message Sum where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor NumberDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor NumberDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Sum
+            )
+            :: Data.ProtoLens.FieldDescriptor Sum
         aggregationTemporality__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "aggregation_temporality"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor AggregationTemporality
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"aggregationTemporality")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Sum
+            )
+            :: Data.ProtoLens.FieldDescriptor Sum
         isMonotonic__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "is_monotonic"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BoolField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Bool
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BoolField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Bool
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"isMonotonic")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Sum
+            )
+            :: Data.ProtoLens.FieldDescriptor Sum
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, dataPoints__field_descriptor)
           , (Data.ProtoLens.Tag 2, aggregationTemporality__field_descriptor)
@@ -9044,10 +9044,10 @@ instance Data.ProtoLens.Message Sum where
       , _Sum'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Sum ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld NumberDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser Sum
+    let loop
+          :: Sum
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld NumberDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser Sum
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -9283,14 +9283,14 @@ instance Data.ProtoLens.Message Summary where
     let dataPoints__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "data_points"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor SummaryDataPoint
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor SummaryDataPoint
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"dataPoints")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Summary
+            )
+            :: Data.ProtoLens.FieldDescriptor Summary
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, dataPoints__field_descriptor)]
   unknownFields =
@@ -9303,10 +9303,10 @@ instance Data.ProtoLens.Message Summary where
       , _Summary'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Summary ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld SummaryDataPoint ->
-          Data.ProtoLens.Encoding.Bytes.Parser Summary
+    let loop
+          :: Summary
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld SummaryDataPoint
+          -> Data.ProtoLens.Encoding.Bytes.Parser Summary
         loop x mutable'dataPoints =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -9593,91 +9593,91 @@ instance Data.ProtoLens.Message SummaryDataPoint where
     let attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         labels__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "labels"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"labels")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         count__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"count")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         sum__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "sum"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"sum")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         quantileValues__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "quantile_values"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor SummaryDataPoint'ValueAtQuantile
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor SummaryDataPoint'ValueAtQuantile
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"quantileValues")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
         flags__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "flags"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"flags")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 7, attributes__field_descriptor)
           , (Data.ProtoLens.Tag 1, labels__field_descriptor)
@@ -9705,12 +9705,12 @@ instance Data.ProtoLens.Message SummaryDataPoint where
       , _SummaryDataPoint'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          SummaryDataPoint ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld SummaryDataPoint'ValueAtQuantile ->
-          Data.ProtoLens.Encoding.Bytes.Parser SummaryDataPoint
+    let loop
+          :: SummaryDataPoint
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.StringKeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld SummaryDataPoint'ValueAtQuantile
+          -> Data.ProtoLens.Encoding.Bytes.Parser SummaryDataPoint
         loop x mutable'attributes mutable'labels mutable'quantileValues =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -10135,25 +10135,25 @@ instance Data.ProtoLens.Message SummaryDataPoint'ValueAtQuantile where
     let quantile__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "quantile"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"quantile")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint'ValueAtQuantile
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint'ValueAtQuantile
         value__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "value"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField ::
-                Data.ProtoLens.FieldTypeDescriptor Prelude.Double
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.DoubleField
+                :: Data.ProtoLens.FieldTypeDescriptor Prelude.Double
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"value")
-            ) ::
-            Data.ProtoLens.FieldDescriptor SummaryDataPoint'ValueAtQuantile
+            )
+            :: Data.ProtoLens.FieldDescriptor SummaryDataPoint'ValueAtQuantile
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, quantile__field_descriptor)
           , (Data.ProtoLens.Tag 2, value__field_descriptor)
@@ -10171,9 +10171,9 @@ instance Data.ProtoLens.Message SummaryDataPoint'ValueAtQuantile where
       , _SummaryDataPoint'ValueAtQuantile'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          SummaryDataPoint'ValueAtQuantile ->
-          Data.ProtoLens.Encoding.Bytes.Parser SummaryDataPoint'ValueAtQuantile
+    let loop
+          :: SummaryDataPoint'ValueAtQuantile
+          -> Data.ProtoLens.Encoding.Bytes.Parser SummaryDataPoint'ValueAtQuantile
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd

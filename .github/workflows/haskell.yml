@@ -44,7 +44,7 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: stack-${{ runner.os }}-9.0-${{ hashFiles('stack-ghc-9.0.yaml.lock') }}-2
+          key: stack-${{ runner.os }}-9.0-${{ hashFiles('stack-ghc-9.0.yaml.lock') }}-3
           restore-keys: |
       - run: stack --stack-yaml stack-ghc-9.0.yaml build --only-dependencies
       - run: stack --stack-yaml stack-ghc-9.0.yaml build

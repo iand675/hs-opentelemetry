@@ -184,35 +184,35 @@ instance Data.ProtoLens.Message InstrumentationLibrarySpans where
     let instrumentationLibrary__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "instrumentation_library"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.InstrumentationLibrary
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.InstrumentationLibrary
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'instrumentationLibrary")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibrarySpans
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibrarySpans
         spans__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "spans"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Span
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Span
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"spans")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibrarySpans
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibrarySpans
         schemaUrl__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "schema_url"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"schemaUrl")
-            ) ::
-            Data.ProtoLens.FieldDescriptor InstrumentationLibrarySpans
+            )
+            :: Data.ProtoLens.FieldDescriptor InstrumentationLibrarySpans
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, instrumentationLibrary__field_descriptor)
           , (Data.ProtoLens.Tag 2, spans__field_descriptor)
@@ -232,10 +232,10 @@ instance Data.ProtoLens.Message InstrumentationLibrarySpans where
       , _InstrumentationLibrarySpans'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          InstrumentationLibrarySpans ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Span ->
-          Data.ProtoLens.Encoding.Bytes.Parser InstrumentationLibrarySpans
+    let loop
+          :: InstrumentationLibrarySpans
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Span
+          -> Data.ProtoLens.Encoding.Bytes.Parser InstrumentationLibrarySpans
         loop x mutable'spans =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -523,35 +523,35 @@ instance Data.ProtoLens.Message ResourceSpans where
     let resource__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Resource.V1.Resource.Resource
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Resource.V1.Resource.Resource
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'resource")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ResourceSpans
+            )
+            :: Data.ProtoLens.FieldDescriptor ResourceSpans
         instrumentationLibrarySpans__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "instrumentation_library_spans"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor InstrumentationLibrarySpans
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor InstrumentationLibrarySpans
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"instrumentationLibrarySpans")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ResourceSpans
+            )
+            :: Data.ProtoLens.FieldDescriptor ResourceSpans
         schemaUrl__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "schema_url"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"schemaUrl")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ResourceSpans
+            )
+            :: Data.ProtoLens.FieldDescriptor ResourceSpans
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
           ,
@@ -572,10 +572,10 @@ instance Data.ProtoLens.Message ResourceSpans where
       , _ResourceSpans'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ResourceSpans ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld InstrumentationLibrarySpans ->
-          Data.ProtoLens.Encoding.Bytes.Parser ResourceSpans
+    let loop
+          :: ResourceSpans
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld InstrumentationLibrarySpans
+          -> Data.ProtoLens.Encoding.Bytes.Parser ResourceSpans
         loop x mutable'instrumentationLibrarySpans =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -1067,167 +1067,167 @@ instance Data.ProtoLens.Message Span where
     let traceId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"traceId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         spanId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "span_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"spanId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         traceState__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_state"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"traceState")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         parentSpanId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "parent_span_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"parentSpanId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         name__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "name"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"name")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         kind__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "kind"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor Span'SpanKind
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor Span'SpanKind
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"kind")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         startTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "start_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"startTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         endTimeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "end_time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"endTimeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         droppedAttributesCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "dropped_attributes_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"droppedAttributesCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         events__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "events"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Span'Event
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Span'Event
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"events")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         droppedEventsCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "dropped_events_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"droppedEventsCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         links__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "links"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Span'Link
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Span'Link
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"links")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         droppedLinksCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "dropped_links_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"droppedLinksCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
         status__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "status"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Status
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Status
             )
             ( Data.ProtoLens.OptionalField
                 (Data.ProtoLens.Field.field @"maybe'status")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span
+            )
+            :: Data.ProtoLens.FieldDescriptor Span
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, traceId__field_descriptor)
           , (Data.ProtoLens.Tag 2, spanId__field_descriptor)
@@ -1269,12 +1269,12 @@ instance Data.ProtoLens.Message Span where
       , _Span'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Span ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Span'Event ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Span'Link ->
-          Data.ProtoLens.Encoding.Bytes.Parser Span
+    let loop
+          :: Span
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Span'Event
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Span'Link
+          -> Data.ProtoLens.Encoding.Bytes.Parser Span
         loop x mutable'attributes mutable'events mutable'links =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -2087,47 +2087,47 @@ instance Data.ProtoLens.Message Span'Event where
     let timeUnixNano__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "time_unix_nano"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.Fixed64Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word64
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"timeUnixNano")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Event
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Event
         name__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "name"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"name")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Event
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Event
         attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Event
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Event
         droppedAttributesCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "dropped_attributes_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"droppedAttributesCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Event
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Event
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, timeUnixNano__field_descriptor)
           , (Data.ProtoLens.Tag 2, name__field_descriptor)
@@ -2147,10 +2147,10 @@ instance Data.ProtoLens.Message Span'Event where
       , _Span'Event'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Span'Event ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser Span'Event
+    let loop
+          :: Span'Event
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser Span'Event
         loop x mutable'attributes =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -2476,58 +2476,58 @@ instance Data.ProtoLens.Message Span'Link where
     let traceId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"traceId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Link
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Link
         spanId__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "span_id"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.BytesField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.ByteString.ByteString
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"spanId")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Link
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Link
         traceState__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "trace_state"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"traceState")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Link
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Link
         attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Link
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Link
         droppedAttributesCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "dropped_attributes_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"droppedAttributesCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Span'Link
+            )
+            :: Data.ProtoLens.FieldDescriptor Span'Link
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, traceId__field_descriptor)
           , (Data.ProtoLens.Tag 2, spanId__field_descriptor)
@@ -2549,10 +2549,10 @@ instance Data.ProtoLens.Message Span'Link where
       , _Span'Link'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Span'Link ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser Span'Link
+    let loop
+          :: Span'Link
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser Span'Link
         loop x mutable'attributes =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -3017,36 +3017,36 @@ instance Data.ProtoLens.Message Status where
     let deprecatedCode__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "deprecated_code"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor Status'DeprecatedStatusCode
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor Status'DeprecatedStatusCode
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"deprecatedCode")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Status
+            )
+            :: Data.ProtoLens.FieldDescriptor Status
         message__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "message"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.StringField
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Text.Text
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"message")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Status
+            )
+            :: Data.ProtoLens.FieldDescriptor Status
         code__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "code"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField ::
-                Data.ProtoLens.FieldTypeDescriptor Status'StatusCode
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.EnumField
+                :: Data.ProtoLens.FieldTypeDescriptor Status'StatusCode
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"code")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Status
+            )
+            :: Data.ProtoLens.FieldDescriptor Status
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, deprecatedCode__field_descriptor)
           , (Data.ProtoLens.Tag 2, message__field_descriptor)
@@ -3646,14 +3646,14 @@ instance Data.ProtoLens.Message TracesData where
     let resourceSpans__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource_spans"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor ResourceSpans
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor ResourceSpans
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"resourceSpans")
-            ) ::
-            Data.ProtoLens.FieldDescriptor TracesData
+            )
+            :: Data.ProtoLens.FieldDescriptor TracesData
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, resourceSpans__field_descriptor)]
   unknownFields =
@@ -3666,10 +3666,10 @@ instance Data.ProtoLens.Message TracesData where
       , _TracesData'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          TracesData ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld ResourceSpans ->
-          Data.ProtoLens.Encoding.Bytes.Parser TracesData
+    let loop
+          :: TracesData
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld ResourceSpans
+          -> Data.ProtoLens.Encoding.Bytes.Parser TracesData
         loop x mutable'resourceSpans =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd

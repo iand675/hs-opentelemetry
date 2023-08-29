@@ -136,25 +136,25 @@ instance Data.ProtoLens.Message Resource where
     let attributes__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "attributes"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"attributes")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Resource
+            )
+            :: Data.ProtoLens.FieldDescriptor Resource
         droppedAttributesCount__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "dropped_attributes_count"
-            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field ::
-                Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
+            ( Data.ProtoLens.ScalarField Data.ProtoLens.UInt32Field
+                :: Data.ProtoLens.FieldTypeDescriptor Data.Word.Word32
             )
             ( Data.ProtoLens.PlainField
                 Data.ProtoLens.Optional
                 (Data.ProtoLens.Field.field @"droppedAttributesCount")
-            ) ::
-            Data.ProtoLens.FieldDescriptor Resource
+            )
+            :: Data.ProtoLens.FieldDescriptor Resource
      in Data.Map.fromList
           [ (Data.ProtoLens.Tag 1, attributes__field_descriptor)
           , (Data.ProtoLens.Tag 2, droppedAttributesCount__field_descriptor)
@@ -170,10 +170,10 @@ instance Data.ProtoLens.Message Resource where
       , _Resource'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          Resource ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue ->
-          Data.ProtoLens.Encoding.Bytes.Parser Resource
+    let loop
+          :: Resource
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
+          -> Data.ProtoLens.Encoding.Bytes.Parser Resource
         loop x mutable'attributes =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
