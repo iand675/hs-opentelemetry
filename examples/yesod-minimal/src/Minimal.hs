@@ -90,7 +90,7 @@ instance YesodPersist Minimal where
       setAlterBackend defaultSqlPoolHooks $ \conn -> do
         -- TODO, could probably not do this on each runDB call.
         staticAttrs <- case getSimpleConn conn of
-          Nothing -> pure []
+          Nothing -> pure mempty
           Just pgConn -> staticConnectionAttributes pgConn
         wrapSqlBackend staticAttrs conn
 

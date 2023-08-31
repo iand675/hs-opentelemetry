@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
@@ -7,7 +8,8 @@ import Control.Monad (forM_, when)
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
 import Data.CaseInsensitive (foldedCase)
-import Data.Foldable (Foldable (toList))
+import qualified Data.HashMap.Strict as H
+import Data.Maybe (mapMaybe)
 import qualified Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -86,8 +88,9 @@ instrumentRequest conf ctxt req = do
         )
       ]
     addAttributes s
-      $ concatMap
-        (\h -> toList $ (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
+      $ H.fromList
+      $ mapMaybe
+        (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
       $ requestHeadersToRecord conf
 
   hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tp) ctxt $ requestHeaders req
@@ -124,6 +127,7 @@ instrumentResponse conf ctxt resp = do
       -- , ("net.peer.port")
       ]
     addAttributes s
-      $ concatMap
-        (\h -> toList $ (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
+      $ H.fromList
+      $ mapMaybe
+        (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
       $ responseHeadersToRecord conf

@@ -1,10 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module OpenTelemetry.Instrumentation.Persistent (
   wrapSqlBackend,
+  wrapSqlBackend',
 ) where
 
 import Control.Monad
@@ -12,6 +14,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Acquire.Internal
 import Data.IORef
+import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -64,7 +67,7 @@ lookupOriginalConnection :: SqlBackend -> Maybe SqlBackend
 lookupOriginalConnection = Vault.lookup originalConnectionKey . getConnVault
 
 
-connectionLevelAttributesKey :: Vault.Key [(Text, Attribute)]
+connectionLevelAttributesKey :: Vault.Key (H.HashMap Text Attribute)
 connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {-# NOINLINE connectionLevelAttributesKey #-}
 
@@ -72,14 +75,27 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
  so that queries are tracked appropriately in the tracing hierarchy.
 -}
-wrapSqlBackend
-  :: (MonadIO m)
-  => [(Text, Attribute)]
-  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  -> SqlBackend
-  -> m SqlBackend
+wrapSqlBackend ::
+  MonadIO m =>
+  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  H.HashMap Text Attribute ->
+  SqlBackend ->
+  m SqlBackend
 wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
+  wrapSqlBackend' tp attrs conn_
+
+
+{- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
+so that queries are tracked appropriately in the tracing hierarchy.
+-}
+wrapSqlBackend' :: MonadIO m =>
+  TracerProvider ->
+  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  H.HashMap Text Attribute ->
+  SqlBackend ->
+  m SqlBackend
+wrapSqlBackend' tp attrs conn_ = do
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
   {- A connection is acquired when the connection pool is asked for a connection. The runSqlPool function in Persistent then
     immediately begins a transaction and ensures the transaction is committed or rolled back. Since we want to capture the
@@ -103,7 +119,7 @@ wrapSqlBackend attrs conn_ = do
                                 t
                                 ctxt
                                 sql
-                                (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute sql) : attrs})
+                                (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs})
                             adjustContext (insertSpan s)
                             pure (lookupSpan ctxt, s)
                           spanCleanup (parent, s) = do
@@ -124,7 +140,7 @@ wrapSqlBackend attrs conn_ = do
                             )
                             (stmtQueryAcquireF f)
                   , stmtExecute = \ps -> do
-                      inSpan' t sql (defaultSpanArguments {kind = Client, attributes = ("db.statement", toAttribute sql) : attrs}) $ \s -> do
+                      inSpan' t sql (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs}) $ \s -> do
                         annotateBasics s conn
                         stmtExecute stmt ps
                   , stmtReset = stmtReset stmt
@@ -132,7 +148,7 @@ wrapSqlBackend attrs conn_ = do
                   }
           }
 
-  let conn' =
+      conn' =
         conn
           { connHooks = hooks
           , connBegin = \f mIso -> do

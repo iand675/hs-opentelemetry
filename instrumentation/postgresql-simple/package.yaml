@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-postgresql-simple
-version:             0.0.1.0
+version:             0.1.0.0
 
 <<: *preface
 
@@ -20,7 +20,7 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.0.3.*
+- hs-opentelemetry-api == 0.1.*
 - network
 - iproute
 - postgresql-simple
@@ -28,6 +28,7 @@ dependencies:
 - text
 - bytestring
 - unliftio # todo, unliftio-core
+- unordered-containers
 
 library:
   source-dirs: src

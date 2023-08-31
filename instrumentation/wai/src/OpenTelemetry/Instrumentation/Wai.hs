@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module OpenTelemetry.Instrumentation.Wai (
@@ -26,20 +27,19 @@ import System.IO.Unsafe
 
 
 newOpenTelemetryWaiMiddleware :: (HasCallStack) => IO Middleware
-newOpenTelemetryWaiMiddleware = getGlobalTracerProvider >>= newOpenTelemetryWaiMiddleware'
-
+newOpenTelemetryWaiMiddleware = newOpenTelemetryWaiMiddleware' <$> getGlobalTracerProvider
 
 newOpenTelemetryWaiMiddleware'
   :: (HasCallStack)
   => TracerProvider
-  -> IO Middleware
-newOpenTelemetryWaiMiddleware' tp = do
+  -> Middleware
+newOpenTelemetryWaiMiddleware' tp =
   let waiTracer =
         makeTracer
           tp
           "opentelemetry-instrumentation-wai"
           (TracerOptions Nothing)
-  pure $ middleware waiTracer
+  in middleware waiTracer
   where
     usefulCallsite = callerAttributes
     middleware :: Tracer -> Middleware

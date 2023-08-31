@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-instrumentation-conduit
-version:            0.0.1.1
+version:            0.1.0.0
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/conduit#readme>
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
@@ -34,7 +34,7 @@ library
   build-depends:
       base >=4.7 && <5
     , conduit
-    , hs-opentelemetry-api ==0.0.3.*
+    , hs-opentelemetry-api ==0.1.*
     , text
   default-language: Haskell2010
 
@@ -49,7 +49,7 @@ test-suite hs-opentelemetry-instrumentation-conduit-test
   build-depends:
       base >=4.7 && <5
     , conduit
-    , hs-opentelemetry-api ==0.0.3.*
+    , hs-opentelemetry-api ==0.1.*
     , hs-opentelemetry-instrumentation-conduit
     , text
   default-language: Haskell2010

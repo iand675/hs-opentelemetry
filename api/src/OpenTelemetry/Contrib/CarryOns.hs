@@ -4,6 +4,7 @@ module OpenTelemetry.Contrib.CarryOns (
 ) where
 
 import Control.Monad.IO.Class
+import qualified Data.HashMap.Strict as H
 import Data.IORef (modifyIORef')
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -16,14 +17,14 @@ import OpenTelemetry.Trace.Core
 import System.IO.Unsafe (unsafePerformIO)
 
 
-carryOnKey :: Key [(Text, Attribute)]
+carryOnKey :: Key (H.HashMap Text Attribute)
 carryOnKey = unsafePerformIO $ newKey "carryOn"
 {-# NOINLINE carryOnKey #-}
 
 
-alterCarryOns :: (MonadIO m) => ([(Text, Attribute)] -> [(Text, Attribute)]) -> m ()
+alterCarryOns :: (MonadIO m) => (H.HashMap Text Attribute -> H.HashMap Text Attribute) -> m ()
 alterCarryOns f = adjustContext $ \ctxt ->
-  Context.insert carryOnKey (f $ fromMaybe [] $ Context.lookup carryOnKey ctxt) ctxt
+  Context.insert carryOnKey (f $ fromMaybe mempty $ Context.lookup carryOnKey ctxt) ctxt
 
 
 {- |
@@ -40,10 +41,10 @@ withCarryOnProcessor p =
     { processorOnStart = processorOnStart p
     , processorOnEnd = \spanRef -> do
         ctxt <- getContext
-        let carryOns = fromMaybe [] $ Context.lookup carryOnKey ctxt
-        case carryOns of
-          [] -> pure ()
-          _ -> do
+        let carryOns = fromMaybe mempty $ Context.lookup carryOnKey ctxt
+        if H.null carryOns
+          then pure ()
+          else do
             -- I doubt we need atomicity at this point. Hopefully people aren't trying to modify the same span after it has ended from multiple threads.
             modifyIORef' spanRef $ \is ->
               is
