@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-utils-exceptions
-version:             0.1.0.0
+version:             0.2.0.0
 
 <<: *preface
 
@@ -20,7 +20,7 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.0.3.*
+- hs-opentelemetry-api == 0.1.*
 - hs-opentelemetry-sdk == 0.0.3.*
 - text
 - exceptions

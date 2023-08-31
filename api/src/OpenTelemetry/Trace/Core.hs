@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -148,6 +149,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Data.Coerce
+import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -202,7 +204,7 @@ createSpan
   -- ^ Additional span information
   -> m Span
   -- ^ The created span.
-createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes = attributes args ++ callerAttributes})
+createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes = H.union (attributes args) callerAttributes})
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -271,7 +273,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                         A.addAttributes
                           (limitBy t spanAttributeCountLimit)
                           emptyAttributes
-                          (concat [additionalInfo, attrs, attributes])
+                          (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                          in frozenBoundedCollection limitedLinks $ fmap freezeLink links
@@ -301,20 +303,20 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         }
 
 
-ownCodeAttributes :: (HasCallStack) => [(Text, Attribute)]
+ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
 ownCodeAttributes = case getCallStack callStack of
   _ : caller : _ -> srcAttributes caller
   _ -> mempty
 
 
-callerAttributes :: (HasCallStack) => [(Text, Attribute)]
+callerAttributes :: (HasCallStack) => H.HashMap Text Attribute
 callerAttributes = case getCallStack callStack of
   _ : _ : caller : _ -> srcAttributes caller
   _ -> mempty
 
 
-srcAttributes :: (String, SrcLoc) -> [(Text, Attribute)]
-srcAttributes (fn, loc) =
+srcAttributes :: (String, SrcLoc) -> H.HashMap Text Attribute
+srcAttributes (fn, loc) = H.fromList
   [ ("code.function", toAttribute $ T.pack fn)
   , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
   , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
@@ -326,8 +328,8 @@ srcAttributes (fn, loc) =
 {- | Attributes are added to the end of the span argument list, so will be discarded
  if the number of attributes in the span exceeds the limit.
 -}
-addAttributesToSpanArguments :: [(Text, Attribute)] -> SpanArguments -> SpanArguments
-addAttributesToSpanArguments attrs args = args {attributes = attributes args ++ attrs}
+addAttributesToSpanArguments :: H.HashMap Text Attribute -> SpanArguments -> SpanArguments
+addAttributesToSpanArguments attrs args = args {attributes = H.union (attributes args) attrs}
 
 
 {- | The simplest function for annotating code with trace information.
@@ -347,7 +349,7 @@ inSpan
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
   -> m a
-inSpan t n args m = inSpan'' t n (args {attributes = attributes args ++ callerAttributes}) (const m)
+inSpan t n args m = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
 
 
 inSpan'
@@ -358,7 +360,7 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' t n args = inSpan'' t n (args {attributes = attributes args ++ callerAttributes})
+inSpan' t n args = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
 
 
 inSpan''
@@ -448,7 +450,7 @@ addAttribute (Dropped _) _ _ = pure ()
 
  @since 0.0.1.0
 -}
-addAttributes :: (MonadIO m) => Span -> [(Text, A.Attribute)] -> m ()
+addAttributes :: (MonadIO m) => Span -> H.HashMap Text A.Attribute -> m ()
 addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
@@ -569,7 +571,7 @@ endSpan (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-recordException :: (MonadIO m, Exception e) => Span -> [(Text, Attribute)] -> Maybe Timestamp -> e -> m ()
+recordException :: (MonadIO m, Exception e) => Span -> H.HashMap Text Attribute -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
@@ -577,11 +579,12 @@ recordException s attrs ts e = liftIO $ do
     NewEvent
       { newEventName = "exception"
       , newEventAttributes =
-          attrs
-            ++ [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
-               , ("exception.message", A.toAttribute message)
-               , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
-               ]
+          H.union
+            attrs
+            [ ("exception.type", A.toAttribute $ T.pack $ show $ typeOf e)
+            , ("exception.message", A.toAttribute message)
+            , ("exception.stacktrace", A.toAttribute $ T.unlines $ map T.pack cs)
+            ]
       , newEventTimestamp = ts
       }
 

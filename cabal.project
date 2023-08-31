@@ -15,6 +15,7 @@ packages:
   , instrumentation/hspec
   , instrumentation/http-client
   , instrumentation/persistent
+  , instrumentation/persistent-mysql
   , instrumentation/postgresql-simple
   , instrumentation/yesod
   , instrumentation/wai

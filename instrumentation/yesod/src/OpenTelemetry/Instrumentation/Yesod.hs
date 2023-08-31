@@ -16,6 +16,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
+import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
@@ -210,7 +211,7 @@ openTelemetryYesodMiddleware rr m = do
   req <- waiRequest
   mr <- getCurrentRoute
   let mspan = requestContext req >>= Context.lookupSpan
-      sharedAttributes =
+      sharedAttributes = H.fromList $
         ("http.framework", toAttribute ("yesod" :: Text))
           : catMaybes
             [ do
