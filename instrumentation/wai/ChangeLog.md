@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+## 0.1.0.0
+
 ### Breaking changes
 
 - Change a type of `newOpenTelemetryWaiMiddleware'` from `TracerProvider -> IO Middleware` to `TracerProvider -> Middleware` #86
