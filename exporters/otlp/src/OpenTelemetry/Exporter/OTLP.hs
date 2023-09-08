@@ -240,24 +240,10 @@ otlpExporter conf = do
                   -- calling code will swallow the exception and cause
                   -- a problem.
                   case fromException err of
-                    Just (SomeAsyncException _) ->
+                    Just (SomeAsyncException _) -> do
                       throwIO err
                     Nothing ->
-                      -- The "default" case is to export to localhost.
-                      -- However, if localhost doesn't have a collector
-                      -- running, then we get a socket error.
-                      -- Instead of printing out that huge error, we'll
-                      -- just swallow it.
-                      case fromException err of
-                        Just (httpException :: HttpException)
-                          | HttpExceptionRequest req httpExceptionContent <- httpException
-                          , HTTPClient.host req == "localhost"
-                          , HTTPClient.port req == 4138
-                          , ConnectionFailure someExn <- httpExceptionContent
-                          ->
-                            pure $ Failure Nothing
-                        Nothing ->
-                          pure $ Failure $ Just err
+                      pure $ Failure $ Just err
                 Right ok -> pure ok
             else pure Success
       , exporterShutdown = pure ()
@@ -293,13 +279,17 @@ otlpExporter conf = do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
 
-      either print (\_ -> pure ()) eResp
-
       case eResp of
-        Left err@(HttpExceptionRequest _ e) ->
-          if isRetryableException e
-            then exponentialBackoff
-            else pure $ Failure $ Just $ SomeException err
+        Left err@(HttpExceptionRequest req e)
+          | HTTPClient.host req == "localhost"
+          , HTTPClient.port req == 4317 || HTTPClient.port req == 4318
+          , ConnectionFailure _someExn <- e
+            -> do
+              pure $ Failure Nothing
+          | otherwise ->
+            if isRetryableException e
+              then exponentialBackoff
+              else pure $ Failure $ Just $ SomeException err
         Left err -> do
           pure $ Failure $ Just $ SomeException err
         Right resp ->
