@@ -82,7 +82,7 @@ emptyAttributes :: Attributes
 emptyAttributes = Attributes mempty 0 0
 
 
-addAttribute :: ToAttribute a => AttributeLimits -> Attributes -> Text -> a -> Attributes
+addAttribute :: (ToAttribute a) => AttributeLimits -> Attributes -> Text -> a -> Attributes
 addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLimit of
   Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ ->
@@ -203,7 +203,7 @@ data PrimitiveAttribute
 -}
 class ToAttribute a where
   toAttribute :: a -> Attribute
-  default toAttribute :: ToPrimitiveAttribute a => a -> Attribute
+  default toAttribute :: (ToPrimitiveAttribute a) => a -> Attribute
   toAttribute = AttributeValue . toPrimitiveAttribute
 
 
@@ -254,7 +254,7 @@ instance ToAttribute Attribute where
   toAttribute = id
 
 
-instance ToPrimitiveAttribute a => ToAttribute [a] where
+instance (ToPrimitiveAttribute a) => ToAttribute [a] where
   toAttribute = AttributeArray . map toPrimitiveAttribute
 
 

@@ -2,7 +2,7 @@
 
 ## Unreleased changes
 
-### Breaking changes
+## 0.1.0.0
 
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes
 

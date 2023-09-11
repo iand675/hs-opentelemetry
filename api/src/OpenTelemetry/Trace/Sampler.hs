@@ -144,10 +144,10 @@ data ParentBasedOptions = ParentBasedOptions
 
  @since 0.1.0.0
 -}
-parentBasedOptions ::
-  -- | Root sampler
-  Sampler ->
-  ParentBasedOptions
+parentBasedOptions
+  :: Sampler
+  -- ^ Root sampler
+  -> ParentBasedOptions
 parentBasedOptions root =
   ParentBasedOptions
     { rootSampler = root

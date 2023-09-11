@@ -126,7 +126,7 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
         ]
         attrs
   (conn, backend) <- Orig.openMySQLConn ci logFunc
-  let backend' = Otel.wrapSqlBackend' tp attrs' backend
+  backend' <- Otel.wrapSqlBackend' tp attrs' backend
   pure (conn, backend')
 
 

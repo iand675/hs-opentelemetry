@@ -28,6 +28,7 @@ dependencies:
 - unliftio # TODO, unliftio-core
 - mtl
 - unordered-containers
+- clock
 
 library:
   # ghc-options: -Wall

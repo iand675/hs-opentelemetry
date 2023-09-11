@@ -80,14 +80,14 @@ mkResource = Resource . unsafeAttributesFromListIgnoringLimits . catMaybes
 {- | Utility function to convert a required resource attribute
  into the format needed for 'mkResource'.
 -}
-(.=) :: ToAttribute a => Text -> a -> Maybe (Text, Attribute)
+(.=) :: (ToAttribute a) => Text -> a -> Maybe (Text, Attribute)
 k .= v = Just (k, toAttribute v)
 
 
 {- | Utility function to convert an optional resource attribute
  into the format needed for 'mkResource'.
 -}
-(.=?) :: ToAttribute a => Text -> Maybe a -> Maybe (Text, Attribute)
+(.=?) :: (ToAttribute a) => Text -> Maybe a -> Maybe (Text, Attribute)
 k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
 
 
@@ -135,12 +135,12 @@ type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
 
  @since 0.0.1.0
 -}
-mergeResources ::
-  -- | the old resource
-  Resource old ->
-  -- | the updating resource whose attributes take precedence
-  Resource new ->
-  Resource (ResourceMerge old new)
+mergeResources
+  :: Resource old
+  -- ^ the old resource
+  -> Resource new
+  -- ^ the updating resource whose attributes take precedence
+  -> Resource (ResourceMerge old new)
 mergeResources (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
 
@@ -167,7 +167,7 @@ instance MaterializeResource 'Nothing where
   materializeResources (Resource attrs) = MaterializedResources Nothing attrs
 
 
-instance KnownSymbol s => MaterializeResource ('Just s) where
+instance (KnownSymbol s) => MaterializeResource ('Just s) where
   materializeResources (Resource attrs) = MaterializedResources (Just $ symbolVal (Proxy @s)) attrs
 
 

@@ -1,22 +1,22 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
-name:           hs-opentelemetry-sdk
-version:        0.0.3.5
-synopsis:       OpenTelemetry SDK for use in applications.
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
-category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
-homepage:       https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
-maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name:               hs-opentelemetry-sdk
+version:            0.0.3.6
+synopsis:           OpenTelemetry SDK for use in applications.
+description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/sdk#readme>
+category:           OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan, Jade Lovelace
+maintainer:         ian@iankduncan.com
+copyright:          2023 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -78,10 +78,8 @@ library
     , hs-opentelemetry-propagator-b3 ==0.0.1.*
     , hs-opentelemetry-propagator-w3c ==0.0.1.*
     , http-types
-    , mwc-random
     , network-bsd
-    , random
-    , random-bytestring
+    , random >=1.2.0
     , stm
     , text
     , transformers
@@ -116,10 +114,8 @@ test-suite hs-opentelemetry-sdk-test
     , hs-opentelemetry-sdk
     , hspec
     , http-types
-    , mwc-random
     , network-bsd
-    , random
-    , random-bytestring
+    , random >=1.2.0
     , stm
     , text
     , transformers

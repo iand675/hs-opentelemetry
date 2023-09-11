@@ -5,7 +5,7 @@ import Data.Text (Text, unpack)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Exporter.Handle
-import OpenTelemetry.Instrumentation.Hspec (wrapSpec)
+import OpenTelemetry.Instrumentation.Hspec (instrumentSpec, wrapSpec)
 import OpenTelemetry.Processor.Batch
 import OpenTelemetry.Trace hiding (inSpan)
 import qualified OpenTelemetry.Trace as Trace
@@ -77,8 +77,10 @@ main = do
 
 runTests :: IO ()
 runTests = do
-  wrapper <- wrapSpec
+  tp <- getGlobalTracerProvider
+  let tracer = makeTracer tp "hspec-example" tracerOptions
+  ctxt <- getContext
   hspecWith
     defaultConfig
-    $ wrapper (parallel Spec.spec)
+    $ instrumentSpec tracer ctxt (parallel Spec.spec)
   putStrLn "Done"

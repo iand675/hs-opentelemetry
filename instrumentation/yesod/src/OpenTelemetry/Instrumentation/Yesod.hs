@@ -27,6 +27,8 @@ import Lens.Micro
 import Network.Wai (requestHeaders)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Contrib.SpanTraversals
+import OpenTelemetry.Instrumentation.Wai (requestContext)
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO.Exception
@@ -197,22 +199,27 @@ data RouteRenderer site = RouteRenderer
   }
 
 
-openTelemetryYesodMiddleware ::
-  (ToTypedContent res) =>
-  RouteRenderer site ->
-  HandlerFor site res ->
-  HandlerFor site res
+-- TODO figure out a way to get better code locations for these spans.
+
+-- | This middleware works best when used with `OpenTelemetry.Instrumentation.Wai` middleware.
+openTelemetryYesodMiddleware
+  :: (ToTypedContent res)
+  => RouteRenderer site
+  -> HandlerFor site res
+  -> HandlerFor site res
 openTelemetryYesodMiddleware rr m = do
-  -- tracer <- OpenTelemetry.Trace.Monad.getTracer
   req <- waiRequest
-  mspan <- Context.lookupSpan <$> getContext
   mr <- getCurrentRoute
-  let sharedAttributes =
-        H.fromList $
-          catMaybes
+  let mspan = requestContext req >>= Context.lookupSpan
+      sharedAttributes = H.fromList $
+        ("http.framework", toAttribute ("yesod" :: Text))
+          : catMaybes
             [ do
                 r <- mr
                 pure ("http.route", toAttribute $ pathRender rr r)
+            , do
+                r <- mr
+                pure ("http.handler", toAttribute $ nameRender rr r)
             , do
                 ff <- lookup "X-Forwarded-For" $ requestHeaders req
                 pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
@@ -222,16 +229,20 @@ openTelemetryYesodMiddleware rr m = do
           { kind = maybe Server (const Internal) mspan
           , attributes = sharedAttributes
           }
-  mapM_ (`addAttributes` sharedAttributes) mspan
-  eResult <- inSpan' (maybe "yesod.handler.notFound" (\r -> "yesod.handler." <> nameRender rr r) mr) args $ \_s -> do
-    catch (Right <$> m) $ \e -> do
-      -- We want to mark the span as an error if it's an InternalError,
-      -- the other HCError values are 4xx status codes which don't
-      -- really count as a server error in OpenTelemetry spec parlance.
-      case e of
-        HCError (InternalError _) -> throwIO e
-        _ -> pure ()
-      pure (Left (e :: HandlerContents))
-  case eResult of
-    Left hc -> throwIO hc
-    Right normal -> pure normal
+  case mspan of
+    Nothing -> do
+      eResult <- inSpan' (maybe "notFound" (\r -> nameRender rr r) mr) args $ \_s -> do
+        catch (Right <$> m) $ \e -> do
+          -- We want to mark the span as an error if it's an InternalError,
+          -- the other HCError values are 4xx status codes which don't
+          -- really count as a server error in OpenTelemetry spec parlance.
+          case e of
+            HCError (InternalError _) -> throwIO e
+            _ -> pure ()
+          pure (Left (e :: HandlerContents))
+      case eResult of
+        Left hc -> throwIO hc
+        Right normal -> pure normal
+    Just waiSpan -> do
+      addAttributes waiSpan sharedAttributes
+      m

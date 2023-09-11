@@ -59,142 +59,142 @@ import qualified Data.ProtoLens.Runtime.Prelude as Prelude
 import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
 
 
-constantSampler ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "constantSampler" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+constantSampler
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "constantSampler" a
+     )
+  => Lens.Family2.LensLike' f s a
 constantSampler = Data.ProtoLens.Field.field @"constantSampler"
 
 
-decision ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "decision" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+decision
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "decision" a
+     )
+  => Lens.Family2.LensLike' f s a
 decision = Data.ProtoLens.Field.field @"decision"
 
 
-maxNumberOfAttributes ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maxNumberOfAttributes" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maxNumberOfAttributes
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maxNumberOfAttributes" a
+     )
+  => Lens.Family2.LensLike' f s a
 maxNumberOfAttributes =
   Data.ProtoLens.Field.field @"maxNumberOfAttributes"
 
 
-maxNumberOfAttributesPerLink ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maxNumberOfAttributesPerLink" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maxNumberOfAttributesPerLink
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maxNumberOfAttributesPerLink" a
+     )
+  => Lens.Family2.LensLike' f s a
 maxNumberOfAttributesPerLink =
   Data.ProtoLens.Field.field @"maxNumberOfAttributesPerLink"
 
 
-maxNumberOfAttributesPerTimedEvent ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maxNumberOfAttributesPerTimedEvent" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maxNumberOfAttributesPerTimedEvent
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maxNumberOfAttributesPerTimedEvent" a
+     )
+  => Lens.Family2.LensLike' f s a
 maxNumberOfAttributesPerTimedEvent =
   Data.ProtoLens.Field.field @"maxNumberOfAttributesPerTimedEvent"
 
 
-maxNumberOfLinks ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maxNumberOfLinks" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maxNumberOfLinks
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maxNumberOfLinks" a
+     )
+  => Lens.Family2.LensLike' f s a
 maxNumberOfLinks = Data.ProtoLens.Field.field @"maxNumberOfLinks"
 
 
-maxNumberOfTimedEvents ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maxNumberOfTimedEvents" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maxNumberOfTimedEvents
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maxNumberOfTimedEvents" a
+     )
+  => Lens.Family2.LensLike' f s a
 maxNumberOfTimedEvents =
   Data.ProtoLens.Field.field @"maxNumberOfTimedEvents"
 
 
-maybe'constantSampler ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'constantSampler" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'constantSampler
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'constantSampler" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'constantSampler =
   Data.ProtoLens.Field.field @"maybe'constantSampler"
 
 
-maybe'rateLimitingSampler ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'rateLimitingSampler" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'rateLimitingSampler
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'rateLimitingSampler" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'rateLimitingSampler =
   Data.ProtoLens.Field.field @"maybe'rateLimitingSampler"
 
 
-maybe'sampler ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'sampler" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'sampler
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'sampler" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'sampler = Data.ProtoLens.Field.field @"maybe'sampler"
 
 
-maybe'traceIdRatioBased ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "maybe'traceIdRatioBased" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+maybe'traceIdRatioBased
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "maybe'traceIdRatioBased" a
+     )
+  => Lens.Family2.LensLike' f s a
 maybe'traceIdRatioBased =
   Data.ProtoLens.Field.field @"maybe'traceIdRatioBased"
 
 
-qps ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "qps" a) =>
-  Lens.Family2.LensLike' f s a
+qps
+  :: forall f s a
+   . (Prelude.Functor f, Data.ProtoLens.Field.HasField s "qps" a)
+  => Lens.Family2.LensLike' f s a
 qps = Data.ProtoLens.Field.field @"qps"
 
 
-rateLimitingSampler ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "rateLimitingSampler" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+rateLimitingSampler
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "rateLimitingSampler" a
+     )
+  => Lens.Family2.LensLike' f s a
 rateLimitingSampler =
   Data.ProtoLens.Field.field @"rateLimitingSampler"
 
 
-samplingRatio ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "samplingRatio" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+samplingRatio
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "samplingRatio" a
+     )
+  => Lens.Family2.LensLike' f s a
 samplingRatio = Data.ProtoLens.Field.field @"samplingRatio"
 
 
-traceIdRatioBased ::
-  forall f s a.
-  ( Prelude.Functor f
-  , Data.ProtoLens.Field.HasField s "traceIdRatioBased" a
-  ) =>
-  Lens.Family2.LensLike' f s a
+traceIdRatioBased
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "traceIdRatioBased" a
+     )
+  => Lens.Family2.LensLike' f s a
 traceIdRatioBased = Data.ProtoLens.Field.field @"traceIdRatioBased"

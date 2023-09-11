@@ -1,20 +1,20 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
-name:           hs-opentelemetry-instrumentation-persistent
-version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent#readme>
-homepage:       https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
-maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
+name:               hs-opentelemetry-instrumentation-persistent
+version:            0.1.0.0
+description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent#readme>
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan, Jade Lovelace
+maintainer:         ian@iankduncan.com
+copyright:          2023 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -32,6 +32,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , clock
     , hs-opentelemetry-api ==0.1.*
     , mtl
     , persistent >=2.13.3
@@ -52,6 +53,7 @@ test-suite hs-opentelemetry-persistent-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , clock
     , hs-opentelemetry-api ==0.1.*
     , hs-opentelemetry-instrumentation-persistent
     , mtl

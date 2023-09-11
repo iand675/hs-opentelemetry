@@ -128,7 +128,7 @@ data OTLPExporterConfig = OTLPExporterConfig
   }
 
 
-loadExporterEnvironmentVariables :: MonadIO m => m OTLPExporterConfig
+loadExporterEnvironmentVariables :: (MonadIO m) => m OTLPExporterConfig
 loadExporterEnvironmentVariables = liftIO $ do
   OTLPExporterConfig
     <$> lookupEnv "OTEL_EXPORTER_OTLP_ENDPOINT"
@@ -328,7 +328,7 @@ attributesToProto =
              )
 
 
-immutableSpansToProtobuf :: MonadIO m => HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> m ExportTraceServiceRequest
+immutableSpansToProtobuf :: (MonadIO m) => HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> m ExportTraceServiceRequest
 immutableSpansToProtobuf completedSpans = do
   spansByLibrary <- mapM makeInstrumentationLibrarySpans spanGroupList
   pure $
@@ -356,7 +356,7 @@ immutableSpansToProtobuf completedSpans = do
 
     spanGroupList = H.toList completedSpans
 
-    makeInstrumentationLibrarySpans :: MonadIO m => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m InstrumentationLibrarySpans
+    makeInstrumentationLibrarySpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m InstrumentationLibrarySpans
     makeInstrumentationLibrarySpans (library, completedSpans_) = do
       spans_ <- mapM makeSpan completedSpans_
       pure $
@@ -371,7 +371,7 @@ immutableSpansToProtobuf completedSpans = do
 
 -- & schemaUrl .~ "" -- TODO
 
-makeSpan :: MonadIO m => OT.ImmutableSpan -> m Span
+makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m Span
 makeSpan completedSpan = do
   let startTime = timestampNanoseconds (OT.spanStart completedSpan)
   parentSpanF <- do

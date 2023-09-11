@@ -75,12 +75,12 @@ data TraceParent = TraceParent
 
  @since 0.0.1.0
 -}
-decodeSpanContext ::
-  -- | @traceparent@ header value
-  Maybe ByteString ->
-  -- | @tracestate@ header value
-  Maybe ByteString ->
-  Maybe SpanContext
+decodeSpanContext
+  :: Maybe ByteString
+  -- ^ @traceparent@ header value
+  -> Maybe ByteString
+  -- ^ @tracestate@ header value
+  -> Maybe SpanContext
 decodeSpanContext Nothing _ = Nothing
 decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
   TraceParent {..} <- decodeTraceparentHeader traceparentHeader

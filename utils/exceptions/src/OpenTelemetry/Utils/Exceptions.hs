@@ -21,7 +21,7 @@ import OpenTelemetry.Trace.Core (ToAttribute (..), endSpan, recordException, set
 import qualified OpenTelemetry.Trace.Core as TraceCore
 
 
-bracketError' :: MonadMask m => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
+bracketError' :: (MonadMask m) => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
 bracketError' before after thing = MonadMask.mask $ \restore -> do
   x <- before
   res1 <- MonadMask.try $ restore $ thing x
@@ -41,44 +41,44 @@ bracketError' before after thing = MonadMask.mask $ \restore -> do
 
 
 -- | The simplest function for annotating code with trace information.
-inSpanM ::
-  (MonadIO m, MonadMask m, HasCallStack) =>
-  Trace.Tracer ->
-  -- | The name of the span. This may be updated later via 'updateName'
-  Text ->
-  -- | Additional options for creating the span, such as 'SpanKind',
+inSpanM
+  :: (MonadIO m, MonadMask m, HasCallStack)
+  => Trace.Tracer
+  -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
+  -> Trace.SpanArguments
+  -- ^ Additional options for creating the span, such as 'SpanKind',
   -- span links, starting attributes, etc.
-  Trace.SpanArguments ->
-  -- | The action to perform. 'inSpan' will record the time spent on the
+  -> m a
+  -- ^ The action to perform. 'inSpan' will record the time spent on the
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
-  m a ->
-  m a
+  -> m a
 inSpanM t n args m = inSpanM'' t callStack n args (const m)
 
 
-inSpanM' ::
-  (MonadIO m, MonadMask m, HasCallStack) =>
-  Trace.Tracer ->
-  -- | The name of the span. This may be updated later via 'updateName'
-  Text ->
-  Trace.SpanArguments ->
-  (Trace.Span -> m a) ->
-  m a
+inSpanM'
+  :: (MonadIO m, MonadMask m, HasCallStack)
+  => Trace.Tracer
+  -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
+  -> Trace.SpanArguments
+  -> (Trace.Span -> m a)
+  -> m a
 inSpanM' t = inSpanM'' t callStack
 
 
-inSpanM'' ::
-  (MonadMask m, HasCallStack, MonadIO m) =>
-  Trace.Tracer ->
-  -- | Record the location of the span in the codebase using the provided
+inSpanM''
+  :: (MonadMask m, HasCallStack, MonadIO m)
+  => Trace.Tracer
+  -> CallStack
+  -- ^ Record the location of the span in the codebase using the provided
   -- callstack for source location info.
-  CallStack ->
-  -- | The name of the span. This may be updated later via 'updateName'
-  Text ->
-  Trace.SpanArguments ->
-  (Trace.Span -> m a) ->
-  m a
+  -> Text
+  -- ^ The name of the span. This may be updated later via 'updateName'
+  -> Trace.SpanArguments
+  -> (Trace.Span -> m a)
+  -> m a
 inSpanM'' t cs n args f = bracketError' before after (f . snd)
   where
     before = do
@@ -102,7 +102,7 @@ inSpanM'' t cs n args f = bracketError' before after (f . snd)
     after e (parent, s) = do
       forM_ e $ \(MonadMask.SomeException inner) -> do
         setStatus s $ Trace.Error $ T.pack $ MonadMask.displayException inner
-        recordException s [] Nothing inner
+        recordException s [("exception.escaped", toAttribute True)] Nothing inner
       endSpan s Nothing
       adjustContext $ \ctx ->
         maybe (removeSpan ctx) (`insertSpan` ctx) parent

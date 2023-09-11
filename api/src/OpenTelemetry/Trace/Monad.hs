@@ -46,48 +46,49 @@ import OpenTelemetry.Trace.Core (
   Span,
   SpanArguments (..),
   Tracer,
+  addAttributesToSpanArguments,
+  callerAttributes,
   inSpan'',
  )
 
 
 -- | This is generally scoped by Monad stack to do different things
-class Monad m => MonadTracer m where
+class (Monad m) => MonadTracer m where
   getTracer :: m Tracer
 
 
-inSpan ::
-  (MonadUnliftIO m, MonadTracer m, HasCallStack) =>
-  Text ->
-  SpanArguments ->
-  m a ->
-  m a
-inSpan n args m = OpenTelemetry.Trace.Monad.inSpan'' callStack n args (const m)
+inSpan
+  :: (MonadUnliftIO m, MonadTracer m, HasCallStack)
+  => Text
+  -> SpanArguments
+  -> m a
+  -> m a
+inSpan n args m = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) (const m)
 
 
-inSpan' ::
-  (MonadUnliftIO m, MonadTracer m, HasCallStack) =>
-  Text ->
-  SpanArguments ->
-  (Span -> m a) ->
-  m a
-inSpan' = OpenTelemetry.Trace.Monad.inSpan'' callStack
+inSpan'
+  :: (MonadUnliftIO m, MonadTracer m, HasCallStack)
+  => Text
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan' n args f = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) f
 
 
-inSpan'' ::
-  (MonadUnliftIO m, MonadTracer m, HasCallStack) =>
-  CallStack ->
-  Text ->
-  SpanArguments ->
-  (Span -> m a) ->
-  m a
-inSpan'' cs n args f = do
+inSpan''
+  :: (MonadUnliftIO m, MonadTracer m, HasCallStack)
+  => Text
+  -> SpanArguments
+  -> (Span -> m a)
+  -> m a
+inSpan'' n args f = do
   t <- getTracer
-  OpenTelemetry.Trace.Core.inSpan'' t cs n args f
+  OpenTelemetry.Trace.Core.inSpan'' t n args f
 
 
-instance MonadTracer m => MonadTracer (IdentityT m) where
+instance (MonadTracer m) => MonadTracer (IdentityT m) where
   getTracer = lift getTracer
 
 
-instance {-# OVERLAPPABLE #-} MonadTracer m => MonadTracer (ReaderT r m) where
+instance {-# OVERLAPPABLE #-} (MonadTracer m) => MonadTracer (ReaderT r m) where
   getTracer = lift getTracer

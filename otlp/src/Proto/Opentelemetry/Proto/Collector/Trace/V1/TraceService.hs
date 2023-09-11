@@ -128,14 +128,14 @@ instance Data.ProtoLens.Message ExportTraceServiceRequest where
     let resourceSpans__field_descriptor =
           Data.ProtoLens.FieldDescriptor
             "resource_spans"
-            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
-                Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Trace.V1.Trace.ResourceSpans
+            ( Data.ProtoLens.MessageField Data.ProtoLens.MessageType
+                :: Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Trace.V1.Trace.ResourceSpans
             )
             ( Data.ProtoLens.RepeatedField
                 Data.ProtoLens.Unpacked
                 (Data.ProtoLens.Field.field @"resourceSpans")
-            ) ::
-            Data.ProtoLens.FieldDescriptor ExportTraceServiceRequest
+            )
+            :: Data.ProtoLens.FieldDescriptor ExportTraceServiceRequest
      in Data.Map.fromList
           [(Data.ProtoLens.Tag 1, resourceSpans__field_descriptor)]
   unknownFields =
@@ -150,10 +150,10 @@ instance Data.ProtoLens.Message ExportTraceServiceRequest where
       , _ExportTraceServiceRequest'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExportTraceServiceRequest ->
-          Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Trace.V1.Trace.ResourceSpans ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExportTraceServiceRequest
+    let loop
+          :: ExportTraceServiceRequest
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Trace.V1.Trace.ResourceSpans
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExportTraceServiceRequest
         loop x mutable'resourceSpans =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd
@@ -300,9 +300,9 @@ instance Data.ProtoLens.Message ExportTraceServiceResponse where
       { _ExportTraceServiceResponse'_unknownFields = []
       }
   parseMessage =
-    let loop ::
-          ExportTraceServiceResponse ->
-          Data.ProtoLens.Encoding.Bytes.Parser ExportTraceServiceResponse
+    let loop
+          :: ExportTraceServiceResponse
+          -> Data.ProtoLens.Encoding.Bytes.Parser ExportTraceServiceResponse
         loop x =
           do
             end <- Data.ProtoLens.Encoding.Bytes.atEnd

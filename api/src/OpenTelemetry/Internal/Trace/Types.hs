@@ -545,7 +545,7 @@ defaultSpanLimits =
     Nothing
 
 
-type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
+type Lens s t a b = forall f. (Functor f) => (a -> f b) -> s -> f t
 
 
 type Lens' s a = Lens s s a a
@@ -554,7 +554,7 @@ type Lens' s a = Lens s s a a
 {- | When sending tracing information across process boundaries,
  the @SpanContext@ is used to serialize the relevant information.
 -}
-getSpanContext :: MonadIO m => Span -> m SpanContext
+getSpanContext :: (MonadIO m) => Span -> m SpanContext
 getSpanContext (Span s) = liftIO (spanContext <$> readIORef s)
 getSpanContext (FrozenSpan c) = pure c
 getSpanContext (Dropped c) = pure c
