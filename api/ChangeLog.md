@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- Exposing `srcAttributes` from `OpenTelemetry.Trace.Core`, primarily for documentation purposes
+
 ## 0.1.0.0
 
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes
