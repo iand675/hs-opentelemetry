@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -65,6 +66,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector as Vector
 import Lens.Micro
 import Network.HTTP.Client
+import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
@@ -198,7 +200,10 @@ otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m (Exporter OT.ImmutableSpa
 otlpExporter conf = do
   -- TODO, url parsing is janky
   -- TODO configurable retryDelay, maximum retry counts
-  req <- liftIO $ parseRequest (maybe "http://localhost:4318/v1/traces" (<> "/v1/traces") (otlpEndpoint conf))
+  let
+    defaultHost = "http://localhost:4318"
+    host = fromMaybe defaultHost $ otlpEndpoint conf
+  req <- liftIO $ parseRequest (host <> "/v1/traces")
 
   let (encodingHeader, encoder) =
         maybe
@@ -235,7 +240,7 @@ otlpExporter conf = do
                   -- calling code will swallow the exception and cause
                   -- a problem.
                   case fromException err of
-                    Just (SomeAsyncException _) ->
+                    Just (SomeAsyncException _) -> do
                       throwIO err
                     Nothing ->
                       pure $ Failure $ Just err
@@ -274,13 +279,17 @@ otlpExporter conf = do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
 
-      either print (\_ -> pure ()) eResp
-
       case eResp of
-        Left err@(HttpExceptionRequest _ e) ->
-          if isRetryableException e
-            then exponentialBackoff
-            else pure $ Failure $ Just $ SomeException err
+        Left err@(HttpExceptionRequest req e)
+          | HTTPClient.host req == "localhost"
+          , HTTPClient.port req == 4317 || HTTPClient.port req == 4318
+          , ConnectionFailure _someExn <- e
+            -> do
+              pure $ Failure Nothing
+          | otherwise ->
+            if isRetryableException e
+              then exponentialBackoff
+              else pure $ Failure $ Just $ SomeException err
         Left err -> do
           pure $ Failure $ Just $ SomeException err
         Right resp ->
