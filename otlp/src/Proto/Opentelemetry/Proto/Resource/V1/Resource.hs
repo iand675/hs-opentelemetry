@@ -155,10 +155,10 @@ instance Data.ProtoLens.Message Resource where
                 (Data.ProtoLens.Field.field @"droppedAttributesCount")
             )
             :: Data.ProtoLens.FieldDescriptor Resource
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, attributes__field_descriptor)
-          , (Data.ProtoLens.Tag 2, droppedAttributesCount__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, attributes__field_descriptor)
+        , (Data.ProtoLens.Tag 2, droppedAttributesCount__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _Resource'_unknownFields
@@ -185,14 +185,14 @@ instance Data.ProtoLens.Message Resource where
                         mutable'attributes
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -250,14 +250,14 @@ instance Data.ProtoLens.Message Resource where
                             x
                         )
                         mutable'attributes
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'attributes <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'attributes
-          )
-          "Resource"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'attributes <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'attributes
+        )
+        "Resource"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -287,16 +287,16 @@ instance Data.ProtoLens.Message Resource where
                     Lens.Family2.view
                       (Data.ProtoLens.Field.field @"droppedAttributesCount")
                       _x
-               in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                    then Data.Monoid.mempty
-                    else
-                      (Data.Monoid.<>)
-                        (Data.ProtoLens.Encoding.Bytes.putVarInt 16)
-                        ( (Prelude..)
-                            Data.ProtoLens.Encoding.Bytes.putVarInt
-                            Prelude.fromIntegral
-                            _v
-                        )
+              in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                  then Data.Monoid.mempty
+                  else
+                    (Data.Monoid.<>)
+                      (Data.ProtoLens.Encoding.Bytes.putVarInt 16)
+                      ( (Prelude..)
+                          Data.ProtoLens.Encoding.Bytes.putVarInt
+                          Prelude.fromIntegral
+                          _v
+                      )
             )
             ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                 (Lens.Family2.view Data.ProtoLens.unknownFields _x)

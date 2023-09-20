@@ -29,6 +29,7 @@ import System.IO.Unsafe
 newOpenTelemetryWaiMiddleware :: (HasCallStack) => IO Middleware
 newOpenTelemetryWaiMiddleware = newOpenTelemetryWaiMiddleware' <$> getGlobalTracerProvider
 
+
 newOpenTelemetryWaiMiddleware'
   :: (HasCallStack)
   => TracerProvider

@@ -136,8 +136,8 @@ instance Data.ProtoLens.Message ExportMetricsServiceRequest where
                 (Data.ProtoLens.Field.field @"resourceMetrics")
             )
             :: Data.ProtoLens.FieldDescriptor ExportMetricsServiceRequest
-     in Data.Map.fromList
-          [(Data.ProtoLens.Tag 1, resourceMetrics__field_descriptor)]
+    in Data.Map.fromList
+        [(Data.ProtoLens.Tag 1, resourceMetrics__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _ExportMetricsServiceRequest'_unknownFields
@@ -165,14 +165,14 @@ instance Data.ProtoLens.Message ExportMetricsServiceRequest where
                         mutable'resourceMetrics
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -217,14 +217,14 @@ instance Data.ProtoLens.Message ExportMetricsServiceRequest where
                             x
                         )
                         mutable'resourceMetrics
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'resourceMetrics <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'resourceMetrics
-          )
-          "ExportMetricsServiceRequest"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'resourceMetrics <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'resourceMetrics
+        )
+        "ExportMetricsServiceRequest"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -309,14 +309,14 @@ instance Data.ProtoLens.Message ExportMetricsServiceResponse where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -338,9 +338,9 @@ instance Data.ProtoLens.Message ExportMetricsServiceResponse where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "ExportMetricsServiceResponse"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "ExportMetricsServiceResponse"
   buildMessage =
     \_x ->
       Data.ProtoLens.Encoding.Wire.buildFieldSet

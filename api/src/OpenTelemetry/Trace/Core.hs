@@ -133,6 +133,7 @@ module OpenTelemetry.Trace.Core (
   whenSpanIsRecording,
   ownCodeAttributes,
   callerAttributes,
+  srcAttributes,
   addAttributesToSpanArguments,
 
   -- * Limits
@@ -207,7 +208,9 @@ createSpan
 createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes = H.union (attributes args) callerAttributes})
 
 
--- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
+{- | The same thing as 'createSpan', except that it does not have
+a 'HasCallStack' constraint. This means that the generated 'Span' will not have
+-}
 createSpanWithoutCallStack
   :: (MonadIO m)
   => Tracer
@@ -276,7 +279,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                           (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                         in frozenBoundedCollection limitedLinks $ fmap freezeLink links
+                        in frozenBoundedCollection limitedLinks $ fmap freezeLink links
                     , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                     , spanStatus = Unset
                     , spanStart = st
@@ -303,26 +306,68 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         }
 
 
+{- | This function returns a map of 'Text' to 'Attribute' for the call-site
+of the code. The attributes are the 'srcAttributes' for the caller.
+-}
 ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
 ownCodeAttributes = case getCallStack callStack of
   _ : caller : _ -> srcAttributes caller
   _ -> mempty
 
 
+{- | This value uses the 'HasCallStack' information to provide a map of
+source-level attributes for the function that calls the function that
+uses this value. For details on what is provided, see 'srcAttributes'.
+
+The precise description is a little confusing, so let's look at how this
+value might be used.
+
+@
+myCoolFunction :: 'HasCallStack' => 'IO' ()
+myCoolFunction = do
+  callsCallerAttributes
+
+callsCallerAttributes :: 'HasCallStack' => 'IO' ()
+callsCallerAttributes = do
+  'print' 'callerAttributes'
+@
+
+So 'callerAttributes' inspects the 'CallStack', and skips it's own
+entry. Then, it considers the *caller* of 'callerAttributes' - in this
+case, that would be @callsCallerAttributes@, and it skips that one too.
+Finally, it ends up seeing the third entry in the callstack, which is
+the function @myCoolFunction@.
+
+So when you *use* this term, you get the caller of the *use site* of the
+term.
+-}
 callerAttributes :: (HasCallStack) => H.HashMap Text Attribute
 callerAttributes = case getCallStack callStack of
   _ : _ : caller : _ -> srcAttributes caller
   _ -> mempty
 
 
-srcAttributes :: (String, SrcLoc) -> H.HashMap Text Attribute
-srcAttributes (fn, loc) = H.fromList
-  [ ("code.function", toAttribute $ T.pack fn)
-  , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-  , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-  , ("code.lineno", toAttribute $ srcLocStartLine loc)
-  , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-  ]
+{- | This function converts a 'CallStack' entry into a map of attributes
+about the source code location. The attributes are:
+
+  * @code.function@ with the function name
+  * @code.namespace@ with the module name
+  * @code.filepath@ with the file for the function
+  * @code.lineno@ with the line number of the start of the function
+  * @code.package@ with the name of the package
+-}
+srcAttributes
+  :: (String, SrcLoc)
+  -- ^ The @(function name, 'SrcLoc')@ that makes up a 'CallStack' frame
+  -> H.HashMap Text Attribute
+srcAttributes (fn, loc) =
+  H.fromList
+    [ ("code.function", toAttribute $ T.pack fn)
+    , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+    , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+    , ("code.lineno", toAttribute $ srcLocStartLine loc)
+    , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+    ]
 
 
 {- | Attributes are added to the end of the span argument list, so will be discarded
@@ -352,6 +397,10 @@ inSpan
 inSpan t n args m = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
 
 
+{- | Create a 'Span' from the given 'Tracer' and with the provided name and
+'SpanArguments'. The resulting 'Span' is provided to the callback
+function so you can modify it.
+-}
 inSpan'
   :: (MonadUnliftIO m, HasCallStack)
   => Tracer
@@ -363,6 +412,12 @@ inSpan'
 inSpan' t n args = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
 
 
+{- | This function works like 'inSpan'', but it does not use the
+'HasCallStack' information to create caller attributes, which provide
+automatic population of items like @code.function@, @code.lineno@, etc.
+See 'srcAttributes' for a listing of the attributes that will not be
+added.
+-}
 inSpan''
   :: (MonadUnliftIO m, HasCallStack)
   => Tracer
@@ -555,7 +610,7 @@ endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
   (alreadyFinished, frozenS) <- atomicModifyIORef' s $ \(!i) ->
     let ref = i {spanEnd = spanEnd i <|> Just ts}
-     in (ref, (isJust $ spanEnd i, ref))
+    in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
     eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
