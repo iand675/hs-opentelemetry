@@ -49,7 +49,7 @@ newTraceIdFromHeader bs =
           writeByteArray mba 0 (0 :: Word64) -- fill zeros to one upper Word64-size area
           writeByteArrayNbo mba 1 w64 -- offset one Word64-size
           freezeByteArray mba 0 len
-   in SBI.SBS ba
+  in SBI.SBS ba
 
 
 newSpanIdFromHeader
@@ -64,7 +64,7 @@ newSpanIdFromHeader bs =
           let w64 = readWord64BS bs
           writeByteArrayNbo mba 0 w64
           freezeByteArray mba 0 len
-   in SBI.SBS ba
+  in SBI.SBS ba
 
 
 {- | Write a primitive value to the byte array with network-byte-order (big-endian).
@@ -78,10 +78,11 @@ writeByteArrayNbo mba offset value = do
     loop _ 0 = pure ()
     loop 8 _ = pure ()
     loop n v = do
-      let -- equivelent:
-          --   (p, q) = v `divMod` (2 ^ (8 :: Int))
-          p = shift v (-8)
-          q = v .&. complement (shift p 8)
+      let
+        -- equivelent:
+        --   (p, q) = v `divMod` (2 ^ (8 :: Int))
+        p = shift v (-8)
+        q = v .&. complement (shift p 8)
       writeByteArray mba (8 * (offset + 1) - n - 1) (fromIntegral q :: Word8)
       loop (n + 1) p
 
@@ -109,13 +110,13 @@ asciiWord8ToWord8 b = b - fromIntegral (C.ord '0')
 newHeaderFromTraceId :: ShortByteString -> ByteString
 newHeaderFromTraceId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 1
-   in showWord64BS w64
+  in showWord64BS w64
 
 
 newHeaderFromSpanId :: ShortByteString -> ByteString
 newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
-   in showWord64BS w64
+  in showWord64BS w64
 
 
 indexByteArrayNbo :: ByteArray -> Int -> Word64

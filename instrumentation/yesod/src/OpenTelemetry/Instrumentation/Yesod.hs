@@ -211,19 +211,20 @@ openTelemetryYesodMiddleware rr m = do
   req <- waiRequest
   mr <- getCurrentRoute
   let mspan = requestContext req >>= Context.lookupSpan
-      sharedAttributes = H.fromList $
-        ("http.framework", toAttribute ("yesod" :: Text))
-          : catMaybes
-            [ do
-                r <- mr
-                pure ("http.route", toAttribute $ pathRender rr r)
-            , do
-                r <- mr
-                pure ("http.handler", toAttribute $ nameRender rr r)
-            , do
-                ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-            ]
+      sharedAttributes =
+        H.fromList $
+          ("http.framework", toAttribute ("yesod" :: Text))
+            : catMaybes
+              [ do
+                  r <- mr
+                  pure ("http.route", toAttribute $ pathRender rr r)
+              , do
+                  r <- mr
+                  pure ("http.handler", toAttribute $ nameRender rr r)
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+              ]
       args =
         defaultSpanArguments
           { kind = maybe Server (const Internal) mspan

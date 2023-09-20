@@ -52,16 +52,16 @@ import Text.Read (readMaybe)
 responsibility to properly close the connection pool when
 unneeded.  Use 'withMySQLPool' for automatic resource control.
 -}
-createMySQLPool ::
-  (MonadUnliftIO m, MonadLoggerIO m) =>
-  Otel.TracerProvider ->
-  -- | Additional attributes.
-  H.HashMap Text Otel.Attribute ->
-  -- | Connection information.
-  MySQL.ConnectInfo ->
-  -- | Number of connections to be kept open in the pool.
-  Int ->
-  m (Pool SqlBackend)
+createMySQLPool
+  :: (MonadUnliftIO m, MonadLoggerIO m)
+  => Otel.TracerProvider
+  -> H.HashMap Text Otel.Attribute
+  -- ^ Additional attributes.
+  -> MySQL.ConnectInfo
+  -- ^ Connection information.
+  -> Int
+  -- ^ Number of connections to be kept open in the pool.
+  -> m (Pool SqlBackend)
 createMySQLPool tp attrs ci = createSqlPool $ fmap snd . openMySQLConn tp attrs ci
 
 
@@ -70,18 +70,18 @@ The pool is properly released after the action finishes using
 it.  Note that you should not use the given 'ConnectionPool'
 outside the action since it may be already been released.
 -}
-withMySQLPool ::
-  (MonadLoggerIO m, MonadUnliftIO m) =>
-  Otel.TracerProvider ->
-  -- | Additional attributes.
-  H.HashMap Text Otel.Attribute ->
-  -- | Connection information.
-  MySQL.ConnectInfo ->
-  -- | Number of connections to be kept open in the pool.
-  Int ->
-  -- | Action to be executed that uses the connection pool.
-  (Pool SqlBackend -> m a) ->
-  m a
+withMySQLPool
+  :: (MonadLoggerIO m, MonadUnliftIO m)
+  => Otel.TracerProvider
+  -> H.HashMap Text Otel.Attribute
+  -- ^ Additional attributes.
+  -> MySQL.ConnectInfo
+  -- ^ Connection information.
+  -> Int
+  -- ^ Number of connections to be kept open in the pool.
+  -> (Pool SqlBackend -> m a)
+  -- ^ Action to be executed that uses the connection pool.
+  -> m a
 withMySQLPool tp attrs ci = withSqlPool $ fmap snd . openMySQLConn tp attrs ci
 
 
@@ -90,14 +90,14 @@ their tuple
 
 About attributes, see https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/database/.
 -}
-openMySQLConn ::
-  Otel.TracerProvider ->
-  -- | Additional attributes.
-  H.HashMap Text Otel.Attribute ->
-  -- | Connection information.
-  MySQL.ConnectInfo ->
-  LogFunc ->
-  IO (MySQL.Connection, SqlBackend)
+openMySQLConn
+  :: Otel.TracerProvider
+  -> H.HashMap Text Otel.Attribute
+  -- ^ Additional attributes.
+  -> MySQL.ConnectInfo
+  -- ^ Connection information.
+  -> LogFunc
+  -> IO (MySQL.Connection, SqlBackend)
 openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOptions, connectHost} logFunc = do
   let
     portAttr, transportAttr :: Otel.Attribute
@@ -133,16 +133,16 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
 {- | Same as 'withMySQLPool', but instead of opening a pool
 of connections, only one connection is opened.
 -}
-withMySQLConn ::
-  (MonadUnliftIO m, MonadLoggerIO m) =>
-  Otel.TracerProvider ->
-  -- | Additional attributes.
-  H.HashMap Text Otel.Attribute ->
-  -- | Connection information.
-  MySQL.ConnectInfo ->
-  -- | Action to be executed that uses the connection.
-  (SqlBackend -> m a) ->
-  m a
+withMySQLConn
+  :: (MonadUnliftIO m, MonadLoggerIO m)
+  => Otel.TracerProvider
+  -> H.HashMap Text Otel.Attribute
+  -- ^ Additional attributes.
+  -> MySQL.ConnectInfo
+  -- ^ Connection information.
+  -> (SqlBackend -> m a)
+  -- ^ Action to be executed that uses the connection.
+  -> m a
 withMySQLConn tp attrs ci = withSqlConn $ fmap snd . openMySQLConn tp attrs ci
 
 
