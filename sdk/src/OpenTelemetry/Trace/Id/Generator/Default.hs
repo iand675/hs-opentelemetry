@@ -29,7 +29,11 @@ import System.Random.Stateful
 -}
 defaultIdGenerator :: IdGenerator
 defaultIdGenerator = unsafePerformIO $ do
+#if MIN_VERSION_random(1,2,1)
   genBase <- initStdGen
+#else
+  genBase <- newStdGen
+#endif
   let (spanIdGen, traceIdGen) = split genBase
   sg <- newAtomicGenM spanIdGen
   tg <- newAtomicGenM traceIdGen
