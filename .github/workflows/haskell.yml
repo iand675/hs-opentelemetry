@@ -50,7 +50,7 @@ jobs:
       - run: stack --stack-yaml stack-ghc-9.0.yaml build
       - run: stack --stack-yaml stack-ghc-9.0.yaml test
       - run: stack --stack-yaml stack-ghc-9.0.yaml bench --no-run-benchmarks
-  stack-ghc:
+  stack:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -74,6 +74,22 @@ jobs:
       - run: stack build
       - run: stack test
       - run: stack bench --no-run-benchmarks
+  cabal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixos-22.11
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cabal
+          key: cabal-${{ runner.os }}-${{ hashFiles('cabal.project.freeze') }}
+      - run: nix-shell --run 'cabal update'
+      - run: nix-shell --run 'cabal v2-build --only-dependencies all'
+      - run: nix-shell --run 'cabal v2-build all'
+      - run: nix-shell --run 'cabal v2-test all'
+      - run: nix-shell --run 'cabal v2-build --enable-benchmarks all'
   format:
     runs-on: ubuntu-latest
     steps:
