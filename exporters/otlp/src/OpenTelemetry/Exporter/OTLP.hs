@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -----------------------------------------------------------------------------
 
@@ -200,9 +200,8 @@ otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m (Exporter OT.ImmutableSpa
 otlpExporter conf = do
   -- TODO, url parsing is janky
   -- TODO configurable retryDelay, maximum retry counts
-  let
-    defaultHost = "http://localhost:4318"
-    host = fromMaybe defaultHost $ otlpEndpoint conf
+  let defaultHost = "http://localhost:4318"
+      host = fromMaybe defaultHost $ otlpEndpoint conf
   req <- liftIO $ parseRequest (host <> "/v1/traces")
 
   let (encodingHeader, encoder) =
@@ -283,13 +282,13 @@ otlpExporter conf = do
         Left err@(HttpExceptionRequest req e)
           | HTTPClient.host req == "localhost"
           , HTTPClient.port req == 4317 || HTTPClient.port req == 4318
-          , ConnectionFailure _someExn <- e
-            -> do
-              pure $ Failure Nothing
+          , ConnectionFailure _someExn <- e ->
+              do
+                pure $ Failure Nothing
           | otherwise ->
-            if isRetryableException e
-              then exponentialBackoff
-              else pure $ Failure $ Just $ SomeException err
+              if isRetryableException e
+                then exponentialBackoff
+                else pure $ Failure $ Just $ SomeException err
         Left err -> do
           pure $ Failure $ Just $ SomeException err
         Right resp ->

@@ -13,8 +13,8 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Acquire.Internal
-import Data.IORef
 import qualified Data.HashMap.Strict as H
+import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -75,12 +75,12 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
  so that queries are tracked appropriately in the tracing hierarchy.
 -}
-wrapSqlBackend ::
-  MonadIO m =>
-  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  H.HashMap Text Attribute ->
-  SqlBackend ->
-  m SqlBackend
+wrapSqlBackend
+  :: MonadIO m
+  => H.HashMap Text Attribute
+  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  -> SqlBackend
+  -> m SqlBackend
 wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
   wrapSqlBackend' tp attrs conn_
@@ -89,12 +89,13 @@ wrapSqlBackend attrs conn_ = do
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
 so that queries are tracked appropriately in the tracing hierarchy.
 -}
-wrapSqlBackend' :: MonadIO m =>
-  TracerProvider ->
-  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  H.HashMap Text Attribute ->
-  SqlBackend ->
-  m SqlBackend
+wrapSqlBackend'
+  :: MonadIO m
+  => TracerProvider
+  -> H.HashMap Text Attribute
+  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  -> SqlBackend
+  -> m SqlBackend
 wrapSqlBackend' tp attrs conn_ = do
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
   {- A connection is acquired when the connection pool is asked for a connection. The runSqlPool function in Persistent then

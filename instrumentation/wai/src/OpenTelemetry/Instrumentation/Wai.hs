@@ -29,6 +29,7 @@ import System.IO.Unsafe
 newOpenTelemetryWaiMiddleware :: (HasCallStack) => IO Middleware
 newOpenTelemetryWaiMiddleware = newOpenTelemetryWaiMiddleware' <$> getGlobalTracerProvider
 
+
 newOpenTelemetryWaiMiddleware'
   :: (HasCallStack)
   => TracerProvider
@@ -39,7 +40,7 @@ newOpenTelemetryWaiMiddleware' tp =
           tp
           "opentelemetry-instrumentation-wai"
           (TracerOptions Nothing)
-  in middleware waiTracer
+   in middleware waiTracer
   where
     usefulCallsite = callerAttributes
     middleware :: Tracer -> Middleware
