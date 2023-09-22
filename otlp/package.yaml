@@ -1,16 +1,23 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-otlp
-version:             0.0.1.0
+version:             0.0.2.0
 
 <<: *preface
 
 extra-source-files:
 - README.md
 - ChangeLog.md
+- protos/opentelemetry/**/*.proto
 
 synopsis:            OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
 category:            OpenTelemetry
+
+custom-setup:
+  dependencies:
+  - base
+  - Cabal
+  - proto-lens-setup
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -19,9 +26,27 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- proto-lens
+- proto-lens >= 0.7.1.1
 - proto-lens-runtime
-
+- proto-lens-protobuf-types
 library:
   source-dirs: src
+  other-modules: []
+  exposed-modules:
+  - Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService
+  - Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields
+  - Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService
+  - Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields
+  - Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService
+  - Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService_Fields
+  - Proto.Opentelemetry.Proto.Common.V1.Common
+  - Proto.Opentelemetry.Proto.Common.V1.Common_Fields
+  - Proto.Opentelemetry.Proto.Logs.V1.Logs
+  - Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields
+  - Proto.Opentelemetry.Proto.Metrics.V1.Metrics
+  - Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields
+  - Proto.Opentelemetry.Proto.Resource.V1.Resource
+  - Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields
+  - Proto.Opentelemetry.Proto.Trace.V1.Trace
+  - Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
 

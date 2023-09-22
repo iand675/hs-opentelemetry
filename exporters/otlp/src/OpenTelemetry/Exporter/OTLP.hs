@@ -78,8 +78,8 @@ import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.Util
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import Proto.Opentelemetry.Proto.Common.V1.Common
-import Proto.Opentelemetry.Proto.Common.V1.Common_Fields
-import Proto.Opentelemetry.Proto.Trace.V1.Trace (InstrumentationLibrarySpans, Span, Span'Event, Span'Link, Span'SpanKind (Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_SERVER), Status'StatusCode (Status'STATUS_CODE_ERROR, Status'STATUS_CODE_OK, Status'STATUS_CODE_UNSET))
+import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common
+import Proto.Opentelemetry.Proto.Trace.V1.Trace (ScopeSpans, Span, Span'Event, Span'Link, Span'SpanKind (Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_SERVER), Status'StatusCode (Status'STATUS_CODE_ERROR, Status'STATUS_CODE_OK, Status'STATUS_CODE_UNSET))
 import Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
 import System.Environment
 import Text.Read (readMaybe)
@@ -311,20 +311,20 @@ attributesToProto =
     . getAttributes
   where
     primAttributeToAnyValue = \case
-      TextAttribute t -> defMessage & stringValue .~ t
-      BoolAttribute b -> defMessage & boolValue .~ b
-      DoubleAttribute d -> defMessage & doubleValue .~ d
-      IntAttribute i -> defMessage & intValue .~ i
+      TextAttribute t -> defMessage & Common.stringValue .~ t
+      BoolAttribute b -> defMessage & Common.boolValue .~ b
+      DoubleAttribute d -> defMessage & Common.doubleValue .~ d
+      IntAttribute i -> defMessage & Common.intValue .~ i
     attributeToKeyValue :: (Text, Attribute) -> KeyValue
     attributeToKeyValue (k, v) =
       defMessage
-        & key .~ k
-        & value
+        & Common.key .~ k
+        & Common.value
           .~ ( case v of
                 AttributeValue a -> primAttributeToAnyValue a
                 AttributeArray a ->
                   defMessage
-                    & arrayValue .~ (defMessage & values .~ fmap primAttributeToAnyValue a)
+                    & Common.arrayValue .~ (defMessage & Common.values .~ fmap primAttributeToAnyValue a)
              )
 
 
@@ -344,7 +344,7 @@ immutableSpansToProtobuf completedSpans = do
                    )
               -- TODO, seems like spans need to be emitted via an API
               -- that lets us keep them grouped by instrumentation originator
-              & instrumentationLibrarySpans .~ spansByLibrary
+              & scopeSpans .~ spansByLibrary
           )
   where
     -- TODO this won't work right if multiple TracerProviders are exporting to a single OTLP exporter with different resources
@@ -356,15 +356,15 @@ immutableSpansToProtobuf completedSpans = do
 
     spanGroupList = H.toList completedSpans
 
-    makeInstrumentationLibrarySpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m InstrumentationLibrarySpans
+    makeInstrumentationLibrarySpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m ScopeSpans
     makeInstrumentationLibrarySpans (library, completedSpans_) = do
       spans_ <- mapM makeSpan completedSpans_
       pure $
         defMessage
-          & instrumentationLibrary
+          & scope
             .~ ( defMessage
-                  & Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields.name .~ OT.libraryName library
-                  & version .~ OT.libraryVersion library
+                  & Common.name .~ OT.libraryName library
+                  & Common.version .~ OT.libraryVersion library
                )
           & vec'spans .~ spans_
 

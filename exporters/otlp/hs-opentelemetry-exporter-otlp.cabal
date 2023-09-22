@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-exporter-otlp
-version:            0.0.1.5
+version:            0.0.2.0
 synopsis:           OpenTelemetry exporter supporting the standard OTLP protocol
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/otlp#readme>
 category:           OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
@@ -39,7 +39,7 @@ library
     , case-insensitive
     , clock
     , hs-opentelemetry-api >=0.0.3 && <0.2
-    , hs-opentelemetry-otlp ==0.0.1.*
+    , hs-opentelemetry-otlp ==0.0.2.*
     , http-client
     , http-conduit
     , http-types
@@ -68,7 +68,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
     , clock
     , hs-opentelemetry-api >=0.0.3 && <0.2
     , hs-opentelemetry-exporter-otlp
-    , hs-opentelemetry-otlp ==0.0.1.*
+    , hs-opentelemetry-otlp ==0.0.2.*
     , http-client
     , http-conduit
     , http-types

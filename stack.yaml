@@ -67,8 +67,15 @@ packages:
 extra-deps:
 - thread-utils-context-0.3.0.4
 - thread-utils-finalizers-0.1.1.0
-- proto-lens-0.7.1.1
-- proto-lens-runtime-0.7.0.2
+- git: git@github.com:iand675/proto-lens.git
+  commit: 38b1ab1d6785c36694245b19ce6a85ee6869b04a
+  subdirs:
+  - proto-lens
+  - proto-lens-protoc
+  - proto-lens-protobuf-types
+  - proto-lens-runtime
+  - proto-lens-setup
+  - proto-lens-json
 
 # just for testing
 # - mwc-random-0.14.0.0
