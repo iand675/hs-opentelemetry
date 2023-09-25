@@ -1,4 +1,4 @@
-cabal-version: 1.24
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.35.2.
 --
@@ -16,7 +16,7 @@ maintainer:         ian@iankduncan.com
 copyright:          2023 Ian Duncan, Mercury Technologies
 license:            BSD3
 license-file:       LICENSE
-build-type:         Custom
+build-type:         Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -32,12 +32,6 @@ extra-source-files:
 source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry
-
-custom-setup
-  setup-depends:
-      Cabal
-    , base
-    , proto-lens-setup
 
 library
   exposed-modules:

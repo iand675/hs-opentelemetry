@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+shopt -s globstar
+
+set -x
+stack exec --package proto-lens-protoc -- protoc \
+  --plugin=protoc-gen-haskell=`which proto-lens-protoc` \
+  --haskell_out=$PWD/otlp/src \
+  --proto_path=$PWD/otlp/protos \
+  $PWD/otlp/protos/opentelemetry/**/*.proto
+
