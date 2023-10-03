@@ -5,47 +5,61 @@
 
 packages:
 - completed:
+    hackage: hspec-2.11.4@sha256:424280c999a5815758c9cfbd2c4ff3df7650027b53ef4aacb40966f4c78443e0,1714
+    pantry-tree:
+      sha256: bbce6bab076d1973f9b108b7e8f0929e63ac3072a4df831439b4e57298a57e30
+      size: 584
+  original:
+    hackage: hspec-2.11.4@sha256:424280c999a5815758c9cfbd2c4ff3df7650027b53ef4aacb40966f4c78443e0,1714
+- completed:
+    hackage: hspec-core-2.11.4@sha256:1d996912bfb66b0b5ba236ab72d5f66a1573fe8d00becd3c8825c5d9692709c7,6765
+    pantry-tree:
+      sha256: 8560d1ffd1a9202b75cf850ae741abc7cda57cbfe943662f16a62ad83a263343
+      size: 6230
+  original:
+    hackage: hspec-core-2.11.4@sha256:1d996912bfb66b0b5ba236ab72d5f66a1573fe8d00becd3c8825c5d9692709c7,6765
+- completed:
+    hackage: hspec-discover-2.11.4@sha256:5014056bf2ba6d9f4fff4367660b380bff7551363d487982e6753ec5dc1c25d9,2169
+    pantry-tree:
+      sha256: f73db9792a59e3109947417dc3e3aeee8fa267f001a2b737a199ad31ce0209f1
+      size: 829
+  original:
+    hackage: hspec-discover-2.11.4@sha256:5014056bf2ba6d9f4fff4367660b380bff7551363d487982e6753ec5dc1c25d9,2169
+- completed:
+    hackage: hspec-expectations-0.8.4@sha256:4237f094a7931202ff57ac6475542b0b314b50a7024550e2b6eb87cfb0d4ff93,1702
+    pantry-tree:
+      sha256: 87681840d430b84686f83f1ab8b5873b09c349775698665233443914acf9ba2b
+      size: 741
+  original:
+    hackage: hspec-expectations-0.8.4@sha256:4237f094a7931202ff57ac6475542b0b314b50a7024550e2b6eb87cfb0d4ff93,1702
+- completed:
+    hackage: proto-lens-0.7.1.3@sha256:2d56bf8c37e21d741385e155d0dd327468ab1bc6897d10b0462b7e241d8e61a3,2973
+    pantry-tree:
+      sha256: aa23b37148ad8d0b74b66bfd36dfffa8ea375a865d0f38399f898ea7c7c8cb36
+      size: 1857
+  original:
+    hackage: proto-lens-0.7.1.3@sha256:2d56bf8c37e21d741385e155d0dd327468ab1bc6897d10b0462b7e241d8e61a3,2973
+- completed:
+    hackage: proto-lens-runtime-0.7.0.4@sha256:1a64cb98b49541e53ea8a19270d7247960445083a2327a091ce0a1cafdef16f3,3051
+    pantry-tree:
+      sha256: 8b82a336d432e0caff944ea5315be498b1a3e5f116ae9a34a190f92d50892a14
+      size: 168
+  original:
+    hackage: proto-lens-runtime-0.7.0.4@sha256:1a64cb98b49541e53ea8a19270d7247960445083a2327a091ce0a1cafdef16f3,3051
+- completed:
     hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
     pantry-tree:
       sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
       size: 397
   original:
-    hackage: thread-utils-context-0.3.0.4
+    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
 - completed:
     hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
     pantry-tree:
       sha256: 8c2c2e2e22c20bf3696ee6f30b50b3a9eeae187a22beb536441eefb0a3f9c549
       size: 400
   original:
-    hackage: thread-utils-finalizers-0.1.1.0
-- completed:
-    hackage: persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
-    pantry-tree:
-      sha256: debd3496e44bf01264de8bc0d3da92991c1550632fe1ef66818392f4c9955323
-      size: 6052
-  original:
-    hackage: persistent-2.13.3.0
-- completed:
-    hackage: persistent-postgresql-2.13.4.0@sha256:7fc0ffc4a591c0355c8ad793bc6de08c13321c81a3fb748c9a23448ac88d987a,3686
-    pantry-tree:
-      sha256: 78b6907bf9bc82a524251dfeb2cf0d3f8c599427c8ae0b0a1d933158b6909281
-      size: 1140
-  original:
-    hackage: persistent-postgresql-2.13.4.0
-- completed:
-    hackage: proto-lens-0.7.1.1@sha256:8419e86fd7f521206a991c3ccb1777332a07a8250b380b06694f9f301b1ff38d,2972
-    pantry-tree:
-      sha256: 307d85c746f63db33ec7c0f7fe8a3b31d7b02e1bb42a7838f7271c3dd0e3d4ff
-      size: 1857
-  original:
-    hackage: proto-lens-0.7.1.1
-- completed:
-    hackage: proto-lens-runtime-0.7.0.2@sha256:25d11fd08b56025c89e6be5da46f40a82bd845218b235b9e0114253b45caa074,3051
-    pantry-tree:
-      sha256: 99e2a2398324bb34159e634723ba644508eaf75e110d7c9e5110aa26cce2d07a
-      size: 168
-  original:
-    hackage: proto-lens-runtime-0.7.0.2
+    hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

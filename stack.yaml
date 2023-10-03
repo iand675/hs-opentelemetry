@@ -34,26 +34,28 @@ packages:
 - api
 - sdk
 - otlp
+- examples/hspec
+- examples/yesod-minimal
 - exporters/handle
 - exporters/in-memory
-# - exporters/jaeger
 - exporters/otlp
-# - exporters/prometheus
-- propagators/b3
-- propagators/datadog
-# - propagators/jaeger
-- propagators/w3c
-- instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/conduit
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
-- instrumentation/yesod
 - instrumentation/wai
-- examples/hspec
-- examples/yesod-minimal
+- instrumentation/yesod
+- propagators/b3
+- propagators/datadog
+- propagators/w3c
+- utils/exceptions
+- vendors/honeycomb
+# - exporters/jaeger
+# - exporters/prometheus
+# - propagators/jaeger
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
@@ -65,10 +67,10 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- thread-utils-context-0.3.0.4
-- thread-utils-finalizers-0.1.1.0
-- proto-lens-0.7.1.1
-- proto-lens-runtime-0.7.0.2
+- honeycomb-0.1.0.1@sha256:255820a584335bf3474d8d7f604c0089c92f895c21e3b2b5f4131b7429e3dde6,2748
+- thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+- chronos-1.1.5.1@sha256:2d0354d9b76d2922394252423b11b82d754f3c396378034ec0f9e56ecfbf53b1,3699
+- thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
 
 # just for testing
 # - mwc-random-0.14.0.0

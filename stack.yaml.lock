@@ -5,33 +5,33 @@
 
 packages:
 - completed:
+    hackage: honeycomb-0.1.0.1@sha256:255820a584335bf3474d8d7f604c0089c92f895c21e3b2b5f4131b7429e3dde6,2748
+    pantry-tree:
+      sha256: b8b779bd3bf53fbbc0bdfc6c7239256a0b1b4bf4f652cc5967ab35a207b65941
+      size: 1454
+  original:
+    hackage: honeycomb-0.1.0.1@sha256:255820a584335bf3474d8d7f604c0089c92f895c21e3b2b5f4131b7429e3dde6,2748
+- completed:
     hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
     pantry-tree:
       sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
       size: 397
   original:
-    hackage: thread-utils-context-0.3.0.4
+    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+- completed:
+    hackage: chronos-1.1.5.1@sha256:2d0354d9b76d2922394252423b11b82d754f3c396378034ec0f9e56ecfbf53b1,3699
+    pantry-tree:
+      sha256: bca826ea95d5f8d9f105d0c5129b1d6c3f95670d4bbec6715ded6f0886805144
+      size: 581
+  original:
+    hackage: chronos-1.1.5.1@sha256:2d0354d9b76d2922394252423b11b82d754f3c396378034ec0f9e56ecfbf53b1,3699
 - completed:
     hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
     pantry-tree:
       sha256: 8c2c2e2e22c20bf3696ee6f30b50b3a9eeae187a22beb536441eefb0a3f9c549
       size: 400
   original:
-    hackage: thread-utils-finalizers-0.1.1.0
-- completed:
-    hackage: proto-lens-0.7.1.1@sha256:8419e86fd7f521206a991c3ccb1777332a07a8250b380b06694f9f301b1ff38d,2972
-    pantry-tree:
-      sha256: 307d85c746f63db33ec7c0f7fe8a3b31d7b02e1bb42a7838f7271c3dd0e3d4ff
-      size: 1857
-  original:
-    hackage: proto-lens-0.7.1.1
-- completed:
-    hackage: proto-lens-runtime-0.7.0.2@sha256:25d11fd08b56025c89e6be5da46f40a82bd845218b235b9e0114253b45caa074,3051
-    pantry-tree:
-      sha256: 99e2a2398324bb34159e634723ba644508eaf75e110d7c9e5110aa26cce2d07a
-      size: 168
-  original:
-    hackage: proto-lens-runtime-0.7.0.2
+    hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
 snapshots:
 - completed:
     sha256: e019cd29e3f7f9dbad500225829a3f7a50f73c674614f2f452e21bb8bf5d99ea
