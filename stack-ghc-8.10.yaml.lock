@@ -5,50 +5,64 @@
 
 packages:
 - completed:
-    hackage: thread-utils-context-0.2.0.0@sha256:7863e568c7a43cd21616342d20484d4c962aaa9710619f104c6fb7ee32273940,1883
+    hackage: hspec-2.11.4@sha256:424280c999a5815758c9cfbd2c4ff3df7650027b53ef4aacb40966f4c78443e0,1714
     pantry-tree:
-      size: 450
-      sha256: 605ea068880ad39c96fce0d91db9f2d54553ed43dfc41c37845fade8be2e9568
+      sha256: bbce6bab076d1973f9b108b7e8f0929e63ac3072a4df831439b4e57298a57e30
+      size: 584
   original:
-    hackage: thread-utils-context-0.2.0.0
+    hackage: hspec-2.11.4@sha256:424280c999a5815758c9cfbd2c4ff3df7650027b53ef4aacb40966f4c78443e0,1714
 - completed:
-    hackage: thread-utils-finalizers-0.1.0.0@sha256:a8435240bfc0ae96c94704d2986699a11a395c496f9a7f2e5f5d729a0b967549,1381
+    hackage: hspec-core-2.11.4@sha256:1d996912bfb66b0b5ba236ab72d5f66a1573fe8d00becd3c8825c5d9692709c7,6765
     pantry-tree:
-      size: 400
-      sha256: 7f708d158d5d0e32ffe77f6375a792ceb6f92e4d8dd8b32fc69e7de962e7e518
+      sha256: 8560d1ffd1a9202b75cf850ae741abc7cda57cbfe943662f16a62ad83a263343
+      size: 6230
   original:
-    hackage: thread-utils-finalizers-0.1.0.0
+    hackage: hspec-core-2.11.4@sha256:1d996912bfb66b0b5ba236ab72d5f66a1573fe8d00becd3c8825c5d9692709c7,6765
 - completed:
-    hackage: persistent-2.13.3.0@sha256:89a4a286ec3739d452f67332a03a392aa57c3e97237b61efcd5b99d50aae9cfc,6762
+    hackage: hspec-discover-2.11.4@sha256:5014056bf2ba6d9f4fff4367660b380bff7551363d487982e6753ec5dc1c25d9,2169
     pantry-tree:
-      size: 6052
-      sha256: debd3496e44bf01264de8bc0d3da92991c1550632fe1ef66818392f4c9955323
+      sha256: f73db9792a59e3109947417dc3e3aeee8fa267f001a2b737a199ad31ce0209f1
+      size: 829
   original:
-    hackage: persistent-2.13.3.0
+    hackage: hspec-discover-2.11.4@sha256:5014056bf2ba6d9f4fff4367660b380bff7551363d487982e6753ec5dc1c25d9,2169
 - completed:
-    hackage: persistent-postgresql-2.13.4.0@sha256:7fc0ffc4a591c0355c8ad793bc6de08c13321c81a3fb748c9a23448ac88d987a,3686
+    hackage: hspec-expectations-0.8.4@sha256:4237f094a7931202ff57ac6475542b0b314b50a7024550e2b6eb87cfb0d4ff93,1702
     pantry-tree:
-      size: 1140
-      sha256: 78b6907bf9bc82a524251dfeb2cf0d3f8c599427c8ae0b0a1d933158b6909281
+      sha256: 87681840d430b84686f83f1ab8b5873b09c349775698665233443914acf9ba2b
+      size: 741
   original:
-    hackage: persistent-postgresql-2.13.4.0
+    hackage: hspec-expectations-0.8.4@sha256:4237f094a7931202ff57ac6475542b0b314b50a7024550e2b6eb87cfb0d4ff93,1702
 - completed:
-    hackage: proto-lens-0.7.1.0@sha256:b151890929e71db5b8c2ad86cd758bcdf1dfcf25f34eb6c9ce19e3d7cd4eae39,2959
+    hackage: proto-lens-0.7.1.3@sha256:2d56bf8c37e21d741385e155d0dd327468ab1bc6897d10b0462b7e241d8e61a3,2973
     pantry-tree:
+      sha256: aa23b37148ad8d0b74b66bfd36dfffa8ea375a865d0f38399f898ea7c7c8cb36
       size: 1857
-      sha256: 2f1199d04d0588805e06faa0bf9a75898584d76243d4f945acbcc0e93913732e
   original:
-    hackage: proto-lens-0.7.1.0
+    hackage: proto-lens-0.7.1.3@sha256:2d56bf8c37e21d741385e155d0dd327468ab1bc6897d10b0462b7e241d8e61a3,2973
 - completed:
-    hackage: proto-lens-runtime-0.7.0.1@sha256:703f327422b2e204f8ea13c5e178edd8ab42ccd01c7a5a89fcb1b37ab474c68a,3038
+    hackage: proto-lens-runtime-0.7.0.4@sha256:1a64cb98b49541e53ea8a19270d7247960445083a2327a091ce0a1cafdef16f3,3051
     pantry-tree:
+      sha256: 8b82a336d432e0caff944ea5315be498b1a3e5f116ae9a34a190f92d50892a14
       size: 168
-      sha256: 145cb9a15b73d45b07cb3f9f0716256b2ed9e27ac296268ce100a4f0e477e110
   original:
-    hackage: proto-lens-runtime-0.7.0.1
+    hackage: proto-lens-runtime-0.7.0.4@sha256:1a64cb98b49541e53ea8a19270d7247960445083a2327a091ce0a1cafdef16f3,3051
+- completed:
+    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+    pantry-tree:
+      sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
+      size: 397
+  original:
+    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+- completed:
+    hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
+    pantry-tree:
+      sha256: 8c2c2e2e22c20bf3696ee6f30b50b3a9eeae187a22beb536441eefb0a3f9c549
+      size: 400
+  original:
+    hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
 snapshots:
 - completed:
-    size: 586106
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/20.yaml
-    sha256: 8699812d2b2c1f83d6ad1261de9cf628ed36a1cfc14f19d67188e005e7a3a39d
-  original: lts-18.20
+    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
+    size: 590100
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+  original: lts-18.28

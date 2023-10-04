@@ -29,10 +29,10 @@ haddock-style: multi-line
 haddock-style-module: null
 
 # Styling of let blocks (choices: auto, inline, newline, or mixed)
-let-style: auto
+let-style: inline
 
 # How to align the 'in' keyword with respect to the 'let' keyword (choices: left-align, right-align, or no-space)
-in-style: no-space
+in-style: right-align
 
 # Whether to put parentheses around a single constraint (choices: auto, always, or never)
 single-constraint-parens: auto

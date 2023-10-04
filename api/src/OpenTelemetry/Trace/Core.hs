@@ -316,13 +316,14 @@ callerAttributes = case getCallStack callStack of
 
 
 srcAttributes :: (String, SrcLoc) -> H.HashMap Text Attribute
-srcAttributes (fn, loc) = H.fromList
-  [ ("code.function", toAttribute $ T.pack fn)
-  , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-  , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-  , ("code.lineno", toAttribute $ srcLocStartLine loc)
-  , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-  ]
+srcAttributes (fn, loc) =
+  H.fromList
+    [ ("code.function", toAttribute $ T.pack fn)
+    , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+    , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+    , ("code.lineno", toAttribute $ srcLocStartLine loc)
+    , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+    ]
 
 
 {- | Attributes are added to the end of the span argument list, so will be discarded

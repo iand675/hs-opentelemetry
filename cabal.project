@@ -7,18 +7,18 @@ packages:
   , exporters/handle
   , exporters/in-memory
   , exporters/otlp
-  , propagators/datadog
-  , propagators/w3c
-  , propagators/b3
-  , instrumentation/conduit
   , instrumentation/cloudflare
+  , instrumentation/conduit
   , instrumentation/hspec
   , instrumentation/http-client
   , instrumentation/persistent
   , instrumentation/persistent-mysql
   , instrumentation/postgresql-simple
-  , instrumentation/yesod
   , instrumentation/wai
+  , instrumentation/yesod
+  , propagators/b3
+  , propagators/datadog
+  , propagators/w3c
   , utils/exceptions
   , vendors/honeycomb
 

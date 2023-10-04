@@ -34,26 +34,28 @@ packages:
 - api
 - sdk
 - otlp
+- examples/hspec
+- examples/yesod-minimal
 - exporters/handle
 - exporters/in-memory
-# - exporters/jaeger
 - exporters/otlp
-# - exporters/prometheus
-- propagators/b3
-- propagators/datadog
-# - propagators/jaeger
-- propagators/w3c
-- instrumentation/conduit
 - instrumentation/cloudflare
+- instrumentation/conduit
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
-- instrumentation/yesod
 - instrumentation/wai
-- examples/yesod-minimal
+- instrumentation/yesod
+- propagators/b3
+- propagators/datadog
+- propagators/w3c
 - utils/exceptions
+# - exporters/jaeger
+# - exporters/prometheus
+# - propagators/jaeger
+# - vendors/honeycomb # incompatible with resolver lts-19.2
 
 # Dependency packages to be pulled from upstream that are not in the resolver.
 # These entries can reference officially published versions as well as
@@ -65,11 +67,12 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-- hspec-2.10.6@sha256:c90dbcc629e88e5f56021c7dba26a97109a0c441aeece6ead217ee3fc83dcb68,1712
-- hspec-core-2.10.6@sha256:68a74267974fee22f4bc57b5d353391e8dc943b0d7ffaf5d47dab691765ee772,6659
-- hspec-discover-2.10.6@sha256:df63254c5aa8c5c2b9233b0067728394936b6c9af7e3a5d3d44df78d888dcefd,2167
-- thread-utils-context-0.3.0.4
-- thread-utils-finalizers-0.1.1.0
+- hspec-2.11.4@sha256:424280c999a5815758c9cfbd2c4ff3df7650027b53ef4aacb40966f4c78443e0,1714
+- hspec-core-2.11.4@sha256:1d996912bfb66b0b5ba236ab72d5f66a1573fe8d00becd3c8825c5d9692709c7,6765
+- hspec-discover-2.11.4@sha256:5014056bf2ba6d9f4fff4367660b380bff7551363d487982e6753ec5dc1c25d9,2169
+- hspec-expectations-0.8.4@sha256:4237f094a7931202ff57ac6475542b0b314b50a7024550e2b6eb87cfb0d4ff93,1702
+- thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+- thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
