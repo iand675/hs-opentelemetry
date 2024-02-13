@@ -63,7 +63,7 @@ data Log body = Log
   , attributes :: Maybe [(Text, Attribute)]
   -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source. Can contain information about the request context (other than TraceId/SpanId). SHOULD follow OpenTelemetry semantic conventions for Log Attributes or semantic conventions for Span Attributes. This field is optional.
   }
-  deriving stock (Functor)
+  deriving stock (Show, Functor)
 
 
 data SeverityNumber
