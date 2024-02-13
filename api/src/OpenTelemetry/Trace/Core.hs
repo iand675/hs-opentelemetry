@@ -49,6 +49,7 @@ module OpenTelemetry.Trace.Core (
   createTracerProvider,
   shutdownTracerProvider,
   forceFlushTracerProvider,
+  FlushResult (..),
   getTracerProviderResources,
   getTracerProviderPropagators,
   getGlobalTracerProvider,
