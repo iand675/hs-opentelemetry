@@ -21,7 +21,7 @@ import Data.IP (fromHostAddress, fromHostAddress6)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vault.Lazy as Vault
-import GHC.Stack (HasCallStack, callStack, popCallStack)
+import GHC.Stack (HasCallStack)
 import Network.HTTP.Types
 import Network.Socket
 import Network.Wai
@@ -60,7 +60,6 @@ newOpenTelemetryWaiMiddleware' tp =
             attachContext ctxt
       let path_ = T.decodeUtf8 $ rawPathInfo req
       -- peer = remoteHost req
-      parentContextM
 
       semanticsOptions <- getSemanticsOptions
       let args =
@@ -84,7 +83,7 @@ newOpenTelemetryWaiMiddleware' tp =
                                   ]
                     Old -> usefulCallsite
               }
-      inSpan'' tracer path_ args $ \requestSpan -> do
+      bracket parentContextM (const $ void detachContext) $ \_ -> inSpan'' tracer path_ args $ \requestSpan -> do
         ctxt <- getContext
 
         let addStableAttributes = do
