@@ -1,5 +1,7 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
 
@@ -9,6 +11,7 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
 import Data.CaseInsensitive (foldedCase)
 import qualified Data.HashMap.Strict as H
+import Data.Maybe
 import Data.Maybe (mapMaybe)
 import qualified Data.Maybe
 import qualified Data.Text as T
@@ -19,12 +22,22 @@ import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
 import OpenTelemetry.Trace.Core
+import System.Environment
 
 
 data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
   { requestName :: Maybe T.Text
   , requestHeadersToRecord :: [HeaderName]
   , responseHeadersToRecord :: [HeaderName]
+  }
+
+
+data SemConvStabilityOptIn = Stable | Both | Old
+
+
+data HttpTracer = HttpTracer
+  { semConvStabilityOptIn :: SemConvStabilityOptIn
+  , tracer :: Tracer
   }
 
 
@@ -51,10 +64,18 @@ httpClientInstrumentationConfig = mempty
 
 
 -- TODO see if we can avoid recreating this on each request without being more invasive with the interface
-httpTracerProvider :: (MonadIO m) => m Tracer
+httpTracerProvider :: (MonadIO m) => m HttpTracer
 httpTracerProvider = do
+  semConvStabilityOptIn <-
+    liftIO $
+      ( \case
+          Just "http" -> Stable
+          Just "http/dup" -> Both
+          _ -> Old
+      )
+        <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
   tp <- getGlobalTracerProvider
-  pure $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
+  pure $ HttpTracer semConvStabilityOptIn $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
 
 
 instrumentRequest
@@ -64,36 +85,66 @@ instrumentRequest
   -> Request
   -> m Request
 instrumentRequest conf ctxt req = do
-  tp <- httpTracerProvider
+  HttpTracer {..} <- httpTracerProvider
   forM_ (lookupSpan ctxt) $ \s -> do
     let url =
           T.decodeUtf8
             ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
     updateName s $ Data.Maybe.fromMaybe url $ requestName conf
-    addAttributes
-      s
-      [ ("http.method", toAttribute $ T.decodeUtf8 $ method req)
-      , ("http.url", toAttribute url)
-      , ("http.target", toAttribute $ T.decodeUtf8 (path req <> queryString req))
-      , ("http.host", toAttribute $ T.decodeUtf8 $ host req)
-      , ("http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
-      ,
-        ( "http.flavor"
-        , toAttribute $ case requestVersion req of
-            (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
-        )
-      ,
-        ( "http.user_agent"
-        , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
-        )
-      ]
-    addAttributes s
-      $ H.fromList
-      $ mapMaybe
-        (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
-      $ requestHeadersToRecord conf
+    let addStableAttributes = do
+          addAttributes
+            s
+            [ ("http.request.method", toAttribute $ T.decodeUtf8 $ method req)
+            , ("url.full", toAttribute url)
+            , ("url.path", toAttribute $ T.decodeUtf8 $ path req)
+            , ("url.query", toAttribute $ T.decodeUtf8 $ queryString req)
+            , ("http.host", toAttribute $ T.decodeUtf8 $ host req)
+            , ("url.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
+            ,
+              ( "network.protocol.version"
+              , toAttribute $ case requestVersion req of
+                  (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
+              )
+            ,
+              ( "user_agent.original"
+              , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
+              )
+            ]
+          addAttributes s
+            $ H.fromList
+            $ mapMaybe
+              (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) -- ! Ask About this: No normalization from - to _. Now must be provided to the sampler
+            $ requestHeadersToRecord conf
+        addOldAttributes = do
+          addAttributes
+            s
+            [ ("http.method", toAttribute $ T.decodeUtf8 $ method req)
+            , ("http.url", toAttribute url)
+            , ("http.target", toAttribute $ T.decodeUtf8 (path req <> queryString req))
+            , ("http.host", toAttribute $ T.decodeUtf8 $ host req)
+            , ("http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
+            ,
+              ( "http.flavor"
+              , toAttribute $ case requestVersion req of
+                  (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
+              )
+            ,
+              ( "http.user_agent"
+              , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
+              )
+            ]
+          addAttributes s
+            $ H.fromList
+            $ mapMaybe
+              (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
+            $ requestHeadersToRecord conf
 
-  hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tp) ctxt $ requestHeaders req
+    case semConvStabilityOptIn of
+      Stable -> addStableAttributes
+      Both -> addStableAttributes >> addOldAttributes
+      Old -> addOldAttributes
+
+  hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tracer) ctxt $ requestHeaders req
   pure $
     req
       { requestHeaders = hdrs
@@ -107,15 +158,15 @@ instrumentResponse
   -> Response a
   -> m ()
 instrumentResponse conf ctxt resp = do
-  tp <- httpTracerProvider
-  ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tp) (responseHeaders resp) ctxt
+  HttpTracer {..} <- httpTracerProvider
+  ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tracer) (responseHeaders resp) ctxt
   _ <- attachContext ctxt'
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")
     addAttributes
-      s
-      [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
+      s -- TODO: change these to the new format for headers
+      [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp) -- http.response.statusCode
       -- TODO
       -- , ("http.request_content_length",	_)
       -- , ("http.request_content_length_uncompressed",	_)
