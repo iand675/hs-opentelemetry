@@ -164,21 +164,46 @@ instrumentResponse conf ctxt resp = do
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")
-    addAttributes
-      s -- TODO: change these to the new format for headers
-      [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp) -- http.response.statusCode
-      -- TODO
-      -- , ("http.request_content_length",	_)
-      -- , ("http.request_content_length_uncompressed",	_)
-      -- , ("http.response_content_length", _)
-      -- , ("http.response_content_length_uncompressed", _)
-      -- , ("net.transport")
-      -- , ("net.peer.name")
-      -- , ("net.peer.ip")
-      -- , ("net.peer.port")
-      ]
-    addAttributes s
-      $ H.fromList
-      $ mapMaybe
-        (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
-      $ responseHeadersToRecord conf
+    let addStableAttributes = 
+          addAttributes
+            s 
+            [ ("http.response.statusCode", toAttribute $ statusCode $ responseStatus resp) 
+            -- TODO
+            -- , ("http.request.body.size",	_)
+            -- , ("http.request_content_length_uncompressed",	_)
+            -- , ("http.reponse.body.size", _)
+            -- , ("http.response_content_length_uncompressed", _)
+            -- , ("net.transport")
+            -- , ("server.address")
+            -- , ("net.peer.ip")
+            -- , ("server.port")
+            ]
+          addAttributes s
+            $ H.fromList
+            $ mapMaybe
+              (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
+            $ responseHeadersToRecord conf
+        addOldAttributes =
+          addAttributes
+            s 
+            [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp) 
+            -- TODO
+            -- , ("http.request_content_length",	_)
+            -- , ("http.request_content_length_uncompressed",	_)
+            -- , ("http.response_content_length", _)
+            -- , ("http.response_content_length_uncompressed", _)
+            -- , ("net.transport")
+            -- , ("net.peer.name")
+            -- , ("net.peer.ip")
+            -- , ("net.peer.port")
+            ]
+          addAttributes s
+            $ H.fromList
+            $ mapMaybe
+              (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
+            $ responseHeadersToRecord conf
+
+    case semConvStabilityOptIn of
+      Stable -> addStableAttributes
+      Both -> addStableAttributes >> addOldAttributes
+      Old -> addOldAttributes
