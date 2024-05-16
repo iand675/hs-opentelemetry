@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {- | Offer a few options for HTTP instrumentation
 
@@ -28,7 +29,7 @@ import OpenTelemetry.Instrumentation.HttpClient.Raw (
   httpClientInstrumentationConfig,
   httpTracerProvider,
   instrumentRequest,
-  instrumentResponse,
+  instrumentResponse, HttpTracer (..),
  )
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
@@ -68,8 +69,8 @@ withResponse
   -> (Client.Response Client.BodyReader -> m a)
   -> m a
 withResponse httpConf req man f = do
-  t <- httpTracerProvider
-  inSpan'' t "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
+  HttpTracer {..} <- httpTracerProvider
+  inSpan'' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
     ctxt <- getContext
     -- TODO would like to capture the req/resp time specifically
     -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
@@ -88,8 +89,8 @@ withResponse httpConf req man f = do
 -}
 httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = do
-  t <- httpTracerProvider
-  inSpan'' t "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
+  HttpTracer {..} <- httpTracerProvider
+  inSpan'' tracer "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.httpLbs req' man
@@ -102,8 +103,8 @@ httpLbs httpConf req man = do
 -}
 httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = do
-  t <- httpTracerProvider
-  inSpan'' t "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
+  HttpTracer {..} <- httpTracerProvider
+  inSpan'' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.httpNoBody req' man
@@ -141,8 +142,8 @@ httpNoBody httpConf req man = do
 -}
 responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = do
-  t <- httpTracerProvider
-  inSpan'' t "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
+  HttpTracer {..} <- httpTracerProvider
+  inSpan'' tracer "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.responseOpen req' man
