@@ -12,8 +12,6 @@ import qualified Data.ByteString.Char8 as B
 import Data.CaseInsensitive (foldedCase)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe
-import Data.Maybe (mapMaybe)
-import qualified Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Network.HTTP.Client
@@ -164,7 +162,7 @@ instrumentResponse conf ctxt resp = do
   forM_ (lookupSpan ctxt') $ \s -> do
     when (statusCode (responseStatus resp) >= 400) $ do
       setStatus s (Error "")
-    let addStableAttributes = 
+    let addStableAttributes = do
           addAttributes
             s 
             [ ("http.response.statusCode", toAttribute $ statusCode $ responseStatus resp) 
@@ -183,7 +181,7 @@ instrumentResponse conf ctxt resp = do
             $ mapMaybe
               (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
             $ responseHeadersToRecord conf
-        addOldAttributes =
+        addOldAttributes = do
           addAttributes
             s 
             [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp) 
