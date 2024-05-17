@@ -111,7 +111,7 @@ instrumentRequest conf ctxt req = do
           addAttributes s
             $ H.fromList
             $ mapMaybe
-              (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) -- ! Ask About this: No normalization from - to _. Now must be provided to the sampler
+              (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) -- ! Ask About this: Now must be provided to the sampler
             $ requestHeadersToRecord conf
         addOldAttributes = do
           addAttributes
@@ -164,12 +164,12 @@ instrumentResponse conf ctxt resp = do
       setStatus s (Error "")
     let addStableAttributes = do
           addAttributes
-            s 
-            [ ("http.response.statusCode", toAttribute $ statusCode $ responseStatus resp) 
+            s
+            [ ("http.response.statusCode", toAttribute $ statusCode $ responseStatus resp)
             -- TODO
             -- , ("http.request.body.size",	_)
             -- , ("http.request_content_length_uncompressed",	_)
-            -- , ("http.reponse.body.size", _)
+            -- , ("http.response.body.size", _)
             -- , ("http.response_content_length_uncompressed", _)
             -- , ("net.transport")
             -- , ("server.address")
@@ -183,8 +183,8 @@ instrumentResponse conf ctxt resp = do
             $ responseHeadersToRecord conf
         addOldAttributes = do
           addAttributes
-            s 
-            [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp) 
+            s
+            [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
             -- TODO
             -- , ("http.request_content_length",	_)
             -- , ("http.request_content_length_uncompressed",	_)
