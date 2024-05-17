@@ -222,7 +222,7 @@ openTelemetryYesodMiddleware rr m = do
                 pure ("http.handler", toAttribute $ nameRender rr r)
             , do
                 ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff) -- ! client.address
             ]
       args =
         defaultSpanArguments
