@@ -119,10 +119,10 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
       H.union
         [ ("db.connection_string", fromString $ showsPrecConnectInfoMasked 0 ci "")
         , ("db.user", fromString connectUser)
-        , ("net.peer.port", portAttr)
-        , ("net.sock.peer.port", portAttr)
+        , ("net.peer.port", portAttr) -- ! server.port
+        , ("net.sock.peer.port", portAttr) -- network.peer.port
         , ("net.transport", transportAttr)
-        , (maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost)
+        , (maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost) -- net.peer.name is server.address, net.sock.peer.addr -> network.peer.address
         ]
         attrs
   (conn, backend) <- Orig.openMySQLConn ci logFunc

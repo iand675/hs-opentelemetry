@@ -96,13 +96,13 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
         [ "db.system" .= toAttribute ("postgresql" :: T.Text)
         , "db.user" .=? (TE.decodeUtf8 <$> mUser)
         , "db.name" .=? (TE.decodeUtf8 <$> mDb)
-        , "net.peer.port"
+        , "net.peer.port" -- server.port
             .=? ( do
                     port <- TE.decodeUtf8 <$> mPort
                     (readMaybe $ T.unpack port) :: Maybe Int
                 )
         , case (readMaybe . C.unpack) =<< mHost of
-            Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost)
+            Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost) -- server.address
             Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
             Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
         ]
