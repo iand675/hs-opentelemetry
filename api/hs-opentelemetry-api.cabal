@@ -52,7 +52,7 @@ library
       OpenTelemetry.Resource.Service
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
-      OpenTelemetry.Settings
+      OpenTelemetry.SemConvStabilityOptIn
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.Id.Generator

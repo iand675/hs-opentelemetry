@@ -1,7 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
 
@@ -19,16 +17,14 @@ import Network.HTTP.Types
 import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
-import OpenTelemetry.Settings
+import OpenTelemetry.SemConvStabilityOptIn
 import OpenTelemetry.Trace.Core
-import System.Environment
 
 
 data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
   { requestName :: Maybe T.Text
   , requestHeadersToRecord :: [HeaderName]
   , responseHeadersToRecord :: [HeaderName]
-  , settings :: Settings
   }
 
 
@@ -122,7 +118,8 @@ instrumentRequest conf ctxt req = do
               (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
             $ requestHeadersToRecord conf
 
-    case semConvStabilityOptIn . settings $ conf of
+    semConvStabilityOptIn <- liftIO getSemConvStabilityOptIn
+    case semConvStabilityOptIn of
       Stable -> addStableAttributes
       Both -> addStableAttributes >> addOldAttributes
       Old -> addOldAttributes
@@ -186,7 +183,8 @@ instrumentResponse conf ctxt resp = do
               (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
             $ responseHeadersToRecord conf
 
-    case semConvStabilityOptIn . settings $ conf of
+    semConvStabilityOptIn <- liftIO getSemConvStabilityOptIn
+    case semConvStabilityOptIn of
       Stable -> addStableAttributes
       Both -> addStableAttributes >> addOldAttributes
       Old -> addOldAttributes
