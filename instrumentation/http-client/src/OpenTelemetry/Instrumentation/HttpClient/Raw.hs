@@ -19,6 +19,7 @@ import Network.HTTP.Types
 import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
+import OpenTelemetry.Settings
 import OpenTelemetry.Trace.Core
 import System.Environment
 
@@ -27,15 +28,7 @@ data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
   { requestName :: Maybe T.Text
   , requestHeadersToRecord :: [HeaderName]
   , responseHeadersToRecord :: [HeaderName]
-  }
-
-
-data SemConvStabilityOptIn = Stable | Both | Old
-
-
-data HttpTracer = HttpTracer
-  { semConvStabilityOptIn :: SemConvStabilityOptIn
-  , tracer :: Tracer
+  , settings :: Settings
   }
 
 
@@ -62,18 +55,10 @@ httpClientInstrumentationConfig = mempty
 
 
 -- TODO see if we can avoid recreating this on each request without being more invasive with the interface
-httpTracerProvider :: (MonadIO m) => m HttpTracer
+httpTracerProvider :: (MonadIO m) => m Tracer
 httpTracerProvider = do
-  semConvStabilityOptIn <-
-    liftIO $
-      ( \case
-          Just "http" -> Stable
-          Just "http/dup" -> Both
-          _ -> Old
-      )
-        <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
   tp <- getGlobalTracerProvider
-  pure $ HttpTracer semConvStabilityOptIn $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
+  pure $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
 
 
 instrumentRequest
@@ -83,7 +68,7 @@ instrumentRequest
   -> Request
   -> m Request
 instrumentRequest conf ctxt req = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   forM_ (lookupSpan ctxt) $ \s -> do
     let url =
           T.decodeUtf8
@@ -137,7 +122,7 @@ instrumentRequest conf ctxt req = do
               (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
             $ requestHeadersToRecord conf
 
-    case semConvStabilityOptIn of
+    case semConvStabilityOptIn . settings $ conf of
       Stable -> addStableAttributes
       Both -> addStableAttributes >> addOldAttributes
       Old -> addOldAttributes
@@ -156,7 +141,7 @@ instrumentResponse
   -> Response a
   -> m ()
 instrumentResponse conf ctxt resp = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   ctxt' <- extract (getTracerProviderPropagators $ getTracerTracerProvider tracer) (responseHeaders resp) ctxt
   _ <- attachContext ctxt'
   forM_ (lookupSpan ctxt') $ \s -> do
@@ -201,7 +186,7 @@ instrumentResponse conf ctxt resp = do
               (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
             $ responseHeadersToRecord conf
 
-    case semConvStabilityOptIn of
+    case semConvStabilityOptIn . settings $ conf of
       Stable -> addStableAttributes
       Both -> addStableAttributes >> addOldAttributes
       Old -> addOldAttributes
