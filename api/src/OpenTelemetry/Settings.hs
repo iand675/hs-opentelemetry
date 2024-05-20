@@ -4,6 +4,7 @@ module OpenTelemetry.Settings (
   Settings,
   semConvStabilityOptIn,
   defaultSettings,
+  SemConvStabilityOptIn (Stable, Both, Old),
 ) where
 
 import System.Environment (lookupEnv)
