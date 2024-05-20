@@ -69,7 +69,7 @@ instrumentRequest conf ctxt req = do
     let url =
           T.decodeUtf8
             ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
-    updateName s $ Data.Maybe.fromMaybe url $ requestName conf
+    updateName s $ fromMaybe url $ requestName conf
     let addStableAttributes = do
           addAttributes
             s
