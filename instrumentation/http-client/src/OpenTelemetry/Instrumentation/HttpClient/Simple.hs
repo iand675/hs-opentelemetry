@@ -36,7 +36,7 @@ spanArgs = defaultSpanArguments {kind = Client}
 
 httpBS :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response B.ByteString)
 httpBS httpConf req = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "httpBS" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -47,7 +47,7 @@ httpBS httpConf req = do
 
 httpLBS :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response L.ByteString)
 httpLBS httpConf req = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "httpLBS" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -58,7 +58,7 @@ httpLBS httpConf req = do
 
 httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response ())
 httpNoBody httpConf req = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -69,7 +69,7 @@ httpNoBody httpConf req = do
 
 httpJSON :: (MonadUnliftIO m, FromJSON a, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response a)
 httpJSON httpConf req = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "httpJSON" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -80,7 +80,7 @@ httpJSON httpConf req = do
 
 httpJSONEither :: (FromJSON a, MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> m (Simple.Response (Either Simple.JSONException a))
 httpJSONEither httpConf req = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "httpJSONEither" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -91,7 +91,7 @@ httpJSONEither httpConf req = do
 
 httpSink :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response () -> ConduitM B.ByteString Void m a) -> m a
 httpSink httpConf req f = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "httpSink" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -102,7 +102,7 @@ httpSink httpConf req f = do
 
 httpSource :: (MonadUnliftIO m, MonadResource m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> ConduitM i o m r) -> ConduitM i o m r
 httpSource httpConf req f = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   Conduit.inSpan tracer "httpSource" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- lift getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -113,7 +113,7 @@ httpSource httpConf req f = do
 
 withResponse :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Simple.Request -> (Simple.Response (ConduitM i B.ByteString m ()) -> m a) -> m a
 withResponse httpConf req f = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_s -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req

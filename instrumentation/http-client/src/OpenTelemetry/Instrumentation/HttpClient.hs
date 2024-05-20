@@ -29,7 +29,7 @@ import OpenTelemetry.Instrumentation.HttpClient.Raw (
   httpClientInstrumentationConfig,
   httpTracerProvider,
   instrumentRequest,
-  instrumentResponse, HttpTracer (..),
+  instrumentResponse,
  )
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
@@ -69,7 +69,7 @@ withResponse
   -> (Client.Response Client.BodyReader -> m a)
   -> m a
 withResponse httpConf req man f = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan'' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
     ctxt <- getContext
     -- TODO would like to capture the req/resp time specifically
@@ -89,7 +89,7 @@ withResponse httpConf req man f = do
 -}
 httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan'' tracer "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -103,7 +103,7 @@ httpLbs httpConf req man = do
 -}
 httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan'' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
@@ -142,7 +142,7 @@ httpNoBody httpConf req man = do
 -}
 responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = do
-  HttpTracer {..} <- httpTracerProvider
+  tracer <- httpTracerProvider
   inSpan'' tracer "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
