@@ -92,7 +92,7 @@ instrumentRequest conf ctxt req = do
           addAttributes s
             $ H.fromList
             $ mapMaybe
-              (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req)) -- ! Ask About this: Now must be provided to the sampler
+              (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
             $ requestHeadersToRecord conf
         addOldAttributes = do
           addAttributes
