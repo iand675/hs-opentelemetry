@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -67,6 +67,7 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , hs-opentelemetry-api ==0.1.*
     , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
     , hs-opentelemetry-instrumentation-http-client
+    , hspec
     , http-client
     , http-client-tls
     , http-conduit
