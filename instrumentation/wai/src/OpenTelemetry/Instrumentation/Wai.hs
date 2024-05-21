@@ -55,6 +55,7 @@ newOpenTelemetryWaiMiddleware' tp =
       let path_ = T.decodeUtf8 $ rawPathInfo req
       -- peer = remoteHost req
       parentContextM
+      semConvStabilityOptIn <- getSemConvStabilityOptIn
       let args =
             defaultSpanArguments
               { kind = Server
@@ -157,7 +158,6 @@ newOpenTelemetryWaiMiddleware' tp =
                 SockAddrUnix path ->
                   [ ("net.peer.name", toAttribute $ T.pack path)
                   ]
-        semConvStabilityOptIn <- getSemConvStabilityOptIn
         case semConvStabilityOptIn of
           Stable -> addStableAttributes
           Both -> addOldAttributes >> addStableAttributes
