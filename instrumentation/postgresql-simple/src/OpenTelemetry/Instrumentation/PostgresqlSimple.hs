@@ -40,6 +40,7 @@ import qualified Data.ByteString.Char8 as C
 import qualified Data.HashMap.Strict as H
 import Data.IP
 import Data.Int (Int64)
+import Data.List
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -75,6 +76,7 @@ import Database.PostgreSQL.Simple.Internal (
  )
 import GHC.Stack
 import OpenTelemetry.Resource ((.=), (.=?))
+import OpenTelemetry.SemConvStabilityOptIn
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
 import Text.Read (readMaybe)
@@ -90,22 +92,44 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
       <*> LibPQ.user pqConn
       <*> LibPQ.host pqConn
       <*> LibPQ.port pqConn
-  pure $
-    H.fromList $
-      catMaybes
+
+  semConvStabilityOptIn <- getSemConvStabilityOptIn
+  let stableMaybeAttributes =
         [ "db.system" .= toAttribute ("postgresql" :: T.Text)
         , "db.user" .=? (TE.decodeUtf8 <$> mUser)
         , "db.name" .=? (TE.decodeUtf8 <$> mDb)
-        , "net.peer.port" -- server.port
+        , "server.port"
             .=? ( do
                     port <- TE.decodeUtf8 <$> mPort
                     (readMaybe $ T.unpack port) :: Maybe Int
                 )
         , case (readMaybe . C.unpack) =<< mHost of
-            Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost) -- server.address
+            Nothing -> "server.address" .=? (TE.decodeUtf8 <$> mHost)
+            Just (IPv4 ipv4) -> "server.address" .= T.pack (show ipv4)
+            Just (IPv6 ipv6) -> "server.address" .= T.pack (show ipv6)
+        ]
+      oldMaybeAttributes =
+        [ "db.system" .= toAttribute ("postgresql" :: T.Text)
+        , "db.user" .=? (TE.decodeUtf8 <$> mUser)
+        , "db.name" .=? (TE.decodeUtf8 <$> mDb)
+        , "net.peer.port"
+            .=? ( do
+                    port <- TE.decodeUtf8 <$> mPort
+                    (readMaybe $ T.unpack port) :: Maybe Int
+                )
+        , case (readMaybe . C.unpack) =<< mHost of
+            Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost)
             Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
             Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
         ]
+
+  pure $
+    H.fromList $
+      catMaybes $
+        case semConvStabilityOptIn of
+          Stable -> stableMaybeAttributes
+          Both -> stableMaybeAttributes `union` oldMaybeAttributes
+          Old -> oldMaybeAttributes
 
 {-
 -- | Perform a @SELECT@ or other SQL query that is expected to return

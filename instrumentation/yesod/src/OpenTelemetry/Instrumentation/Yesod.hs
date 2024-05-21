@@ -29,6 +29,7 @@ import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Contrib.SpanTraversals
 import OpenTelemetry.Instrumentation.Wai (requestContext)
+import OpenTelemetry.SemConvStabilityOptIn
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO.Exception
@@ -210,20 +211,31 @@ openTelemetryYesodMiddleware
 openTelemetryYesodMiddleware rr m = do
   req <- waiRequest
   mr <- getCurrentRoute
+  semConvStabilityOptIn <- liftIO getSemConvStabilityOptIn
   let mspan = requestContext req >>= Context.lookupSpan
-      sharedAttributes = H.fromList $
-        ("http.framework", toAttribute ("yesod" :: Text))
-          : catMaybes
-            [ do
-                r <- mr
-                pure ("http.route", toAttribute $ pathRender rr r)
-            , do
-                r <- mr
-                pure ("http.handler", toAttribute $ nameRender rr r)
-            , do
-                ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff) -- ! client.address
-            ]
+      sharedAttributes =
+        H.fromList $
+          ("http.framework", toAttribute ("yesod" :: Text))
+            : catMaybes
+              [ do
+                  r <- mr
+                  pure ("http.route", toAttribute $ pathRender rr r)
+              , do
+                  r <- mr
+                  pure ("http.handler", toAttribute $ nameRender rr r)
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case semConvStabilityOptIn of
+                    Stable -> pure ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Both -> pure ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Nothing
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case semConvStabilityOptIn of
+                    Stable -> Nothing
+                    Both -> pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    Old -> pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+              ]
       args =
         defaultSpanArguments
           { kind = maybe Server (const Internal) mspan

@@ -155,7 +155,6 @@ instrumentResponse conf ctxt resp = do
             -- , ("http.response_content_length_uncompressed", _)
             -- , ("net.transport")
             -- , ("server.address")
-            -- , ("net.peer.ip")
             -- , ("server.port")
             ]
           addAttributes s
