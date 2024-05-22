@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import System.Environment (lookupEnv)
 
 
-data SemConvStabilityOptIn = Stable | Both | Old
+data SemConvStabilityOptIn = Stable | Both | Old deriving (Show, Eq)
 
 
 getSemConvStabilityOptIn :: IO SemConvStabilityOptIn
