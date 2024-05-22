@@ -100,6 +100,7 @@ test-suite hs-opentelemetry-api-test
   main-is: Spec.hs
   other-modules:
       OpenTelemetry.BaggageSpec
+      OpenTelemetry.SemConvStabilityOptInSpec
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
       Paths_hs_opentelemetry_api
