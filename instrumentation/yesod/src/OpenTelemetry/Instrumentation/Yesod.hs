@@ -225,22 +225,22 @@ openTelemetryYesodMiddleware rr m = do
             : catMaybes
               [ do
                   r <- mr
-                  pure ("http.route", toAttribute $ pathRender rr r)
+                  Just ("http.route", toAttribute $ pathRender rr r)
               , do
                   r <- mr
-                  pure ("http.handler", toAttribute $ nameRender rr r)
+                  Just ("http.handler", toAttribute $ nameRender rr r)
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
                   case semConvStabilityOptIn of
-                    Stable -> pure ("client.address", toAttribute $ T.decodeUtf8 ff)
-                    Both -> pure ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Stable -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Both -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
                     Old -> Nothing
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
                   case semConvStabilityOptIn of
                     Stable -> Nothing
-                    Both -> pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-                    Old -> pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    Both -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
               ]
       args =
         defaultSpanArguments
