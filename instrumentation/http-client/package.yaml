@@ -48,4 +48,3 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hs-opentelemetry-instrumentation-http-client
-    - hspec
