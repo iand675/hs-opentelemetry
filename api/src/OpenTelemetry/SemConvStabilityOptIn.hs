@@ -12,16 +12,15 @@ import System.Environment (lookupEnv)
 data SemConvStabilityOptIn = Stable | Both | Old deriving (Show, Eq)
 
 
+parseSemConvStabilityOptIn :: Maybe String -> SemConvStabilityOptIn
+parseSemConvStabilityOptIn Nothing = Old
+parseSemConvStabilityOptIn (Just env)
+  | "http/dup" `elem` envs = Both
+  | "http" `elem` envs = Stable
+  | otherwise = Old
+  where
+    envs = fmap T.strip . T.splitOn "," . T.pack $ env
+
+
 getSemConvStabilityOptIn :: IO SemConvStabilityOptIn
-getSemConvStabilityOptIn = do
-  menv <- lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
-  let menvs = fmap T.strip . T.splitOn "," . T.pack <$> menv
-  pure $ case menvs of
-    Nothing -> Old
-    Just envs ->
-      if "http/dup" `elem` envs
-        then Both
-        else
-          if "http" `elem` envs
-            then Stable
-            else Old
+getSemConvStabilityOptIn = parseSemConvStabilityOptIn <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
