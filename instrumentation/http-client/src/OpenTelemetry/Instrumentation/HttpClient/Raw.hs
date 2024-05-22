@@ -70,6 +70,7 @@ instrumentRequest conf ctxt req = do
           T.decodeUtf8
             ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
     updateName s $ fromMaybe url $ requestName conf
+
     let addStableAttributes = do
           addAttributes
             s
@@ -94,6 +95,7 @@ instrumentRequest conf ctxt req = do
             $ mapMaybe
               (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
             $ requestHeadersToRecord conf
+
         addOldAttributes = do
           addAttributes
             s
