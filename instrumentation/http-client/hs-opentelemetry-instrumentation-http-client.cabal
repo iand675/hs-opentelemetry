@@ -67,7 +67,6 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , hs-opentelemetry-api ==0.1.*
     , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
     , hs-opentelemetry-instrumentation-http-client
-    , hspec
     , http-client
     , http-client-tls
     , http-conduit
