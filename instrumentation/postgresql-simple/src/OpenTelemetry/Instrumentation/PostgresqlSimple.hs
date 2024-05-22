@@ -1,6 +1,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+-}
 module OpenTelemetry.Instrumentation.PostgresqlSimple (
   staticConnectionAttributes,
   {-

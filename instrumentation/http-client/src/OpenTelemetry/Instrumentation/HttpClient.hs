@@ -6,6 +6,11 @@
 - Use internals to instrument a particular callsite using modifyRequest, modifyResponse (Next best)
 - Provide a middleware to pull from the thread-local state (okay)
 - Modify the global manager to pull from the thread-local state (least good, can't be helped sometimes)
+
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
 -}
 module OpenTelemetry.Instrumentation.HttpClient (
   withResponse,
