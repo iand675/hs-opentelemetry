@@ -52,7 +52,7 @@ library
       OpenTelemetry.Resource.Service
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
-      OpenTelemetry.SemConvStabilityOptIn
+      OpenTelemetry.SemanticsConfig
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.Id.Generator
@@ -84,6 +84,7 @@ library
     , http-types
     , memory
     , mtl
+    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.3.*
@@ -126,6 +127,7 @@ test-suite hs-opentelemetry-api-test
     , http-types
     , memory
     , mtl
+    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.3.*
