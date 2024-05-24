@@ -17,7 +17,7 @@ import Network.HTTP.Types
 import OpenTelemetry.Context (Context, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
-import OpenTelemetry.SemConvStabilityOptIn
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
 
 
@@ -120,10 +120,10 @@ instrumentRequest conf ctxt req = do
               (\h -> (\v -> ("http.request.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (requestHeaders req))
             $ requestHeadersToRecord conf
 
-    semConvStabilityOptIn <- liftIO getSemConvStabilityOptIn
-    case semConvStabilityOptIn of
+    semanticsOptions <- liftIO getSemanticsOptions
+    case httpOption semanticsOptions of
       Stable -> addStableAttributes
-      Both -> addStableAttributes >> addOldAttributes
+      StableAndOld -> addStableAttributes >> addOldAttributes
       Old -> addOldAttributes
 
   hdrs <- inject (getTracerProviderPropagators $ getTracerTracerProvider tracer) ctxt $ requestHeaders req
@@ -184,8 +184,8 @@ instrumentResponse conf ctxt resp = do
               (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
             $ responseHeadersToRecord conf
 
-    semConvStabilityOptIn <- liftIO getSemConvStabilityOptIn
-    case semConvStabilityOptIn of
+    semanticsOptions <- liftIO getSemanticsOptions
+    case httpOption semanticsOptions of
       Stable -> addStableAttributes
-      Both -> addStableAttributes >> addOldAttributes
+      StableAndOld -> addStableAttributes >> addOldAttributes
       Old -> addOldAttributes

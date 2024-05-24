@@ -35,7 +35,7 @@ import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Contrib.SpanTraversals
 import OpenTelemetry.Instrumentation.Wai (requestContext)
-import OpenTelemetry.SemConvStabilityOptIn
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO.Exception
@@ -217,7 +217,7 @@ openTelemetryYesodMiddleware
 openTelemetryYesodMiddleware rr m = do
   req <- waiRequest
   mr <- getCurrentRoute
-  semConvStabilityOptIn <- liftIO getSemConvStabilityOptIn
+  semanticsOptions <- liftIO getSemanticsOptions
   let mspan = requestContext req >>= Context.lookupSpan
       sharedAttributes =
         H.fromList $
@@ -231,15 +231,15 @@ openTelemetryYesodMiddleware rr m = do
                   Just ("http.handler", toAttribute $ nameRender rr r)
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                  case semConvStabilityOptIn of
+                  case httpOption semanticsOptions of
                     Stable -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
-                    Both -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    StableAndOld -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
                     Old -> Nothing
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                  case semConvStabilityOptIn of
+                  case httpOption semanticsOptions of
                     Stable -> Nothing
-                    Both -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    StableAndOld -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
                     Old -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
               ]
       args =

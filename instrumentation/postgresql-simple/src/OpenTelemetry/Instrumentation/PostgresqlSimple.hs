@@ -82,7 +82,7 @@ import Database.PostgreSQL.Simple.Internal (
  )
 import GHC.Stack
 import OpenTelemetry.Resource ((.=), (.=?))
-import OpenTelemetry.SemConvStabilityOptIn
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
 import Text.Read (readMaybe)
@@ -99,7 +99,6 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
       <*> LibPQ.host pqConn
       <*> LibPQ.port pqConn
 
-  semConvStabilityOptIn <- getSemConvStabilityOptIn
   let stableMaybeAttributes =
         [ "db.system" .= toAttribute ("postgresql" :: T.Text)
         , "db.user" .=? (TE.decodeUtf8 <$> mUser)
@@ -129,12 +128,13 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
             Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
         ]
 
+  semanticsOptions <- getSemanticsOptions
   pure $
     H.fromList $
       catMaybes $
-        case semConvStabilityOptIn of
+        case httpOption semanticsOptions of
           Stable -> stableMaybeAttributes
-          Both -> stableMaybeAttributes `union` oldMaybeAttributes
+          StableAndOld -> stableMaybeAttributes `union` oldMaybeAttributes
           Old -> oldMaybeAttributes
 
 {-

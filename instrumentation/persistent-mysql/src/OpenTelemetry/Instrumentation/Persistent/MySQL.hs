@@ -50,7 +50,7 @@ import qualified Database.MySQL.Base as MySQL
 import qualified Database.Persist.MySQL as Orig
 import Database.Persist.Sql
 import qualified OpenTelemetry.Instrumentation.Persistent as Otel
-import OpenTelemetry.SemConvStabilityOptIn
+import OpenTelemetry.SemanticsConfig
 import qualified OpenTelemetry.Trace.Core as Otel
 import Text.Read (readMaybe)
 
@@ -141,11 +141,11 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
         , (maybe "net.peer.name" (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost)
         ]
 
-  semConvStabilityOptIn <- getSemConvStabilityOptIn
+  semanticsOptions <- getSemanticsOptions
   let attrs' =
-        case semConvStabilityOptIn of
+        case httpOption semanticsOptions of
           Stable -> addStableAttributes attrs
-          Both -> addStableAttributes . addOldAttributes $ attrs
+          StableAndOld -> addStableAttributes . addOldAttributes $ attrs
           Old -> addOldAttributes attrs
   (conn, backend) <- Orig.openMySQLConn ci logFunc
   backend' <- Otel.wrapSqlBackend' tp attrs' backend

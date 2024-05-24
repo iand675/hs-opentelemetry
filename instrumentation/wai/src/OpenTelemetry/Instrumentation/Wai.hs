@@ -29,7 +29,7 @@ import OpenTelemetry.Attributes (lookupAttribute)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator
-import OpenTelemetry.SemConvStabilityOptIn
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
 import System.IO.Unsafe
 
@@ -61,12 +61,13 @@ newOpenTelemetryWaiMiddleware' tp =
       let path_ = T.decodeUtf8 $ rawPathInfo req
       -- peer = remoteHost req
       parentContextM
-      semConvStabilityOptIn <- getSemConvStabilityOptIn
+
+      semanticsOptions <- getSemanticsOptions
       let args =
             defaultSpanArguments
               { kind = Server
               , attributes =
-                  case semConvStabilityOptIn of
+                  case httpOption semanticsOptions of
                     Stable ->
                       usefulCallsite
                         `H.union` [
@@ -74,7 +75,7 @@ newOpenTelemetryWaiMiddleware' tp =
                                     , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
                                     )
                                   ]
-                    Both ->
+                    StableAndOld ->
                       usefulCallsite
                         `H.union` [
                                     ( "user_agent.original"
@@ -85,6 +86,7 @@ newOpenTelemetryWaiMiddleware' tp =
               }
       inSpan'' tracer path_ args $ \requestSpan -> do
         ctxt <- getContext
+
         let addStableAttributes = do
               addAttributes
                 requestSpan
@@ -164,9 +166,10 @@ newOpenTelemetryWaiMiddleware' tp =
                 SockAddrUnix path ->
                   [ ("net.peer.name", toAttribute $ T.pack path)
                   ]
-        case semConvStabilityOptIn of
+
+        case httpOption semanticsOptions of
           Stable -> addStableAttributes
-          Both -> addOldAttributes >> addStableAttributes
+          StableAndOld -> addOldAttributes >> addStableAttributes
           Old -> addOldAttributes
 
         let req' =
@@ -186,13 +189,13 @@ newOpenTelemetryWaiMiddleware' tp =
             AttributeValue (TextAttribute route) -> updateName requestSpan route
             _ -> pure ()
 
-          case semConvStabilityOptIn of
+          case httpOption semanticsOptions of
             Stable ->
               addAttributes
                 requestSpan
                 [ ("http.response.status_code", toAttribute $ statusCode $ responseStatus resp)
                 ]
-            Both ->
+            StableAndOld ->
               addAttributes
                 requestSpan
                 [ ("http.response.status_code", toAttribute $ statusCode $ responseStatus resp)
