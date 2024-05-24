@@ -145,7 +145,7 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
   let attrs' =
         case httpOption semanticsOptions of
           Stable -> addStableAttributes attrs
-          StableAndOld -> addStableAttributes . addOldAttributes $ attrs
+          StableAndOld -> addStableAttributes $ addOldAttributes attrs
           Old -> addOldAttributes attrs
   (conn, backend) <- Orig.openMySQLConn ci logFunc
   backend' <- Otel.wrapSqlBackend' tp attrs' backend
