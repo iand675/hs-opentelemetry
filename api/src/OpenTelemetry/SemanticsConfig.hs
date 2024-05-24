@@ -105,5 +105,5 @@ memoize action = do
 -- This uses the global IORef trick:
 -- https://www.parsonsmatt.org/2021/04/21/global_ioref_in_template_haskell.html
 getSemanticsOptions :: IO SemanticsOptions
-getSemanticsOptions = unsafePerformIO $ memoize getSemanticsOptions
+getSemanticsOptions = unsafePerformIO $ memoize getSemanticsOptions'
 {-# NOINLINE getSemanticsOptions #-}
