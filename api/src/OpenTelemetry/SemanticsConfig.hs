@@ -3,6 +3,7 @@
 
 module OpenTelemetry.SemanticsConfig (
   SemanticsOptions (httpOption),
+  HttpOption (..),
   getSemanticsOptions,
   getSemanticsOptions',
 ) where
@@ -79,6 +80,8 @@ parseSemanticsOptions (Just env) = SemanticsOptions $ HS.fromList $ mapMaybe par
 getSemanticsOptions' :: IO SemanticsOptions
 getSemanticsOptions' = parseSemanticsOptions <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
 
+
+-- ! Does not pass memoization tests yet
 
 {- | Create a new memoized IO action using an 'IORef' under the surface. Note that
 the action may be run in multiple threads simultaneously, so this may not be
