@@ -2,64 +2,79 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module OpenTelemetry.SemanticsConfig (
-  SemanticsOptions,
-  useStableHttpSemantics,
-  useOldHttpSemantics,
+  SemanticsOptions (httpOption),
   getSemanticsOptions,
   getSemanticsOptions',
 ) where
 
 import Control.Exception.Safe (throwIO, tryAny)
-import qualified Data.HashSet as HS
-import Data.Hashable (Hashable)
 import Data.IORef (newIORef, readIORef, writeIORef)
-import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
-import GHC.Generics (Generic)
 import System.Environment (lookupEnv)
 import System.IO.Unsafe (unsafePerformIO)
 
 
-data SemanticsOption
+data SemanticsOptions = SemanticsOptions {httpOption :: HttpOption}
+
+
+data HttpOption
+  = Stable
+  | StableAndOld
+  | Old
+  deriving (Show, Eq)
+
+
+defaultOptions :: SemanticsOptions
+defaultOptions = SemanticsOptions {httpOption = Old}
+
+
+parseHttpOption :: (Foldable t) => t T.Text -> HttpOption
+parseHttpOption envs
+  | "http/dup" `elem` envs = StableAndOld
+  | "http" `elem` envs = Stable
+  | otherwise = Old
+
+
+parseSemanticsOptions :: Maybe String -> SemanticsOptions
+parseSemanticsOptions Nothing = defaultOptions
+parseSemanticsOptions (Just env) = SemanticsOptions {..}
+  where
+    envs = fmap T.strip $ T.splitOn "," $ T.pack env
+    httpOption = parseHttpOption envs
+
+
+{- data SemanticsOption
   = HttpStableSemantics
   | HttpOldAndStableSemantics
   deriving (Show, Eq, Generic)
 
-
 instance Hashable SemanticsOption
-
 
 newtype SemanticsOptions = SemanticsOptions (HS.HashSet SemanticsOption)
 
-
 semanticsOptionIsSet :: SemanticsOption -> SemanticsOptions -> Bool
 semanticsOptionIsSet option (SemanticsOptions options) = HS.member option options
-
 
 useStableHttpSemantics :: SemanticsOptions -> Bool
 useStableHttpSemantics options =
   semanticsOptionIsSet HttpStableSemantics options
     || semanticsOptionIsSet HttpOldAndStableSemantics options
 
-
 useOldHttpSemantics :: SemanticsOptions -> Bool
 useOldHttpSemantics options =
   semanticsOptionIsSet HttpOldAndStableSemantics options
     || not (semanticsOptionIsSet HttpStableSemantics options)
-
 
 parseSemanticsOption :: T.Text -> Maybe SemanticsOption
 parseSemanticsOption "http/dup" = Just HttpOldAndStableSemantics
 parseSemanticsOption "http" = Just HttpStableSemantics
 parseSemanticsOption _ = Nothing
 
-
 parseSemanticsOptions :: Maybe String -> SemanticsOptions
 parseSemanticsOptions Nothing = SemanticsOptions HS.empty
 parseSemanticsOptions (Just env) = SemanticsOptions $ HS.fromList $ mapMaybe parseSemanticsOption envs
   where
-    envs = fmap T.strip . T.splitOn "," . T.pack $ env
-
+    envs = fmap T.strip . T.splitOn "," . T.pack $ env -}
 
 getSemanticsOptions' :: IO SemanticsOptions
 getSemanticsOptions' = parseSemanticsOptions <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
