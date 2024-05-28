@@ -136,8 +136,8 @@ instance Data.ProtoLens.Message ExportTraceServiceRequest where
                 (Data.ProtoLens.Field.field @"resourceSpans")
             )
             :: Data.ProtoLens.FieldDescriptor ExportTraceServiceRequest
-     in Data.Map.fromList
-          [(Data.ProtoLens.Tag 1, resourceSpans__field_descriptor)]
+    in Data.Map.fromList
+        [(Data.ProtoLens.Tag 1, resourceSpans__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _ExportTraceServiceRequest'_unknownFields
@@ -165,14 +165,14 @@ instance Data.ProtoLens.Message ExportTraceServiceRequest where
                         mutable'resourceSpans
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -217,14 +217,14 @@ instance Data.ProtoLens.Message ExportTraceServiceRequest where
                             x
                         )
                         mutable'resourceSpans
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'resourceSpans <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'resourceSpans
-          )
-          "ExportTraceServiceRequest"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'resourceSpans <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'resourceSpans
+        )
+        "ExportTraceServiceRequest"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -309,14 +309,14 @@ instance Data.ProtoLens.Message ExportTraceServiceResponse where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -338,9 +338,9 @@ instance Data.ProtoLens.Message ExportTraceServiceResponse where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "ExportTraceServiceResponse"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "ExportTraceServiceResponse"
   buildMessage =
     \_x ->
       Data.ProtoLens.Encoding.Wire.buildFieldSet

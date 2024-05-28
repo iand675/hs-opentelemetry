@@ -6,6 +6,12 @@ cradle:
     - path: "api/test"
       component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
 
+    - path: "examples/hspec/src"
+      component: "hspec-example:lib"
+
+    - path: "examples/hspec/test"
+      component: "hspec-example:test:test"
+
     - path: "examples/yesod-minimal/src"
       component: "yesod-minimal:lib"
 
@@ -90,8 +96,8 @@ cradle:
     - path: "propagators/b3/src"
       component: "hs-opentelemetry-propagator-b3:lib"
 
-    - path: "propagators/b3/test/spec"
-      component: "hs-opentelemetry-propagator-b3:test:spec"
+    - path: "propagators/b3/test"
+      component: "hs-opentelemetry-propagator-b3:test:hs-opentelemetry-propagator-b3-test"
 
     - path: "propagators/datadog/src"
       component: "hs-opentelemetry-propagator-datadog:lib"
@@ -105,6 +111,21 @@ cradle:
     - path: "propagators/datadog/benchmark/header-codec/main.hs"
       component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
 
+    - path: "propagators/datadog/old-src/main.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/benchmark/header-codec/Raw.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/benchmark/header-codec/String.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/old-src/Raw.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/old-src/String.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
     - path: "propagators/w3c/src"
       component: "hs-opentelemetry-propagator-w3c:lib"
 
@@ -116,9 +137,3 @@ cradle:
 
     - path: "sdk/test"
       component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
-
-    - path: "utils/exceptions/src"
-      component: "hs-opentelemetry-utils-exceptions:lib"
-
-    - path: "utils/exceptions/test"
-      component: "hs-opentelemetry-utils-exceptions:test:exceptions-test"

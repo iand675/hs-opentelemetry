@@ -203,11 +203,11 @@ instance Data.ProtoLens.Message InstrumentationLibraryLogs where
                 (Data.ProtoLens.Field.field @"schemaUrl")
             )
             :: Data.ProtoLens.FieldDescriptor InstrumentationLibraryLogs
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, instrumentationLibrary__field_descriptor)
-          , (Data.ProtoLens.Tag 2, logs__field_descriptor)
-          , (Data.ProtoLens.Tag 3, schemaUrl__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, instrumentationLibrary__field_descriptor)
+        , (Data.ProtoLens.Tag 2, logs__field_descriptor)
+        , (Data.ProtoLens.Tag 3, schemaUrl__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _InstrumentationLibraryLogs'_unknownFields
@@ -235,14 +235,14 @@ instance Data.ProtoLens.Message InstrumentationLibraryLogs where
                   Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
                     (Data.ProtoLens.Encoding.Growing.unsafeFreeze mutable'logs)
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -322,14 +322,14 @@ instance Data.ProtoLens.Message InstrumentationLibraryLogs where
                             x
                         )
                         mutable'logs
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'logs <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'logs
-          )
-          "InstrumentationLibraryLogs"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'logs <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'logs
+        )
+        "InstrumentationLibraryLogs"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -373,22 +373,22 @@ instance Data.ProtoLens.Message InstrumentationLibraryLogs where
             )
             ( (Data.Monoid.<>)
                 ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"schemaUrl") _x
-                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                        then Data.Monoid.mempty
-                        else
-                          (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
-                            ( (Prelude..)
-                                ( \bs ->
-                                    (Data.Monoid.<>)
-                                      ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                          (Prelude.fromIntegral (Data.ByteString.length bs))
-                                      )
-                                      (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                                )
-                                Data.Text.Encoding.encodeUtf8
-                                _v
-                            )
+                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                      then Data.Monoid.mempty
+                      else
+                        (Data.Monoid.<>)
+                          (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
+                          ( (Prelude..)
+                              ( \bs ->
+                                  (Data.Monoid.<>)
+                                    ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                        (Prelude.fromIntegral (Data.ByteString.length bs))
+                                    )
+                                    (Data.ProtoLens.Encoding.Bytes.putBytes bs)
+                              )
+                              Data.Text.Encoding.encodeUtf8
+                              _v
+                          )
                 )
                 ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                     (Lens.Family2.view Data.ProtoLens.unknownFields _x)
@@ -708,18 +708,18 @@ instance Data.ProtoLens.Message LogRecord where
                 (Data.ProtoLens.Field.field @"spanId")
             )
             :: Data.ProtoLens.FieldDescriptor LogRecord
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, timeUnixNano__field_descriptor)
-          , (Data.ProtoLens.Tag 2, severityNumber__field_descriptor)
-          , (Data.ProtoLens.Tag 3, severityText__field_descriptor)
-          , (Data.ProtoLens.Tag 4, name__field_descriptor)
-          , (Data.ProtoLens.Tag 5, body__field_descriptor)
-          , (Data.ProtoLens.Tag 6, attributes__field_descriptor)
-          , (Data.ProtoLens.Tag 7, droppedAttributesCount__field_descriptor)
-          , (Data.ProtoLens.Tag 8, flags__field_descriptor)
-          , (Data.ProtoLens.Tag 9, traceId__field_descriptor)
-          , (Data.ProtoLens.Tag 10, spanId__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, timeUnixNano__field_descriptor)
+        , (Data.ProtoLens.Tag 2, severityNumber__field_descriptor)
+        , (Data.ProtoLens.Tag 3, severityText__field_descriptor)
+        , (Data.ProtoLens.Tag 4, name__field_descriptor)
+        , (Data.ProtoLens.Tag 5, body__field_descriptor)
+        , (Data.ProtoLens.Tag 6, attributes__field_descriptor)
+        , (Data.ProtoLens.Tag 7, droppedAttributesCount__field_descriptor)
+        , (Data.ProtoLens.Tag 8, flags__field_descriptor)
+        , (Data.ProtoLens.Tag 9, traceId__field_descriptor)
+        , (Data.ProtoLens.Tag 10, spanId__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _LogRecord'_unknownFields
@@ -754,14 +754,14 @@ instance Data.ProtoLens.Message LogRecord where
                         mutable'attributes
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -943,83 +943,83 @@ instance Data.ProtoLens.Message LogRecord where
                             x
                         )
                         mutable'attributes
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'attributes <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'attributes
-          )
-          "LogRecord"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'attributes <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'attributes
+        )
+        "LogRecord"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
         ( let _v =
                 Lens.Family2.view (Data.ProtoLens.Field.field @"timeUnixNano") _x
-           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                then Data.Monoid.mempty
-                else
-                  (Data.Monoid.<>)
-                    (Data.ProtoLens.Encoding.Bytes.putVarInt 9)
-                    (Data.ProtoLens.Encoding.Bytes.putFixed64 _v)
+          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+              then Data.Monoid.mempty
+              else
+                (Data.Monoid.<>)
+                  (Data.ProtoLens.Encoding.Bytes.putVarInt 9)
+                  (Data.ProtoLens.Encoding.Bytes.putFixed64 _v)
         )
         ( (Data.Monoid.<>)
             ( let _v =
                     Lens.Family2.view
                       (Data.ProtoLens.Field.field @"severityNumber")
                       _x
-               in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                    then Data.Monoid.mempty
-                    else
-                      (Data.Monoid.<>)
-                        (Data.ProtoLens.Encoding.Bytes.putVarInt 16)
-                        ( (Prelude..)
-                            ( (Prelude..)
-                                Data.ProtoLens.Encoding.Bytes.putVarInt
-                                Prelude.fromIntegral
-                            )
-                            Prelude.fromEnum
-                            _v
-                        )
+              in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                  then Data.Monoid.mempty
+                  else
+                    (Data.Monoid.<>)
+                      (Data.ProtoLens.Encoding.Bytes.putVarInt 16)
+                      ( (Prelude..)
+                          ( (Prelude..)
+                              Data.ProtoLens.Encoding.Bytes.putVarInt
+                              Prelude.fromIntegral
+                          )
+                          Prelude.fromEnum
+                          _v
+                      )
             )
             ( (Data.Monoid.<>)
                 ( let _v =
                         Lens.Family2.view (Data.ProtoLens.Field.field @"severityText") _x
-                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                        then Data.Monoid.mempty
-                        else
-                          (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
-                            ( (Prelude..)
-                                ( \bs ->
-                                    (Data.Monoid.<>)
-                                      ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                          (Prelude.fromIntegral (Data.ByteString.length bs))
-                                      )
-                                      (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                                )
-                                Data.Text.Encoding.encodeUtf8
-                                _v
-                            )
+                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                      then Data.Monoid.mempty
+                      else
+                        (Data.Monoid.<>)
+                          (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
+                          ( (Prelude..)
+                              ( \bs ->
+                                  (Data.Monoid.<>)
+                                    ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                        (Prelude.fromIntegral (Data.ByteString.length bs))
+                                    )
+                                    (Data.ProtoLens.Encoding.Bytes.putBytes bs)
+                              )
+                              Data.Text.Encoding.encodeUtf8
+                              _v
+                          )
                 )
                 ( (Data.Monoid.<>)
                     ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"name") _x
-                       in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                            then Data.Monoid.mempty
-                            else
-                              (Data.Monoid.<>)
-                                (Data.ProtoLens.Encoding.Bytes.putVarInt 34)
-                                ( (Prelude..)
-                                    ( \bs ->
-                                        (Data.Monoid.<>)
-                                          ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                              (Prelude.fromIntegral (Data.ByteString.length bs))
-                                          )
-                                          (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                                    )
-                                    Data.Text.Encoding.encodeUtf8
-                                    _v
-                                )
+                      in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                          then Data.Monoid.mempty
+                          else
+                            (Data.Monoid.<>)
+                              (Data.ProtoLens.Encoding.Bytes.putVarInt 34)
+                              ( (Prelude..)
+                                  ( \bs ->
+                                      (Data.Monoid.<>)
+                                        ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                            (Prelude.fromIntegral (Data.ByteString.length bs))
+                                        )
+                                        (Data.ProtoLens.Encoding.Bytes.putBytes bs)
+                                  )
+                                  Data.Text.Encoding.encodeUtf8
+                                  _v
+                              )
                     )
                     ( (Data.Monoid.<>)
                         ( case Lens.Family2.view (Data.ProtoLens.Field.field @"maybe'body") _x of
@@ -1068,71 +1068,71 @@ instance Data.ProtoLens.Message LogRecord where
                                         Lens.Family2.view
                                           (Data.ProtoLens.Field.field @"droppedAttributesCount")
                                           _x
-                                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                                        then Data.Monoid.mempty
-                                        else
-                                          (Data.Monoid.<>)
-                                            (Data.ProtoLens.Encoding.Bytes.putVarInt 56)
-                                            ( (Prelude..)
-                                                Data.ProtoLens.Encoding.Bytes.putVarInt
-                                                Prelude.fromIntegral
-                                                _v
-                                            )
+                                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                                      then Data.Monoid.mempty
+                                      else
+                                        (Data.Monoid.<>)
+                                          (Data.ProtoLens.Encoding.Bytes.putVarInt 56)
+                                          ( (Prelude..)
+                                              Data.ProtoLens.Encoding.Bytes.putVarInt
+                                              Prelude.fromIntegral
+                                              _v
+                                          )
                                 )
                                 ( (Data.Monoid.<>)
                                     ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"flags") _x
-                                       in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                                            then Data.Monoid.mempty
-                                            else
-                                              (Data.Monoid.<>)
-                                                (Data.ProtoLens.Encoding.Bytes.putVarInt 69)
-                                                (Data.ProtoLens.Encoding.Bytes.putFixed32 _v)
+                                      in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                                          then Data.Monoid.mempty
+                                          else
+                                            (Data.Monoid.<>)
+                                              (Data.ProtoLens.Encoding.Bytes.putVarInt 69)
+                                              (Data.ProtoLens.Encoding.Bytes.putFixed32 _v)
                                     )
                                     ( (Data.Monoid.<>)
                                         ( let _v =
                                                 Lens.Family2.view
                                                   (Data.ProtoLens.Field.field @"traceId")
                                                   _x
-                                           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                                                then Data.Monoid.mempty
-                                                else
-                                                  (Data.Monoid.<>)
-                                                    (Data.ProtoLens.Encoding.Bytes.putVarInt 74)
-                                                    ( ( \bs ->
-                                                          (Data.Monoid.<>)
-                                                            ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                                                ( Prelude.fromIntegral
-                                                                    (Data.ByteString.length bs)
-                                                                )
-                                                            )
-                                                            (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                                                      )
-                                                        _v
+                                          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                                              then Data.Monoid.mempty
+                                              else
+                                                (Data.Monoid.<>)
+                                                  (Data.ProtoLens.Encoding.Bytes.putVarInt 74)
+                                                  ( ( \bs ->
+                                                        (Data.Monoid.<>)
+                                                          ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                                              ( Prelude.fromIntegral
+                                                                  (Data.ByteString.length bs)
+                                                              )
+                                                          )
+                                                          (Data.ProtoLens.Encoding.Bytes.putBytes bs)
                                                     )
+                                                      _v
+                                                  )
                                         )
                                         ( (Data.Monoid.<>)
                                             ( let _v =
                                                     Lens.Family2.view
                                                       (Data.ProtoLens.Field.field @"spanId")
                                                       _x
-                                               in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                                                    then Data.Monoid.mempty
-                                                    else
-                                                      (Data.Monoid.<>)
-                                                        (Data.ProtoLens.Encoding.Bytes.putVarInt 82)
-                                                        ( ( \bs ->
-                                                              (Data.Monoid.<>)
-                                                                ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                                                    ( Prelude.fromIntegral
-                                                                        (Data.ByteString.length bs)
-                                                                    )
-                                                                )
-                                                                ( Data.ProtoLens.Encoding.Bytes.putBytes
-                                                                    bs
-                                                                )
-                                                          )
-                                                            _v
+                                              in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                                                  then Data.Monoid.mempty
+                                                  else
+                                                    (Data.Monoid.<>)
+                                                      (Data.ProtoLens.Encoding.Bytes.putVarInt 82)
+                                                      ( ( \bs ->
+                                                            (Data.Monoid.<>)
+                                                              ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                                                  ( Prelude.fromIntegral
+                                                                      (Data.ByteString.length bs)
+                                                                  )
+                                                              )
+                                                              ( Data.ProtoLens.Encoding.Bytes.putBytes
+                                                                  bs
+                                                              )
                                                         )
+                                                          _v
+                                                      )
                                             )
                                             ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                                                 ( Lens.Family2.view
@@ -1339,8 +1339,8 @@ instance Data.ProtoLens.Message LogsData where
                 (Data.ProtoLens.Field.field @"resourceLogs")
             )
             :: Data.ProtoLens.FieldDescriptor LogsData
-     in Data.Map.fromList
-          [(Data.ProtoLens.Tag 1, resourceLogs__field_descriptor)]
+    in Data.Map.fromList
+        [(Data.ProtoLens.Tag 1, resourceLogs__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _LogsData'_unknownFields
@@ -1366,14 +1366,14 @@ instance Data.ProtoLens.Message LogsData where
                         mutable'resourceLogs
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -1418,14 +1418,14 @@ instance Data.ProtoLens.Message LogsData where
                             x
                         )
                         mutable'resourceLogs
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'resourceLogs <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'resourceLogs
-          )
-          "LogsData"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'resourceLogs <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'resourceLogs
+        )
+        "LogsData"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -1591,14 +1591,14 @@ instance Data.ProtoLens.Message ResourceLogs where
                 (Data.ProtoLens.Field.field @"schemaUrl")
             )
             :: Data.ProtoLens.FieldDescriptor ResourceLogs
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
-          ,
-            ( Data.ProtoLens.Tag 2
-            , instrumentationLibraryLogs__field_descriptor
-            )
-          , (Data.ProtoLens.Tag 3, schemaUrl__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
+        ,
+          ( Data.ProtoLens.Tag 2
+          , instrumentationLibraryLogs__field_descriptor
+          )
+        , (Data.ProtoLens.Tag 3, schemaUrl__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _ResourceLogs'_unknownFields
@@ -1626,14 +1626,14 @@ instance Data.ProtoLens.Message ResourceLogs where
                         mutable'instrumentationLibraryLogs
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -1712,14 +1712,14 @@ instance Data.ProtoLens.Message ResourceLogs where
                             x
                         )
                         mutable'instrumentationLibraryLogs
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'instrumentationLibraryLogs <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'instrumentationLibraryLogs
-          )
-          "ResourceLogs"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'instrumentationLibraryLogs <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'instrumentationLibraryLogs
+        )
+        "ResourceLogs"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -1764,22 +1764,22 @@ instance Data.ProtoLens.Message ResourceLogs where
             )
             ( (Data.Monoid.<>)
                 ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"schemaUrl") _x
-                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                        then Data.Monoid.mempty
-                        else
-                          (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
-                            ( (Prelude..)
-                                ( \bs ->
-                                    (Data.Monoid.<>)
-                                      ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                          (Prelude.fromIntegral (Data.ByteString.length bs))
-                                      )
-                                      (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                                )
-                                Data.Text.Encoding.encodeUtf8
-                                _v
-                            )
+                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                      then Data.Monoid.mempty
+                      else
+                        (Data.Monoid.<>)
+                          (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
+                          ( (Prelude..)
+                              ( \bs ->
+                                  (Data.Monoid.<>)
+                                    ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                        (Prelude.fromIntegral (Data.ByteString.length bs))
+                                    )
+                                    (Data.ProtoLens.Encoding.Bytes.putBytes bs)
+                              )
+                              Data.Text.Encoding.encodeUtf8
+                              _v
+                          )
                 )
                 ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                     (Lens.Family2.view Data.ProtoLens.unknownFields _x)

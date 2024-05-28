@@ -28,6 +28,7 @@ dependencies:
 - bytestring
 - network
 - iproute
+- unordered-containers
 
 library:
   ghc-options: -Wall

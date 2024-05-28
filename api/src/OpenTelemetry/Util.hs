@@ -103,14 +103,14 @@ data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection
 instance forall a. (Show a) => Show (AppendOnlyBoundedCollection a) where
   showsPrec d AppendOnlyBoundedCollection {collection = c, maxSize = m, dropped = r} =
     let vec = Builder.build c :: V.Vector a
-     in showParen (d > 10) $
-          showString "AppendOnlyBoundedCollection {collection = "
-            . shows vec
-            . showString ", maxSize = "
-            . shows m
-            . showString ", dropped = "
-            . shows r
-            . showString "}"
+    in showParen (d > 10) $
+        showString "AppendOnlyBoundedCollection {collection = "
+          . shows vec
+          . showString ", maxSize = "
+          . shows m
+          . showString ", dropped = "
+          . shows r
+          . showString "}"
 
 
 -- | Initialize a bounded collection that admits a maximum size

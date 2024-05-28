@@ -159,10 +159,10 @@ instance Data.ProtoLens.Message MetricConfigRequest where
                 (Data.ProtoLens.Field.field @"lastKnownFingerprint")
             )
             :: Data.ProtoLens.FieldDescriptor MetricConfigRequest
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
-          , (Data.ProtoLens.Tag 2, lastKnownFingerprint__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, resource__field_descriptor)
+        , (Data.ProtoLens.Tag 2, lastKnownFingerprint__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _MetricConfigRequest'_unknownFields
@@ -183,14 +183,14 @@ instance Data.ProtoLens.Message MetricConfigRequest where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -241,9 +241,9 @@ instance Data.ProtoLens.Message MetricConfigRequest where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "MetricConfigRequest"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "MetricConfigRequest"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -269,20 +269,20 @@ instance Data.ProtoLens.Message MetricConfigRequest where
                     Lens.Family2.view
                       (Data.ProtoLens.Field.field @"lastKnownFingerprint")
                       _x
-               in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                    then Data.Monoid.mempty
-                    else
-                      (Data.Monoid.<>)
-                        (Data.ProtoLens.Encoding.Bytes.putVarInt 18)
-                        ( ( \bs ->
-                              (Data.Monoid.<>)
-                                ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                    (Prelude.fromIntegral (Data.ByteString.length bs))
-                                )
-                                (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                          )
-                            _v
+              in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                  then Data.Monoid.mempty
+                  else
+                    (Data.Monoid.<>)
+                      (Data.ProtoLens.Encoding.Bytes.putVarInt 18)
+                      ( ( \bs ->
+                            (Data.Monoid.<>)
+                              ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                                  (Prelude.fromIntegral (Data.ByteString.length bs))
+                              )
+                              (Data.ProtoLens.Encoding.Bytes.putBytes bs)
                         )
+                          _v
+                      )
             )
             ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                 (Lens.Family2.view Data.ProtoLens.unknownFields _x)
@@ -430,11 +430,11 @@ instance Data.ProtoLens.Message MetricConfigResponse where
                 (Data.ProtoLens.Field.field @"suggestedWaitTimeSec")
             )
             :: Data.ProtoLens.FieldDescriptor MetricConfigResponse
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, fingerprint__field_descriptor)
-          , (Data.ProtoLens.Tag 2, schedules__field_descriptor)
-          , (Data.ProtoLens.Tag 3, suggestedWaitTimeSec__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, fingerprint__field_descriptor)
+        , (Data.ProtoLens.Tag 2, schedules__field_descriptor)
+        , (Data.ProtoLens.Tag 3, suggestedWaitTimeSec__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _MetricConfigResponse'_unknownFields
@@ -462,14 +462,14 @@ instance Data.ProtoLens.Message MetricConfigResponse where
                         mutable'schedules
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -540,33 +540,33 @@ instance Data.ProtoLens.Message MetricConfigResponse where
                             x
                         )
                         mutable'schedules
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'schedules <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'schedules
-          )
-          "MetricConfigResponse"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'schedules <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'schedules
+        )
+        "MetricConfigResponse"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
         ( let _v =
                 Lens.Family2.view (Data.ProtoLens.Field.field @"fingerprint") _x
-           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                then Data.Monoid.mempty
-                else
-                  (Data.Monoid.<>)
-                    (Data.ProtoLens.Encoding.Bytes.putVarInt 10)
-                    ( ( \bs ->
-                          (Data.Monoid.<>)
-                            ( Data.ProtoLens.Encoding.Bytes.putVarInt
-                                (Prelude.fromIntegral (Data.ByteString.length bs))
-                            )
-                            (Data.ProtoLens.Encoding.Bytes.putBytes bs)
-                      )
-                        _v
+          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+              then Data.Monoid.mempty
+              else
+                (Data.Monoid.<>)
+                  (Data.ProtoLens.Encoding.Bytes.putVarInt 10)
+                  ( ( \bs ->
+                        (Data.Monoid.<>)
+                          ( Data.ProtoLens.Encoding.Bytes.putVarInt
+                              (Prelude.fromIntegral (Data.ByteString.length bs))
+                          )
+                          (Data.ProtoLens.Encoding.Bytes.putBytes bs)
                     )
+                      _v
+                  )
         )
         ( (Data.Monoid.<>)
             ( Data.ProtoLens.Encoding.Bytes.foldMapBuilder
@@ -595,16 +595,16 @@ instance Data.ProtoLens.Message MetricConfigResponse where
                         Lens.Family2.view
                           (Data.ProtoLens.Field.field @"suggestedWaitTimeSec")
                           _x
-                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                        then Data.Monoid.mempty
-                        else
-                          (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 24)
-                            ( (Prelude..)
-                                Data.ProtoLens.Encoding.Bytes.putVarInt
-                                Prelude.fromIntegral
-                                _v
-                            )
+                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                      then Data.Monoid.mempty
+                      else
+                        (Data.Monoid.<>)
+                          (Data.ProtoLens.Encoding.Bytes.putVarInt 24)
+                          ( (Prelude..)
+                              Data.ProtoLens.Encoding.Bytes.putVarInt
+                              Prelude.fromIntegral
+                              _v
+                          )
                 )
                 ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                     (Lens.Family2.view Data.ProtoLens.unknownFields _x)
@@ -774,11 +774,11 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule where
                 (Data.ProtoLens.Field.field @"periodSec")
             )
             :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, exclusionPatterns__field_descriptor)
-          , (Data.ProtoLens.Tag 2, inclusionPatterns__field_descriptor)
-          , (Data.ProtoLens.Tag 3, periodSec__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, exclusionPatterns__field_descriptor)
+        , (Data.ProtoLens.Tag 2, inclusionPatterns__field_descriptor)
+        , (Data.ProtoLens.Tag 3, periodSec__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _MetricConfigResponse'Schedule'_unknownFields
@@ -814,14 +814,14 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule where
                         mutable'inclusionPatterns
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -902,20 +902,20 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule where
                         )
                         mutable'exclusionPatterns
                         mutable'inclusionPatterns
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'exclusionPatterns <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              mutable'inclusionPatterns <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop
-                Data.ProtoLens.defMessage
-                mutable'exclusionPatterns
-                mutable'inclusionPatterns
-          )
-          "Schedule"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'exclusionPatterns <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            mutable'inclusionPatterns <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop
+              Data.ProtoLens.defMessage
+              mutable'exclusionPatterns
+              mutable'inclusionPatterns
+        )
+        "Schedule"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -964,16 +964,16 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule where
             )
             ( (Data.Monoid.<>)
                 ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"periodSec") _x
-                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                        then Data.Monoid.mempty
-                        else
-                          (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 24)
-                            ( (Prelude..)
-                                Data.ProtoLens.Encoding.Bytes.putVarInt
-                                Prelude.fromIntegral
-                                _v
-                            )
+                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                      then Data.Monoid.mempty
+                      else
+                        (Data.Monoid.<>)
+                          (Data.ProtoLens.Encoding.Bytes.putVarInt 24)
+                          ( (Prelude..)
+                              Data.ProtoLens.Encoding.Bytes.putVarInt
+                              Prelude.fromIntegral
+                              _v
+                          )
                 )
                 ( Data.ProtoLens.Encoding.Wire.buildFieldSet
                     (Lens.Family2.view Data.ProtoLens.unknownFields _x)
@@ -1173,10 +1173,10 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule'Pattern where
                 (Data.ProtoLens.Field.field @"maybe'startsWith")
             )
             :: Data.ProtoLens.FieldDescriptor MetricConfigResponse'Schedule'Pattern
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 1, equals__field_descriptor)
-          , (Data.ProtoLens.Tag 2, startsWith__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 1, equals__field_descriptor)
+        , (Data.ProtoLens.Tag 2, startsWith__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _MetricConfigResponse'Schedule'Pattern'_unknownFields
@@ -1200,14 +1200,14 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule'Pattern where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -1266,9 +1266,9 @@ instance Data.ProtoLens.Message MetricConfigResponse'Schedule'Pattern where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "Pattern"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "Pattern"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)

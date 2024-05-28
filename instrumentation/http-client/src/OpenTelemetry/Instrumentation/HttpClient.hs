@@ -6,6 +6,11 @@
 - Use internals to instrument a particular callsite using modifyRequest, modifyResponse (Next best)
 - Provide a middleware to pull from the thread-local state (okay)
 - Modify the global manager to pull from the thread-local state (least good, can't be helped sometimes)
+
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
 -}
 module OpenTelemetry.Instrumentation.HttpClient (
   withResponse,
@@ -68,8 +73,8 @@ withResponse
   -> (Client.Response Client.BodyReader -> m a)
   -> m a
 withResponse httpConf req man f = do
-  t <- httpTracerProvider
-  inSpan'' t "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
+  tracer <- httpTracerProvider
+  inSpan'' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
     ctxt <- getContext
     -- TODO would like to capture the req/resp time specifically
     -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
@@ -88,8 +93,8 @@ withResponse httpConf req man f = do
 -}
 httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = do
-  t <- httpTracerProvider
-  inSpan'' t "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
+  tracer <- httpTracerProvider
+  inSpan'' tracer "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.httpLbs req' man
@@ -102,8 +107,8 @@ httpLbs httpConf req man = do
 -}
 httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = do
-  t <- httpTracerProvider
-  inSpan'' t "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
+  tracer <- httpTracerProvider
+  inSpan'' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.httpNoBody req' man
@@ -141,8 +146,8 @@ httpNoBody httpConf req man = do
 -}
 responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = do
-  t <- httpTracerProvider
-  inSpan'' t "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
+  tracer <- httpTracerProvider
+  inSpan'' tracer "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
     req' <- instrumentRequest httpConf ctxt req
     resp <- liftIO $ Client.responseOpen req' man

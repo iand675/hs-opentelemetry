@@ -1,6 +1,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+-}
 module OpenTelemetry.Instrumentation.PostgresqlSimple (
   staticConnectionAttributes,
   {-
@@ -40,6 +46,7 @@ import qualified Data.ByteString.Char8 as C
 import qualified Data.HashMap.Strict as H
 import Data.IP
 import Data.Int (Int64)
+import Data.List
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -75,6 +82,7 @@ import Database.PostgreSQL.Simple.Internal (
  )
 import GHC.Stack
 import OpenTelemetry.Resource ((.=), (.=?))
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad
 import Text.Read (readMaybe)
@@ -90,9 +98,22 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
       <*> LibPQ.user pqConn
       <*> LibPQ.host pqConn
       <*> LibPQ.port pqConn
-  pure $
-    H.fromList $
-      catMaybes
+
+  let stableMaybeAttributes =
+        [ "db.system" .= toAttribute ("postgresql" :: T.Text)
+        , "db.user" .=? (TE.decodeUtf8 <$> mUser)
+        , "db.name" .=? (TE.decodeUtf8 <$> mDb)
+        , "server.port"
+            .=? ( do
+                    port <- TE.decodeUtf8 <$> mPort
+                    (readMaybe $ T.unpack port) :: Maybe Int
+                )
+        , case (readMaybe . C.unpack) =<< mHost of
+            Nothing -> "server.address" .=? (TE.decodeUtf8 <$> mHost)
+            Just (IPv4 ipv4) -> "server.address" .= T.pack (show ipv4)
+            Just (IPv6 ipv6) -> "server.address" .= T.pack (show ipv6)
+        ]
+      oldMaybeAttributes =
         [ "db.system" .= toAttribute ("postgresql" :: T.Text)
         , "db.user" .=? (TE.decodeUtf8 <$> mUser)
         , "db.name" .=? (TE.decodeUtf8 <$> mDb)
@@ -106,6 +127,15 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
             Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
             Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
         ]
+
+  semanticsOptions <- getSemanticsOptions
+  pure $
+    H.fromList $
+      catMaybes $
+        case httpOption semanticsOptions of
+          Stable -> stableMaybeAttributes
+          StableAndOld -> stableMaybeAttributes `union` oldMaybeAttributes
+          Old -> oldMaybeAttributes
 
 {-
 -- | Perform a @SELECT@ or other SQL query that is expected to return

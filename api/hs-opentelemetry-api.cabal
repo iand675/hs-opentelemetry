@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -52,6 +52,7 @@ library
       OpenTelemetry.Resource.Service
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
+      OpenTelemetry.SemanticsConfig
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.Id.Generator
@@ -83,6 +84,7 @@ library
     , http-types
     , memory
     , mtl
+    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.3.*
@@ -99,6 +101,7 @@ test-suite hs-opentelemetry-api-test
   main-is: Spec.hs
   other-modules:
       OpenTelemetry.BaggageSpec
+      OpenTelemetry.SemanticsConfigSpec
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
       Paths_hs_opentelemetry_api
@@ -124,6 +127,7 @@ test-suite hs-opentelemetry-api-test
     , http-types
     , memory
     , mtl
+    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.3.*

@@ -129,8 +129,8 @@ instance Data.ProtoLens.Message ConstantSampler where
                 (Data.ProtoLens.Field.field @"decision")
             )
             :: Data.ProtoLens.FieldDescriptor ConstantSampler
-     in Data.Map.fromList
-          [(Data.ProtoLens.Tag 1, decision__field_descriptor)]
+    in Data.Map.fromList
+        [(Data.ProtoLens.Tag 1, decision__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _ConstantSampler'_unknownFields
@@ -150,14 +150,14 @@ instance Data.ProtoLens.Message ConstantSampler where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -192,26 +192,26 @@ instance Data.ProtoLens.Message ConstantSampler where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "ConstantSampler"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "ConstantSampler"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
         ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"decision") _x
-           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                then Data.Monoid.mempty
-                else
-                  (Data.Monoid.<>)
-                    (Data.ProtoLens.Encoding.Bytes.putVarInt 8)
-                    ( (Prelude..)
-                        ( (Prelude..)
-                            Data.ProtoLens.Encoding.Bytes.putVarInt
-                            Prelude.fromIntegral
-                        )
-                        Prelude.fromEnum
-                        _v
-                    )
+          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+              then Data.Monoid.mempty
+              else
+                (Data.Monoid.<>)
+                  (Data.ProtoLens.Encoding.Bytes.putVarInt 8)
+                  ( (Prelude..)
+                      ( (Prelude..)
+                          Data.ProtoLens.Encoding.Bytes.putVarInt
+                          Prelude.fromIntegral
+                      )
+                      Prelude.fromEnum
+                      _v
+                  )
         )
         ( Data.ProtoLens.Encoding.Wire.buildFieldSet
             (Lens.Family2.view Data.ProtoLens.unknownFields _x)
@@ -370,7 +370,7 @@ instance Data.ProtoLens.Message RateLimitingSampler where
                 (Data.ProtoLens.Field.field @"qps")
             )
             :: Data.ProtoLens.FieldDescriptor RateLimitingSampler
-     in Data.Map.fromList [(Data.ProtoLens.Tag 1, qps__field_descriptor)]
+    in Data.Map.fromList [(Data.ProtoLens.Tag 1, qps__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _RateLimitingSampler'_unknownFields
@@ -390,14 +390,14 @@ instance Data.ProtoLens.Message RateLimitingSampler where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -428,23 +428,23 @@ instance Data.ProtoLens.Message RateLimitingSampler where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "RateLimitingSampler"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "RateLimitingSampler"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
         ( let _v = Lens.Family2.view (Data.ProtoLens.Field.field @"qps") _x
-           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                then Data.Monoid.mempty
-                else
-                  (Data.Monoid.<>)
-                    (Data.ProtoLens.Encoding.Bytes.putVarInt 8)
-                    ( (Prelude..)
-                        Data.ProtoLens.Encoding.Bytes.putVarInt
-                        Prelude.fromIntegral
-                        _v
-                    )
+          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+              then Data.Monoid.mempty
+              else
+                (Data.Monoid.<>)
+                  (Data.ProtoLens.Encoding.Bytes.putVarInt 8)
+                  ( (Prelude..)
+                      Data.ProtoLens.Encoding.Bytes.putVarInt
+                      Prelude.fromIntegral
+                      _v
+                  )
         )
         ( Data.ProtoLens.Encoding.Wire.buildFieldSet
             (Lens.Family2.view Data.ProtoLens.unknownFields _x)
@@ -788,22 +788,22 @@ instance Data.ProtoLens.Message TraceConfig where
                 (Data.ProtoLens.Field.field @"maybe'rateLimitingSampler")
             )
             :: Data.ProtoLens.FieldDescriptor TraceConfig
-     in Data.Map.fromList
-          [ (Data.ProtoLens.Tag 4, maxNumberOfAttributes__field_descriptor)
-          , (Data.ProtoLens.Tag 5, maxNumberOfTimedEvents__field_descriptor)
-          ,
-            ( Data.ProtoLens.Tag 6
-            , maxNumberOfAttributesPerTimedEvent__field_descriptor
-            )
-          , (Data.ProtoLens.Tag 7, maxNumberOfLinks__field_descriptor)
-          ,
-            ( Data.ProtoLens.Tag 8
-            , maxNumberOfAttributesPerLink__field_descriptor
-            )
-          , (Data.ProtoLens.Tag 1, constantSampler__field_descriptor)
-          , (Data.ProtoLens.Tag 2, traceIdRatioBased__field_descriptor)
-          , (Data.ProtoLens.Tag 3, rateLimitingSampler__field_descriptor)
-          ]
+    in Data.Map.fromList
+        [ (Data.ProtoLens.Tag 4, maxNumberOfAttributes__field_descriptor)
+        , (Data.ProtoLens.Tag 5, maxNumberOfTimedEvents__field_descriptor)
+        ,
+          ( Data.ProtoLens.Tag 6
+          , maxNumberOfAttributesPerTimedEvent__field_descriptor
+          )
+        , (Data.ProtoLens.Tag 7, maxNumberOfLinks__field_descriptor)
+        ,
+          ( Data.ProtoLens.Tag 8
+          , maxNumberOfAttributesPerLink__field_descriptor
+          )
+        , (Data.ProtoLens.Tag 1, constantSampler__field_descriptor)
+        , (Data.ProtoLens.Tag 2, traceIdRatioBased__field_descriptor)
+        , (Data.ProtoLens.Tag 3, rateLimitingSampler__field_descriptor)
+        ]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _TraceConfig'_unknownFields
@@ -827,14 +827,14 @@ instance Data.ProtoLens.Message TraceConfig where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -984,9 +984,9 @@ instance Data.ProtoLens.Message TraceConfig where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "TraceConfig"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "TraceConfig"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -994,80 +994,80 @@ instance Data.ProtoLens.Message TraceConfig where
                 Lens.Family2.view
                   (Data.ProtoLens.Field.field @"maxNumberOfAttributes")
                   _x
-           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                then Data.Monoid.mempty
-                else
-                  (Data.Monoid.<>)
-                    (Data.ProtoLens.Encoding.Bytes.putVarInt 32)
-                    ( (Prelude..)
-                        Data.ProtoLens.Encoding.Bytes.putVarInt
-                        Prelude.fromIntegral
-                        _v
-                    )
+          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+              then Data.Monoid.mempty
+              else
+                (Data.Monoid.<>)
+                  (Data.ProtoLens.Encoding.Bytes.putVarInt 32)
+                  ( (Prelude..)
+                      Data.ProtoLens.Encoding.Bytes.putVarInt
+                      Prelude.fromIntegral
+                      _v
+                  )
         )
         ( (Data.Monoid.<>)
             ( let _v =
                     Lens.Family2.view
                       (Data.ProtoLens.Field.field @"maxNumberOfTimedEvents")
                       _x
-               in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                    then Data.Monoid.mempty
-                    else
-                      (Data.Monoid.<>)
-                        (Data.ProtoLens.Encoding.Bytes.putVarInt 40)
-                        ( (Prelude..)
-                            Data.ProtoLens.Encoding.Bytes.putVarInt
-                            Prelude.fromIntegral
-                            _v
-                        )
+              in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                  then Data.Monoid.mempty
+                  else
+                    (Data.Monoid.<>)
+                      (Data.ProtoLens.Encoding.Bytes.putVarInt 40)
+                      ( (Prelude..)
+                          Data.ProtoLens.Encoding.Bytes.putVarInt
+                          Prelude.fromIntegral
+                          _v
+                      )
             )
             ( (Data.Monoid.<>)
                 ( let _v =
                         Lens.Family2.view
                           (Data.ProtoLens.Field.field @"maxNumberOfAttributesPerTimedEvent")
                           _x
-                   in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                        then Data.Monoid.mempty
-                        else
-                          (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 48)
-                            ( (Prelude..)
-                                Data.ProtoLens.Encoding.Bytes.putVarInt
-                                Prelude.fromIntegral
-                                _v
-                            )
+                  in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                      then Data.Monoid.mempty
+                      else
+                        (Data.Monoid.<>)
+                          (Data.ProtoLens.Encoding.Bytes.putVarInt 48)
+                          ( (Prelude..)
+                              Data.ProtoLens.Encoding.Bytes.putVarInt
+                              Prelude.fromIntegral
+                              _v
+                          )
                 )
                 ( (Data.Monoid.<>)
                     ( let _v =
                             Lens.Family2.view
                               (Data.ProtoLens.Field.field @"maxNumberOfLinks")
                               _x
-                       in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                            then Data.Monoid.mempty
-                            else
-                              (Data.Monoid.<>)
-                                (Data.ProtoLens.Encoding.Bytes.putVarInt 56)
-                                ( (Prelude..)
-                                    Data.ProtoLens.Encoding.Bytes.putVarInt
-                                    Prelude.fromIntegral
-                                    _v
-                                )
+                      in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                          then Data.Monoid.mempty
+                          else
+                            (Data.Monoid.<>)
+                              (Data.ProtoLens.Encoding.Bytes.putVarInt 56)
+                              ( (Prelude..)
+                                  Data.ProtoLens.Encoding.Bytes.putVarInt
+                                  Prelude.fromIntegral
+                                  _v
+                              )
                     )
                     ( (Data.Monoid.<>)
                         ( let _v =
                                 Lens.Family2.view
                                   (Data.ProtoLens.Field.field @"maxNumberOfAttributesPerLink")
                                   _x
-                           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                                then Data.Monoid.mempty
-                                else
-                                  (Data.Monoid.<>)
-                                    (Data.ProtoLens.Encoding.Bytes.putVarInt 64)
-                                    ( (Prelude..)
-                                        Data.ProtoLens.Encoding.Bytes.putVarInt
-                                        Prelude.fromIntegral
-                                        _v
-                                    )
+                          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+                              then Data.Monoid.mempty
+                              else
+                                (Data.Monoid.<>)
+                                  (Data.ProtoLens.Encoding.Bytes.putVarInt 64)
+                                  ( (Prelude..)
+                                      Data.ProtoLens.Encoding.Bytes.putVarInt
+                                      Prelude.fromIntegral
+                                      _v
+                                  )
                         )
                         ( (Data.Monoid.<>)
                             ( case Lens.Family2.view (Data.ProtoLens.Field.field @"maybe'sampler") _x of
@@ -1247,8 +1247,8 @@ instance Data.ProtoLens.Message TraceIdRatioBased where
                 (Data.ProtoLens.Field.field @"samplingRatio")
             )
             :: Data.ProtoLens.FieldDescriptor TraceIdRatioBased
-     in Data.Map.fromList
-          [(Data.ProtoLens.Tag 1, samplingRatio__field_descriptor)]
+    in Data.Map.fromList
+        [(Data.ProtoLens.Tag 1, samplingRatio__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _TraceIdRatioBased'_unknownFields
@@ -1268,14 +1268,14 @@ instance Data.ProtoLens.Message TraceIdRatioBased where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -1311,9 +1311,9 @@ instance Data.ProtoLens.Message TraceIdRatioBased where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "TraceIdRatioBased"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "TraceIdRatioBased"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -1321,16 +1321,16 @@ instance Data.ProtoLens.Message TraceIdRatioBased where
                 Lens.Family2.view
                   (Data.ProtoLens.Field.field @"samplingRatio")
                   _x
-           in if (Prelude.==) _v Data.ProtoLens.fieldDefault
-                then Data.Monoid.mempty
-                else
-                  (Data.Monoid.<>)
-                    (Data.ProtoLens.Encoding.Bytes.putVarInt 9)
-                    ( (Prelude..)
-                        Data.ProtoLens.Encoding.Bytes.putFixed64
-                        Data.ProtoLens.Encoding.Bytes.doubleToWord
-                        _v
-                    )
+          in if (Prelude.==) _v Data.ProtoLens.fieldDefault
+              then Data.Monoid.mempty
+              else
+                (Data.Monoid.<>)
+                  (Data.ProtoLens.Encoding.Bytes.putVarInt 9)
+                  ( (Prelude..)
+                      Data.ProtoLens.Encoding.Bytes.putFixed64
+                      Data.ProtoLens.Encoding.Bytes.doubleToWord
+                      _v
+                  )
         )
         ( Data.ProtoLens.Encoding.Wire.buildFieldSet
             (Lens.Family2.view Data.ProtoLens.unknownFields _x)
