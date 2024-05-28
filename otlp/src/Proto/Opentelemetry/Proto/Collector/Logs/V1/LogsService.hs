@@ -132,8 +132,8 @@ instance Data.ProtoLens.Message ExportLogsServiceRequest where
                 (Data.ProtoLens.Field.field @"resourceLogs")
             )
             :: Data.ProtoLens.FieldDescriptor ExportLogsServiceRequest
-     in Data.Map.fromList
-          [(Data.ProtoLens.Tag 1, resourceLogs__field_descriptor)]
+    in Data.Map.fromList
+        [(Data.ProtoLens.Tag 1, resourceLogs__field_descriptor)]
   unknownFields =
     Lens.Family2.Unchecked.lens
       _ExportLogsServiceRequest'_unknownFields
@@ -159,14 +159,14 @@ instance Data.ProtoLens.Message ExportLogsServiceRequest where
                         mutable'resourceLogs
                     )
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -211,14 +211,14 @@ instance Data.ProtoLens.Message ExportLogsServiceRequest where
                             x
                         )
                         mutable'resourceLogs
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          ( do
-              mutable'resourceLogs <-
-                Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                  Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'resourceLogs
-          )
-          "ExportLogsServiceRequest"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        ( do
+            mutable'resourceLogs <-
+              Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                Data.ProtoLens.Encoding.Growing.new
+            loop Data.ProtoLens.defMessage mutable'resourceLogs
+        )
+        "ExportLogsServiceRequest"
   buildMessage =
     \_x ->
       (Data.Monoid.<>)
@@ -303,14 +303,14 @@ instance Data.ProtoLens.Message ExportLogsServiceResponse where
             if end
               then do
                 ( let missing = []
-                   in if Prelude.null missing
-                        then Prelude.return ()
-                        else
-                          Prelude.fail
-                            ( (Prelude.++)
-                                "Missing required fields: "
-                                (Prelude.show (missing :: [Prelude.String]))
-                            )
+                  in if Prelude.null missing
+                      then Prelude.return ()
+                      else
+                        Prelude.fail
+                          ( (Prelude.++)
+                              "Missing required fields: "
+                              (Prelude.show (missing :: [Prelude.String]))
+                          )
                   )
                 Prelude.return
                   ( Lens.Family2.over
@@ -332,9 +332,9 @@ instance Data.ProtoLens.Message ExportLogsServiceResponse where
                             (\ !t -> (:) y t)
                             x
                         )
-     in (Data.ProtoLens.Encoding.Bytes.<?>)
-          (do loop Data.ProtoLens.defMessage)
-          "ExportLogsServiceResponse"
+    in (Data.ProtoLens.Encoding.Bytes.<?>)
+        (do loop Data.ProtoLens.defMessage)
+        "ExportLogsServiceResponse"
   buildMessage =
     \_x ->
       Data.ProtoLens.Encoding.Wire.buildFieldSet

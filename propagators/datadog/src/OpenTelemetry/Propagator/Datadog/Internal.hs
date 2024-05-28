@@ -46,7 +46,7 @@ newTraceIdFromHeader
 newTraceIdFromHeader bs =
   let w64 = readWord64BS bs
       builder = BB.word64BE 0 <> BB.word64BE w64
-   in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
 
 
 newSpanIdFromHeader
@@ -57,7 +57,7 @@ newSpanIdFromHeader
 newSpanIdFromHeader bs =
   let w64 = readWord64BS bs
       builder = BB.word64BE w64
-   in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
 
 
 readWord64BS :: ByteString -> Word64
@@ -88,7 +88,7 @@ newHeaderFromTraceId
   -- ^ ASCII text of 64-bit integer
 newHeaderFromTraceId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 1
-   in showWord64BS w64
+  in showWord64BS w64
 
 
 newHeaderFromSpanId
@@ -98,7 +98,7 @@ newHeaderFromSpanId
   -- ^ ASCII text of 64-bit integer
 newHeaderFromSpanId (SBI.SBS ba) =
   let w64 = indexByteArrayNbo (ByteArray ba) 0
-   in showWord64BS w64
+  in showWord64BS w64
 
 
 -- | Read 'ByteArray' to 'Word64' with network-byte-order.
