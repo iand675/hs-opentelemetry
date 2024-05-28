@@ -276,7 +276,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                           (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
                         let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                         in frozenBoundedCollection limitedLinks $ fmap freezeLink links
+                        in frozenBoundedCollection limitedLinks $ fmap freezeLink links
                     , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                     , spanStatus = Unset
                     , spanStart = st
@@ -316,13 +316,14 @@ callerAttributes = case getCallStack callStack of
 
 
 srcAttributes :: (String, SrcLoc) -> H.HashMap Text Attribute
-srcAttributes (fn, loc) = H.fromList
-  [ ("code.function", toAttribute $ T.pack fn)
-  , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-  , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-  , ("code.lineno", toAttribute $ srcLocStartLine loc)
-  , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-  ]
+srcAttributes (fn, loc) =
+  H.fromList
+    [ ("code.function", toAttribute $ T.pack fn)
+    , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+    , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+    , ("code.lineno", toAttribute $ srcLocStartLine loc)
+    , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+    ]
 
 
 {- | Attributes are added to the end of the span argument list, so will be discarded
@@ -555,7 +556,7 @@ endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
   (alreadyFinished, frozenS) <- atomicModifyIORef' s $ \(!i) ->
     let ref = i {spanEnd = spanEnd i <|> Just ts}
-     in (ref, (isJust $ spanEnd i, ref))
+    in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
     eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of

@@ -13,6 +13,7 @@ import OpenTelemetry.Attributes (lookupAttribute)
 
 import qualified OpenTelemetry.BaggageSpec as Baggage
 import OpenTelemetry.Context
+import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
 import OpenTelemetry.Trace.Core
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
@@ -54,3 +55,4 @@ main = hspec $ do
   Baggage.spec
   Sampler.spec
   TraceFlags.spec
+  SemanticsConfigSpec.spec

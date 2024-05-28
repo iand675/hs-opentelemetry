@@ -4,6 +4,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+{- |
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+-}
 module OpenTelemetry.Instrumentation.Yesod (
   -- * Middleware functionality
   openTelemetryYesodMiddleware,
@@ -29,6 +35,7 @@ import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Contrib.SpanTraversals
 import OpenTelemetry.Instrumentation.Wai (requestContext)
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO.Exception
@@ -210,20 +217,31 @@ openTelemetryYesodMiddleware
 openTelemetryYesodMiddleware rr m = do
   req <- waiRequest
   mr <- getCurrentRoute
+  semanticsOptions <- liftIO getSemanticsOptions
   let mspan = requestContext req >>= Context.lookupSpan
-      sharedAttributes = H.fromList $
-        ("http.framework", toAttribute ("yesod" :: Text))
-          : catMaybes
-            [ do
-                r <- mr
-                pure ("http.route", toAttribute $ pathRender rr r)
-            , do
-                r <- mr
-                pure ("http.handler", toAttribute $ nameRender rr r)
-            , do
-                ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-            ]
+      sharedAttributes =
+        H.fromList $
+          ("http.framework", toAttribute ("yesod" :: Text))
+            : catMaybes
+              [ do
+                  r <- mr
+                  Just ("http.route", toAttribute $ pathRender rr r)
+              , do
+                  r <- mr
+                  Just ("http.handler", toAttribute $ nameRender rr r)
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case httpOption semanticsOptions of
+                    Stable -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    StableAndOld -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Nothing
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case httpOption semanticsOptions of
+                    Stable -> Nothing
+                    StableAndOld -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+              ]
       args =
         defaultSpanArguments
           { kind = maybe Server (const Internal) mspan
