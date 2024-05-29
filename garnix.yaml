@@ -1,3 +1,6 @@
 builds:
-  - exclude:
+  - include:
+    - "packages.x86_64-linux.*-ghc98"
+    - "checks.x86_64-linux.*"
+    exclude:
     - "devShells.*"
