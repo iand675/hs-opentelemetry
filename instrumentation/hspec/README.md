@@ -7,4 +7,3 @@ case inside a test suite.
 
 See the example in [examples/hspec](../../examples/hspec) for an instrumented
 test suite.
-
