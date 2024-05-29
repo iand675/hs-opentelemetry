@@ -105,8 +105,8 @@
 
       devShells = rec {
         default = ghc96;
-        ghc810 = mkShellForGHC "ghc810";
-        ghc90 = mkShellForGHC "ghc90";
+        # ghc810 = mkShellForGHC "ghc810";
+        # ghc90 = mkShellForGHC "ghc90";
         ghc92 = mkShellForGHC "ghc92";
         ghc94 = mkShellForGHC "ghc94";
         ghc96 = mkShellForGHC "ghc96";
