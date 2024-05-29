@@ -1,0 +1,112 @@
+{
+  description = "Haskell OpenTelemetry support.";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    devenv.url = "github:cachix/devenv/v1.0.5";
+    # Hack to avoid needing to use impure when loading the devenv root.
+    #
+    # See .envrc for how we substitute this with the actual path.
+    devenv-root = {
+      url = "file+file:///dev/null";
+      flake = false;
+    };
+  };
+
+  outputs = inputs @ {
+    self,
+    devenv-root,
+    nixpkgs,
+    devenv,
+    flake-utils,
+    ...
+  }: let
+    inherit (nixpkgs) lib;
+    inherit
+      (import ./nix/matrix.nix)
+      supportedSystems
+      ;
+  in
+    {
+      # overlays = {
+      #   default = import ./nix/overlays/temporal-sdk.nix;
+      # };
+    }
+    // flake-utils.lib.eachSystem supportedSystems (system: let
+      pkgs = import nixpkgs {inherit system;};
+      haskellPackageUtils = import ./nix/haskell-packages.nix {
+        inherit
+          lib
+          pkgs
+          ;
+      };
+      # inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
+
+      # mkShellForGHC = ghcVersion: let
+      #   myHaskellPackages = extendedPackageSetByGHCVersions.${ghcVersion};
+      # in
+      #   devenv.lib.mkShell {
+      #     inherit inputs pkgs;
+      #     modules = [
+      #       ({...}: {
+      #         devenv.root =
+      #           let
+      #             devenvRootFileContent = builtins.readFile devenv-root.outPath;
+      #           in
+      #           pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
+      #         packages = with pkgs; [
+      #           ghciwatch
+      #         ];
+
+      #         languages.haskell = {
+      #           enable = true;
+      #           package = myHaskellPackages.ghc.withHoogle (
+      #             hpkgs:
+      #               lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet myHaskellPackages)) hpkgs
+      #           );
+      #         };
+      #       })
+      #       (import ./nix/devenv/repo-wide-checks.nix)
+      #     ];
+      #   };
+    in {
+      packages =
+        {
+          # devenv-up = self.devShells.${system}.default.config.procfileScript;
+        }
+        // haskellPackageUtils.localPackageMatrix;
+
+      # devShells = rec {
+      #   default = ghc96;
+      #   ghc92 = mkShellForGHC "ghc92";
+      #   ghc94 = mkShellForGHC "ghc94";
+      #   ghc96 = mkShellForGHC "ghc96";
+      #   ghc98 = mkShellForGHC "ghc98";
+      # };
+
+      checks = {
+        # pre-commit-check = devenv.inputs.pre-commit-hooks.lib.${system}.run {
+        #   src = ./.;
+        #   hooks = pre-commit-hooks;
+        # };
+      };
+    });
+
+  # --- Flake Local Nix Configuration ----------------------------
+  nixConfig = {
+    # This sets the flake to use the IOG nix cache.
+    # Nix should ask for permission before using it,
+    # but remove it here if you do not want it to.
+    extra-substituters = [
+      "https://cache.iog.io"
+      "https://cache.garnix.io"
+      "https://devenv.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+    ];
+    allow-import-from-derivation = "true";
+  };
+}
