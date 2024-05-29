@@ -34,16 +34,16 @@ in rec {
 
   localPackageCabalDerivations = hfinal: lib.mapAttrs (name: path: hfinal.callCabal2nix name path {}) localPackages;
 
-  pluckLocalPackages = hpkgs:
-    let
-      narrowAttrs = sourceAttrs: matchAttrs:
-        lib.foldl' (acc: key:
-          if lib.hasAttr key matchAttrs then
-            acc // { "${key}" = sourceAttrs.${key}; }
-          else
-            acc
-        ) {} (lib.attrNames sourceAttrs);
-    in narrowAttrs hpkgs localPackages;
+  pluckLocalPackages = hpkgs: let
+    narrowAttrs = sourceAttrs: matchAttrs:
+      lib.foldl' (
+        acc: key:
+          if lib.hasAttr key matchAttrs
+          then acc // {"${key}" = sourceAttrs.${key};}
+          else acc
+      ) {} (lib.attrNames sourceAttrs);
+  in
+    narrowAttrs hpkgs localPackages;
 
   extendedPackageSetByGHCVersions = listToAttrs (
     map (ghcVersion: {
@@ -53,19 +53,24 @@ in rec {
     supportedGHCVersions
   );
 
-  localPackageMatrix = listToAttrs (
-    lib.concatMap (
-      ghcVersion: let
-        myLocalPackages = pluckLocalPackages extendedPackageSetByGHCVersions.${ghcVersion};
-      in
-        map (localPackage: {
-          name = "${localPackage}-${ghcVersion}";
-          value = myLocalPackages.${localPackage};
-        })
-        (attrNames myLocalPackages)
+  mapKeyValues = f: attrs: let
+    inherit (lib.attrsets) foldlAttrs;
+  in
+    foldlAttrs (acc: key: value: acc // f key value) {} attrs;
+
+  localPackageMatrix =
+    mapKeyValues (
+      key: value: let
+        myLocalPackages = pluckLocalPackages value;
+        k = "hs-opentelemetry-suite-${key}";
+      in {
+        "${k}" = pkgs.buildEnv {
+          name = k;
+          paths = lib.attrValues myLocalPackages;
+        };
+      }
     )
-    supportedGHCVersions
-  );
+    extendedPackageSetByGHCVersions;
 
   localDevPackageDeps = hsPackageSet:
     lib.concatMapAttrs (_: v:
