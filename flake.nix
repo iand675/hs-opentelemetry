@@ -14,7 +14,6 @@
   };
 
   outputs = inputs @ {
-    self,
     devenv-root,
     nixpkgs,
     devenv,
@@ -26,6 +25,24 @@
       (import ./nix/matrix.nix)
       supportedSystems
       ;
+    ignoreGeneratedFiles = attrs: {
+      excludes =
+        attrs.excludes
+        or []
+        ++ [
+          "^otlp/src/"
+        ];
+    };
+    pre-commit-hooks = {
+      alejandra.enable = true;
+      fourmolu = ignoreGeneratedFiles {
+        enable = true;
+      };
+      deadnix.enable = true;
+      end-of-file-fixer = ignoreGeneratedFiles {
+        enable = true;
+      };
+    };
   in
     {
       # overlays = {
@@ -40,35 +57,37 @@
           pkgs
           ;
       };
-      # inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
+      inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
 
-      # mkShellForGHC = ghcVersion: let
-      #   myHaskellPackages = extendedPackageSetByGHCVersions.${ghcVersion};
-      # in
-      #   devenv.lib.mkShell {
-      #     inherit inputs pkgs;
-      #     modules = [
-      #       ({...}: {
-      #         devenv.root =
-      #           let
-      #             devenvRootFileContent = builtins.readFile devenv-root.outPath;
-      #           in
-      #           pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
-      #         packages = with pkgs; [
-      #           ghciwatch
-      #         ];
+      mkShellForGHC = ghcVersion: let
+        myHaskellPackages = extendedPackageSetByGHCVersions.${ghcVersion};
+      in
+        devenv.lib.mkShell {
+          inherit inputs pkgs;
+          modules = [
+            ({...}: {
+              devenv.root = let
+                devenvRootFileContent = builtins.readFile devenv-root.outPath;
+              in
+                pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
+              packages = with pkgs; [
+                ghciwatch
+              ];
 
-      #         languages.haskell = {
-      #           enable = true;
-      #           package = myHaskellPackages.ghc.withHoogle (
-      #             hpkgs:
-      #               lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet myHaskellPackages)) hpkgs
-      #           );
-      #         };
-      #       })
-      #       (import ./nix/devenv/repo-wide-checks.nix)
-      #     ];
-      #   };
+              dotenv.enable = true;
+
+              languages.haskell = {
+                enable = true;
+                package = myHaskellPackages.ghc.withHoogle (
+                  hpkgs:
+                    lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet myHaskellPackages)) hpkgs
+                );
+              };
+
+              pre-commit.hooks = pre-commit-hooks;
+            })
+          ];
+        };
     in {
       packages =
         {
@@ -76,19 +95,19 @@
         }
         // haskellPackageUtils.localPackageMatrix;
 
-      # devShells = rec {
-      #   default = ghc96;
-      #   ghc92 = mkShellForGHC "ghc92";
-      #   ghc94 = mkShellForGHC "ghc94";
-      #   ghc96 = mkShellForGHC "ghc96";
-      #   ghc98 = mkShellForGHC "ghc98";
-      # };
+      devShells = rec {
+        default = ghc96;
+        ghc92 = mkShellForGHC "ghc92";
+        ghc94 = mkShellForGHC "ghc94";
+        ghc96 = mkShellForGHC "ghc96";
+        ghc98 = mkShellForGHC "ghc98";
+      };
 
       checks = {
-        # pre-commit-check = devenv.inputs.pre-commit-hooks.lib.${system}.run {
-        #   src = ./.;
-        #   hooks = pre-commit-hooks;
-        # };
+        pre-commit-check = devenv.inputs.pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = pre-commit-hooks;
+        };
       };
     });
 
