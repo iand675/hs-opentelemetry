@@ -34,6 +34,7 @@
           or []
           ++ [
             "^otlp/src/"
+            ".*\\.cabal$"
           ];
       }
       // attrs;
