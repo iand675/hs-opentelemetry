@@ -166,6 +166,7 @@ import OpenTelemetry.Processor (Processor)
 import OpenTelemetry.Processor.Batch (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
+import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Resource
@@ -290,6 +291,7 @@ knownPropagators =
   , ("baggage", w3cBaggagePropagator)
   , ("b3", b3TraceContextPropagator)
   , ("b3multi", b3MultiTraceContextPropagator)
+  , ("datadog", datadogTraceContextPropagator)
   , ("jaeger", error "Jaeger not yet implemented")
   ]
 
