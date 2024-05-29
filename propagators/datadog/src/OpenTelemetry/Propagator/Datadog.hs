@@ -36,8 +36,8 @@ import OpenTelemetry.Propagator.Datadog.Internal (
   newSpanIdFromHeader,
   newTraceIdFromHeader,
  )
-import OpenTelemetry.Trace (SpanContext (SpanContext, isRemote, spanId, traceFlags, traceId, traceState))
 import OpenTelemetry.Trace.Core (
+  SpanContext (SpanContext, isRemote, spanId, traceFlags, traceId, traceState),
   getSpanContext,
   wrapSpanContext,
  )
