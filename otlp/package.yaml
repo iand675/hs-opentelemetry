@@ -8,7 +8,7 @@ version:             0.0.1.0
 extra-source-files:
 - README.md
 - ChangeLog.md
-- proto/**/*/*.proto
+- ../proto/**/*/*.proto
 
 synopsis:            OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
 category:            OpenTelemetry
