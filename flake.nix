@@ -42,6 +42,9 @@
       # General hooks
       end-of-file-fixer = ignoreGeneratedFiles {
         enable = true;
+        excludes = [
+          ".*\\.l?hs$"
+        ];
       };
       # Nix hooks
       alejandra.enable = true;
