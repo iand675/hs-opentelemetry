@@ -7,6 +7,8 @@
     # Hack to avoid needing to use impure when loading the devenv root.
     #
     # See .envrc for how we substitute this with the actual path.
+    #
+    # Alternatively, use the --impure flag when running nix develop, nix show, etc.
     devenv-root = {
       url = "file+file:///dev/null";
       flake = false;
@@ -103,10 +105,13 @@
 
       devShells = rec {
         default = ghc96;
+        ghc810 = mkShellForGHC "ghc810";
+        ghc90 = mkShellForGHC "ghc90";
         ghc92 = mkShellForGHC "ghc92";
         ghc94 = mkShellForGHC "ghc94";
         ghc96 = mkShellForGHC "ghc96";
         ghc98 = mkShellForGHC "ghc98";
+        ghc910 = mkShellForGHC "ghc98";
       };
 
       checks = {
