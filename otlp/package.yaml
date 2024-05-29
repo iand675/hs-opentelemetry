@@ -8,6 +8,7 @@ version:             0.0.1.0
 extra-source-files:
 - README.md
 - ChangeLog.md
+- proto/**/*/*.proto
 
 synopsis:            OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
 category:            OpenTelemetry
@@ -17,6 +18,15 @@ category:            OpenTelemetry
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
 
+custom-setup:
+  dependencies:
+  - base >= 4.7 && < 5
+  - Cabal
+  - proto-lens-setup
+  - Glob
+
+build-tools: proto-lens-protoc:proto-lens-protoc
+
 dependencies:
 - base >= 4.7 && < 5
 - proto-lens
@@ -24,4 +34,3 @@ dependencies:
 
 library:
   source-dirs: src
-
