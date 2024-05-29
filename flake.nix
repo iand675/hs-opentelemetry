@@ -25,23 +25,29 @@
       (import ./nix/matrix.nix)
       supportedSystems
       ;
-    ignoreGeneratedFiles = attrs: {
-      excludes =
-        attrs.excludes
-        or []
-        ++ [
-          "^otlp/src/"
-        ];
-    };
+    ignoreGeneratedFiles = attrs:
+      {
+        excludes =
+          attrs.excludes
+          or []
+          ++ [
+            "^otlp/src/"
+          ];
+      }
+      // attrs;
     pre-commit-hooks = {
-      alejandra.enable = true;
-      fourmolu = ignoreGeneratedFiles {
-        enable = true;
-      };
-      deadnix.enable = true;
+      # General hooks
       end-of-file-fixer = ignoreGeneratedFiles {
         enable = true;
       };
+      # Nix hooks
+      alejandra.enable = true;
+      deadnix.enable = true;
+      # Haskell hooks
+      fourmolu = ignoreGeneratedFiles {
+        enable = true;
+      };
+      hpack.enable = true;
     };
   in
     {
