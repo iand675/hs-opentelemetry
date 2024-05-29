@@ -1,0 +1,71 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.5.
+--
+-- see: https://github.com/sol/hpack
+
+name:           sqlcommenter
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/sqlcommenter#readme>
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan
+maintainer:     ian@iankduncan.com
+copyright:      2024 Ian Duncan
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      SqlCommenter
+  other-modules:
+      Paths_sqlcommenter
+  autogen-modules:
+      Paths_sqlcommenter
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      attoparsec
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , hedgehog
+    , hs-opentelemetry-api
+    , hs-opentelemetry-propagator-w3c
+    , http-types
+    , text >=2.0 && <2.2
+  default-language: Haskell2010
+
+test-suite sqlcommenter-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_sqlcommenter
+  autogen-modules:
+      Paths_sqlcommenter
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      attoparsec
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , hedgehog
+    , hs-opentelemetry-api
+    , hs-opentelemetry-propagator-w3c
+    , hspec
+    , hspec-hedgehog
+    , http-types
+    , sqlcommenter
+    , text
+  default-language: Haskell2010
