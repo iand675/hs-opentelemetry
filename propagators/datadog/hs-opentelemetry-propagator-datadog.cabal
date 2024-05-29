@@ -19,7 +19,6 @@ library
                    OpenTelemetry.Propagator.Datadog.Internal
   build-depends: bytestring,
                  hs-opentelemetry-api,
-                 hs-opentelemetry-sdk,
                  http-types,
                  primitive,
                  text

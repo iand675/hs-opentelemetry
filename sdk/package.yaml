@@ -28,6 +28,7 @@ dependencies:
 - hs-opentelemetry-propagator-w3c == 0.0.1.*
 - hs-opentelemetry-exporter-otlp == 0.0.1.*
 - hs-opentelemetry-propagator-b3 ==0.0.1.*
+- hs-opentelemetry-propagator-datadog ==0.0.0.*
 
 - async
 - vector
