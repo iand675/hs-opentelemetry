@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -261,8 +261,10 @@ openTelemetryYesodMiddleware rr m = do
           recordException waiSpan mempty Nothing ex
           setStatus waiSpan $ Error $ T.pack $ displayException ex
 
+
 shouldMarkException :: SomeException -> Bool
 shouldMarkException = maybe True isInternalError . fromException
+
 
 -- We want to mark the span as an error if it's an InternalError, the other
 -- HCError values are 4xx status codes which don't really count as a server
