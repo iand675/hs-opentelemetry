@@ -32,8 +32,6 @@ import Language.Haskell.TH.Syntax
 import Lens.Micro
 import Network.Wai (requestHeaders)
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Contrib.SpanTraversals
 import OpenTelemetry.Instrumentation.Wai (requestContext)
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
@@ -57,7 +55,7 @@ rheSiteL = lens rheSite (\rhe new -> rhe {rheSite = new})
 instance MonadTracer (HandlerFor site) where
   getTracer = do
     tp <- getGlobalTracerProvider
-    OpenTelemetry.Trace.Core.getTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions
+    pure $ makeTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions
 
 
 {- | Template Haskell to generate a function named routeToRendererFunction.
@@ -181,11 +179,9 @@ renderPattern FlatResource {..} =
           pieces -> pieces
       , case frDispatch of
           Methods {..} ->
-            concat
-              [ case methodsMulti of
-                  Nothing -> []
-                  Just t -> ["/+", t]
-              ]
+            case methodsMulti of
+              Nothing -> []
+              Just t -> ["/+", t]
           Subsite {} -> []
       ]
   where
@@ -249,7 +245,7 @@ openTelemetryYesodMiddleware rr m = do
           }
   case mspan of
     Nothing -> do
-      eResult <- inSpan' (maybe "notFound" (\r -> nameRender rr r) mr) args $ \_s -> do
+      eResult <- inSpan' (maybe "notFound" (nameRender rr) mr) args $ \_s -> do
         catch (Right <$> m) $ \e -> do
           -- We want to mark the span as an error if it's an InternalError,
           -- the other HCError values are 4xx status codes which don't
