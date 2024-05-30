@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -22,6 +23,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
+import Control.Monad (when)
 import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
@@ -247,16 +249,19 @@ openTelemetryYesodMiddleware rr m = do
     Nothing -> do
       eResult <- inSpan' (maybe "notFound" (nameRender rr) mr) args $ \_s -> do
         catch (Right <$> m) $ \e -> do
-          -- We want to mark the span as an error if it's an InternalError,
-          -- the other HCError values are 4xx status codes which don't
-          -- really count as a server error in OpenTelemetry spec parlance.
-          case e of
-            HCError (InternalError _) -> throwIO e
-            _ -> pure ()
+          when (isInternalError e) $ throwIO e
           pure (Left (e :: HandlerContents))
       case eResult of
         Left hc -> throwIO hc
         Right normal -> pure normal
     Just waiSpan -> do
       addAttributes waiSpan sharedAttributes
-      m
+
+
+-- We want to mark the span as an error if it's an InternalError, the other
+-- HCError values are 4xx status codes which don't really count as a server
+-- error in OpenTelemetry spec parlance.
+isInternalError :: HandlerContents -> Bool
+isInternalError = \case
+  HCError (InternalError _) -> True
+  _ -> False
