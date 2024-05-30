@@ -256,7 +256,13 @@ openTelemetryYesodMiddleware rr m = do
         Right normal -> pure normal
     Just waiSpan -> do
       addAttributes waiSpan sharedAttributes
+      withException m $ \ex -> do
+        when (shouldMarkException ex) $ do
+          recordException waiSpan mempty Nothing ex
+          setStatus waiSpan $ Error $ T.pack $ displayException ex
 
+shouldMarkException :: SomeException -> Bool
+shouldMarkException = maybe True isInternalError . fromException
 
 -- We want to mark the span as an error if it's an InternalError, the other
 -- HCError values are 4xx status codes which don't really count as a server
