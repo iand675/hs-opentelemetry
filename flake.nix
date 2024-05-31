@@ -15,7 +15,7 @@
     # };
 
     otlp-protobufs = {
-      url = "github:open-telemetry/opentelemetry-proto/v0.14.0";
+      url = "github:open-telemetry/opentelemetry-proto/v0.19.0";
       flake = false;
     };
   };

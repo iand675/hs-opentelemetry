@@ -19,6 +19,7 @@ package opentelemetry.proto.metrics.v1;
 import "opentelemetry/proto/common/v1/common.proto";
 import "opentelemetry/proto/resource/v1/resource.proto";
 
+option csharp_namespace = "OpenTelemetry.Proto.Metrics.V1";
 option java_multiple_files = true;
 option java_package = "io.opentelemetry.proto.metrics.v1";
 option java_outer_classname = "MetricsProto";
@@ -43,27 +44,28 @@ message MetricsData {
   repeated ResourceMetrics resource_metrics = 1;
 }
 
-// A collection of InstrumentationLibraryMetrics from a Resource.
+// A collection of ScopeMetrics from a Resource.
 message ResourceMetrics {
+  reserved 1000;
+
   // The resource for the metrics in this message.
   // If this field is not set then no resource info is known.
   opentelemetry.proto.resource.v1.Resource resource = 1;
 
   // A list of metrics that originate from a resource.
-  repeated InstrumentationLibraryMetrics instrumentation_library_metrics = 2;
+  repeated ScopeMetrics scope_metrics = 2;
 
   // This schema_url applies to the data in the "resource" field. It does not apply
-  // to the data in the "instrumentation_library_metrics" field which have their own
-  // schema_url field.
+  // to the data in the "scope_metrics" field which have their own schema_url field.
   string schema_url = 3;
 }
 
-// A collection of Metrics produced by an InstrumentationLibrary.
-message InstrumentationLibraryMetrics {
-  // The instrumentation library information for the metrics in this message.
-  // Semantically when InstrumentationLibrary isn't set, it is equivalent with
-  // an empty instrumentation library name (unknown).
-  opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library = 1;
+// A collection of Metrics produced by an Scope.
+message ScopeMetrics {
+  // The instrumentation scope information for the metrics in this message.
+  // Semantically when InstrumentationScope isn't set, it is equivalent with
+  // an empty instrumentation scope name (unknown).
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
 
   // A list of metrics that originate from an instrumentation library.
   repeated Metric metrics = 2;
@@ -75,7 +77,7 @@ message InstrumentationLibraryMetrics {
 // Defines a Metric which has one or more timeseries.  The following is a
 // brief summary of the Metric data model.  For more details, see:
 //
-//   https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md
+//   https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md
 //
 //
 // The data model and relation between entities is shown in the
@@ -412,7 +414,7 @@ message HistogramDataPoint {
   // Negative events *can* be recorded, but sum should not be filled out when
   // doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
   // see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
-  double sum = 5;
+  optional double sum = 5;
 
   // bucket_counts is an optional field contains the count values of histogram
   // for each bucket.
@@ -445,6 +447,12 @@ message HistogramDataPoint {
   // Flags that apply to this specific data point.  See DataPointFlags
   // for the available flags and their meaning.
   uint32 flags = 10;
+
+  // min is the minimum value over (start_time, end_time].
+  optional double min = 11;
+
+  // max is the maximum value over (start_time, end_time].
+  optional double max = 12;
 }
 
 // ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
@@ -485,7 +493,7 @@ message ExponentialHistogramDataPoint {
   // Negative events *can* be recorded, but sum should not be filled out when
   // doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
   // see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
-  double sum = 5;
+  optional double sum = 5;
   
   // scale describes the resolution of the histogram.  Boundaries are
   // located at powers of the base, where:
@@ -547,6 +555,12 @@ message ExponentialHistogramDataPoint {
   // (Optional) List of exemplars collected from
   // measurements that were used to form the data point
   repeated Exemplar exemplars = 11;
+
+  // min is the minimum value over (start_time, end_time].
+  optional double min = 12;
+
+  // max is the maximum value over (start_time, end_time].
+  optional double max = 13;
 }
 
 // SummaryDataPoint is a single data point in a timeseries that describes the
