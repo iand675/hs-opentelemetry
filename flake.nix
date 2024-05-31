@@ -9,14 +9,19 @@
     # See .envrc for how we substitute this with the actual path.
     #
     # Alternatively, use the --impure flag when running nix develop, nix show, etc.
-    devenv-root = {
-      url = "file+file:///dev/null";
+    # devenv-root = {
+    #   url = "file+file:///dev/null";
+    #   flake = false;
+    # };
+
+    otlp-protobufs = {
+      url = "github:open-telemetry/opentelemetry-proto/b43e9b18b76abf3ee040164b55b9c355217151f3";
       flake = false;
     };
   };
 
   outputs = inputs @ {
-    devenv-root,
+    # devenv-root,
     nixpkgs,
     devenv,
     flake-utils,
@@ -44,6 +49,7 @@
         enable = true;
         excludes = [
           ".*\\.l?hs$"
+          ".*\\.proto$"
         ];
       };
       # Nix hooks
@@ -78,13 +84,13 @@
           inherit inputs pkgs;
           modules = [
             ({...}: {
-              devenv.root = let
-                devenvRootFileContent = builtins.readFile devenv-root.outPath;
-              in
-                pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
-              packages = with pkgs; [
-                ghciwatch
-              ];
+              # devenv.root = let
+              #   devenvRootFileContent = builtins.readFile devenv-root.outPath;
+              # in
+              #   pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
+              # packages = with pkgs; [
+              #   ghciwatch
+              # ];
 
               dotenv.enable = true;
 
@@ -98,6 +104,7 @@
 
               pre-commit.hooks = pre-commit-hooks;
             })
+            (import ./nix/devenv/otlp-protobuf-setup.nix)
           ];
         };
     in {

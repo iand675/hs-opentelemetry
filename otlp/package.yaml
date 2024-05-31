@@ -8,6 +8,7 @@ version:             0.0.1.0
 extra-source-files:
 - README.md
 - ChangeLog.md
+- proto/**/*/*.proto
 
 synopsis:            OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
 category:            OpenTelemetry
@@ -17,10 +18,38 @@ category:            OpenTelemetry
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
 
+custom-setup:
+  dependencies:
+  - base >= 4.7 && < 5
+  - Cabal >= 2.0 && < 3.12
+  - proto-lens-setup
+
+build-tools: proto-lens-protoc:proto-lens-protoc
+
 dependencies:
 - base >= 4.7 && < 5
 - proto-lens
 - proto-lens-runtime
 
 library:
-  source-dirs: src
+  generated-exposed-modules:
+  - Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService
+  - Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields
+  - Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService
+  - Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields
+  - Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService
+  - Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService_Fields
+  - Proto.Opentelemetry.Proto.Common.V1.Common
+  - Proto.Opentelemetry.Proto.Common.V1.Common_Fields
+  - Proto.Opentelemetry.Proto.Logs.V1.Logs
+  - Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields
+  - Proto.Opentelemetry.Proto.Metrics.Experimental.MetricsConfigService
+  - Proto.Opentelemetry.Proto.Metrics.Experimental.MetricsConfigService_Fields
+  - Proto.Opentelemetry.Proto.Metrics.V1.Metrics
+  - Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields
+  - Proto.Opentelemetry.Proto.Resource.V1.Resource
+  - Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields
+  - Proto.Opentelemetry.Proto.Trace.V1.Trace
+  - Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
+  - Proto.Opentelemetry.Proto.Trace.V1.TraceConfig
+  - Proto.Opentelemetry.Proto.Trace.V1.TraceConfig_Fields

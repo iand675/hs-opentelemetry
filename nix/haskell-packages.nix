@@ -11,6 +11,8 @@
     ;
   inherit (import ./matrix.nix) supportedGHCVersions;
 in rec {
+  inherit pkgs;
+
   localPackages = {
     hs-opentelemetry-api = ../api;
     hs-opentelemetry-sdk = ../sdk;
@@ -32,7 +34,13 @@ in rec {
     hs-opentelemetry-instrumentation-wai = ../instrumentation/wai;
   };
 
-  localPackageCabalDerivations = hfinal: lib.mapAttrs (name: path: hfinal.callCabal2nix name path {}) localPackages;
+  localPackageCabalDerivations = hfinal: let
+    baseConfig = lib.mapAttrs (name: path: hfinal.callCabal2nix name path {}) localPackages;
+  in
+    baseConfig
+    // {
+      hs-opentelemetry-otlp = pkgs.haskell.lib.addSetupDepends baseConfig.hs-opentelemetry-otlp [pkgs.protobuf];
+    };
 
   pluckLocalPackages = hpkgs: let
     narrowAttrs = sourceAttrs: matchAttrs:
