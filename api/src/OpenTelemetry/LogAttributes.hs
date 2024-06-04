@@ -15,6 +15,10 @@ module OpenTelemetry.LogAttributes (
   lookupAttribute,
   AnyValue (..),
   ToValue (..),
+
+  -- * unsafe utilities
+  unsafeLogAttributesFromListIgnoringLimits,
+  unsafeMergeLogAttributesIgnoringLimits,
 ) where
 
 import Data.ByteString (ByteString)
@@ -22,6 +26,7 @@ import Data.Data (Data)
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
 import Data.Int (Int64)
+import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -81,6 +86,14 @@ limitLengths limit (HashMapValue h) = HashMapValue $ fmap (limitLengths limit) h
 limitLengths _ val = val
 
 
+{- | An attribute represents user-provided metadata about a span, link, or event.
+
+ 'Any' values are used in place of 'Standard Attributes' in logs because third-party
+ logs may not conform to the 'Standard Attribute' format.
+
+ Telemetry tools may use this data to support high-cardinality querying, visualization
+ in waterfall diagrams, trace sampling decisions, and more.
+-}
 data AnyValue
   = TextValue Text
   | BoolValue Bool
@@ -93,6 +106,23 @@ data AnyValue
   deriving anyclass (Hashable)
 
 
+-- | Create a `TextAttribute` from the string value.
+instance IsString AnyValue where
+  fromString :: String -> AnyValue
+  fromString = TextValue . fromString
+
+
+{- | Convert a Haskell value to an 'Any' value.
+
+ @
+
+ data Foo = Foo
+
+ instance ToValue Foo where
+   toValue Foo = TextValue "Foo"
+
+ @
+-}
 class ToValue a where
   toValue :: a -> AnyValue
 

@@ -14,6 +14,9 @@ import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace.Id (SpanId, TraceId)
 
 
+{- | This is a data type that can represent logs from various sources: application log files, machine generated events, system logs, etc. [Specification outlined here.](https://opentelemetry.io/docs/specs/otel/logs/data-model/)
+Existing log formats can be unambiguously mapped to this data type. Reverse mapping from this data type is also possible to the extent that the target log format has equivalent capabilities.
+-}
 data LogRecord body = LogRecord
   { timestamp :: Maybe Timestamp
   -- ^ Time when the event occurred measured by the origin clock. This field is optional, it may be missing if the timestamp is unknown.
