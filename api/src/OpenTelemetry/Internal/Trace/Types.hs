@@ -24,7 +24,7 @@ import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
-import OpenTelemetry.Logging.Core (Log)
+import OpenTelemetry.Logging.Core (LogRecord)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -131,7 +131,7 @@ data TracerProvider = TracerProvider
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
   , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
-  , tracerProviderLogger :: Log Text -> IO ()
+  , tracerProviderLogger :: LogRecord Text -> IO ()
   }
 
 

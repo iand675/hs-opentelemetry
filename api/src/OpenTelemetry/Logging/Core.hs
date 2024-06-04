@@ -2,19 +2,28 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module OpenTelemetry.Logging.Core where
+module OpenTelemetry.Logging.Core (
+  LogRecord (..),
+) where
 
-import Data.Int (Int32, Int64)
+import Data.Int (Int64)
 import Data.Text (Text)
-import OpenTelemetry.Attributes (Attribute)
 import OpenTelemetry.Common
+import OpenTelemetry.LogAttributes (LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace.Id (SpanId, TraceId)
 
 
-data Log body = Log
+data LogRecord body = LogRecord
   { timestamp :: Maybe Timestamp
   -- ^ Time when the event occurred measured by the origin clock. This field is optional, it may be missing if the timestamp is unknown.
+  , observedTimestamp :: Timestamp
+  -- ^ Time when the event was observed by the collection system. For events that originate in OpenTelemetry (e.g. using OpenTelemetry Logging SDK)
+  -- this timestamp is typically set at the generation time and is equal to Timestamp. For events originating externally and collected by OpenTelemetry (e.g. using Collector)
+  -- this is the time when OpenTelemetry’s code observed the event measured by the clock of the OpenTelemetry code. This field SHOULD be set once the event is observed by OpenTelemetry.
+  --
+  -- For converting OpenTelemetry log data to formats that support only one timestamp or when receiving OpenTelemetry log data by recipients that support only one timestamp internally the following logic is recommended:
+  -- - Use Timestamp if it is present, otherwise use ObservedTimestamp
   , tracingDetails :: Maybe (TraceId, SpanId, TraceFlags)
   -- ^ Tuple contains three fields:
   --
@@ -22,9 +31,11 @@ data Log body = Log
   -- - Span id. Can be set for logs that are part of a particular processing span.
   -- - Trace flag as defined in W3C Trace Context specification. At the time of writing the specification defines one flag - the SAMPLED flag.
   , severityText :: Maybe Text
-  -- ^ severity text (also known as log level). This is the original string representation of the severity as it is known at the source. If this field is missing and SeverityNumber is present then the short name that corresponds to the SeverityNumber may be used as a substitution. This field is optional.
+  -- ^ severity text (also known as log level). This is the original string representation of the severity as it is known at the source. If this field is missing
+  -- and SeverityNumber is present then the short name that corresponds to the SeverityNumber may be used as a substitution. This field is optional.
   , severityNumber :: Maybe Int64
-  -- ^ SeverityNumber is an integer number. Smaller numerical values correspond to less severe events (such as debug events), larger numerical values correspond to more severe events (such as errors and critical events). The following table defines the meaning of SeverityNumber value:
+  -- ^ SeverityNumber is an integer number. Smaller numerical values correspond to less severe events (such as debug events), larger numerical values correspond to
+  -- more severe events (such as errors and critical events). The following table defines the meaning of SeverityNumber value:
   --
   -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
   -- | SeverityNumber range  | Range name  | Meaning                                                                                  |
@@ -41,32 +52,40 @@ data Log body = Log
   -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
   -- | 21-24                 | FATAL       | A fatal error such as application or system crash.                                       |
   -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
-  , name :: Maybe Text
-  -- ^ Short low cardinality event type that does not contain varying parts. Name describes what happened (e.g. "ProcessStarted"). Recommended to be no longer than 50 characters. Typically used for filtering and grouping purposes in backends.
+  -- Smaller numerical values in each range represent less important (less severe) events. Larger numerical values in each range represent more important (more severe) events.
+  -- For example SeverityNumber=17 describes an error that is less critical than an error with SeverityNumber=20.
+  --
+  -- Mappings from existing logging systems and formats (or source format for short) must define how severity (or log level) of that particular format corresponds to SeverityNumber
+  -- of this data model based on the meaning given for each range in the above table. [More Information](https://opentelemetry.io/docs/specs/otel/logs/data-model/#mapping-of-severitynumber)
+  --
+  -- [These short names](https://opentelemetry.io/docs/specs/otel/logs/data-model/#displaying-severity) can be used to represent SeverityNumber in the UI
+  --
+  -- In the contexts where severity participates in less-than / greater-than comparisons SeverityNumber field should be used.
+  -- SeverityNumber can be compared to another SeverityNumber or to numbers in the 1..24 range (or to the corresponding short names).
   , body :: body
-  -- ^ A value containing the body of the log record. Can be for example a human-readable string message (including multi-line) describing the event in a free form or it can be a structured data composed of arrays and maps of other values. First-party Applications SHOULD use a string message. However, a structured body may be necessary to preserve the semantics of some existing log formats. Can vary for each occurrence of the event coming from the same source. This field is optional.
-  , {-
-    Type any
-      Value of type any can be one of the following:
-
-      A scalar value: number, string or boolean,
-
-      A byte array,
-
-      An array (a list) of any values,
-
-      A map<string, any>.
-    -}
-
-    resource :: Maybe MaterializedResources
-  -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource. Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources. This field is optional.
-  , attributes :: Maybe [(Text, Attribute)]
-  -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source. Can contain information about the request context (other than TraceId/SpanId). SHOULD follow OpenTelemetry semantic conventions for Log Attributes or semantic conventions for Span Attributes. This field is optional.
+  -- ^ A value containing the body of the log record. Can be for example a human-readable string message (including multi-line) describing the event in a free form or it can be a
+  -- structured data composed of arrays and maps of other values. Body MUST support any type to preserve the semantics of structured logs emitted by the applications.
+  -- Can vary for each occurrence of the event coming from the same source. This field is optional.
+  --
+  -- Type any (functions that use Log should have a Typeclass constraint of (ToValue body) => ...)
+  --    Value of type any can be one of the following:
+  --    - A scalar value: number, string or boolean,
+  --    - A byte array,
+  --    - An array (a list) of any values,
+  --    - A map<string, any>.
+  , resource :: Maybe MaterializedResources
+  -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource.
+  -- Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model
+  -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.
+  -- This field is optional.
+  , attributes :: LogAttributes
+  -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source.
+  -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
+  -- emitted by the applications. This field is optional.
   }
   deriving stock (Functor)
 
-
-data SeverityNumber
+{- data SeverityNumber
   = Trace
   | Trace2
   | Trace3
@@ -92,7 +111,14 @@ data SeverityNumber
   | Fatal3
   | Fatal4
   | Unknown !Int32
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Ord, Read, Show )
+
+instance Enum SeverityNumber where
+  toEnum 1 = Trace
+  toEnum 2 = Trace2
+  toEnum 3 = Trace3
+  toEnum 4 = Trace4
+  ... -}
 
 -- severityTrace :: SeverityNumber
 -- severityTrace = 1
