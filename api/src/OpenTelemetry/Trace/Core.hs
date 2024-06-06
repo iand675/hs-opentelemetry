@@ -167,7 +167,7 @@ import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
-import OpenTelemetry.Logging.Core (Log)
+import OpenTelemetry.Logging.Core (LogRecord)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -690,7 +690,7 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
-  , tracerProviderOptionsLogger :: Log Text -> IO ()
+  , tracerProviderOptionsLogger :: LogRecord Text -> IO ()
   }
 
 
