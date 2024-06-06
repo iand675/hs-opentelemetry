@@ -86,7 +86,7 @@ data LogRecord body = LogRecord
   -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
   -- emitted by the applications. This field is optional.
   }
-  deriving stock (Functor)
+  deriving stock (Show, Functor)
 
 {- data SeverityNumber
   = Trace
