@@ -2,10 +2,12 @@
 {-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.Logging.Core (
+  Logger (..),
   LogRecord (..),
+  LogRecordArguments (..),
   mkSeverityNumber,
   shortName,
-  severityNumber,
+  severityInt,
   emitLogRecord,
 ) where
 
