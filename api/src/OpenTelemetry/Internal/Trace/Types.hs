@@ -24,7 +24,7 @@ import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
-import OpenTelemetry.Logging.Core (LogRecord)
+import OpenTelemetry.Internal.Logging.Types
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
