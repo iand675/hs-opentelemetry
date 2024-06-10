@@ -165,9 +165,9 @@ import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Internal.Logging.Types (LogRecord)
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
-import OpenTelemetry.Logging.Core (LogRecord)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
