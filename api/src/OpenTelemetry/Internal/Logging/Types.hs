@@ -14,6 +14,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types
+import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
 import OpenTelemetry.LogAttributes (LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
@@ -21,7 +22,8 @@ import OpenTelemetry.Resource (MaterializedResources)
 
 -- | LogRecords can be Created from Loggers
 data Logger = Logger
-  { loggerResource :: Maybe MaterializedResources
+  { loggerInstrumentationScope :: InstrumentationLibrary
+  , loggerResource :: Maybe MaterializedResources
   }
 
 
@@ -92,6 +94,7 @@ data LogRecord body = LogRecord
   -- Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model
   -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.
   -- This field is optional.
+  , logRecordInstrumentationScope :: InstrumentationLibrary
   , logRecordAttributes :: LogAttributes
   -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source.
   -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes

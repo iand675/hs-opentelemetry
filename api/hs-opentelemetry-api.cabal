@@ -35,6 +35,7 @@ library
       OpenTelemetry.Contrib.CarryOns
       OpenTelemetry.Contrib.SpanTraversals
       OpenTelemetry.Exporter
+      OpenTelemetry.Internal.Common.Types
       OpenTelemetry.Internal.Logging.Types
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
