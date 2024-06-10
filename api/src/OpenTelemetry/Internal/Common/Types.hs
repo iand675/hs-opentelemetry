@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..)) where
 
@@ -46,11 +46,9 @@ data InstrumentationLibrary = InstrumentationLibrary
   , librarySchemaUrl :: {-# UNPACK #-} !Text
   , libraryAttributes :: Attributes
   }
-  deriving (Ord, Eq, Generic, Show)
-
-
-instance Hashable InstrumentationLibrary
+  deriving (Ord, Eq, Show)
 
 
 instance IsString InstrumentationLibrary where
+  fromString :: String -> InstrumentationLibrary
   fromString str = InstrumentationLibrary (fromString str) "" "" emptyAttributes
