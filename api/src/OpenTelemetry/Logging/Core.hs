@@ -2,7 +2,18 @@
 {-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.Logging.Core (
+  -- LoggerProvider operations
+  LoggerProvider (..),
+  LoggerProviderOptions (..),
+  emptyLoggerProviderOptions,
+  createLoggerProvider,
+  globalLoggerProvider,
+  setGlobalLoggerProvider,
+  getGlobalLoggerProvider,
+  -- Logger operations
   Logger (..),
+  makeLogger,
+  -- LogRecord operations
   LogRecord (..),
   LogRecordArguments (..),
   mkSeverityNumber,
@@ -15,17 +26,52 @@ import Control.Applicative
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Coerce
+import Data.IORef
 import Data.Maybe
+import GHC.IO (unsafePerformIO)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logging.Types
 import OpenTelemetry.Internal.Trace.Types
+import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
 import System.Clock
 
 
 getCurrentTimestamp :: (MonadIO m) => m Timestamp
 getCurrentTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
+
+
+data LoggerProviderOptions = LoggerProviderOptions {loggerProviderOptionsResource :: Maybe MaterializedResources}
+
+
+emptyLoggerProviderOptions :: LoggerProviderOptions
+emptyLoggerProviderOptions =
+  LoggerProviderOptions
+    { loggerProviderOptionsResource = Just emptyMaterializedResources
+    }
+
+
+createLoggerProvider :: (MonadIO m) => LoggerProviderOptions -> m LoggerProvider
+createLoggerProvider LoggerProviderOptions {..} = pure LoggerProvider {loggerProviderResource = loggerProviderOptionsResource}
+
+
+globalLoggerProvider :: IORef LoggerProvider
+globalLoggerProvider = unsafePerformIO $ newIORef =<< createLoggerProvider emptyLoggerProviderOptions
+{-# NOINLINE globalLoggerProvider #-}
+
+
+getGlobalLoggerProvider :: (MonadIO m) => m LoggerProvider
+getGlobalLoggerProvider = liftIO $ readIORef globalLoggerProvider
+
+
+setGlobalLoggerProvider :: (MonadIO m) => LoggerProvider -> m ()
+setGlobalLoggerProvider = liftIO . writeIORef globalLoggerProvider
+
+
+makeLogger :: LoggerProvider -> InstrumentationLibrary -> Logger
+makeLogger loggerProvider loggerInstrumentationScope = Logger {..}
 
 
 {- | Emits a LogRecord with properties specified by the passed in Logger and LogRecordArguments.
@@ -55,7 +101,7 @@ emitLogRecord Logger {..} LogRecordArguments {..} = do
       , logRecordSeverityNumber = fmap mkSeverityNumber severityNumber
       , logRecordSeverityText = severityText <|> (shortName . mkSeverityNumber =<< severityNumber)
       , logRecordBody = body
-      , logRecordResource = loggerResource
+      , logRecordResource = loggerProviderResource loggerProvider
       , logRecordInstrumentationScope = loggerInstrumentationScope
       , logRecordAttributes = attributes
       }

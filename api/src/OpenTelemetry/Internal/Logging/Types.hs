@@ -2,6 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module OpenTelemetry.Internal.Logging.Types (
+  LoggerProvider (..),
   Logger (..),
   LogRecord (..),
   LogRecordArguments (..),
@@ -20,10 +21,15 @@ import OpenTelemetry.LogAttributes (LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
 
 
+data LoggerProvider = LoggerProvider
+  { loggerProviderResource :: Maybe MaterializedResources
+  }
+
+
 -- | LogRecords can be Created from Loggers
 data Logger = Logger
   { loggerInstrumentationScope :: InstrumentationLibrary
-  , loggerResource :: Maybe MaterializedResources
+  , loggerProvider :: LoggerProvider
   }
 
 
