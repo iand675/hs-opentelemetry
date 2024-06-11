@@ -4,7 +4,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE StrictData #-}
 
 {- |
@@ -75,7 +74,10 @@ data Attributes = Attributes
   , attributesCount :: {-# UNPACK #-} !Int
   , attributesDropped :: {-# UNPACK #-} !Int
   }
-  deriving stock (Show, Eq)
+  deriving stock (Show, Generic, Eq, Ord)
+
+
+instance Hashable Attributes
 
 
 emptyAttributes :: Attributes

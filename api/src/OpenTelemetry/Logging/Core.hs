@@ -37,7 +37,7 @@ emitLogRecord
   => Logger
   -> LogRecordArguments body
   -> m (LogRecord body)
-emitLogRecord logger LogRecordArguments {..} = do
+emitLogRecord Logger {..} LogRecordArguments {..} = do
   currentTimestamp <- getCurrentTimestamp
   let logRecordObservedTimestamp = fromMaybe currentTimestamp observedTimestamp
 
@@ -55,6 +55,7 @@ emitLogRecord logger LogRecordArguments {..} = do
       , logRecordSeverityNumber = fmap mkSeverityNumber severityNumber
       , logRecordSeverityText = severityText <|> (shortName . mkSeverityNumber =<< severityNumber)
       , logRecordBody = body
-      , logRecordResource = loggerResource logger
+      , logRecordResource = loggerResource
+      , logRecordInstrumentationScope = loggerInstrumentationScope
       , logRecordAttributes = attributes
       }
