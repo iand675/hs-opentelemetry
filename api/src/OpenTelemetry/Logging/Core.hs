@@ -2,18 +2,20 @@
 {-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.Logging.Core (
-  -- LoggerProvider operations
+  -- * @LoggerProvider@ operations
   LoggerProvider (..),
   LoggerProviderOptions (..),
   emptyLoggerProviderOptions,
   createLoggerProvider,
-  globalLoggerProvider,
   setGlobalLoggerProvider,
   getGlobalLoggerProvider,
-  -- Logger operations
+
+  -- * @Logger@ operations
+  InstrumentationLibrary (..),
   Logger (..),
   makeLogger,
-  -- LogRecord operations
+
+  -- * @LogRecord@ operations
   LogRecord (..),
   LogRecordArguments (..),
   mkSeverityNumber,
@@ -46,6 +48,10 @@ getCurrentTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime R
 data LoggerProviderOptions = LoggerProviderOptions {loggerProviderOptionsResource :: Maybe MaterializedResources}
 
 
+{- | Options for creating a @LoggerProvider@ with no resources and default limits.
+
+ In effect, logging is a no-op when using this configuration.
+-}
 emptyLoggerProviderOptions :: LoggerProviderOptions
 emptyLoggerProviderOptions =
   LoggerProviderOptions
@@ -53,6 +59,10 @@ emptyLoggerProviderOptions =
     }
 
 
+{- | Initialize a new @LoggerProvider@
+
+ You should generally use @getGlobalLoggerProvider@ for most applications.
+-}
 createLoggerProvider :: (MonadIO m) => LoggerProviderOptions -> m LoggerProvider
 createLoggerProvider LoggerProviderOptions {..} = pure LoggerProvider {loggerProviderResource = loggerProviderOptionsResource}
 
@@ -62,15 +72,26 @@ globalLoggerProvider = unsafePerformIO $ newIORef =<< createLoggerProvider empty
 {-# NOINLINE globalLoggerProvider #-}
 
 
+-- | Access the globally configured @LoggerProvider@. This @LoggerProvider@ is no-op until initialized by the SDK
 getGlobalLoggerProvider :: (MonadIO m) => m LoggerProvider
 getGlobalLoggerProvider = liftIO $ readIORef globalLoggerProvider
 
 
+{- | Overwrite the globally configured @LoggerProvider@.
+
+ @Logger@s acquired from the previously installed @LoggerProvider@s
+ will continue to use that @LoggerProvider@s settings.
+-}
 setGlobalLoggerProvider :: (MonadIO m) => LoggerProvider -> m ()
 setGlobalLoggerProvider = liftIO . writeIORef globalLoggerProvider
 
 
-makeLogger :: LoggerProvider -> InstrumentationLibrary -> Logger
+makeLogger
+  :: LoggerProvider
+  -- ^ The @LoggerProvider@ holds the configuration for the @Logger@.
+  -> InstrumentationLibrary
+  -- ^ The library that the @Logger@ instruments. This uniquely identifies the @Logger@.
+  -> Logger
 makeLogger loggerProvider loggerInstrumentationScope = Logger {..}
 
 

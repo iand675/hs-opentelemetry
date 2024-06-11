@@ -21,15 +21,20 @@ import OpenTelemetry.LogAttributes (LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
 
 
+-- | @Logger@s can be created from @LoggerProvider@s
 data LoggerProvider = LoggerProvider
   { loggerProviderResource :: Maybe MaterializedResources
   }
 
 
--- | LogRecords can be Created from Loggers
+{- | @LogRecords@ can be created from @Loggers@. @Logger@s are uniquely identified by the @libraryName@, @libraryVersion@, @schemaUrl@ fields of @InstrumentationLibrary@.
+Creating two @Logger@s with the same identity but different @libraryAttributes@ is a user error.
+-}
 data Logger = Logger
   { loggerInstrumentationScope :: InstrumentationLibrary
+  -- ^ Details about the library that the @Logger@ instruments.
   , loggerProvider :: LoggerProvider
+  -- ^ The @LoggerProvider@ that created this @Logger@. All configuration for the @Logger@ is contained in the @LoggerProvider@.
   }
 
 
@@ -110,7 +115,8 @@ data LogRecord body = LogRecord
 
 
 {- | Arguments that may be set on LogRecord creation. If observedTimestamp is not set, it will default to the current timestamp.
-If context is not specified it will default to the current context.
+If context is not specified it will default to the current context. Refer to the documentation of @LogRecord@ for descriptions
+of the fields.
 -}
 data LogRecordArguments body = LogRecordArguments
   { timestamp :: Maybe Timestamp
