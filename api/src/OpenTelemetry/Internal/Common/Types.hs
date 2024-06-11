@@ -35,6 +35,8 @@ import OpenTelemetry.Attributes (Attributes, emptyAttributes)
  instrumentationLibrary = InstrumentationLibrary
    { libraryName = "your_package_name"
    , libraryVersion = T.pack $ showVersion version
+   , librarySchemaUrl = T.pack "" -- to specify a URL, refer to this documentation: https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
+   , libraryAttributes = emptyAttributes
    }
 
  @
