@@ -24,6 +24,7 @@ import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logging.Types
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
@@ -36,51 +37,6 @@ import OpenTelemetry.Util
 data ExportResult
   = Success
   | Failure (Maybe SomeException)
-
-
-{- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
- Instrumented Library and Instrumentation Library may be the same library if it has built-in OpenTelemetry instrumentation.
-
- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly.
- However, many libraries will not have such integration, and as such there is a need for a separate library which would inject such calls, using mechanisms such as wrapping interfaces,
- subscribing to library-specific callbacks, or translating existing telemetry into the OpenTelemetry model.
-
- A library that enables OpenTelemetry observability for another library is called an Instrumentation Library.
-
- An instrumentation library should be named to follow any naming conventions of the instrumented library (e.g. 'middleware' for a web framework).
-
- If there is no established name, the recommendation is to prefix packages with "hs-opentelemetry-instrumentation", followed by the instrumented library name itself.
-
- In general, you can initialize the instrumentation library like so:
-
- @
-
- import qualified Data.Text as T
- import Data.Version (showVersion)
- import Paths_your_package_name
-
- instrumentationLibrary :: InstrumentationLibrary
- instrumentationLibrary = InstrumentationLibrary
-   { libraryName = "your_package_name"
-   , libraryVersion = T.pack $ showVersion version
-   }
-
- @
--}
-data InstrumentationLibrary = InstrumentationLibrary
-  { libraryName :: {-# UNPACK #-} !Text
-  -- ^ The name of the instrumentation library
-  , libraryVersion :: {-# UNPACK #-} !Text
-  -- ^ The version of the instrumented library
-  }
-  deriving (Ord, Eq, Generic, Show)
-
-
-instance Hashable InstrumentationLibrary
-
-
-instance IsString InstrumentationLibrary where
-  fromString str = InstrumentationLibrary (fromString str) ""
 
 
 data Exporter a = Exporter
