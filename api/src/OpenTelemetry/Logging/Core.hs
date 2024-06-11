@@ -28,15 +28,18 @@ import Control.Applicative
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Coerce
+import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe
 import GHC.IO (unsafePerformIO)
+import OpenTelemetry.Attributes (AttributeLimits)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logging.Types
 import OpenTelemetry.Internal.Trace.Types
+import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
 import System.Clock
 
@@ -45,7 +48,10 @@ getCurrentTimestamp :: (MonadIO m) => m Timestamp
 getCurrentTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
 
-data LoggerProviderOptions = LoggerProviderOptions {loggerProviderOptionsResource :: MaterializedResources}
+data LoggerProviderOptions = LoggerProviderOptions
+  { loggerProviderOptionsResource :: MaterializedResources
+  , loggerProviderOptionsAttributeLimits :: AttributeLimits
+  }
 
 
 {- | Options for creating a @LoggerProvider@ with no resources and default limits.
@@ -124,5 +130,9 @@ emitLogRecord Logger {..} LogRecordArguments {..} = do
       , logRecordBody = body
       , logRecordResource = loggerProviderResource loggerProvider
       , logRecordInstrumentationScope = loggerInstrumentationScope
-      , logRecordAttributes = attributes
+      , logRecordAttributes =
+          addAttributes
+            (loggerProviderAttributeLimits loggerProvider)
+            emptyAttributes
+            attributes
       }
