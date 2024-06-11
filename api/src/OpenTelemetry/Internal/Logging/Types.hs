@@ -23,7 +23,7 @@ import OpenTelemetry.Resource (MaterializedResources)
 
 -- | @Logger@s can be created from @LoggerProvider@s
 data LoggerProvider = LoggerProvider
-  { loggerProviderResource :: Maybe MaterializedResources
+  { loggerProviderResource :: MaterializedResources
   }
 
 
@@ -100,7 +100,7 @@ data LogRecord body = LogRecord
   --    - A byte array,
   --    - An array (a list) of any values,
   --    - A map<string, any>.
-  , logRecordResource :: Maybe MaterializedResources
+  , logRecordResource :: MaterializedResources
   -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource.
   -- Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model
   -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.

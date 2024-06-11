@@ -45,7 +45,7 @@ getCurrentTimestamp :: (MonadIO m) => m Timestamp
 getCurrentTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
 
-data LoggerProviderOptions = LoggerProviderOptions {loggerProviderOptionsResource :: Maybe MaterializedResources}
+data LoggerProviderOptions = LoggerProviderOptions {loggerProviderOptionsResource :: MaterializedResources}
 
 
 {- | Options for creating a @LoggerProvider@ with no resources and default limits.
@@ -55,7 +55,7 @@ data LoggerProviderOptions = LoggerProviderOptions {loggerProviderOptionsResourc
 emptyLoggerProviderOptions :: LoggerProviderOptions
 emptyLoggerProviderOptions =
   LoggerProviderOptions
-    { loggerProviderOptionsResource = Just emptyMaterializedResources
+    { loggerProviderOptionsResource = emptyMaterializedResources
     }
 
 
