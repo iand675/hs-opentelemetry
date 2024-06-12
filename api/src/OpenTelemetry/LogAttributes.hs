@@ -16,6 +16,10 @@ module OpenTelemetry.LogAttributes (
   AnyValue (..),
   ToValue (..),
 
+  -- * Attribute limits
+  AttributeLimits (..),
+  defaultAttributeLimits,
+
   -- * unsafe utilities
   unsafeLogAttributesFromListIgnoringLimits,
   unsafeMergeLogAttributesIgnoringLimits,
@@ -30,7 +34,7 @@ import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import OpenTelemetry.Attributes (AttributeLimits (..))
+import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 
 
 data LogAttributes = LogAttributes

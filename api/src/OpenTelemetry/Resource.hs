@@ -176,6 +176,7 @@ data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
   , materializedResourcesAttributes :: Attributes
   }
+  deriving (Show, Eq)
 
 
 {- | A placeholder for 'MaterializedResources' when no resource information is
