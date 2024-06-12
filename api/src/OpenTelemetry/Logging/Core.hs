@@ -18,6 +18,9 @@ module OpenTelemetry.Logging.Core (
   SeverityNumber (..),
   toShortName,
   emitLogRecord,
+  addAttribute,
+  addAttributes,
+  logRecordGetAttributes,
 ) where
 
 import OpenTelemetry.Internal.Common.Types

@@ -5,6 +5,7 @@ module OpenTelemetry.Internal.Logging.Types (
   LoggerProvider (..),
   Logger (..),
   LogRecord (..),
+  ImmutableLogRecord (..),
   LogRecordArguments (..),
   emptyLogRecordArguments,
   SeverityNumber (..),
@@ -13,13 +14,14 @@ module OpenTelemetry.Internal.Logging.Types (
 
 import Data.Function (on)
 import qualified Data.HashMap.Strict as H
+import Data.IORef (IORef)
+import Data.Int (Int64)
 import Data.Text (Text)
-import OpenTelemetry.Attributes (AttributeLimits)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
-import OpenTelemetry.Context.Types
+import OpenTelemetry.Context.Types (Context)
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
-import OpenTelemetry.LogAttributes (AnyValue, LogAttributes)
+import OpenTelemetry.LogAttributes (AnyValue, AttributeLimits, LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
 
 
@@ -28,6 +30,7 @@ data LoggerProvider = LoggerProvider
   { loggerProviderResource :: MaterializedResources
   , loggerProviderAttributeLimits :: AttributeLimits
   }
+  deriving (Show, Eq)
 
 
 {- | @LogRecords@ can be created from @Loggers@. @Logger@s are uniquely identified by the @libraryName@, @libraryVersion@, @schemaUrl@ fields of @InstrumentationLibrary@.
@@ -44,7 +47,10 @@ data Logger = Logger
 {- | This is a data type that can represent logs from various sources: application log files, machine generated events, system logs, etc. [Specification outlined here.](https://opentelemetry.io/docs/specs/otel/logs/data-model/)
 Existing log formats can be unambiguously mapped to this data type. Reverse mapping from this data type is also possible to the extent that the target log format has equivalent capabilities.
 -}
-data LogRecord body = LogRecord
+data LogRecord a = LogRecord (IORef (ImmutableLogRecord a))
+
+
+data ImmutableLogRecord body = ImmutableLogRecord
   { logRecordTimestamp :: Maybe Timestamp
   -- ^ Time when the event occurred measured by the origin clock. This field is optional, it may be missing if the timestamp is unknown.
   , logRecordObservedTimestamp :: Timestamp
@@ -113,6 +119,7 @@ data LogRecord body = LogRecord
   -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source.
   -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
   -- emitted by the applications. This field is optional.
+  , logRecordLogger :: Logger
   }
   deriving (Functor)
 

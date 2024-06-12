@@ -11,6 +11,9 @@ module OpenTelemetry.Internal.Logging.Core (
   emitLogRecord,
   logDroppedAttributes,
   emitOTelLogRecord,
+  addAttribute,
+  addAttributes,
+  logRecordGetAttributes,
 ) where
 
 import Control.Applicative
@@ -18,6 +21,7 @@ import Control.Monad (void, when)
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Coerce
+import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe
@@ -32,6 +36,7 @@ import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logging.Types
 import OpenTelemetry.Internal.Trace.Types (SpanContext (..), getSpanContext)
+import OpenTelemetry.LogAttributes (LogAttributes, ToValue)
 import qualified OpenTelemetry.LogAttributes as LA
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
 import Paths_hs_opentelemetry_api (version)
@@ -100,16 +105,12 @@ makeLogger
 makeLogger loggerProvider loggerInstrumentationScope = Logger {..}
 
 
-{- | Emits a LogRecord with properties specified by the passed in Logger and LogRecordArguments.
-If observedTimestamp is not set in LogRecordArguments, it will default to the current timestamp.
-If context is not specified in LogRecordArguments it will default to the current context.
--}
-emitLogRecord
+createImmutableLogRecord
   :: (MonadIO m)
   => Logger
   -> LogRecordArguments body
-  -> m (LogRecord body)
-emitLogRecord Logger {..} LogRecordArguments {..} = do
+  -> m (ImmutableLogRecord body)
+createImmutableLogRecord logger@Logger {..} LogRecordArguments {..} = do
   currentTimestamp <- getCurrentTimestamp
   let logRecordObservedTimestamp = fromMaybe currentTimestamp observedTimestamp
 
@@ -128,7 +129,7 @@ emitLogRecord Logger {..} LogRecordArguments {..} = do
   when (LA.attributesDropped logRecordAttributes > 0) $ void logDroppedAttributes
 
   pure
-    LogRecord
+    ImmutableLogRecord
       { logRecordTimestamp = timestamp
       , logRecordObservedTimestamp
       , logRecordTracingDetails
@@ -138,6 +139,7 @@ emitLogRecord Logger {..} LogRecordArguments {..} = do
       , logRecordResource = loggerProviderResource loggerProvider
       , logRecordInstrumentationScope = loggerInstrumentationScope
       , logRecordAttributes
+      , logRecordLogger = logger
       }
 
 
@@ -164,3 +166,81 @@ emitOTelLogRecord attrs severity body = do
       { severityNumber = Just severity
       , attributes = attrs
       }
+
+
+{- | Emits a LogRecord with properties specified by the passed in Logger and LogRecordArguments.
+If observedTimestamp is not set in LogRecordArguments, it will default to the current timestamp.
+If context is not specified in LogRecordArguments it will default to the current context.
+-}
+emitLogRecord
+  :: (MonadIO m)
+  => Logger
+  -> LogRecordArguments body
+  -> m (LogRecord body)
+emitLogRecord l args = do
+  ilr <- createImmutableLogRecord l args
+  lr <- liftIO $ newIORef ilr
+  pure $ LogRecord lr
+
+
+{- | Add an attribute to a @LogRecord@.
+
+As an application developer when you need to record an attribute first consult existing semantic conventions for Resources, Spans, and Metrics. If an appropriate name does not exists you will need to come up with a new name. To do that consider a few options:
+
+The name is specific to your company and may be possibly used outside the company as well. To avoid clashes with names introduced by other companies (in a distributed system that uses applications from multiple vendors) it is recommended to prefix the new name by your company’s reverse domain name, e.g. 'com.acme.shopname'.
+
+The name is specific to your application that will be used internally only. If you already have an internal company process that helps you to ensure no name clashes happen then feel free to follow it. Otherwise it is recommended to prefix the attribute name by your application name, provided that the application name is reasonably unique within your organization (e.g. 'myuniquemapapp.longitude' is likely fine). Make sure the application name does not clash with an existing semantic convention namespace.
+
+The name may be generally applicable to applications in the industry. In that case consider submitting a proposal to this specification to add a new name to the semantic conventions, and if necessary also to add a new namespace.
+
+It is recommended to limit names to printable Basic Latin characters (more precisely to 'U+0021' .. 'U+007E' subset of Unicode code points), although the Haskell OpenTelemetry specification DOES provide full Unicode support.
+
+Attribute names that start with 'otel.' are reserved to be defined by OpenTelemetry specification. These are typically used to express OpenTelemetry concepts in formats that don’t have a corresponding concept.
+
+For example, the 'otel.library.name' attribute is used to record the instrumentation library name, which is an OpenTelemetry concept that is natively represented in OTLP, but does not have an equivalent in other telemetry formats and protocols.
+
+Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetry specification.
+-}
+addAttribute :: (MonadIO m, ToValue a) => LogRecord body -> Text -> a -> m ()
+addAttribute (LogRecord lr) k v =
+  liftIO $
+    modifyIORef'
+      lr
+      ( \ilr@ImmutableLogRecord {logRecordAttributes, logRecordLogger} ->
+          ilr
+            { logRecordAttributes =
+                LA.addAttribute
+                  (loggerProviderAttributeLimits $ loggerProvider logRecordLogger)
+                  logRecordAttributes
+                  k
+                  v
+            }
+      )
+
+
+{- | A convenience function related to 'addAttribute' that adds multiple attributes to a @LogRecord@ at the same time.
+
+ This function may be slightly more performant than repeatedly calling 'addAttribute'.
+-}
+addAttributes :: (MonadIO m, ToValue a) => LogRecord body -> HashMap Text a -> m ()
+addAttributes (LogRecord lr) attrs =
+  liftIO $
+    modifyIORef'
+      lr
+      ( \ilr@ImmutableLogRecord {logRecordAttributes, logRecordLogger} ->
+          ilr
+            { logRecordAttributes =
+                LA.addAttributes
+                  (loggerProviderAttributeLimits $ loggerProvider logRecordLogger)
+                  logRecordAttributes
+                  attrs
+            }
+      )
+
+
+{- | This can be useful for pulling data for attributes and
+ using it to copy / otherwise use the data to further enrich
+ instrumentation.
+-}
+logRecordGetAttributes :: (MonadIO m) => LogRecord a -> m LogAttributes
+logRecordGetAttributes (LogRecord lr) = liftIO $ logRecordAttributes <$> readIORef lr
