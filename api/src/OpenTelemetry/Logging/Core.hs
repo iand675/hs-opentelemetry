@@ -63,12 +63,12 @@ emptyLoggerProviderOptions =
 
  You should generally use @getGlobalLoggerProvider@ for most applications.
 -}
-createLoggerProvider :: (MonadIO m) => LoggerProviderOptions -> m LoggerProvider
-createLoggerProvider LoggerProviderOptions {..} = pure LoggerProvider {loggerProviderResource = loggerProviderOptionsResource}
+createLoggerProvider :: LoggerProviderOptions -> LoggerProvider
+createLoggerProvider LoggerProviderOptions {..} = LoggerProvider {loggerProviderResource = loggerProviderOptionsResource}
 
 
 globalLoggerProvider :: IORef LoggerProvider
-globalLoggerProvider = unsafePerformIO $ newIORef =<< createLoggerProvider emptyLoggerProviderOptions
+globalLoggerProvider = unsafePerformIO $ newIORef $ createLoggerProvider emptyLoggerProviderOptions
 {-# NOINLINE globalLoggerProvider #-}
 
 
