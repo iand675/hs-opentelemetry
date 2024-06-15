@@ -21,7 +21,7 @@ import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types (Context)
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
-import OpenTelemetry.LogAttributes (AnyValue, AttributeLimits, LogAttributes)
+import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
 
 
