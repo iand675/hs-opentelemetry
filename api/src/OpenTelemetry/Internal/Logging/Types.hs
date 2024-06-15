@@ -7,6 +7,7 @@ module OpenTelemetry.Internal.Logging.Types (
   LogRecord (..),
   ImmutableLogRecord (..),
   LogRecordArguments (..),
+  emptyLogRecordArguments,
   mkSeverityNumber,
   shortName,
   severityInt,
@@ -20,7 +21,7 @@ import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types (Context)
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
-import OpenTelemetry.LogAttributes (AnyValue, AttributeLimits, LogAttributes)
+import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
 
 
@@ -136,6 +137,19 @@ data LogRecordArguments body = LogRecordArguments
   , body :: body
   , attributes :: H.HashMap Text AnyValue
   }
+
+
+emptyLogRecordArguments :: body -> LogRecordArguments body
+emptyLogRecordArguments body =
+  LogRecordArguments
+    { timestamp = Nothing
+    , observedTimestamp = Nothing
+    , context = Nothing
+    , severityText = Nothing
+    , severityNumber = Nothing
+    , body = body
+    , attributes = snd $ getAttributes emptyAttributes
+    }
 
 
 data SeverityNumber = SeverityNumber {shortName :: Maybe Text, severityInt :: !Int64} deriving (Read, Show)
