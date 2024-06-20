@@ -38,13 +38,23 @@ dependencies:
 - vector-builder
 - http-types
 - network-bsd
-- unix
+- unix-compat >= 0.7.1 # for getProcessID
 - transformers
 - random >= 1.2.0
+
+when:
+  condition: '!os(windows)'
+  dependencies: unix # for getEffectiveUserID
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  when:
+    - condition: os(windows)
+      then:
+        source-dirs: src/platform/windows
+      else:
+        source-dirs: src/platform/unix
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
