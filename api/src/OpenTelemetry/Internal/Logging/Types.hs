@@ -2,6 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module OpenTelemetry.Internal.Logging.Types (
+  LoggerProvider (..),
   Logger (..),
   LogRecord (..),
   LogRecordArguments (..),
@@ -20,10 +21,20 @@ import OpenTelemetry.LogAttributes (LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
 
 
--- | LogRecords can be Created from Loggers
+-- | @Logger@s can be created from @LoggerProvider@s
+data LoggerProvider = LoggerProvider
+  { loggerProviderResource :: MaterializedResources
+  }
+
+
+{- | @LogRecords@ can be created from @Loggers@. @Logger@s are uniquely identified by the @libraryName@, @libraryVersion@, @schemaUrl@ fields of @InstrumentationLibrary@.
+Creating two @Logger@s with the same identity but different @libraryAttributes@ is a user error.
+-}
 data Logger = Logger
   { loggerInstrumentationScope :: InstrumentationLibrary
-  , loggerResource :: Maybe MaterializedResources
+  -- ^ Details about the library that the @Logger@ instruments.
+  , loggerProvider :: LoggerProvider
+  -- ^ The @LoggerProvider@ that created this @Logger@. All configuration for the @Logger@ is contained in the @LoggerProvider@.
   }
 
 
@@ -89,7 +100,7 @@ data LogRecord body = LogRecord
   --    - A byte array,
   --    - An array (a list) of any values,
   --    - A map<string, any>.
-  , logRecordResource :: Maybe MaterializedResources
+  , logRecordResource :: MaterializedResources
   -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource.
   -- Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model
   -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.
@@ -104,7 +115,8 @@ data LogRecord body = LogRecord
 
 
 {- | Arguments that may be set on LogRecord creation. If observedTimestamp is not set, it will default to the current timestamp.
-If context is not specified it will default to the current context.
+If context is not specified it will default to the current context. Refer to the documentation of @LogRecord@ for descriptions
+of the fields.
 -}
 data LogRecordArguments body = LogRecordArguments
   { timestamp :: Maybe Timestamp
