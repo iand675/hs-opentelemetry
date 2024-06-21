@@ -162,6 +162,11 @@ instance (ToValue a) => ToValue (H.HashMap Text a) where
   toValue = HashMapValue . fmap toValue
 
 
+instance ToValue AnyValue where
+  toValue :: AnyValue -> AnyValue
+  toValue = id
+
+
 unsafeMergeLogAttributesIgnoringLimits :: LogAttributes -> LogAttributes -> LogAttributes
 unsafeMergeLogAttributesIgnoringLimits (LogAttributes l lc ld) (LogAttributes r rc rd) = LogAttributes (l <> r) (lc + rc) (ld + rd)
 
