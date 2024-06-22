@@ -8,7 +8,6 @@ import Data.IORef
 import qualified Data.Text as T
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Internal.Logging.Types
-import OpenTelemetry.Internal.Logging.Types (LoggerProvider (loggerProviderProcessors))
 import qualified OpenTelemetry.LogAttributes as LA
 import OpenTelemetry.Logging.Core
 import OpenTelemetry.Resource
@@ -16,10 +15,10 @@ import OpenTelemetry.Resource.OperatingSystem
 import Test.Hspec
 
 
-newtype TestLogRecordProcessor body = TestLogRecordProcessor (LogRecordProcessor body)
+newtype TestLogRecordProcessor = TestLogRecordProcessor LogRecordProcessor
 
 
-instance Show (TestLogRecordProcessor body) where
+instance Show TestLogRecordProcessor where
   show _ = "LogRecordProcessor {..}"
 
 

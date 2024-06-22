@@ -1,5 +1,5 @@
 {- |
- @LogProcessor@ is an interface which allows hooks for @LogRecord@ emit method invocations.
+ @LogRecordProcessor@ is an interface which allows hooks for @LogRecord@ emit method invocations.
 
  Built-in log processors are responsible for batching and conversion of spans to exportable representation and passing batches to exporters.
 
