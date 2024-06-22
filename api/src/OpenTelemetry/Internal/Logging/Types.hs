@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module OpenTelemetry.Internal.Logging.Types (
-  LogProcessor (..),
+  LogRecordProcessor (..),
   LoggerProvider (..),
   Logger (..),
   LogRecord (..),
@@ -28,12 +28,12 @@ import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
 
 
-data LogProcessor body = LogProcessor
-  { logProcessorOnEmit :: IORef (ImmutableLogRecord body) -> Context -> IO ()
+data LogRecordProcessor body = LogRecordProcessor
+  { logRecordProcessorOnEmit :: IORef (ImmutableLogRecord body) -> Context -> IO ()
   -- ^ Called when a LogRecord is emitted. This method is called synchronously on the thread that emitted the LogRecord, therefore it SHOULD NOT block or throw exceptions.
   --
   -- A LogRecordProcessor may freely modify logRecord for the duration of the OnEmit call. If logRecord is needed after OnEmit returns (i.e. for asynchronous processing) only reads are permitted.
-  , logProcessorShutdown :: IO (Async ShutdownResult)
+  , logRecordProcessorShutdown :: IO (Async ShutdownResult)
   -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
   --
   -- Shutdown SHOULD be called only once for each LogRecordProcessor instance. After the call to Shutdown, subsequent calls to OnEmit are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
@@ -44,7 +44,7 @@ data LogProcessor body = LogProcessor
   --
   -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event.
   -- OpenTelemetry SDK authors can decide if they want to make the shutdown timeout configurable.
-  , logProcessorForceFlush :: IO ()
+  , logRecordProcessorForceFlush :: IO ()
   -- ^ This is a hint to ensure that any tasks associated with LogRecords for which the LogRecordProcessor had already received events prior to the call to ForceFlush SHOULD be completed
   -- as soon as possible, preferably before returning from this method.
   --
@@ -63,7 +63,7 @@ data LogProcessor body = LogProcessor
 
 -- | @Logger@s can be created from @LoggerProvider@s
 data LoggerProvider body = LoggerProvider
-  { loggerProviderProcessors :: Vector (LogProcessor body)
+  { loggerProviderProcessors :: Vector (LogRecordProcessor body)
   , loggerProviderResource :: MaterializedResources
   , loggerProviderAttributeLimits :: AttributeLimits
   }

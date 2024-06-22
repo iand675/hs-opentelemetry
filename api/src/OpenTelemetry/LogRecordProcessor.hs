@@ -1,5 +1,5 @@
 {- |
- @LogProcessor@ is an interface which allows hooks for @LogRecord@ emit method invocations.
+ @LogRecordProcessor@ is an interface which allows hooks for @LogRecord@ emit method invocations.
 
  Built-in log processors are responsible for batching and conversion of spans to exportable representation and passing batches to exporters.
 
@@ -9,8 +9,8 @@
 
  SDK MUST allow users to implement and configure custom processors and decorate built-in processors for advanced scenarios such as tagging or filtering.
 -}
-module OpenTelemetry.LogProcessor (
-  LogProcessor (..),
+module OpenTelemetry.LogRecordProcessor (
+  LogRecordProcessor (..),
   ShutdownResult (..),
 ) where
 

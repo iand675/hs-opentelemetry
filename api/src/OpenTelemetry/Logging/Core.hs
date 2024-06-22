@@ -80,7 +80,7 @@ emptyLoggerProviderOptions =
 
  You should generally use @getGlobalLoggerProvider@ for most applications.
 -}
-createLoggerProvider :: [LogProcessor body] -> LoggerProviderOptions -> LoggerProvider body
+createLoggerProvider :: [LogRecordProcessor body] -> LoggerProviderOptions -> LoggerProvider body
 createLoggerProvider ps LoggerProviderOptions {..} =
   LoggerProvider
     { loggerProviderProcessors = V.fromList ps
@@ -119,7 +119,7 @@ setGlobalLoggerProvider = liftIO . writeIORef globalLoggerProvider
 shutdownLoggerProvider :: (MonadIO m) => LoggerProvider body -> m ()
 shutdownLoggerProvider LoggerProvider {loggerProviderProcessors} = liftIO $ do
   asyncShutdownResults <- V.forM loggerProviderProcessors $ \processor -> do
-    logProcessorShutdown processor
+    logRecordProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
 
@@ -135,7 +135,7 @@ forceFlushLoggerProvider
   -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
 forceFlushLoggerProvider LoggerProvider {loggerProviderProcessors} mtimeout = liftIO $ do
   jobs <- V.forM loggerProviderProcessors $ \processor -> async $ do
-    logProcessorForceFlush processor
+    logRecordProcessorForceFlush processor
   mresult <-
     timeout (fromMaybe 5_000_000 mtimeout) $
       V.foldM

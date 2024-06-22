@@ -40,7 +40,7 @@ library
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
       OpenTelemetry.Logging.Core
-      OpenTelemetry.LogProcessor
+      OpenTelemetry.LogRecordProcessor
       OpenTelemetry.Processor
       OpenTelemetry.Propagator
       OpenTelemetry.Resource
