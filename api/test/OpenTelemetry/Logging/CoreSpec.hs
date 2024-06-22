@@ -31,7 +31,7 @@ spec = describe "Core" $ do
       loggerProviderAttributeLimits `shouldBe` LA.defaultAttributeLimits
     it "Allows a LoggerProvider to be set and returns that with subsequent calls to getGlobalLoggerProvider" $ do
       let lp =
-            createLoggerProvider $
+            createLoggerProvider [] $
               LoggerProviderOptions
                 { loggerProviderOptionsResource =
                     materializeResources $
