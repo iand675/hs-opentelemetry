@@ -1,7 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE InstanceSigs #-}
 
-module OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..)) where
+module OpenTelemetry.Internal.Common.Types (
+  InstrumentationLibrary (..),
+  ShutdownResult (..),
+  FlushResult (..),
+) where
 
 import Data.Hashable (Hashable)
 import Data.String (IsString (fromString))
@@ -59,3 +63,19 @@ instance Hashable InstrumentationLibrary
 instance IsString InstrumentationLibrary where
   fromString :: String -> InstrumentationLibrary
   fromString str = InstrumentationLibrary (fromString str) "" "" emptyAttributes
+
+
+data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
+
+
+-- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logging.forceFlush@
+data FlushResult
+  = -- | One or more spans or @LogRecord@s did not export from all associated exporters
+    -- within the alotted timeframe.
+    FlushTimeout
+  | -- | Flushing spans or @LogRecord@s to all associated exporters succeeded.
+    FlushSuccess
+  | -- | One or more exporters failed to successfully export one or more
+    -- unexported spans or @LogRecord@s.
+    FlushError
+  deriving (Show)
