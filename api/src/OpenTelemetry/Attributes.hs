@@ -24,7 +24,7 @@
  - Attribute values expressing a numerical value of zero, an empty string, or an empty array are considered meaningful and MUST be stored and passed on to processors / exporters.
 -}
 module OpenTelemetry.Attributes (
-  Attributes,
+  Attributes (attributesDropped),
   emptyAttributes,
   addAttribute,
   addAttributes,

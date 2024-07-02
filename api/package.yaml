@@ -52,6 +52,7 @@ library:
   other-modules:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Types
+  - Paths_hs_opentelemetry_api
 
 tests:
   hs-opentelemetry-api-test:

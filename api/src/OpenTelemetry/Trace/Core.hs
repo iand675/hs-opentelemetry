@@ -166,9 +166,10 @@ import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Types (LogRecord)
+import OpenTelemetry.Internal.Logging.Types (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
+import OpenTelemetry.Logging.Core (emitOTelLogRecord, logDroppedAttributes)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -285,10 +286,13 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                     , spanEnd = Nothing
                     , spanTracer = t
                     }
+
+            when (A.attributesDropped (spanAttributes is) > 0) $ void logDroppedAttributes
+
             s <- newIORef is
             eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
-              Left err -> print (err :: SomeException)
+              Left err -> void $ emitOTelLogRecord H.empty Err $ T.pack $ show (err :: SomeException)
               Right _ -> pure ()
             pure $ Span s
 
@@ -701,7 +705,6 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
-  , tracerProviderOptionsLogger :: LogRecord Text -> IO ()
   }
 
 
@@ -720,7 +723,6 @@ emptyTracerProviderOptions =
     defaultAttributeLimits
     defaultSpanLimits
     mempty
-    (\_ -> pure ())
 
 
 {- | Initialize a new tracer provider
@@ -739,7 +741,6 @@ createTracerProvider ps opts = liftIO $ do
       (tracerProviderOptionsAttributeLimits opts)
       (tracerProviderOptionsSpanLimits opts)
       (tracerProviderOptionsPropagators opts)
-      (tracerProviderOptionsLogger opts)
 
 
 {- | Access the globally configured 'TracerProvider'. Once the

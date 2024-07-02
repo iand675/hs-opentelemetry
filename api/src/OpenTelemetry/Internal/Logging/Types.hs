@@ -6,13 +6,13 @@ module OpenTelemetry.Internal.Logging.Types (
   Logger (..),
   LogRecord (..),
   LogRecordArguments (..),
-  mkSeverityNumber,
-  shortName,
-  severityInt,
+  emptyLogRecordArguments,
+  SeverityNumber (..),
+  toShortName,
 ) where
 
+import Data.Function (on)
 import qualified Data.HashMap.Strict as H
-import Data.Int (Int64)
 import Data.Text (Text)
 import OpenTelemetry.Attributes (AttributeLimits)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
@@ -126,55 +126,139 @@ data LogRecordArguments body = LogRecordArguments
   , observedTimestamp :: Maybe Timestamp
   , context :: Maybe Context
   , severityText :: Maybe Text
-  , severityNumber :: Maybe Int
+  , severityNumber :: Maybe SeverityNumber
   , body :: body
   , attributes :: H.HashMap Text AnyValue
   }
 
 
-data SeverityNumber = SeverityNumber {shortName :: Maybe Text, severityInt :: !Int64} deriving (Read, Show)
+emptyLogRecordArguments :: body -> LogRecordArguments body
+emptyLogRecordArguments body =
+  LogRecordArguments
+    { timestamp = Nothing
+    , observedTimestamp = Nothing
+    , context = Nothing
+    , severityText = Nothing
+    , severityNumber = Nothing
+    , body = body
+    , attributes = H.empty
+    }
+
+
+data SeverityNumber
+  = Trace
+  | Trace2
+  | Trace3
+  | Trace4
+  | Debug
+  | Debug2
+  | Debug3
+  | Debug4
+  | Info
+  | Info2
+  | Info3
+  | Info4
+  | Warn
+  | Warn2
+  | Warn3
+  | Warn4
+  | Err
+  | Err2
+  | Err3
+  | Err4
+  | Fatal
+  | Fatal2
+  | Fatal3
+  | Fatal4
+  | Unknown !Int
+
+
+instance Enum SeverityNumber where
+  toEnum 1 = Trace
+  toEnum 2 = Trace2
+  toEnum 3 = Trace3
+  toEnum 4 = Trace4
+  toEnum 5 = Debug
+  toEnum 6 = Debug2
+  toEnum 7 = Debug3
+  toEnum 8 = Debug4
+  toEnum 9 = Info
+  toEnum 10 = Info2
+  toEnum 11 = Info3
+  toEnum 12 = Info4
+  toEnum 13 = Warn
+  toEnum 14 = Warn2
+  toEnum 15 = Warn3
+  toEnum 16 = Warn4
+  toEnum 17 = Err
+  toEnum 18 = Err2
+  toEnum 19 = Err3
+  toEnum 20 = Err4
+  toEnum 21 = Fatal
+  toEnum 22 = Fatal2
+  toEnum 23 = Fatal3
+  toEnum 24 = Fatal4
+  toEnum n = Unknown n
+
+
+  fromEnum Trace = 1
+  fromEnum Trace2 = 2
+  fromEnum Trace3 = 3
+  fromEnum Trace4 = 4
+  fromEnum Debug = 5
+  fromEnum Debug2 = 6
+  fromEnum Debug3 = 7
+  fromEnum Debug4 = 8
+  fromEnum Info = 9
+  fromEnum Info2 = 10
+  fromEnum Info3 = 11
+  fromEnum Info4 = 12
+  fromEnum Warn = 13
+  fromEnum Warn2 = 14
+  fromEnum Warn3 = 15
+  fromEnum Warn4 = 16
+  fromEnum Err = 17
+  fromEnum Err2 = 18
+  fromEnum Err3 = 19
+  fromEnum Err4 = 20
+  fromEnum Fatal = 21
+  fromEnum Fatal2 = 22
+  fromEnum Fatal3 = 23
+  fromEnum Fatal4 = 24
+  fromEnum (Unknown n) = n
 
 
 instance Eq SeverityNumber where
-  (==) :: SeverityNumber -> SeverityNumber -> Bool
-  n == m = severityInt n == severityInt m
+  (==) = on (==) fromEnum
 
 
 instance Ord SeverityNumber where
-  compare :: SeverityNumber -> SeverityNumber -> Ordering
-  compare n m = compare (severityInt n) (severityInt m)
+  compare = on compare fromEnum
 
 
-mkSeverityNumber :: (Integral n) => n -> SeverityNumber
-mkSeverityNumber n = SeverityNumber {..}
-  where
-    severityInt = fromIntegral n
-    shortName = mkShortName n
-
-
-mkShortName :: (Integral n) => n -> Maybe Text
-mkShortName 1 = Just "TRACE"
-mkShortName 2 = Just "TRACE2"
-mkShortName 3 = Just "TRACE3"
-mkShortName 4 = Just "TRACE4"
-mkShortName 5 = Just "DEBUG"
-mkShortName 6 = Just "DEBUG2"
-mkShortName 7 = Just "DEBUG3"
-mkShortName 8 = Just "DEBUG4"
-mkShortName 9 = Just "INFO"
-mkShortName 10 = Just "INFO2"
-mkShortName 11 = Just "INFO3"
-mkShortName 12 = Just "INFO4"
-mkShortName 13 = Just "WARN"
-mkShortName 14 = Just "WARN2"
-mkShortName 15 = Just "WARN3"
-mkShortName 16 = Just "WARN4"
-mkShortName 17 = Just "ERROR"
-mkShortName 18 = Just "ERROR2"
-mkShortName 19 = Just "ERROR3"
-mkShortName 20 = Just "ERROR4"
-mkShortName 21 = Just "FATAL"
-mkShortName 22 = Just "FATAL2"
-mkShortName 23 = Just "FATAL3"
-mkShortName 24 = Just "FATAL4"
-mkShortName _ = Nothing
+toShortName :: SeverityNumber -> Maybe Text
+toShortName Trace = Just "TRACE"
+toShortName Trace2 = Just "TRACE2"
+toShortName Trace3 = Just "TRACE3"
+toShortName Trace4 = Just "TRACE4"
+toShortName Debug = Just "DEBUG"
+toShortName Debug2 = Just "DEBUG2"
+toShortName Debug3 = Just "DEBUG3"
+toShortName Debug4 = Just "DEBUG4"
+toShortName Info = Just "INFO"
+toShortName Info2 = Just "INFO2"
+toShortName Info3 = Just "INFO3"
+toShortName Info4 = Just "INFO4"
+toShortName Warn = Just "WARN"
+toShortName Warn2 = Just "WARN2"
+toShortName Warn3 = Just "WARN3"
+toShortName Warn4 = Just "WARN4"
+toShortName Err = Just "ERROR"
+toShortName Err2 = Just "ERROR2"
+toShortName Err3 = Just "ERROR3"
+toShortName Err4 = Just "ERROR4"
+toShortName Fatal = Just "FATAL"
+toShortName Fatal2 = Just "FATAL2"
+toShortName Fatal3 = Just "FATAL3"
+toShortName Fatal4 = Just "FATAL4"
+toShortName _ = Nothing

@@ -18,29 +18,36 @@ module OpenTelemetry.Logging.Core (
   -- * @LogRecord@ operations
   LogRecord (..),
   LogRecordArguments (..),
-  mkSeverityNumber,
-  shortName,
-  severityInt,
+  SeverityNumber (..),
+  toShortName,
   emitLogRecord,
+  logDroppedAttributes,
+  emitOTelLogRecord,
 ) where
 
 import Control.Applicative
+import Control.Monad (void, when)
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Coerce
 import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Version (showVersion)
 import GHC.IO (unsafePerformIO)
-import OpenTelemetry.Attributes (AttributeLimits)
+import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logging.Types
-import OpenTelemetry.Internal.Trace.Types
-import OpenTelemetry.LogAttributes
+import OpenTelemetry.Internal.Trace.Types (SpanContext (..), getSpanContext)
+import OpenTelemetry.LogAttributes (LogAttributes)
+import qualified OpenTelemetry.LogAttributes as LA
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
+import Paths_hs_opentelemetry_api (version)
 import System.Clock
 
 
@@ -50,7 +57,7 @@ getCurrentTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime R
 
 data LoggerProviderOptions = LoggerProviderOptions
   { loggerProviderOptionsResource :: MaterializedResources
-  , loggerProviderOptionsAttributeLimits :: AttributeLimits
+  , loggerProviderOptionsAttributeLimits :: A.AttributeLimits
   }
 
 
@@ -62,6 +69,7 @@ emptyLoggerProviderOptions :: LoggerProviderOptions
 emptyLoggerProviderOptions =
   LoggerProviderOptions
     { loggerProviderOptionsResource = emptyMaterializedResources
+    , loggerProviderOptionsAttributeLimits = A.defaultAttributeLimits
     }
 
 
@@ -70,7 +78,11 @@ emptyLoggerProviderOptions =
  You should generally use @getGlobalLoggerProvider@ for most applications.
 -}
 createLoggerProvider :: LoggerProviderOptions -> LoggerProvider
-createLoggerProvider LoggerProviderOptions {..} = LoggerProvider {loggerProviderResource = loggerProviderOptionsResource}
+createLoggerProvider LoggerProviderOptions {..} =
+  LoggerProvider
+    { loggerProviderResource = loggerProviderOptionsResource
+    , loggerProviderAttributeLimits = loggerProviderOptionsAttributeLimits
+    }
 
 
 globalLoggerProvider :: IORef LoggerProvider
@@ -120,19 +132,46 @@ emitLogRecord Logger {..} LogRecordArguments {..} = do
     SpanContext {traceId, spanId, traceFlags} <- getSpanContext currentSpan
     pure (traceId, spanId, traceFlags)
 
+  let logRecordAttributes =
+        LA.addAttributes
+          (loggerProviderAttributeLimits loggerProvider)
+          LA.emptyAttributes
+          attributes
+
+  when (LA.attributesDropped logRecordAttributes > 0) $ void logDroppedAttributes
+
   pure
     LogRecord
       { logRecordTimestamp = timestamp
       , logRecordObservedTimestamp
       , logRecordTracingDetails
-      , logRecordSeverityNumber = fmap mkSeverityNumber severityNumber
-      , logRecordSeverityText = severityText <|> (shortName . mkSeverityNumber =<< severityNumber)
+      , logRecordSeverityNumber = severityNumber
+      , logRecordSeverityText = severityText <|> (toShortName =<< severityNumber)
       , logRecordBody = body
       , logRecordResource = loggerProviderResource loggerProvider
       , logRecordInstrumentationScope = loggerInstrumentationScope
-      , logRecordAttributes =
-          addAttributes
-            (loggerProviderAttributeLimits loggerProvider)
-            emptyAttributes
-            attributes
+      , logRecordAttributes
+      }
+
+
+logDroppedAttributes :: (MonadIO m) => m (LogRecord Text)
+logDroppedAttributes = emitOTelLogRecord H.empty Warn "At least 1 attribute was discarded due to the attribute limits set in the logger provider."
+
+
+emitOTelLogRecord :: (MonadIO m) => H.HashMap Text LA.AnyValue -> SeverityNumber -> Text -> m (LogRecord Text)
+emitOTelLogRecord attrs severity body = do
+  glp <- getGlobalLoggerProvider
+  let gl =
+        makeLogger glp $
+          InstrumentationLibrary
+            { libraryName = "hs-opentelemetry-api"
+            , libraryVersion = T.pack $ showVersion version
+            , librarySchemaUrl = ""
+            , libraryAttributes = A.emptyAttributes
+            }
+
+  emitLogRecord gl $
+    (emptyLogRecordArguments body)
+      { severityNumber = Just severity
+      , attributes = attrs
       }

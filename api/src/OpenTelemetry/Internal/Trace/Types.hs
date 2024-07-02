@@ -87,7 +87,6 @@ data TracerProvider = TracerProvider
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
   , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
-  , tracerProviderLogger :: LogRecord Text -> IO ()
   }
 
 
