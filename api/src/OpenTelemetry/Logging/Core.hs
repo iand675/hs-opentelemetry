@@ -154,10 +154,12 @@ emitLogRecord Logger {..} LogRecordArguments {..} = do
       }
 
 
+-- | WARNING: this function should only be used to emit logs from the hs-opentelemetry-api library. DO NOT USE this function in any other context.
 logDroppedAttributes :: (MonadIO m) => m (LogRecord Text)
 logDroppedAttributes = emitOTelLogRecord H.empty Warn "At least 1 attribute was discarded due to the attribute limits set in the logger provider."
 
 
+-- | WARNING: this function should only be used to emit logs from the hs-opentelemetry-api library. DO NOT USE this function in any other context.
 emitOTelLogRecord :: (MonadIO m) => H.HashMap Text LA.AnyValue -> SeverityNumber -> Text -> m (LogRecord Text)
 emitOTelLogRecord attrs severity body = do
   glp <- getGlobalLoggerProvider
