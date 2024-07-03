@@ -11,19 +11,22 @@ module OpenTelemetry.Internal.Logging.Types (
   severityInt,
 ) where
 
+import qualified Data.HashMap.Strict as H
 import Data.Int (Int64)
 import Data.Text (Text)
+import OpenTelemetry.Attributes (AttributeLimits)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
-import OpenTelemetry.LogAttributes (LogAttributes)
+import OpenTelemetry.LogAttributes (AnyValue, LogAttributes)
 import OpenTelemetry.Resource (MaterializedResources)
 
 
 -- | @Logger@s can be created from @LoggerProvider@s
 data LoggerProvider = LoggerProvider
   { loggerProviderResource :: MaterializedResources
+  , loggerProviderAttributeLimits :: AttributeLimits
   }
 
 
@@ -125,7 +128,7 @@ data LogRecordArguments body = LogRecordArguments
   , severityText :: Maybe Text
   , severityNumber :: Maybe Int
   , body :: body
-  , attributes :: LogAttributes
+  , attributes :: H.HashMap Text AnyValue
   }
 
 
