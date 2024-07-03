@@ -13,7 +13,9 @@ module OpenTelemetry.Logging.Core (
   makeLogger,
 
   -- * @LogRecord@ operations
-  LogRecord (..),
+  LogRecord,
+  ReadableLogRecord (..),
+  ReadWriteLogRecord (..),
   LogRecordArguments (..),
   SeverityNumber (..),
   toShortName,

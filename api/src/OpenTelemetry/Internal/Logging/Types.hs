@@ -4,7 +4,10 @@
 module OpenTelemetry.Internal.Logging.Types (
   LoggerProvider (..),
   Logger (..),
-  LogRecord (..),
+  LogRecord,
+  mkLogRecord,
+  ReadableLogRecord (..),
+  ReadWriteLogRecord (..),
   ImmutableLogRecord (..),
   LogRecordArguments (..),
   emptyLogRecordArguments,
@@ -14,7 +17,7 @@ module OpenTelemetry.Internal.Logging.Types (
 
 import Data.Function (on)
 import qualified Data.HashMap.Strict as H
-import Data.IORef (IORef)
+import Data.IORef (IORef, atomicModifyIORef, modifyIORef, newIORef, readIORef)
 import Data.Int (Int64)
 import Data.Text (Text)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
@@ -47,7 +50,29 @@ data Logger = Logger
 {- | This is a data type that can represent logs from various sources: application log files, machine generated events, system logs, etc. [Specification outlined here.](https://opentelemetry.io/docs/specs/otel/logs/data-model/)
 Existing log formats can be unambiguously mapped to this data type. Reverse mapping from this data type is also possible to the extent that the target log format has equivalent capabilities.
 -}
-data LogRecord a = LogRecord (IORef (ImmutableLogRecord a))
+newtype LogRecord a = LogRecord (IORef (ImmutableLogRecord a))
+
+
+mkLogRecord :: ImmutableLogRecord body -> IO (LogRecord body)
+mkLogRecord = fmap LogRecord . newIORef
+
+
+class ReadableLogRecord r where
+  readLogRecord :: r a -> IO (ImmutableLogRecord a)
+
+
+class (ReadableLogRecord r) => ReadWriteLogRecord r where
+  modifyLogRecord :: r a -> (ImmutableLogRecord a -> ImmutableLogRecord a) -> IO ()
+  atomicModifyLogRecord :: r a -> (ImmutableLogRecord a -> (ImmutableLogRecord a, b)) -> IO b
+
+
+instance ReadableLogRecord LogRecord where
+  readLogRecord (LogRecord ref) = readIORef ref
+
+
+instance ReadWriteLogRecord LogRecord where
+  modifyLogRecord (LogRecord ref) = modifyIORef ref
+  atomicModifyLogRecord (LogRecord ref) = atomicModifyIORef ref
 
 
 data ImmutableLogRecord body = ImmutableLogRecord
