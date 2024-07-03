@@ -21,6 +21,8 @@ module OpenTelemetry.Logging.Core (
   SeverityNumber (..),
   toShortName,
   emitLogRecord,
+
+  -- * Internal logging operations
   logDroppedAttributes,
   emitOTelLogRecord,
 ) where
