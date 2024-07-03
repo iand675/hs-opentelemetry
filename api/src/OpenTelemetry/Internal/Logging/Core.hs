@@ -9,11 +9,11 @@ module OpenTelemetry.Internal.Logging.Core (
   getGlobalLoggerProvider,
   makeLogger,
   emitLogRecord,
-  logDroppedAttributes,
-  emitOTelLogRecord,
   addAttribute,
   addAttributes,
   logRecordGetAttributes,
+  logDroppedAttributes,
+  emitOTelLogRecord,
 ) where
 
 import Control.Applicative
@@ -107,10 +107,10 @@ makeLogger loggerProvider loggerInstrumentationScope = Logger {..}
 
 createImmutableLogRecord
   :: (MonadIO m)
-  => Logger
+  => LA.AttributeLimits
   -> LogRecordArguments body
   -> m (ImmutableLogRecord body)
-createImmutableLogRecord logger@Logger {..} LogRecordArguments {..} = do
+createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
   currentTimestamp <- getCurrentTimestamp
   let logRecordObservedTimestamp = fromMaybe currentTimestamp observedTimestamp
 
@@ -122,7 +122,7 @@ createImmutableLogRecord logger@Logger {..} LogRecordArguments {..} = do
 
   let logRecordAttributes =
         LA.addAttributes
-          (loggerProviderAttributeLimits loggerProvider)
+          attributeLimits
           LA.emptyAttributes
           attributes
 
@@ -136,10 +136,7 @@ createImmutableLogRecord logger@Logger {..} LogRecordArguments {..} = do
       , logRecordSeverityNumber = severityNumber
       , logRecordSeverityText = severityText <|> (toShortName =<< severityNumber)
       , logRecordBody = body
-      , logRecordResource = loggerProviderResource loggerProvider
-      , logRecordInstrumentationScope = loggerInstrumentationScope
       , logRecordAttributes
-      , logRecordLogger = logger
       }
 
 
@@ -178,11 +175,13 @@ emitLogRecord
   -> LogRecordArguments body
   -> m (LogRecord body)
 emitLogRecord l args = do
-  ilr <- createImmutableLogRecord l args
-  liftIO $ mkLogRecord ilr
+  ilr <- createImmutableLogRecord (loggerProviderAttributeLimits $ loggerProvider l) args
+  liftIO $ mkLogRecord l ilr
 
 
 {- | Add an attribute to a @LogRecord@.
+
+This is not an atomic modification
 
 As an application developer when you need to record an attribute first consult existing semantic conventions for Resources, Spans, and Metrics. If an appropriate name does not exists you will need to come up with a new name. To do that consider a few options:
 
@@ -202,39 +201,43 @@ Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetr
 -}
 addAttribute :: (ReadWriteLogRecord r, MonadIO m, ToValue a) => r body -> Text -> a -> m ()
 addAttribute lr k v =
-  liftIO $
-    modifyLogRecord
-      lr
-      ( \ilr@ImmutableLogRecord {logRecordAttributes, logRecordLogger} ->
-          ilr
-            { logRecordAttributes =
-                LA.addAttribute
-                  (loggerProviderAttributeLimits $ loggerProvider logRecordLogger)
-                  logRecordAttributes
-                  k
-                  v
-            }
-      )
+  let attributeLimits = readLogRecordAttributeLimits lr
+  in liftIO $
+      modifyLogRecord
+        lr
+        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+            ilr
+              { logRecordAttributes =
+                  LA.addAttribute
+                    attributeLimits
+                    logRecordAttributes
+                    k
+                    v
+              }
+        )
 
 
 {- | A convenience function related to 'addAttribute' that adds multiple attributes to a @LogRecord@ at the same time.
 
- This function may be slightly more performant than repeatedly calling 'addAttribute'.
+This function may be slightly more performant than repeatedly calling 'addAttribute'.
+
+This is not an atomic modification
 -}
 addAttributes :: (ReadWriteLogRecord r, MonadIO m, ToValue a) => r body -> HashMap Text a -> m ()
 addAttributes lr attrs =
-  liftIO $
-    modifyLogRecord
-      lr
-      ( \ilr@ImmutableLogRecord {logRecordAttributes, logRecordLogger} ->
-          ilr
-            { logRecordAttributes =
-                LA.addAttributes
-                  (loggerProviderAttributeLimits $ loggerProvider logRecordLogger)
-                  logRecordAttributes
-                  attrs
-            }
-      )
+  let attributeLimits = readLogRecordAttributeLimits lr
+  in liftIO $
+      modifyLogRecord
+        lr
+        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+            ilr
+              { logRecordAttributes =
+                  LA.addAttributes
+                    attributeLimits
+                    logRecordAttributes
+                    attrs
+              }
+        )
 
 
 {- | This can be useful for pulling data for attributes and

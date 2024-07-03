@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module OpenTelemetry.Internal.Logging.Types (
   LoggerProvider (..),
@@ -18,7 +19,6 @@ module OpenTelemetry.Internal.Logging.Types (
 import Data.Function (on)
 import qualified Data.HashMap.Strict as H
 import Data.IORef (IORef, atomicModifyIORef, modifyIORef, newIORef, readIORef)
-import Data.Int (Int64)
 import Data.Text (Text)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types (Context)
@@ -31,6 +31,10 @@ import OpenTelemetry.Resource (MaterializedResources)
 -- | @Logger@s can be created from @LoggerProvider@s
 data LoggerProvider = LoggerProvider
   { loggerProviderResource :: MaterializedResources
+  -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource.
+  -- Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model
+  -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.
+  -- This field is optional.
   , loggerProviderAttributeLimits :: AttributeLimits
   }
   deriving (Show, Eq)
@@ -49,30 +53,73 @@ data Logger = Logger
 
 {- | This is a data type that can represent logs from various sources: application log files, machine generated events, system logs, etc. [Specification outlined here.](https://opentelemetry.io/docs/specs/otel/logs/data-model/)
 Existing log formats can be unambiguously mapped to this data type. Reverse mapping from this data type is also possible to the extent that the target log format has equivalent capabilities.
+Uses an IORef under the hood to allow mutability.
 -}
-newtype LogRecord a = LogRecord (IORef (ImmutableLogRecord a))
+data LogRecord a = LogRecord Logger (IORef (ImmutableLogRecord a))
 
 
-mkLogRecord :: ImmutableLogRecord body -> IO (LogRecord body)
-mkLogRecord = fmap LogRecord . newIORef
+mkLogRecord :: Logger -> ImmutableLogRecord body -> IO (LogRecord body)
+mkLogRecord l = fmap (LogRecord l) . newIORef
 
 
+{- | This is a typeclass representing @LogRecord@s that can be read from.
+
+A function receiving this as an argument MUST be able to access all the information added to the LogRecord. It MUST also be able to access the Instrumentation Scope and Resource information (implicitly) associated with the LogRecord.
+
+The trace context fields MUST be populated from the resolved Context (either the explicitly passed Context or the current Context) when emitted.
+
+Counts for attributes due to collection limits MUST be available for exporters to report as described in the transformation to non-OTLP formats specification.
+-}
 class ReadableLogRecord r where
+  -- | Reads the current state of the @LogRecord@ from its internal @IORef@. The implementation mirrors @readIORef@.
   readLogRecord :: r a -> IO (ImmutableLogRecord a)
 
 
+  -- | Reads the @InstrumentationScope@ from the @Logger@ that emitted the @LogRecord@
+  readLogRecordInstrumentationScope :: r a -> InstrumentationLibrary
+
+
+  -- | Reads the @Resource@ from the @LoggerProvider@ that emitted the @LogRecord@
+  readLogRecordResource :: r a -> MaterializedResources
+
+
+{- | This is a typeclass representing @LogRecord@s that can be read from or written to. All @ReadWriteLogRecord@s are @ReadableLogRecord@s.
+
+A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord:
+
+- Timestamp
+- ObservedTimestamp
+- SeverityText
+- SeverityNumber
+- Body
+- Attributes (addition, modification, removal)
+- TraceId
+- SpanId
+- TraceFlags
+-}
 class (ReadableLogRecord r) => ReadWriteLogRecord r where
+  -- | Reads the attribute limits from the @LoggerProvider@ that emitted the @LogRecord@. These are needed to add more attributes.
+  readLogRecordAttributeLimits :: r a -> AttributeLimits
+
+
+  -- | Modifies the @LogRecord@ using its internal @IORef@. This is lazy and is not an atomic operation. The implementation mirrors @modifyIORef@.
   modifyLogRecord :: r a -> (ImmutableLogRecord a -> ImmutableLogRecord a) -> IO ()
+
+
+  -- | An atomic version of @modifyLogRecord@. This function is lazy. The implementation mirrors @atomicModifyIORef@.
   atomicModifyLogRecord :: r a -> (ImmutableLogRecord a -> (ImmutableLogRecord a, b)) -> IO b
 
 
 instance ReadableLogRecord LogRecord where
-  readLogRecord (LogRecord ref) = readIORef ref
+  readLogRecord (LogRecord _ ref) = readIORef ref
+  readLogRecordInstrumentationScope (LogRecord (Logger {loggerInstrumentationScope}) _) = loggerInstrumentationScope
+  readLogRecordResource (LogRecord Logger {loggerProvider = LoggerProvider {loggerProviderResource}} _) = loggerProviderResource
 
 
 instance ReadWriteLogRecord LogRecord where
-  modifyLogRecord (LogRecord ref) = modifyIORef ref
-  atomicModifyLogRecord (LogRecord ref) = atomicModifyIORef ref
+  readLogRecordAttributeLimits (LogRecord Logger {loggerProvider = LoggerProvider {loggerProviderAttributeLimits}} _) = loggerProviderAttributeLimits
+  modifyLogRecord (LogRecord _ ref) = modifyIORef ref
+  atomicModifyLogRecord (LogRecord _ ref) = atomicModifyIORef ref
 
 
 data ImmutableLogRecord body = ImmutableLogRecord
@@ -134,17 +181,10 @@ data ImmutableLogRecord body = ImmutableLogRecord
   --    - A byte array,
   --    - An array (a list) of any values,
   --    - A map<string, any>.
-  , logRecordResource :: MaterializedResources
-  -- ^ Describes the source of the log, aka resource. Multiple occurrences of events coming from the same event source can happen across time and they all have the same value of Resource.
-  -- Can contain for example information about the application that emits the record or about the infrastructure where the application runs. Data formats that represent this data model
-  -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.
-  -- This field is optional.
-  , logRecordInstrumentationScope :: InstrumentationLibrary
   , logRecordAttributes :: LogAttributes
   -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source.
   -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
   -- emitted by the applications. This field is optional.
-  , logRecordLogger :: Logger
   }
   deriving (Functor)
 
