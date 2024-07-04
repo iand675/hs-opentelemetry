@@ -9,7 +9,7 @@ dependencies:
 # opentelemetry dependencies
 - hs-opentelemetry-sdk
 - hs-opentelemetry-api
-- hs-opentelemetry-exporter-handle
+- hs-opentelemetry-span-exporter-handle
 - hs-opentelemetry-instrumentation-hspec
 
 ghc-options:

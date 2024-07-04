@@ -29,13 +29,13 @@ source-repository head
 
 library
   exposed-modules:
-      OpenTelemetry.Processor.Batch
-      OpenTelemetry.Processor.Simple
       OpenTelemetry.Resource.Host.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
       OpenTelemetry.Resource.Service.Detector
       OpenTelemetry.Resource.Telemetry.Detector
+      OpenTelemetry.SpanProcessor.Batch
+      OpenTelemetry.SpanProcessor.Simple
       OpenTelemetry.Trace
       OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
@@ -45,8 +45,8 @@ library
     , OpenTelemetry.Baggage
     , OpenTelemetry.Context
     , OpenTelemetry.Context.ThreadLocal
-    , OpenTelemetry.Exporter
-    , OpenTelemetry.Processor
+    , OpenTelemetry.SpanExporter
+    , OpenTelemetry.SpanProcessor
     , OpenTelemetry.Propagator
     , OpenTelemetry.Resource
     , OpenTelemetry.Resource.Cloud
@@ -74,10 +74,10 @@ library
     , base >=4.7 && <5
     , bytestring
     , hs-opentelemetry-api >=0.0.3 && <0.2
-    , hs-opentelemetry-exporter-otlp ==0.0.1.*
     , hs-opentelemetry-propagator-b3 ==0.0.1.*
     , hs-opentelemetry-propagator-datadog ==0.0.0.*
     , hs-opentelemetry-propagator-w3c ==0.0.1.*
+    , hs-opentelemetry-span-exporter-otlp ==0.0.1.*
     , http-types
     , network-bsd
     , random >=1.2.0
@@ -109,11 +109,11 @@ test-suite hs-opentelemetry-sdk-test
     , bytestring
     , clock
     , hs-opentelemetry-api
-    , hs-opentelemetry-exporter-otlp ==0.0.1.*
     , hs-opentelemetry-propagator-b3 ==0.0.1.*
     , hs-opentelemetry-propagator-datadog ==0.0.0.*
     , hs-opentelemetry-propagator-w3c ==0.0.1.*
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-span-exporter-otlp ==0.0.1.*
     , hspec
     , http-types
     , network-bsd

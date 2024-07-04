@@ -25,14 +25,14 @@ dependencies:
 - microlens
 # opentelemetry dependencies
 - hs-opentelemetry-sdk
-- hs-opentelemetry-exporter-handle
+- hs-opentelemetry-span-exporter-handle
 - hs-opentelemetry-instrumentation-wai
 - hs-opentelemetry-instrumentation-yesod
 - hs-opentelemetry-instrumentation-http-client
 - hs-opentelemetry-instrumentation-persistent
 - hs-opentelemetry-instrumentation-postgresql-simple
 - hs-opentelemetry-propagator-w3c
-- hs-opentelemetry-exporter-otlp
+- hs-opentelemetry-span-exporter-otlp
 
 executables:
   yesod-minimal:

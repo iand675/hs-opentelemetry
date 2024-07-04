@@ -19,9 +19,9 @@ library
   build-depends:
       base
     , hs-opentelemetry-api
-    , hs-opentelemetry-exporter-handle
     , hs-opentelemetry-instrumentation-hspec
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-span-exporter-handle
     , hspec
     , text
     , unliftio
@@ -40,9 +40,9 @@ test-suite test
   build-depends:
       base
     , hs-opentelemetry-api
-    , hs-opentelemetry-exporter-handle
     , hs-opentelemetry-instrumentation-hspec
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-span-exporter-handle
     , hspec
     , hspec-example
     , text

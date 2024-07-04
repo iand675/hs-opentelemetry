@@ -26,7 +26,7 @@ dependencies:
 # These are "distribution" packages
 - hs-opentelemetry-api >= 0.0.3 && < 0.2
 - hs-opentelemetry-propagator-w3c == 0.0.1.*
-- hs-opentelemetry-exporter-otlp == 0.0.1.*
+- hs-opentelemetry-span-exporter-otlp == 0.0.1.*
 - hs-opentelemetry-propagator-b3 ==0.0.1.*
 - hs-opentelemetry-propagator-datadog ==0.0.0.*
 
@@ -50,8 +50,8 @@ library:
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal
-    - OpenTelemetry.Exporter
-    - OpenTelemetry.Processor
+    - OpenTelemetry.SpanExporter
+    - OpenTelemetry.SpanProcessor
     - OpenTelemetry.Propagator
     - OpenTelemetry.Resource
     - OpenTelemetry.Resource.Cloud

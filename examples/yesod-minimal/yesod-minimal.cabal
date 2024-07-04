@@ -19,8 +19,6 @@ library
       base
     , bytestring
     , conduit
-    , hs-opentelemetry-exporter-handle
-    , hs-opentelemetry-exporter-otlp
     , hs-opentelemetry-instrumentation-http-client
     , hs-opentelemetry-instrumentation-persistent
     , hs-opentelemetry-instrumentation-postgresql-simple
@@ -28,6 +26,8 @@ library
     , hs-opentelemetry-instrumentation-yesod
     , hs-opentelemetry-propagator-w3c
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-span-exporter-handle
+    , hs-opentelemetry-span-exporter-otlp
     , http-client
     , http-types
     , microlens
@@ -57,8 +57,6 @@ executable yesod-minimal
       base
     , bytestring
     , conduit
-    , hs-opentelemetry-exporter-handle
-    , hs-opentelemetry-exporter-otlp
     , hs-opentelemetry-instrumentation-http-client
     , hs-opentelemetry-instrumentation-persistent
     , hs-opentelemetry-instrumentation-postgresql-simple
@@ -66,6 +64,8 @@ executable yesod-minimal
     , hs-opentelemetry-instrumentation-yesod
     , hs-opentelemetry-propagator-w3c
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-span-exporter-handle
+    , hs-opentelemetry-span-exporter-otlp
     , http-client
     , http-types
     , microlens

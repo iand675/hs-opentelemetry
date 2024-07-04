@@ -34,11 +34,11 @@ packages:
 - api
 - sdk
 - otlp
-- exporters/handle
-- exporters/in-memory
-# - exporters/jaeger
-- exporters/otlp
-# - exporters/prometheus
+- span-exporters/handle
+- span-exporters/in-memory
+# - span-exporters/jaeger
+- span-exporters/otlp
+# - span-exporters/prometheus
 - propagators/b3
 - propagators/datadog
 # - propagators/jaeger

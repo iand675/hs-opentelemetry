@@ -15,5 +15,5 @@ module OpenTelemetry.LogRecordProcessor (
 ) where
 
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Types
+import OpenTelemetry.Internal.Logs.Types
 

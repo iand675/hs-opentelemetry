@@ -34,15 +34,13 @@ library
       OpenTelemetry.Context.ThreadLocal
       OpenTelemetry.Contrib.CarryOns
       OpenTelemetry.Contrib.SpanTraversals
-      OpenTelemetry.Exporter
       OpenTelemetry.Internal.Common.Types
-      OpenTelemetry.Internal.Logging.Core
-      OpenTelemetry.Internal.Logging.Types
+      OpenTelemetry.Internal.Logs.Core
+      OpenTelemetry.Internal.Logs.Types
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
-      OpenTelemetry.Logging.Core
       OpenTelemetry.LogRecordProcessor
-      OpenTelemetry.Processor
+      OpenTelemetry.Logs.Core
       OpenTelemetry.Propagator
       OpenTelemetry.Resource
       OpenTelemetry.Resource.Cloud
@@ -58,6 +56,8 @@ library
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
       OpenTelemetry.SemanticsConfig
+      OpenTelemetry.SpanExporter
+      OpenTelemetry.SpanProcessor
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.Id.Generator
@@ -107,7 +107,7 @@ test-suite hs-opentelemetry-api-test
   main-is: Spec.hs
   other-modules:
       OpenTelemetry.BaggageSpec
-      OpenTelemetry.Logging.CoreSpec
+      OpenTelemetry.Logs.CoreSpec
       OpenTelemetry.SemanticsConfigSpec
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
