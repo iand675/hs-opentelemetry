@@ -21,24 +21,6 @@ cradle:
     - path: "examples/yesod-minimal/src/Paths_yesod_minimal.hs"
       component: "yesod-minimal:exe:yesod-minimal"
 
-    - path: "exporters/handle/src"
-      component: "hs-opentelemetry-exporter-handle:lib"
-
-    - path: "exporters/handle/test"
-      component: "hs-opentelemetry-exporter-handle:test:hs-opentelemetry-exporter-handle-test"
-
-    - path: "exporters/in-memory/src"
-      component: "hs-opentelemetry-exporter-in-memory:lib"
-
-    - path: "exporters/in-memory/test"
-      component: "hs-opentelemetry-exporter-in-memory:test:hs-opentelemetry-exporter-in-memory-test"
-
-    - path: "exporters/otlp/src"
-      component: "hs-opentelemetry-exporter-otlp:lib"
-
-    - path: "exporters/otlp/test"
-      component: "hs-opentelemetry-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
-
     - path: "instrumentation/cloudflare/src"
       component: "hs-opentelemetry-instrumentation-cloudflare:lib"
 
@@ -137,3 +119,21 @@ cradle:
 
     - path: "sdk/test"
       component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"
+
+    - path: "span-exporters/handle/src"
+      component: "hs-opentelemetry-span-exporter-handle:lib"
+
+    - path: "span-exporters/handle/test"
+      component: "hs-opentelemetry-span-exporter-handle:test:hs-opentelemetry-exporter-handle-test"
+
+    - path: "span-exporters/in-memory/src"
+      component: "hs-opentelemetry-span-exporter-in-memory:lib"
+
+    - path: "span-exporters/in-memory/test"
+      component: "hs-opentelemetry-span-exporter-in-memory:test:hs-opentelemetry-exporter-in-memory-test"
+
+    - path: "span-exporters/otlp/src"
+      component: "hs-opentelemetry-span-exporter-otlp:lib"
+
+    - path: "span-exporters/otlp/test"
+      component: "hs-opentelemetry-span-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
