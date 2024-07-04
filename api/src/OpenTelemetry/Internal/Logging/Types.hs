@@ -261,4 +261,4 @@ toShortName Fatal = Just "FATAL"
 toShortName Fatal2 = Just "FATAL2"
 toShortName Fatal3 = Just "FATAL3"
 toShortName Fatal4 = Just "FATAL4"
-toShortName _ = Nothing
+toShortName (Unknown _) = Nothing
