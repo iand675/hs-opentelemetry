@@ -35,7 +35,7 @@ import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
 
 
-{- | LogRecordExporter defines the interface that protocol-specific exporters must implement so that they can be plugged into OpenTelemetry SDK and support sending of telemetry data.
+{- | @LogRecordExporter@ defines the interface that protocol-specific exporters must implement so that they can be plugged into OpenTelemetry SDK and support sending of telemetry data.
 
 The goal of the interface is to minimize burden of implementation for protocol-dependent telemetry exporters. The protocol exporter is expected to be primarily a simple telemetry data encoder and transmitter.
 -}
