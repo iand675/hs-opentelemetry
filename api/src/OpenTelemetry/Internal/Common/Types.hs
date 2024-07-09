@@ -10,7 +10,13 @@ module OpenTelemetry.Internal.Common.Types (
   AnyValue (..),
   ToValue (..),
   ShutdownResult (..),
+  takeWorseShutdownResult,
+  takeWorstShutdownResult,
+  flushResultToShutdownResult,
   FlushResult (..),
+  takeWorseFlushResult,
+  takeWorstFlushResult,
+  exportResultToFlushResult,
   ExportResult (..),
 ) where
 
@@ -162,6 +168,25 @@ instance ToValue AnyValue where
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
 
 
+flushResultToShutdownResult :: FlushResult -> ShutdownResult
+flushResultToShutdownResult FlushSuccess = ShutdownSuccess
+flushResultToShutdownResult FlushTimeout = ShutdownTimeout
+flushResultToShutdownResult FlushError = ShutdownFailure
+
+
+-- | Returns @ShutdownFailure@ if either argument is @ShutdownFailure@, @ShutdownTimeout@ if either argument is @ShutdownTimeout@, and @ShutdownSuccess@ otherwise.
+takeWorseShutdownResult :: ShutdownResult -> ShutdownResult -> ShutdownResult
+takeWorseShutdownResult ShutdownFailure _ = ShutdownFailure
+takeWorseShutdownResult _ ShutdownFailure = ShutdownFailure
+takeWorseShutdownResult ShutdownTimeout _ = ShutdownTimeout
+takeWorseShutdownResult _ ShutdownTimeout = ShutdownTimeout
+takeWorseShutdownResult _ _ = ShutdownSuccess
+
+
+takeWorstShutdownResult :: (Foldable t) => t ShutdownResult -> ShutdownResult
+takeWorstShutdownResult = foldr takeWorseShutdownResult ShutdownSuccess
+
+
 -- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logs.forceFlush@
 data FlushResult
   = -- | One or more spans or @LogRecord@s did not export from all associated exporters
@@ -173,6 +198,24 @@ data FlushResult
     -- unexported spans or @LogRecord@s.
     FlushError
   deriving (Show)
+
+
+-- | Returns @FlushError@ if either argument is @FlushError@, @FlushTimeout@ if either argument is @FlushTimeout@, and @FlushSuccess@ otherwise.
+takeWorseFlushResult :: FlushResult -> FlushResult -> FlushResult
+takeWorseFlushResult FlushError _ = FlushError
+takeWorseFlushResult _ FlushError = FlushError
+takeWorseFlushResult FlushTimeout _ = FlushTimeout
+takeWorseFlushResult _ FlushTimeout = FlushTimeout
+takeWorseFlushResult _ _ = FlushSuccess
+
+
+takeWorstFlushResult :: (Foldable t) => t FlushResult -> FlushResult
+takeWorstFlushResult = foldr takeWorseFlushResult FlushSuccess
+
+
+exportResultToFlushResult :: ExportResult -> FlushResult
+exportResultToFlushResult Success = FlushSuccess
+exportResultToFlushResult (Failure _) = FlushError
 
 
 data ExportResult

@@ -24,7 +24,6 @@ module OpenTelemetry.Internal.Logs.Types (
 ) where
 
 import Control.Concurrent (MVar, newMVar, withMVar)
-import Control.Concurrent.Async
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
@@ -33,7 +32,7 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types (Context)
-import OpenTelemetry.Internal.Common.Types (ExportResult, InstrumentationLibrary, ShutdownResult)
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
 import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
@@ -43,9 +42,9 @@ import OpenTelemetry.Resource (MaterializedResources)
 data LogRecordExporterArguments = LogRecordExporterArguments
   { logRecordExporterArgumentsExport :: Vector ReadableLogRecord -> IO ExportResult
   -- ^ See @logRecordExporterExport@ for documentation
-  , logRecordExporterArgumentsForceFlush :: IO ()
+  , logRecordExporterArgumentsForceFlush :: IO FlushResult
   -- ^ See @logRecordExporterArgumentsForceFlush@ for documentation
-  , logRecordExporterArgumentsShutdown :: IO ()
+  , logRecordExporterArgumentsShutdown :: IO ShutdownResult
   -- ^ See @logRecordExporterArgumentsShutdown@ for documentation
   }
 
@@ -97,7 +96,7 @@ the process after an invocation, but before the exporter exports the ReadlableLo
 ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which
 notifies the caller via a callback or an event. OpenTelemetry SDK authors MAY decide if they want to make the flush timeout configurable.
 -}
-logRecordExporterForceFlush :: LogRecordExporter -> IO ()
+logRecordExporterForceFlush :: LogRecordExporter -> IO FlushResult
 logRecordExporterForceFlush = flip withMVar logRecordExporterArgumentsForceFlush . unExporter
 
 
@@ -109,7 +108,7 @@ allowed and SHOULD return a Failure result.
 Shutdown SHOULD NOT block indefinitely (e.g. if it attempts to flush the data and the destination is unavailable).
 OpenTelemetry SDK authors MAY decide if they want to make the shutdown timeout configurable.
 -}
-logRecordExporterShutdown :: LogRecordExporter -> IO ()
+logRecordExporterShutdown :: LogRecordExporter -> IO ShutdownResult
 logRecordExporterShutdown = flip withMVar logRecordExporterArgumentsShutdown . unExporter
 
 
@@ -143,7 +142,7 @@ data LogRecordProcessor = LogRecordProcessor
   -- ^ Called when a LogRecord is emitted. This method is called synchronously on the thread that emitted the LogRecord, therefore it SHOULD NOT block or throw exceptions.
   --
   -- A LogRecordProcessor may freely modify logRecord for the duration of the OnEmit call. If logRecord is needed after OnEmit returns (i.e. for asynchronous processing) only reads are permitted.
-  , logRecordProcessorShutdown :: IO (Async ShutdownResult)
+  , logRecordProcessorShutdown :: IO ShutdownResult
   -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
   --
   -- Shutdown SHOULD be called only once for each LogRecordProcessor instance. After the call to Shutdown, subsequent calls to OnEmit are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
@@ -154,7 +153,7 @@ data LogRecordProcessor = LogRecordProcessor
   --
   -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event.
   -- OpenTelemetry SDK authors can decide if they want to make the shutdown timeout configurable.
-  , logRecordProcessorForceFlush :: IO ()
+  , logRecordProcessorForceFlush :: IO FlushResult
   -- ^ This is a hint to ensure that any tasks associated with LogRecords for which the LogRecordProcessor had already received events prior to the call to ForceFlush SHOULD be completed
   -- as soon as possible, preferably before returning from this method.
   --
