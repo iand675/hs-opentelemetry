@@ -24,7 +24,7 @@ simpleProcessor exporter = do
     bracketOnError
       (readChan outChan)
       (writeChan inChan)
-      exportSingleLogRecord
+      (logRecordExporterExport exporter . V.singleton . mkReadableLogRecord)
 
   let logRecordProcessorForceFlush =
         ( do
@@ -58,7 +58,5 @@ simpleProcessor exporter = do
       case mlr of
         Nothing -> pure acc
         Just lr -> do
-          res <- exportSingleLogRecord lr
+          res <- logRecordExporterExport exporter $ V.singleton $ mkReadableLogRecord lr
           forceFlushOutChan outChan (res : acc)
-
-    exportSingleLogRecord = logRecordExporterExport exporter . V.singleton . mkReadableLogRecord

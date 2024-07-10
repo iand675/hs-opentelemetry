@@ -4,7 +4,6 @@
 
 module OpenTelemetry.LogRecordProcessorSpec where
 
-import qualified Data.HashMap.Strict as H
 import Data.IORef
 import qualified Data.Vector as V
 import qualified OpenTelemetry.Context as Context
@@ -22,13 +21,12 @@ getTestExporter = do
   numExportsRef <- newIORef 0
   shutdownRef <- newIORef False
 
-  let logRecordExporterExportInternal logRecordsByLibrary = do
+  let logRecordExporterExportInternal logRecords = do
         shutdown <- readIORef shutdownRef
         if shutdown
           then pure (Failure Nothing)
           else do
-            let numLogRecords = foldr (\lrs n -> n + V.length lrs) 0 logRecordsByLibrary
-            modifyIORef numExportsRef (+ numLogRecords)
+            modifyIORef numExportsRef $ (+) $ V.length logRecords
 
             pure Success
 
@@ -54,9 +52,8 @@ getTestExporterWithoutShutdown :: IO (IORef Int, LogRecordExporter)
 getTestExporterWithoutShutdown = do
   numExportsRef <- newIORef 0
 
-  let logRecordExporterExport logRecordsByLibrary = do
-        let numLogRecords = foldr (\lrs n -> n + V.length lrs) 0 logRecordsByLibrary
-        modifyIORef numExportsRef (+ numLogRecords)
+  let logRecordExporterExport logRecords = do
+        modifyIORef numExportsRef $ (+) $ V.length $ logRecords
 
         pure Success
 
@@ -115,7 +112,7 @@ spec = describe "LogRecordProcessor" $ do
       numExports <- readIORef numExportsRef
       numExports `shouldBe` 3
 
-      exportRes <- logRecordExporterExport testExporter H.empty
+      exportRes <- logRecordExporterExport testExporter V.empty
       exportRes `shouldSatisfy` \case
         Success -> False
         Failure _ -> True
