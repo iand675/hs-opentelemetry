@@ -17,9 +17,9 @@ in rec {
     hs-opentelemetry-api = ../api;
     hs-opentelemetry-sdk = ../sdk;
     hs-opentelemetry-otlp = ../otlp;
-    hs-opentelemetry-exporter-handle = ../exporters/handle;
-    hs-opentelemetry-exporter-in-memory = ../exporters/in-memory;
-    hs-opentelemetry-exporter-otlp = ../exporters/otlp;
+    hs-opentelemetry-span-exporter-handle = ../span-exporters/handle;
+    hs-opentelemetry-span-exporter-in-memory = ../span-exporters/in-memory;
+    hs-opentelemetry-span-exporter-otlp = ../span-exporters/otlp;
     hs-opentelemetry-propagator-b3 = ../propagators/b3;
     hs-opentelemetry-propagator-datadog = ../propagators/datadog;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
