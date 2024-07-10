@@ -221,3 +221,4 @@ exportResultToFlushResult (Failure _) = FlushError
 data ExportResult
   = Success
   | Failure (Maybe SomeException)
+  deriving (Show)
