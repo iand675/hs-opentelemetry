@@ -1,10 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module OpenTelemetry.LogAttributes (
   LogAttributes (..),
@@ -35,6 +31,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
+import OpenTelemetry.Internal.Common.Types
 
 
 data LogAttributes = LogAttributes
@@ -88,87 +85,6 @@ limitLengths limit (TextValue t) = TextValue (T.take limit t)
 limitLengths limit (ArrayValue arr) = ArrayValue $ fmap (limitLengths limit) arr
 limitLengths limit (HashMapValue h) = HashMapValue $ fmap (limitLengths limit) h
 limitLengths _ val = val
-
-
-{- | An attribute represents user-provided metadata about a span, link, or event.
-
- 'Any' values are used in place of 'Standard Attributes' in logs because third-party
- logs may not conform to the 'Standard Attribute' format.
-
- Telemetry tools may use this data to support high-cardinality querying, visualization
- in waterfall diagrams, trace sampling decisions, and more.
--}
-data AnyValue
-  = TextValue Text
-  | BoolValue Bool
-  | DoubleValue Double
-  | IntValue Int64
-  | ByteStringValue ByteString
-  | ArrayValue [AnyValue]
-  | HashMapValue (H.HashMap Text AnyValue)
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
-  deriving anyclass (Hashable)
-
-
--- | Create a `TextAttribute` from the string value.
-instance IsString AnyValue where
-  fromString :: String -> AnyValue
-  fromString = TextValue . fromString
-
-
-{- | Convert a Haskell value to an 'Any' value.
-
- @
-
- data Foo = Foo
-
- instance ToValue Foo where
-   toValue Foo = TextValue "Foo"
-
- @
--}
-class ToValue a where
-  toValue :: a -> AnyValue
-
-
-instance ToValue Text where
-  toValue :: Text -> AnyValue
-  toValue = TextValue
-
-
-instance ToValue Bool where
-  toValue :: Bool -> AnyValue
-  toValue = BoolValue
-
-
-instance ToValue Double where
-  toValue :: Double -> AnyValue
-  toValue = DoubleValue
-
-
-instance ToValue Int64 where
-  toValue :: Int64 -> AnyValue
-  toValue = IntValue
-
-
-instance ToValue ByteString where
-  toValue :: ByteString -> AnyValue
-  toValue = ByteStringValue
-
-
-instance (ToValue a) => ToValue [a] where
-  toValue :: (ToValue a) => [a] -> AnyValue
-  toValue = ArrayValue . fmap toValue
-
-
-instance (ToValue a) => ToValue (H.HashMap Text a) where
-  toValue :: (ToValue a) => H.HashMap Text a -> AnyValue
-  toValue = HashMapValue . fmap toValue
-
-
-instance ToValue AnyValue where
-  toValue :: AnyValue -> AnyValue
-  toValue = id
 
 
 unsafeMergeLogAttributesIgnoringLimits :: LogAttributes -> LogAttributes -> LogAttributes

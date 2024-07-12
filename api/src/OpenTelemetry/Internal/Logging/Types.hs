@@ -55,10 +55,10 @@ data Logger = Logger
 Existing log formats can be unambiguously mapped to this data type. Reverse mapping from this data type is also possible to the extent that the target log format has equivalent capabilities.
 Uses an IORef under the hood to allow mutability.
 -}
-data LogRecord a = LogRecord Logger (IORef (ImmutableLogRecord a))
+data LogRecord = LogRecord Logger (IORef ImmutableLogRecord)
 
 
-mkLogRecord :: Logger -> ImmutableLogRecord body -> IO (LogRecord body)
+mkLogRecord :: Logger -> ImmutableLogRecord -> IO LogRecord
 mkLogRecord l = fmap (LogRecord l) . newIORef
 
 
@@ -72,15 +72,15 @@ Counts for attributes due to collection limits MUST be available for exporters t
 -}
 class ReadableLogRecord r where
   -- | Reads the current state of the @LogRecord@ from its internal @IORef@. The implementation mirrors @readIORef@.
-  readLogRecord :: r a -> IO (ImmutableLogRecord a)
+  readLogRecord :: r -> IO ImmutableLogRecord
 
 
   -- | Reads the @InstrumentationScope@ from the @Logger@ that emitted the @LogRecord@
-  readLogRecordInstrumentationScope :: r a -> InstrumentationLibrary
+  readLogRecordInstrumentationScope :: r -> InstrumentationLibrary
 
 
   -- | Reads the @Resource@ from the @LoggerProvider@ that emitted the @LogRecord@
-  readLogRecordResource :: r a -> MaterializedResources
+  readLogRecordResource :: r -> MaterializedResources
 
 
 {- | This is a typeclass representing @LogRecord@s that can be read from or written to. All @ReadWriteLogRecord@s are @ReadableLogRecord@s.
@@ -99,15 +99,15 @@ A function receiving this as an argument MUST additionally be able to modify the
 -}
 class (ReadableLogRecord r) => ReadWriteLogRecord r where
   -- | Reads the attribute limits from the @LoggerProvider@ that emitted the @LogRecord@. These are needed to add more attributes.
-  readLogRecordAttributeLimits :: r a -> AttributeLimits
+  readLogRecordAttributeLimits :: r -> AttributeLimits
 
 
   -- | Modifies the @LogRecord@ using its internal @IORef@. This is lazy and is not an atomic operation. The implementation mirrors @modifyIORef@.
-  modifyLogRecord :: r a -> (ImmutableLogRecord a -> ImmutableLogRecord a) -> IO ()
+  modifyLogRecord :: r -> (ImmutableLogRecord -> ImmutableLogRecord) -> IO ()
 
 
   -- | An atomic version of @modifyLogRecord@. This function is lazy. The implementation mirrors @atomicModifyIORef@.
-  atomicModifyLogRecord :: r a -> (ImmutableLogRecord a -> (ImmutableLogRecord a, b)) -> IO b
+  atomicModifyLogRecord :: r -> (ImmutableLogRecord -> (ImmutableLogRecord, b)) -> IO b
 
 
 instance ReadableLogRecord LogRecord where
@@ -122,7 +122,7 @@ instance ReadWriteLogRecord LogRecord where
   atomicModifyLogRecord (LogRecord _ ref) = atomicModifyIORef ref
 
 
-data ImmutableLogRecord body = ImmutableLogRecord
+data ImmutableLogRecord = ImmutableLogRecord
   { logRecordTimestamp :: Maybe Timestamp
   -- ^ Time when the event occurred measured by the origin clock. This field is optional, it may be missing if the timestamp is unknown.
   , logRecordObservedTimestamp :: Timestamp
@@ -170,7 +170,7 @@ data ImmutableLogRecord body = ImmutableLogRecord
   --
   -- In the contexts where severity participates in less-than / greater-than comparisons SeverityNumber field should be used.
   -- SeverityNumber can be compared to another SeverityNumber or to numbers in the 1..24 range (or to the corresponding short names).
-  , logRecordBody :: body
+  , logRecordBody :: AnyValue
   -- ^ A value containing the body of the log record. Can be for example a human-readable string message (including multi-line) describing the event in a free form or it can be a
   -- structured data composed of arrays and maps of other values. Body MUST support any type to preserve the semantics of structured logs emitted by the applications.
   -- Can vary for each occurrence of the event coming from the same source. This field is optional.
@@ -186,25 +186,24 @@ data ImmutableLogRecord body = ImmutableLogRecord
   -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
   -- emitted by the applications. This field is optional.
   }
-  deriving (Functor)
 
 
 {- | Arguments that may be set on LogRecord creation. If observedTimestamp is not set, it will default to the current timestamp.
 If context is not specified it will default to the current context. Refer to the documentation of @LogRecord@ for descriptions
 of the fields.
 -}
-data LogRecordArguments body = LogRecordArguments
+data LogRecordArguments = LogRecordArguments
   { timestamp :: Maybe Timestamp
   , observedTimestamp :: Maybe Timestamp
   , context :: Maybe Context
   , severityText :: Maybe Text
   , severityNumber :: Maybe SeverityNumber
-  , body :: body
+  , body :: AnyValue
   , attributes :: H.HashMap Text AnyValue
   }
 
 
-emptyLogRecordArguments :: body -> LogRecordArguments body
+emptyLogRecordArguments :: (ToValue body) => body -> LogRecordArguments
 emptyLogRecordArguments body =
   LogRecordArguments
     { timestamp = Nothing
@@ -212,7 +211,7 @@ emptyLogRecordArguments body =
     , context = Nothing
     , severityText = Nothing
     , severityNumber = Nothing
-    , body = body
+    , body = toValue body
     , attributes = H.empty
     }
 

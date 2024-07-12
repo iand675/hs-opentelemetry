@@ -108,8 +108,8 @@ makeLogger loggerProvider loggerInstrumentationScope = Logger {..}
 createImmutableLogRecord
   :: (MonadIO m)
   => LA.AttributeLimits
-  -> LogRecordArguments body
-  -> m (ImmutableLogRecord body)
+  -> LogRecordArguments
+  -> m ImmutableLogRecord
 createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
   currentTimestamp <- getCurrentTimestamp
   let logRecordObservedTimestamp = fromMaybe currentTimestamp observedTimestamp
@@ -141,12 +141,12 @@ createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
 
 
 -- | WARNING: this function should only be used to emit logs from the hs-opentelemetry-api library. DO NOT USE this function in any other context.
-logDroppedAttributes :: (MonadIO m) => m (LogRecord Text)
+logDroppedAttributes :: (MonadIO m) => m LogRecord
 logDroppedAttributes = emitOTelLogRecord H.empty Warn "At least 1 attribute was discarded due to the attribute limits set in the logger provider."
 
 
 -- | WARNING: this function should only be used to emit logs from the hs-opentelemetry-api library. DO NOT USE this function in any other context.
-emitOTelLogRecord :: (MonadIO m) => H.HashMap Text LA.AnyValue -> SeverityNumber -> Text -> m (LogRecord Text)
+emitOTelLogRecord :: (MonadIO m) => H.HashMap Text LA.AnyValue -> SeverityNumber -> Text -> m LogRecord
 emitOTelLogRecord attrs severity body = do
   glp <- getGlobalLoggerProvider
   let gl =
@@ -172,8 +172,8 @@ If context is not specified in LogRecordArguments it will default to the current
 emitLogRecord
   :: (MonadIO m)
   => Logger
-  -> LogRecordArguments body
-  -> m (LogRecord body)
+  -> LogRecordArguments
+  -> m LogRecord
 emitLogRecord l args = do
   ilr <- createImmutableLogRecord (loggerProviderAttributeLimits $ loggerProvider l) args
   liftIO $ mkLogRecord l ilr
@@ -199,7 +199,7 @@ For example, the 'otel.library.name' attribute is used to record the instrumenta
 
 Any additions to the 'otel.*' namespace MUST be approved as part of OpenTelemetry specification.
 -}
-addAttribute :: (ReadWriteLogRecord r, MonadIO m, ToValue a) => r body -> Text -> a -> m ()
+addAttribute :: (ReadWriteLogRecord r, MonadIO m, ToValue a) => r -> Text -> a -> m ()
 addAttribute lr k v =
   let attributeLimits = readLogRecordAttributeLimits lr
   in liftIO $
@@ -223,7 +223,7 @@ This function may be slightly more performant than repeatedly calling 'addAttrib
 
 This is not an atomic modification
 -}
-addAttributes :: (ReadWriteLogRecord r, MonadIO m, ToValue a) => r body -> HashMap Text a -> m ()
+addAttributes :: (ReadWriteLogRecord r, MonadIO m, ToValue a) => r -> HashMap Text a -> m ()
 addAttributes lr attrs =
   let attributeLimits = readLogRecordAttributeLimits lr
   in liftIO $
@@ -244,5 +244,5 @@ addAttributes lr attrs =
  using it to copy / otherwise use the data to further enrich
  instrumentation.
 -}
-logRecordGetAttributes :: (ReadableLogRecord r, MonadIO m) => r a -> m LogAttributes
+logRecordGetAttributes :: (ReadableLogRecord r, MonadIO m) => r -> m LogAttributes
 logRecordGetAttributes lr = liftIO $ logRecordAttributes <$> readLogRecord lr
