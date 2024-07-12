@@ -2,6 +2,9 @@
 
 ## Unreleased changes
 
+- `callerAttributes` and `ownCodeAttributes` now work properly if the call stack has been frozen. Hence most
+  span-construction functions should now get correct source code attributes in this situation also.
+
 ## 0.1.0.0
 
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes

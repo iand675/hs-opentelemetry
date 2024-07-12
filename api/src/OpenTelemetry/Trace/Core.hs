@@ -307,13 +307,23 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
 
 ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
 ownCodeAttributes = case getCallStack callStack of
-  _ : caller : _ -> srcAttributes caller
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look one further step up for our own code.
+  (("ownCodeAttributes", _) : ownCode : _) -> srcAttributes ownCode
+  -- The call stack doesn't look like we expect, potentially frozen or empty. In this case we can't
+  -- really do much, so give up.
   _ -> mempty
 
 
 callerAttributes :: (HasCallStack) => H.HashMap Text Attribute
 callerAttributes = case getCallStack callStack of
-  _ : _ : caller : _ -> srcAttributes caller
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look two further steps up for the caller.
+  (("callerAttributes", _) : _ : caller : _) -> srcAttributes caller
+  -- The call stack doesn't look like we expect. Guess that it got frozen, and so the most
+  -- useful thing to do is to assume that the "caller" is the top of the frozen call stack
+  (caller : _) -> srcAttributes caller
+  -- Empty call stack
   _ -> mempty
 
 
