@@ -5,9 +5,18 @@ module OpenTelemetry.Exporter.LogRecord (
   logRecordExporterExport,
   logRecordExporterForceFlush,
   logRecordExporterShutdown,
+  ExportResult (..),
+  FlushResult (..),
+  takeWorseFlushResult,
+  takeWorstFlushResult,
+  exportResultToFlushResult,
   ShutdownResult (..),
+  takeWorseShutdownResult,
+  takeWorstShutdownResult,
+  flushResultToShutdownResult,
 ) where
 
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logs.Types (
   LogRecordExporter,
   LogRecordExporterArguments (..),
@@ -16,5 +25,4 @@ import OpenTelemetry.Internal.Logs.Types (
   logRecordExporterShutdown,
   mkLogRecordExporter,
  )
-import OpenTelemetry.Processor.LogRecord (ShutdownResult (..))
 

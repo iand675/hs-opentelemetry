@@ -5,6 +5,7 @@
 module OpenTelemetry.LogRecordProcessorSpec where
 
 import Data.IORef
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Exporter.LogRecord
@@ -52,7 +53,7 @@ getTestExporterWithoutShutdown :: IO (IORef Int, LogRecordExporter)
 getTestExporterWithoutShutdown = do
   numExportsRef <- newIORef 0
 
-  let logRecordExporterExport logRecords = do
+  let logRecordExporterExportInternal logRecords = do
         modifyIORef numExportsRef $ (+) $ V.length $ logRecords
 
         pure Success
@@ -84,9 +85,9 @@ spec = describe "LogRecordProcessor" $ do
       let lp = createLoggerProvider [processor] emptyLoggerProviderOptions
           l = makeLogger lp "Test Library"
 
-      emitLogRecord l emptyLogRecordArguments
-      emitLogRecord l emptyLogRecordArguments
-      emitLogRecord l emptyLogRecordArguments
+      emitLogRecord l (emptyLogRecordArguments ("something" :: T.Text))
+      emitLogRecord l (emptyLogRecordArguments ("another thing" :: T.Text))
+      emitLogRecord l (emptyLogRecordArguments ("a third thing" :: T.Text))
 
       -- WARNING: There might be a better way to ensure exporting than forceFlush
       forceFlushLoggerProvider Nothing lp
@@ -102,9 +103,9 @@ spec = describe "LogRecordProcessor" $ do
       let lp = createLoggerProvider [processor, processorNoShutdown] emptyLoggerProviderOptions
           l = makeLogger lp "Test Library"
 
-      emitLogRecord l (emptyLogRecordArguments "something")
-      emitLogRecord l (emptyLogRecordArguments "another thing")
-      emitLogRecord l (emptyLogRecordArguments "a third thing")
+      emitLogRecord l (emptyLogRecordArguments ("something" :: T.Text))
+      emitLogRecord l (emptyLogRecordArguments ("another thing" :: T.Text))
+      emitLogRecord l (emptyLogRecordArguments ("a third thing" :: T.Text))
 
       -- WARNING: There might be a better way to ensure exporting than forceFlush
       shutdownLoggerProvider Nothing lp
@@ -117,7 +118,7 @@ spec = describe "LogRecordProcessor" $ do
         Success -> False
         Failure _ -> True
 
-      lr <- emitLogRecord l (emptyLogRecordArguments ("a bad one" :: String))
+      lr <- emitLogRecord l (emptyLogRecordArguments ("a bad one" :: T.Text))
       logRecordProcessorOnEmit processorNoShutdown lr Context.empty
       numExportsNoShutdown <- readIORef numExportsNoShutdownRef
       numExportsNoShutdown `shouldBe` 3

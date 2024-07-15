@@ -10,8 +10,9 @@ import Control.Concurrent.Chan.Unagi
 import Control.Exception
 import Control.Monad (forever)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Exporter.LogRecord
+import OpenTelemetry.Logs.Core
+import OpenTelemetry.Processor.LogRecord
 
 
 {- | This is an implementation of LogRecordProcessor which passes finished logs and passes the export-friendly ReadableLogRecord
@@ -19,12 +20,12 @@ representation to the configured LogRecordExporter, as soon as they are finished
 -}
 simpleProcessor :: LogRecordExporter -> IO LogRecordProcessor
 simpleProcessor exporter = do
-  (inChan :: InChan ReadWriteLogRecord, outChan :: OutChan ReadWriteLogRecord) <- newChan
+  (inChan :: InChan ReadableLogRecord, outChan :: OutChan ReadableLogRecord) <- newChan
   exportWorker <- async $ forever $ do
     bracketOnError
       (readChan outChan)
       (writeChan inChan)
-      (logRecordExporterExport exporter . V.singleton . mkReadableLogRecord)
+      (logRecordExporterExport exporter . V.singleton)
 
   let logRecordProcessorForceFlush =
         ( do
@@ -41,7 +42,7 @@ simpleProcessor exporter = do
 
   pure $
     LogRecordProcessor
-      { logRecordProcessorOnEmit = \lr _ -> writeChan inChan lr
+      { logRecordProcessorOnEmit = \lr _ -> writeChan inChan $ mkReadableLogRecord lr
       , logRecordProcessorShutdown = mask $ \restore -> do
           cancel exportWorker
           flushResult <- restore logRecordProcessorForceFlush
@@ -58,5 +59,5 @@ simpleProcessor exporter = do
       case mlr of
         Nothing -> pure acc
         Just lr -> do
-          res <- logRecordExporterExport exporter $ V.singleton $ mkReadableLogRecord lr
+          res <- logRecordExporterExport exporter $ V.singleton lr
           forceFlushOutChan outChan (res : acc)

@@ -16,6 +16,7 @@ module OpenTelemetry.Logs.Core (
 
   -- * @LogRecord@ operations
   ReadableLogRecord,
+  mkReadableLogRecord,
   ReadWriteLogRecord,
   IsReadableLogRecord (..),
   IsReadWriteLogRecord (..),
