@@ -67,8 +67,8 @@ mkReadWriteLogRecord l = fmap (ReadWriteLogRecord l) . newIORef
 newtype ReadableLogRecord = ReadableLogRecord {readableLogRecord :: ReadWriteLogRecord}
 
 
-mkReadableLogRecord :: Logger -> ImmutableLogRecord -> IO ReadableLogRecord
-mkReadableLogRecord l = fmap ReadableLogRecord . mkReadWriteLogRecord l
+mkReadableLogRecord :: ReadWriteLogRecord -> ReadableLogRecord
+mkReadableLogRecord = ReadableLogRecord
 
 
 {- | This is a typeclass representing @LogRecord@s that can be read from.
