@@ -162,10 +162,10 @@ data SeverityNumber
   | Warn2
   | Warn3
   | Warn4
-  | Err
-  | Err2
-  | Err3
-  | Err4
+  | Error
+  | Error2
+  | Error3
+  | Error4
   | Fatal
   | Fatal2
   | Fatal3
@@ -190,10 +190,10 @@ instance Enum SeverityNumber where
   toEnum 14 = Warn2
   toEnum 15 = Warn3
   toEnum 16 = Warn4
-  toEnum 17 = Err
-  toEnum 18 = Err2
-  toEnum 19 = Err3
-  toEnum 20 = Err4
+  toEnum 17 = Error
+  toEnum 18 = Error2
+  toEnum 19 = Error3
+  toEnum 20 = Error4
   toEnum 21 = Fatal
   toEnum 22 = Fatal2
   toEnum 23 = Fatal3
@@ -217,10 +217,10 @@ instance Enum SeverityNumber where
   fromEnum Warn2 = 14
   fromEnum Warn3 = 15
   fromEnum Warn4 = 16
-  fromEnum Err = 17
-  fromEnum Err2 = 18
-  fromEnum Err3 = 19
-  fromEnum Err4 = 20
+  fromEnum Error = 17
+  fromEnum Error2 = 18
+  fromEnum Error3 = 19
+  fromEnum Error4 = 20
   fromEnum Fatal = 21
   fromEnum Fatal2 = 22
   fromEnum Fatal3 = 23
@@ -253,10 +253,10 @@ toShortName Warn = Just "WARN"
 toShortName Warn2 = Just "WARN2"
 toShortName Warn3 = Just "WARN3"
 toShortName Warn4 = Just "WARN4"
-toShortName Err = Just "ERROR"
-toShortName Err2 = Just "ERROR2"
-toShortName Err3 = Just "ERROR3"
-toShortName Err4 = Just "ERROR4"
+toShortName Error = Just "ERROR"
+toShortName Error2 = Just "ERROR2"
+toShortName Error3 = Just "ERROR3"
+toShortName Error4 = Just "ERROR4"
 toShortName Fatal = Just "FATAL"
 toShortName Fatal2 = Just "FATAL2"
 toShortName Fatal3 = Just "FATAL3"

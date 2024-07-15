@@ -166,7 +166,7 @@ import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Types (SeverityNumber (..))
+import qualified OpenTelemetry.Internal.Logging.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
 import OpenTelemetry.Logging.Core (emitOTelLogRecord, logDroppedAttributes)
@@ -292,7 +292,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
             s <- newIORef is
             eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
-              Left err -> void $ emitOTelLogRecord H.empty Err $ T.pack $ show (err :: SomeException)
+              Left err -> void $ emitOTelLogRecord H.empty SeverityNumber.Error $ T.pack $ show (err :: SomeException)
               Right _ -> pure ()
             pure $ Span s
 
