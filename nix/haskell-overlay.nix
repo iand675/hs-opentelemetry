@@ -4,4 +4,4 @@
 }: let
   allOpenTelemetryPackages = import ./haskell-packages.nix {inherit pkgs lib;};
 in
-  allOpenTelemetryPackages.localPackageCabalDerivations
+  hfinal: _hsuper: allOpenTelemetryPackages.localPackageCabalDerivations hfinal
