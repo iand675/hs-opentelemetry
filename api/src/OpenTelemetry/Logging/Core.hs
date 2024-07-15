@@ -13,10 +13,13 @@ module OpenTelemetry.Logging.Core (
   makeLogger,
 
   -- * @LogRecord@ operations
-  LogRecord,
-  ReadableLogRecord (..),
-  ReadWriteLogRecord (..),
+  ReadableLogRecord,
+  ReadWriteLogRecord,
+  IsReadableLogRecord (..),
+  IsReadWriteLogRecord (..),
   LogRecordArguments (..),
+  AnyValue (..),
+  ToValue (..),
   SeverityNumber (..),
   toShortName,
   emitLogRecord,

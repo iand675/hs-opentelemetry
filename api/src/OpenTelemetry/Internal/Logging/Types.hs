@@ -5,10 +5,12 @@
 module OpenTelemetry.Internal.Logging.Types (
   LoggerProvider (..),
   Logger (..),
-  LogRecord,
-  mkLogRecord,
-  ReadableLogRecord (..),
-  ReadWriteLogRecord (..),
+  ReadWriteLogRecord,
+  mkReadWriteLogRecord,
+  ReadableLogRecord,
+  mkReadableLogRecord,
+  IsReadableLogRecord (..),
+  IsReadWriteLogRecord (..),
   ImmutableLogRecord (..),
   LogRecordArguments (..),
   emptyLogRecordArguments,
@@ -55,11 +57,18 @@ data Logger = Logger
 Existing log formats can be unambiguously mapped to this data type. Reverse mapping from this data type is also possible to the extent that the target log format has equivalent capabilities.
 Uses an IORef under the hood to allow mutability.
 -}
-data LogRecord = LogRecord Logger (IORef ImmutableLogRecord)
+data ReadWriteLogRecord = ReadWriteLogRecord Logger (IORef ImmutableLogRecord)
 
 
-mkLogRecord :: Logger -> ImmutableLogRecord -> IO LogRecord
-mkLogRecord l = fmap (LogRecord l) . newIORef
+mkReadWriteLogRecord :: Logger -> ImmutableLogRecord -> IO ReadWriteLogRecord
+mkReadWriteLogRecord l = fmap (ReadWriteLogRecord l) . newIORef
+
+
+newtype ReadableLogRecord = ReadableLogRecord {readableLogRecord :: ReadWriteLogRecord}
+
+
+mkReadableLogRecord :: Logger -> ImmutableLogRecord -> IO ReadableLogRecord
+mkReadableLogRecord l = fmap ReadableLogRecord . mkReadWriteLogRecord l
 
 
 {- | This is a typeclass representing @LogRecord@s that can be read from.
@@ -70,7 +79,7 @@ The trace context fields MUST be populated from the resolved Context (either the
 
 Counts for attributes due to collection limits MUST be available for exporters to report as described in the transformation to non-OTLP formats specification.
 -}
-class ReadableLogRecord r where
+class IsReadableLogRecord r where
   -- | Reads the current state of the @LogRecord@ from its internal @IORef@. The implementation mirrors @readIORef@.
   readLogRecord :: r -> IO ImmutableLogRecord
 
@@ -97,7 +106,7 @@ A function receiving this as an argument MUST additionally be able to modify the
 - SpanId
 - TraceFlags
 -}
-class (ReadableLogRecord r) => ReadWriteLogRecord r where
+class (IsReadableLogRecord r) => IsReadWriteLogRecord r where
   -- | Reads the attribute limits from the @LoggerProvider@ that emitted the @LogRecord@. These are needed to add more attributes.
   readLogRecordAttributeLimits :: r -> AttributeLimits
 
@@ -110,16 +119,22 @@ class (ReadableLogRecord r) => ReadWriteLogRecord r where
   atomicModifyLogRecord :: r -> (ImmutableLogRecord -> (ImmutableLogRecord, b)) -> IO b
 
 
-instance ReadableLogRecord LogRecord where
-  readLogRecord (LogRecord _ ref) = readIORef ref
-  readLogRecordInstrumentationScope (LogRecord (Logger {loggerInstrumentationScope}) _) = loggerInstrumentationScope
-  readLogRecordResource (LogRecord Logger {loggerProvider = LoggerProvider {loggerProviderResource}} _) = loggerProviderResource
+instance IsReadableLogRecord ReadableLogRecord where
+  readLogRecord = readLogRecord . readableLogRecord
+  readLogRecordInstrumentationScope = readLogRecordInstrumentationScope . readableLogRecord
+  readLogRecordResource = readLogRecordResource . readableLogRecord
 
 
-instance ReadWriteLogRecord LogRecord where
-  readLogRecordAttributeLimits (LogRecord Logger {loggerProvider = LoggerProvider {loggerProviderAttributeLimits}} _) = loggerProviderAttributeLimits
-  modifyLogRecord (LogRecord _ ref) = modifyIORef ref
-  atomicModifyLogRecord (LogRecord _ ref) = atomicModifyIORef ref
+instance IsReadableLogRecord ReadWriteLogRecord where
+  readLogRecord (ReadWriteLogRecord _ ref) = readIORef ref
+  readLogRecordInstrumentationScope (ReadWriteLogRecord (Logger {loggerInstrumentationScope}) _) = loggerInstrumentationScope
+  readLogRecordResource (ReadWriteLogRecord Logger {loggerProvider = LoggerProvider {loggerProviderResource}} _) = loggerProviderResource
+
+
+instance IsReadWriteLogRecord ReadWriteLogRecord where
+  readLogRecordAttributeLimits (ReadWriteLogRecord Logger {loggerProvider = LoggerProvider {loggerProviderAttributeLimits}} _) = loggerProviderAttributeLimits
+  modifyLogRecord (ReadWriteLogRecord _ ref) = modifyIORef ref
+  atomicModifyLogRecord (ReadWriteLogRecord _ ref) = atomicModifyIORef ref
 
 
 data ImmutableLogRecord = ImmutableLogRecord
