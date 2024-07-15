@@ -1,28 +1,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeApplications #-}
 
-module OpenTelemetry.Logging.Core (
-  -- * @LoggerProvider@ operations
-  LoggerProvider (..),
+module OpenTelemetry.Internal.Logging.Core (
   LoggerProviderOptions (..),
   emptyLoggerProviderOptions,
   createLoggerProvider,
   setGlobalLoggerProvider,
   getGlobalLoggerProvider,
-
-  -- * @Logger@ operations
-  InstrumentationLibrary (..),
-  Logger (..),
   makeLogger,
-
-  -- * @LogRecord@ operations
-  LogRecord (..),
-  LogRecordArguments (..),
-  SeverityNumber (..),
-  toShortName,
   emitLogRecord,
-
-  -- * Internal logging operations
   logDroppedAttributes,
   emitOTelLogRecord,
 ) where
@@ -46,7 +32,6 @@ import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logging.Types
 import OpenTelemetry.Internal.Trace.Types (SpanContext (..), getSpanContext)
-import OpenTelemetry.LogAttributes (LogAttributes)
 import qualified OpenTelemetry.LogAttributes as LA
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
 import Paths_hs_opentelemetry_api (version)

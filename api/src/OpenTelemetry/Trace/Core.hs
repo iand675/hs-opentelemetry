@@ -166,10 +166,10 @@ import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
+import OpenTelemetry.Internal.Logging.Core (emitOTelLogRecord, logDroppedAttributes)
 import qualified OpenTelemetry.Internal.Logging.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
-import OpenTelemetry.Logging.Core (emitOTelLogRecord, logDroppedAttributes)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
