@@ -1,2 +1,2 @@
-module OpenTelemetry.Trace.Exporter.Zipkin where
+module OpenTelemetry.Exporter.Zipkin.Span where
 

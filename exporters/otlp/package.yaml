@@ -1,4 +1,4 @@
-name:                hs-opentelemetry-span-exporter-otlp
+name:                hs-opentelemetry-exporter-otlp
 version:             0.0.1.5
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
@@ -51,4 +51,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-span-exporter-otlp
+    - hs-opentelemetry-exporter-otlp

@@ -30,7 +30,7 @@
  one or more open-source or commercial back-ends. The local Collector agent is the default location to which instrumentation libraries export
  their telemetry data.
 -}
-module OpenTelemetry.SpanExporter.OTLP (
+module OpenTelemetry.Exporter.OTLP.Span (
   -- * Initializing the exporter
   otlpExporter,
 

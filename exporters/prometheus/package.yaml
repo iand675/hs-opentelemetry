@@ -1,4 +1,4 @@
-name:                hs-opentelemetry-span-exporter-prometheus
+name:                hs-opentelemetry-exporter-prometheus
 version:             0.0.1.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
@@ -35,4 +35,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-span-exporter-prometheus
+    - hs-opentelemetry-exporter-prometheus

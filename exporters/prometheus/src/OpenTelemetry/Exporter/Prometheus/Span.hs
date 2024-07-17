@@ -1,2 +1,2 @@
-module OpenTelemetry.SpanExporter.Prometheus where
+module OpenTelemetry.Exporter.Prometheus.Span where
 

@@ -1,2 +1,2 @@
-module OpenTelemetry.SpanExporter.Jaeger where
+module OpenTelemetry.Exporter.Jaeger.Span where
 

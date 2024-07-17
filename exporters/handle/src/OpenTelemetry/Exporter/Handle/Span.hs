@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module OpenTelemetry.SpanExporter.Handle (
+module OpenTelemetry.Exporter.Handle.Span (
   makeHandleExporter,
   -- $
   stdoutExporter',

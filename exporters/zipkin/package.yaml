@@ -1,4 +1,4 @@
-name:                hs-opentelemetry-span-exporter-zipkin
+name:                hs-opentelemetry-exporter-zipkin
 version:             0.0.1.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
@@ -34,4 +34,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-span-exporter-zipkin
+    - hs-opentelemetry-exporter-zipkin

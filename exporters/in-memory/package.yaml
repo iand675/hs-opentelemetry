@@ -1,4 +1,4 @@
-name:                hs-opentelemetry-span-exporter-in-memory
+name:                hs-opentelemetry-exporter-in-memory
 version:             0.0.1.3
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
@@ -38,4 +38,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-span-exporter-in-memory
+    - hs-opentelemetry-exporter-in-memory

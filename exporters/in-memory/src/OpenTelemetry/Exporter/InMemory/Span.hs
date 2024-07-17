@@ -1,4 +1,4 @@
-module OpenTelemetry.SpanExporter.InMemory (
+module OpenTelemetry.Exporter.InMemory.Span (
   inMemoryChannelExporter,
   inMemoryListExporter,
   module Control.Concurrent.Chan.Unagi,
