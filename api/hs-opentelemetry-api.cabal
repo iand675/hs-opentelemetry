@@ -34,6 +34,8 @@ library
       OpenTelemetry.Context.ThreadLocal
       OpenTelemetry.Contrib.CarryOns
       OpenTelemetry.Contrib.SpanTraversals
+      OpenTelemetry.Exporter
+      OpenTelemetry.Exporter.Span
       OpenTelemetry.Internal.Common.Types
       OpenTelemetry.Internal.Logs.Core
       OpenTelemetry.Internal.Logs.Types
@@ -56,7 +58,6 @@ library
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
       OpenTelemetry.SemanticsConfig
-      OpenTelemetry.SpanExporter
       OpenTelemetry.SpanProcessor
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id

@@ -4,8 +4,8 @@ import Control.Monad (void)
 import Data.Text (Text, unpack)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
+import OpenTelemetry.Exporter.Handle.Span
 import OpenTelemetry.Instrumentation.Hspec (instrumentSpec, wrapSpec)
-import OpenTelemetry.SpanExporter.Handle
 import OpenTelemetry.SpanProcessor.Batch
 import OpenTelemetry.Trace hiding (inSpan)
 import qualified OpenTelemetry.Trace as Trace

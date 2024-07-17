@@ -14,7 +14,7 @@ module OpenTelemetry.Exporter.Handle.Span (
 import Data.IORef
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
-import OpenTelemetry.SpanExporter
+import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Trace.Core
 import System.IO (Handle, hFlush, stderr, stdout)
 

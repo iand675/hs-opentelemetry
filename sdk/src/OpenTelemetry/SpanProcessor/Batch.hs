@@ -32,8 +32,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Vector (Vector)
-import OpenTelemetry.SpanExporter (SpanExporter)
-import qualified OpenTelemetry.SpanExporter as SpanExporter
+import OpenTelemetry.Exporter.Span (SpanExporter)
+import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.SpanProcessor
 import OpenTelemetry.Trace.Core
 import VectorBuilder.Builder as Builder

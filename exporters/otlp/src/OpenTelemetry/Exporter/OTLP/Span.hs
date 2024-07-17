@@ -10,7 +10,7 @@
 -----------------------------------------------------------------------------
 
 {- |
- Module      :  OpenTelemetry.SpanExporter.OTLP
+ Module      :  OpenTelemetry.Exporter.OTLP.Span
  Copyright   :  (c) Ian Duncan, 2021
  License     :  BSD-3
  Description :  OTLP Exporter
@@ -72,8 +72,8 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
+import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Resource
-import OpenTelemetry.SpanExporter
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
 import qualified OpenTelemetry.Trace.Core as OT
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)

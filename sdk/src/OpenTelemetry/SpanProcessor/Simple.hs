@@ -12,7 +12,7 @@ import Control.Exception
 import Control.Monad
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef
-import qualified OpenTelemetry.SpanExporter as SpanExporter
+import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.SpanProcessor
 import OpenTelemetry.Trace.Core (ImmutableSpan, spanTracer, tracerName)
 

@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 
 {- |
- Module      :  OpenTelemetry.SpanExporter
+ Module      :  OpenTelemetry.Exporter.Span
  Copyright   :  (c) Ian Duncan, 2021
  License     :  BSD-3
  Description :  Encode and transmit telemetry to external systems
@@ -15,7 +15,7 @@
 
  The goal of the interface is to minimize burden of implementation for protocol-dependent telemetry exporters. The protocol exporter is expected to be primarily a simple telemetry data encoder and transmitter.
 -}
-module OpenTelemetry.SpanExporter (
+module OpenTelemetry.Exporter.Span (
   SpanExporter (..),
   ExportResult (..),
 ) where

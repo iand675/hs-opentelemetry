@@ -50,7 +50,8 @@ library:
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal
-    - OpenTelemetry.SpanExporter
+    - OpenTelemetry.Exporter.Span
+    - OpenTelemetry.Exporter
     - OpenTelemetry.SpanProcessor
     - OpenTelemetry.Propagator
     - OpenTelemetry.Resource
