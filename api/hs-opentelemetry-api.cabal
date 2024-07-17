@@ -35,14 +35,17 @@ library
       OpenTelemetry.Contrib.CarryOns
       OpenTelemetry.Contrib.SpanTraversals
       OpenTelemetry.Exporter
+      OpenTelemetry.Exporter.LogRecord
       OpenTelemetry.Exporter.Span
       OpenTelemetry.Internal.Common.Types
       OpenTelemetry.Internal.Logs.Core
       OpenTelemetry.Internal.Logs.Types
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
-      OpenTelemetry.LogRecordProcessor
       OpenTelemetry.Logs.Core
+      OpenTelemetry.Processor
+      OpenTelemetry.Processor.LogRecord
+      OpenTelemetry.Processor.Span
       OpenTelemetry.Propagator
       OpenTelemetry.Resource
       OpenTelemetry.Resource.Cloud
@@ -58,7 +61,6 @@ library
       OpenTelemetry.Resource.Telemetry
       OpenTelemetry.Resource.Webengine
       OpenTelemetry.SemanticsConfig
-      OpenTelemetry.SpanProcessor
       OpenTelemetry.Trace.Core
       OpenTelemetry.Trace.Id
       OpenTelemetry.Trace.Id.Generator

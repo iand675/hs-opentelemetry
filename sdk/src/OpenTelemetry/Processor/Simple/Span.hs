@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module OpenTelemetry.SpanProcessor.Simple (
+module OpenTelemetry.Processor.Simple.Span (
   SimpleProcessorConfig (..),
   simpleProcessor,
 ) where
@@ -13,7 +13,7 @@ import Control.Monad
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
-import OpenTelemetry.SpanProcessor
+import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core (ImmutableSpan, spanTracer, tracerName)
 
 

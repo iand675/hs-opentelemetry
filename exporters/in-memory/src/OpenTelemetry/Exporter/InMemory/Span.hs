@@ -8,7 +8,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.Chan.Unagi
 import Control.Monad.IO.Class
 import Data.IORef
-import OpenTelemetry.SpanProcessor
+import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
 
 

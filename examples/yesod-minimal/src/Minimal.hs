@@ -34,9 +34,9 @@ import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
+import OpenTelemetry.Processor.Batch.Span
 import OpenTelemetry.Propagator.W3CBaggage
 import OpenTelemetry.Propagator.W3CTraceContext
-import OpenTelemetry.SpanProcessor.Batch
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO hiding (Handler)

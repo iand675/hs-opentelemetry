@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 
 {- |
- Module      :  OpenTelemetry.SpanProcessor.Batch
+ Module      :  OpenTelemetry.Processor.Batch.Span
  Copyright   :  (c) Ian Duncan, 2021
  License     :  BSD-3
  Description :  Performant exporting of spans in time & space-bounded batches.
@@ -15,7 +15,7 @@
 
  This is an implementation of the Span Processor which create batches of finished spans and passes the export-friendly span data representations to the configured Exporter.
 -}
-module OpenTelemetry.SpanProcessor.Batch (
+module OpenTelemetry.Processor.Batch.Span (
   BatchTimeoutConfig (..),
   batchTimeoutConfig,
   batchProcessor,
@@ -34,7 +34,7 @@ import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Vector (Vector)
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
-import OpenTelemetry.SpanProcessor
+import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder

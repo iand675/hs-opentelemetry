@@ -29,13 +29,17 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Processor.Batch
+      OpenTelemetry.Processor.Batch.LogRecord
+      OpenTelemetry.Processor.Batch.Span
+      OpenTelemetry.Processor.Simple
+      OpenTelemetry.Processor.Simple.LogRecord
+      OpenTelemetry.Processor.Simple.Span
       OpenTelemetry.Resource.Host.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
       OpenTelemetry.Resource.Service.Detector
       OpenTelemetry.Resource.Telemetry.Detector
-      OpenTelemetry.SpanProcessor.Batch
-      OpenTelemetry.SpanProcessor.Simple
       OpenTelemetry.Trace
       OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
@@ -46,8 +50,11 @@ library
     , OpenTelemetry.Context
     , OpenTelemetry.Context.ThreadLocal
     , OpenTelemetry.Exporter.Span
+    , OpenTelemetry.Exporter.LogRecord
     , OpenTelemetry.Exporter
-    , OpenTelemetry.SpanProcessor
+    , OpenTelemetry.Processor.Span
+    , OpenTelemetry.Processor.LogRecord
+    , OpenTelemetry.Processor
     , OpenTelemetry.Propagator
     , OpenTelemetry.Resource
     , OpenTelemetry.Resource.Cloud

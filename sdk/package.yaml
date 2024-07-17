@@ -51,8 +51,11 @@ library:
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal
     - OpenTelemetry.Exporter.Span
+    - OpenTelemetry.Exporter.LogRecord
     - OpenTelemetry.Exporter
-    - OpenTelemetry.SpanProcessor
+    - OpenTelemetry.Processor.Span
+    - OpenTelemetry.Processor.LogRecord
+    - OpenTelemetry.Processor
     - OpenTelemetry.Propagator
     - OpenTelemetry.Resource
     - OpenTelemetry.Resource.Cloud

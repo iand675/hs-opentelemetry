@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 
 {- |
- Module      :  OpenTelemetry.SpanProcessor
+ Module      :  OpenTelemetry.Processor.Span
  Copyright   :  (c) Ian Duncan, 2021
  License     :  BSD-3
  Description :  Hooks for performing actions on the start and end of recording spans
@@ -21,7 +21,7 @@
 
  SDK MUST allow users to implement and configure custom processors and decorate built-in processors for advanced scenarios such as tagging or filtering.
 -}
-module OpenTelemetry.SpanProcessor (
+module OpenTelemetry.Processor.Span (
   SpanProcessor (..),
   ShutdownResult (..),
 ) where
