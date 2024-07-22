@@ -1,4 +1,5 @@
-module OpenTelemetry.Exporter.InMemory (
+module OpenTelemetry.Exporter.InMemory
+  {-# DEPRECATED "use OpenTelemetry.Exporter.InMemory.Span instead" #-} (
   module OpenTelemetry.Exporter.InMemory.Span,
 ) where
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module OpenTelemetry.Processor (
+module OpenTelemetry.Processor
+  {-# DEPRECATED "use OpenTelemetry.Processor.Span instead" #-} (
   Processor,
   SpanProcessor (
     Processor,
@@ -17,6 +18,9 @@ import Data.IORef (IORef)
 import OpenTelemetry.Context (Context)
 import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 import OpenTelemetry.Processor.Span
+
+
+{-# DEPRECATED Processor "use SpanProcessor instead" #-}
 
 
 type Processor = SpanProcessor

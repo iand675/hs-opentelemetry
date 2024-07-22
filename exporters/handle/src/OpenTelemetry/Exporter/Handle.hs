@@ -1,4 +1,5 @@
-module OpenTelemetry.Exporter.Handle (
+module OpenTelemetry.Exporter.Handle
+  {-# DEPRECATED "use OpenTelemetry.Exporter.Handle.Span instead" #-} (
   module OpenTelemetry.Exporter.Handle.Span,
 ) where
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 
-module OpenTelemetry.Exporter (
+module OpenTelemetry.Exporter
+  {-# DEPRECATED "use OpenTelemetry.Exporter.Span instead" #-} (
   Exporter,
   SpanExporter (Exporter, exporterExport, exporterShutdown),
   ExportResult (..),
@@ -11,6 +12,9 @@ import Data.Vector (Vector)
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
 import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
+
+
+{-# DEPRECATED Exporter "use SpanExporter instead" #-}
 
 
 type Exporter a = SpanExporter

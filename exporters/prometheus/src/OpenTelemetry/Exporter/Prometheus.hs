@@ -1,4 +1,5 @@
-module OpenTelemetry.Exporter.Prometheus (
+module OpenTelemetry.Exporter.Prometheus
+  {-# DEPRECATED "use OpenTelemetry.Exporter.Prometheus.Span instead" #-} (
   module OpenTelemetry.Exporter.Prometheus.Span,
 ) where
 
