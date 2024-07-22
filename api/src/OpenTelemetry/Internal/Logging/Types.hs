@@ -218,15 +218,15 @@ data LogRecordArguments = LogRecordArguments
   }
 
 
-emptyLogRecordArguments :: (ToValue body) => body -> LogRecordArguments
-emptyLogRecordArguments body =
+emptyLogRecordArguments :: LogRecordArguments
+emptyLogRecordArguments =
   LogRecordArguments
     { timestamp = Nothing
     , observedTimestamp = Nothing
     , context = Nothing
     , severityText = Nothing
     , severityNumber = Nothing
-    , body = toValue body
+    , body = NullValue
     , attributes = H.empty
     }
 

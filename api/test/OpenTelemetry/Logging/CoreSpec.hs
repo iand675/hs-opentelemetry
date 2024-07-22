@@ -50,7 +50,7 @@ spec = describe "Core" $ do
     it "works" $ do
       lp <- getGlobalLoggerProvider
       let l = makeLogger lp InstrumentationLibrary {libraryName = "exampleLibrary", libraryVersion = "", librarySchemaUrl = "", libraryAttributes = A.emptyAttributes}
-      lr <- emitLogRecord l $ (emptyLogRecordArguments ("" :: LA.AnyValue)) {attributes = H.fromList [("something", "a thing")]}
+      lr <- emitLogRecord l $ emptyLogRecordArguments {attributes = H.fromList [("something", "a thing")]}
 
       addAttribute lr "anotherThing" ("another thing" :: LA.AnyValue)
 
@@ -64,7 +64,7 @@ spec = describe "Core" $ do
     it "works" $ do
       lp <- getGlobalLoggerProvider
       let l = makeLogger lp InstrumentationLibrary {libraryName = "exampleLibrary", libraryVersion = "", librarySchemaUrl = "", libraryAttributes = A.emptyAttributes}
-      lr <- emitLogRecord l $ (emptyLogRecordArguments ("" :: LA.AnyValue)) {attributes = H.fromList [("something", "a thing")]}
+      lr <- emitLogRecord l $ emptyLogRecordArguments {attributes = H.fromList [("something", "a thing")]}
 
       addAttributes lr $
         H.fromList

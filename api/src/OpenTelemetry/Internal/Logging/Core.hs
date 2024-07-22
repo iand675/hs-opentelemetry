@@ -147,7 +147,7 @@ logDroppedAttributes = emitOTelLogRecord H.empty Warn "At least 1 attribute was 
 
 -- | WARNING: this function should only be used to emit logs from the hs-opentelemetry-api library. DO NOT USE this function in any other context.
 emitOTelLogRecord :: (MonadIO m) => H.HashMap Text LA.AnyValue -> SeverityNumber -> Text -> m ReadWriteLogRecord
-emitOTelLogRecord attrs severity body = do
+emitOTelLogRecord attrs severity bodyText = do
   glp <- getGlobalLoggerProvider
   let gl =
         makeLogger glp $
@@ -159,8 +159,9 @@ emitOTelLogRecord attrs severity body = do
             }
 
   emitLogRecord gl $
-    (emptyLogRecordArguments body)
+    emptyLogRecordArguments
       { severityNumber = Just severity
+      , body = toValue bodyText
       , attributes = attrs
       }
 

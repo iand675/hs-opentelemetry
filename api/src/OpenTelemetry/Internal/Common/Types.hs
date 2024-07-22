@@ -89,6 +89,7 @@ data AnyValue
   | ByteStringValue ByteString
   | ArrayValue [AnyValue]
   | HashMapValue (H.HashMap Text AnyValue)
+  | NullValue
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)
 
