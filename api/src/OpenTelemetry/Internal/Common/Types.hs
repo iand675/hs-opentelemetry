@@ -30,7 +30,7 @@ import OpenTelemetry.Attributes (Attributes, emptyAttributes)
  import qualified Data.Text as T
  import Data.Version (showVersion)
  import OpenTelemetry.Attributes (emptyAttributes)
- import Paths_your_package_name
+ import Paths_your_package_name (version)
 
  instrumentationLibrary :: InstrumentationLibrary
  instrumentationLibrary = InstrumentationLibrary

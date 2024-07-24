@@ -36,6 +36,7 @@ library
       OpenTelemetry.Contrib.SpanTraversals
       OpenTelemetry.Exporter
       OpenTelemetry.Internal.Common.Types
+      OpenTelemetry.Internal.Logging.Core
       OpenTelemetry.Internal.Logging.Types
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
@@ -67,6 +68,7 @@ library
   other-modules:
       OpenTelemetry.Context.Types
       OpenTelemetry.Internal.Trace.Types
+      Paths_hs_opentelemetry_api
   hs-source-dirs:
       src
   default-extensions:
