@@ -44,9 +44,6 @@ data Exporter a = Exporter
   }
 
 
-data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
-
-
 data Processor = Processor
   { processorOnStart :: IORef ImmutableSpan -> Context -> IO ()
   -- ^ Called when a span is started. This method is called synchronously on the thread that started the span, therefore it should not block or throw exceptions.
@@ -184,19 +181,6 @@ data SpanArguments = SpanArguments
   , startTime :: Maybe Timestamp
   -- ^ An explicit start time, if the span has already begun.
   }
-
-
--- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
-data FlushResult
-  = -- | One or more spans did not export from all associated exporters
-    -- within the alotted timeframe.
-    FlushTimeout
-  | -- | Flushing spans to all associated exporters succeeded.
-    FlushSuccess
-  | -- | One or more exporters failed to successfully export one or more
-    -- unexported spans.
-    FlushError
-  deriving (Show)
 
 
 {- |
