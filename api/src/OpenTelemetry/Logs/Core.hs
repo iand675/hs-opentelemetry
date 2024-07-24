@@ -20,6 +20,7 @@ module OpenTelemetry.Logs.Core (
   ReadWriteLogRecord,
   IsReadableLogRecord (..),
   IsReadWriteLogRecord (..),
+  ImmutableLogRecord (..),
   LogRecordArguments (..),
   emptyLogRecordArguments,
   AnyValue (..),
