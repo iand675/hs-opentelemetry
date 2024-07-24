@@ -26,5 +26,6 @@ module OpenTelemetry.Processor (
   ShutdownResult (..),
 ) where
 
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Trace.Types
 

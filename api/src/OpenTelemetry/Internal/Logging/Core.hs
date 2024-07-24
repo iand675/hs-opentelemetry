@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.Internal.Logging.Core (
@@ -7,6 +8,8 @@ module OpenTelemetry.Internal.Logging.Core (
   createLoggerProvider,
   setGlobalLoggerProvider,
   getGlobalLoggerProvider,
+  shutdownLoggerProvider,
+  forceFlushLoggerProvider,
   makeLogger,
   emitLogRecord,
   addAttribute,
@@ -17,7 +20,8 @@ module OpenTelemetry.Internal.Logging.Core (
 ) where
 
 import Control.Applicative
-import Control.Monad (void, when)
+import Control.Concurrent.Async
+import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 import Data.Coerce
@@ -27,6 +31,7 @@ import Data.IORef
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import Data.Version (showVersion)
 import GHC.IO (unsafePerformIO)
 import qualified OpenTelemetry.Attributes as A
@@ -41,6 +46,7 @@ import qualified OpenTelemetry.LogAttributes as LA
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
 import Paths_hs_opentelemetry_api (version)
 import System.Clock
+import System.Timeout (timeout)
 
 
 getCurrentTimestamp :: (MonadIO m) => m Timestamp
@@ -55,7 +61,7 @@ data LoggerProviderOptions = LoggerProviderOptions
 
 {- | Options for creating a @LoggerProvider@ with no resources and default limits.
 
- In effect, logging is a no-op when using this configuration.
+ In effect, logging is a no-op when using this configuration and no-op Processors.
 -}
 emptyLoggerProviderOptions :: LoggerProviderOptions
 emptyLoggerProviderOptions =
@@ -69,16 +75,22 @@ emptyLoggerProviderOptions =
 
  You should generally use @getGlobalLoggerProvider@ for most applications.
 -}
-createLoggerProvider :: LoggerProviderOptions -> LoggerProvider
-createLoggerProvider LoggerProviderOptions {..} =
+createLoggerProvider :: [LogRecordProcessor] -> LoggerProviderOptions -> LoggerProvider
+createLoggerProvider ps LoggerProviderOptions {..} =
   LoggerProvider
-    { loggerProviderResource = loggerProviderOptionsResource
+    { loggerProviderProcessors = V.fromList ps
+    , loggerProviderResource = loggerProviderOptionsResource
     , loggerProviderAttributeLimits = loggerProviderOptionsAttributeLimits
     }
 
 
+-- | Logging is no-op when using this @LoggerProvider@ because it has no processors and empty options.
+noOpLoggerProvider :: LoggerProvider
+noOpLoggerProvider = createLoggerProvider [] emptyLoggerProviderOptions
+
+
 globalLoggerProvider :: IORef LoggerProvider
-globalLoggerProvider = unsafePerformIO $ newIORef $ createLoggerProvider emptyLoggerProviderOptions
+globalLoggerProvider = unsafePerformIO $ newIORef noOpLoggerProvider
 {-# NOINLINE globalLoggerProvider #-}
 
 
@@ -96,13 +108,53 @@ setGlobalLoggerProvider :: (MonadIO m) => LoggerProvider -> m ()
 setGlobalLoggerProvider = liftIO . writeIORef globalLoggerProvider
 
 
+{- | This method provides a way for provider to do any cleanup required.
+
+ This will also trigger shutdowns on all internal processors.
+-}
+shutdownLoggerProvider :: (MonadIO m) => LoggerProvider -> m ()
+shutdownLoggerProvider LoggerProvider {loggerProviderProcessors} = liftIO $ do
+  asyncShutdownResults <- V.forM loggerProviderProcessors $ \processor -> do
+    logRecordProcessorShutdown processor
+  mapM_ wait asyncShutdownResults
+
+
+{- | This method provides a way for provider to immediately export all @LogRecord@s that have not yet
+ been exported for all the internal processors.
+-}
+forceFlushLoggerProvider
+  :: (MonadIO m)
+  => LoggerProvider
+  -> Maybe Int
+  -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  -> m FlushResult
+  -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
+forceFlushLoggerProvider LoggerProvider {loggerProviderProcessors} mtimeout = liftIO $ do
+  jobs <- V.forM loggerProviderProcessors $ \processor -> async $ do
+    logRecordProcessorForceFlush processor
+  mresult <-
+    timeout (fromMaybe 5_000_000 mtimeout) $
+      V.foldM
+        ( \status action -> do
+            res <- waitCatch action
+            pure $! case res of
+              Left _err -> FlushError
+              Right _ok -> status
+        )
+        FlushSuccess
+        jobs
+  case mresult of
+    Nothing -> pure FlushTimeout
+    Just res -> pure res
+
+
 makeLogger
   :: LoggerProvider
   -- ^ The @LoggerProvider@ holds the configuration for the @Logger@.
   -> InstrumentationLibrary
   -- ^ The library that the @Logger@ instruments. This uniquely identifies the @Logger@.
   -> Logger
-makeLogger loggerProvider loggerInstrumentationScope = Logger {..}
+makeLogger loggerLoggerProvider loggerInstrumentationScope = Logger {..}
 
 
 createImmutableLogRecord
@@ -166,9 +218,12 @@ emitOTelLogRecord attrs severity bodyText = do
       }
 
 
-{- | Emits a LogRecord with properties specified by the passed in Logger and LogRecordArguments.
+{- | Emits a @LogRecord@ with properties specified by the passed in Logger and LogRecordArguments.
 If observedTimestamp is not set in LogRecordArguments, it will default to the current timestamp.
 If context is not specified in LogRecordArguments it will default to the current context.
+
+The emitted @LogRecord@ will be passed to any @LogRecordProcessor@s registered on the @LoggerProvider@
+that created the @Logger@.
 -}
 emitLogRecord
   :: (MonadIO m)
@@ -176,8 +231,15 @@ emitLogRecord
   -> LogRecordArguments
   -> m ReadWriteLogRecord
 emitLogRecord l args = do
-  ilr <- createImmutableLogRecord (loggerProviderAttributeLimits $ loggerProvider l) args
-  liftIO $ mkReadWriteLogRecord l ilr
+  let LoggerProvider {loggerProviderProcessors, loggerProviderAttributeLimits} = loggerLoggerProvider l
+
+  ilr <- createImmutableLogRecord loggerProviderAttributeLimits args
+  lr <- liftIO $ mkReadWriteLogRecord l ilr
+
+  ctxt <- getContext
+  mapM_ (\processor -> liftIO $ logRecordProcessorOnEmit processor lr ctxt) loggerProviderProcessors
+
+  pure lr
 
 
 {- | Add an attribute to a @LogRecord@.
