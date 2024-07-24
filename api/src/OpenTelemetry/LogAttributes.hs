@@ -7,7 +7,7 @@
 {-# LANGUAGE InstanceSigs #-}
 
 module OpenTelemetry.LogAttributes (
-  LogAttributes,
+  LogAttributes (..),
   emptyAttributes,
   addAttribute,
   addAttributes,
