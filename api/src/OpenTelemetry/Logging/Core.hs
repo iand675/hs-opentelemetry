@@ -13,11 +13,19 @@ module OpenTelemetry.Logging.Core (
   makeLogger,
 
   -- * @LogRecord@ operations
-  LogRecord (..),
+  ReadableLogRecord,
+  ReadWriteLogRecord,
+  IsReadableLogRecord (..),
+  IsReadWriteLogRecord (..),
   LogRecordArguments (..),
+  AnyValue (..),
+  ToValue (..),
   SeverityNumber (..),
   toShortName,
   emitLogRecord,
+  addAttribute,
+  addAttributes,
+  logRecordGetAttributes,
 ) where
 
 import OpenTelemetry.Internal.Common.Types
