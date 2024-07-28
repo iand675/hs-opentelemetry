@@ -63,7 +63,7 @@ inSpan
   -> SpanArguments
   -> m a
   -> m a
-inSpan n args m = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) (const m)
+inSpan n args m = withFrozenCallStack $ OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) (const m)
 
 
 inSpan'
@@ -72,7 +72,7 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' n args f = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) f
+inSpan' n args f = withFrozenCallStack $ OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) f
 
 
 inSpan''
@@ -81,7 +81,7 @@ inSpan''
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan'' n args f = do
+inSpan'' n args f = withFrozenCallStack $ do
   t <- getTracer
   OpenTelemetry.Trace.Core.inSpan'' t n args f
 

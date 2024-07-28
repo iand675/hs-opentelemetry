@@ -159,6 +159,7 @@ import Data.Typeable
 import qualified Data.Vector as V
 import Data.Word (Word64)
 import GHC.Stack
+import qualified GHC.Stack as GHC
 import Network.HTTP.Types
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Attributes as A
@@ -366,7 +367,7 @@ inSpan
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
   -> m a
-inSpan t n args m = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
+inSpan t n args m = withFrozenCallStack $ inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
 
 
 inSpan'
@@ -377,7 +378,7 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' t n args = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
+inSpan' t n args = withFrozenCallStack $ inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
 
 
 inSpan''
@@ -388,11 +389,12 @@ inSpan''
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan'' t n args f = do
+inSpan'' t n args f = withFrozenCallStack $ do
   bracketError
     ( liftIO $ do
         ctx <- getContext
-        s <- createSpanWithoutCallStack t ctx n args
+        codeLocations <- getCallStackLocationAttrs callStack
+        s <- createSpanWithoutCallStack t ctx n (args {attributes = H.union codeLocations (attributes args)})
         adjustContext (insertSpan s)
         pure (lookupSpan ctx, s)
     )
@@ -405,6 +407,34 @@ inSpan'' t n args f = do
           maybe (removeSpan ctx) (`insertSpan` ctx) parent
     )
     (\(_, s) -> f s)
+
+
+{- | Generate OTEL `code` attributes from the CallStack location,
+ according to https://opentelemetry.io/docs/specs/semconv/attributes-registry/code/
+-}
+getCallStackLocationAttrs :: Applicative m => GHC.CallStack -> m (H.HashMap Text Attribute)
+getCallStackLocationAttrs cs = do
+  case locFromCallStack cs of
+    Nothing -> pure H.empty
+    Just loc ->
+      pure $
+        H.fromList
+          [ ("code.filepath", toAttribute $ T.pack $ GHC.srcLocFile loc)
+          , ("code.namespace", toAttribute $ T.pack $ GHC.srcLocPackage loc <> "." <> GHC.srcLocModule loc)
+          , ("code.lineno", toAttribute $ GHC.srcLocStartLine loc)
+          , ("code.column", toAttribute $ GHC.srcLocStartCol loc)
+          , -- TODO: these are non-standard, adjust once there is a standard way to specify an end position
+            ("code.lineno-end", toAttribute $ GHC.srcLocEndLine loc)
+          , ("code.column-end", toAttribute $ GHC.srcLocEndCol loc)
+          -- TODO: can we add code.function somehow?
+          ]
+
+
+-- | Extracts the sourc location from the GHC CallStack, if any.
+locFromCallStack :: GHC.CallStack -> Maybe GHC.SrcLoc
+locFromCallStack cs = case getCallStack cs of
+  ((_, loc) : _) -> Just loc
+  _ -> Nothing
 
 
 {- | Returns whether the the @Span@ is currently recording. If a span
