@@ -9,13 +9,15 @@ Otherwise, the old conventions will be used. The stable conventions will replace
 -}
 module OpenTelemetry.Instrumentation.PostgresqlSimple (
   staticConnectionAttributes,
-  {-
+
   -- * Queries that return results
-    query
-  , query_
+  query,
+  query_,
+
   -- ** Queries taking parser as argument
-  , queryWith
-  , queryWith_
+  queryWith,
+  queryWith_,
+  {-
   -- * Queries that stream results
   , fold
   , foldWithOptions
@@ -151,40 +153,31 @@ pgsSpan conn statement f = do
   let tracer = makeTracer tracerProvider "hs-opentelemetry-postgresql-simple" tracerOptions
   TC.inSpan tracer dbName spanArgs f
 
+
+-- | Instrumented version of 'Simple.query'
+query :: (MonadIO m, ToRow q, FromRow r) => Connection -> Query -> q -> m [r]
+query = queryWith Simple.fromRow
+
+
+-- | Instrumented version of 'Simple.query_'
+query_ :: (MonadIO m, FromRow r) => Connection -> Query -> m [r]
+query_ = queryWith_ Simple.fromRow
+
+
+-- | Instrumented version of 'Simple.queryWith'
+queryWith :: (MonadIO m, ToRow q) => Simple.RowParser r -> Connection -> Query -> q -> m [r]
+queryWith parser conn template qs = liftIO $ do
+  statement <- formatQuery conn template qs
+  pgsSpan conn statement $ Simple.queryWith parser conn template qs
+
+
+-- | Instrumented version of 'Simple.queryWith_'
+queryWith_ :: MonadIO m => Simple.RowParser r -> Connection -> Query -> m [r]
+queryWith_ parser conn query = liftIO $ do
+  statement <- formatQuery conn query ()
+  pgsSpan conn statement $ Simple.queryWith_ parser conn query
+
 {-
--- | Perform a @SELECT@ or other SQL query that is expected to return
--- results. All results are retrieved and converted before this
--- function returns.
---
--- When processing large results, this function will consume a lot of
--- client-side memory.  Consider using 'fold' instead.
---
--- Exceptions that may be thrown:
---
--- * 'FormatError': the query string could not be formatted correctly.
---
--- * 'QueryError': the result contains no columns (i.e. you should be
---   using 'execute' instead of 'query').
---
--- * 'ResultError': result conversion failed.
---
--- * 'SqlError':  the postgresql backend returned an error,  e.g.
---   a syntax or type error,  or an incorrect table or column name.
-query :: (MonadIO m, MonadGetContext m, ToRow q, FromRow r) => Connection -> Query -> q -> m [r]
-query = liftIO $ Simple.query
-
--- | A version of 'query' that does not perform query substitution.
-query_ :: (MonadIO m, MonadGetContext m, FromRow r) => Connection -> Query -> m [r]
-query_ = _
-
--- | A version of 'query' taking parser as argument
-queryWith :: (MonadIO m, MonadGetContext m, ToRow q) => Simple.RowParser r -> Connection -> Query -> q -> m [r]
-queryWith parser conn template qs = _
-
--- | A version of 'query_' taking parser as argument
-queryWith_ :: (MonadIO m, MonadGetContext m) => Simple.RowParser r -> Connection -> Query -> m [r]
-queryWith_ parser conn q = _
-
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. Results are streamed incrementally from the server, and
 -- consumed via a left fold.
