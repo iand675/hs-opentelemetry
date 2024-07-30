@@ -34,10 +34,13 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
   , forEachWith
   , forEachWith_
   , returningWith
+  -}
+
   -- * Statements that do not return results
-  , execute
-  , execute_
-  , executeMany
+  execute,
+  execute_,
+  executeMany,
+  {-
   -- * Reexported functions
   , module X
   -}
@@ -176,6 +179,7 @@ queryWith_ :: MonadIO m => Simple.RowParser r -> Connection -> Query -> m [r]
 queryWith_ parser conn query = liftIO $ do
   statement <- formatQuery conn query ()
   pgsSpan conn statement $ Simple.queryWith_ parser conn query
+
 
 {-
 -- | Perform a @SELECT@ or other SQL query that is expected to return
@@ -347,51 +351,24 @@ returning = _
 -- | A version of 'returning' taking parser as argument
 returningWith :: (MonadIO m, MonadGetContext m, ToRow q) => Simple.RowParser r -> Connection -> Query -> [q] -> m [r]
 returningWith = _
-
--- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
--- expected to return results.
---
--- Returns the number of rows affected.
---
--- Throws 'FormatError' if the query could not be formatted correctly, or
--- a 'SqlError' exception if the backend returns an error.
-execute :: (MonadIO m, MonadGetContext m, ToRow q) => Connection -> Query -> q -> m Int64
-execute conn template qs = _
-
--- | A version of 'execute' that does not perform query substitution.
-execute_ :: (MonadIO m, MonadGetContext m) => Connection -> Query -> m Int64
-execute_ = _
-
--- | Execute a multi-row @INSERT@, @UPDATE@, or other SQL query that is not
--- expected to return results.
---
--- Returns the number of rows affected.   If the list of parameters is empty,
--- this function will simply return 0 without issuing the query to the backend.
--- If this is not desired, consider using the 'Values' constructor instead.
---
--- Throws 'FormatError' if the query could not be formatted correctly, or
--- a 'SqlError' exception if the backend returns an error.
---
--- For example,  here's a command that inserts two rows into a table
--- with two columns:
---
--- @
--- executeMany c [sql|
---     INSERT INTO sometable VALUES (?,?)
---  |] [(1, \"hello\"),(2, \"world\")]
--- @
---
--- Here's an canonical example of a multi-row update command:
---
--- @
--- executeMany c [sql|
---     UPDATE sometable
---        SET y = upd.y
---       FROM (VALUES (?,?)) as upd(x,y)
---      WHERE sometable.x = upd.x
---  |] [(1, \"hello\"),(2, \"world\")]
--- @
-
-executeMany :: (MonadIO m, MonadGetContext m, ToRow q) => Connection -> Query -> [q] -> m Int64
-executeMany = _
 -}
+
+-- | Instrumented version of 'Simple.execute'
+execute :: (MonadIO m, ToRow q) => Connection -> Query -> q -> m Int64
+execute conn template qs = liftIO $ do
+  statement <- formatQuery conn template qs
+  pgsSpan conn statement $ Simple.execute conn template qs
+
+
+-- | Instrumented version of 'Simple.execute_'
+execute_ :: MonadIO m => Connection -> Query -> m Int64
+execute_ conn q = liftIO $ do
+  statement <- formatQuery conn q ()
+  pgsSpan conn statement $ Simple.execute_ conn q
+
+
+-- | Instrumented version of 'Simple.executeMany'
+executeMany :: (MonadIO m, ToRow q) => Connection -> Query -> [q] -> m Int64
+executeMany conn q qs = liftIO $ do
+  statement <- formatMany conn q qs
+  pgsSpan conn statement $ Simple.executeMany conn q qs
