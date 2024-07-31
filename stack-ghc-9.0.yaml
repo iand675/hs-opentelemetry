@@ -97,4 +97,4 @@ extra-deps:
 
 nix:
   enable: true
-  packages: [libffi, mysql80, openssl, pcre, postgresql, zlib, zstd]
+  packages: [libffi, mysql80, openssl, pcre, postgresql, protobuf, zlib, zstd]
