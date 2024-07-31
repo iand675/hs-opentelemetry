@@ -1,7 +1,7 @@
 module OpenTelemetry.Exporter.Zipkin
   {-# DEPRECATED "use OpenTelemetry.Exporter.Zipkin.Span instead" #-} (
-  module OpenTelemetry.Exporter.Zipking.Span,
+  module OpenTelemetry.Exporter.Zipkin.Span,
 ) where
 
-import OpenTelemetry.Exporter.Zipking.Span
+import OpenTelemetry.Exporter.Zipkin.Span
 
