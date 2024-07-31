@@ -86,6 +86,7 @@ data LogRecordExporterInternal = LogRecordExporterInternal
   }
 
 
+-- | @LogRecordExporter@s are an @MVar@ wrapper around @LogRecordExporterInternal@ that prevent @logRecordExporterExport@ from being called concurrently for the same exporter.
 newtype LogRecordExporter = LogRecordExporter {unExporter :: MVar LogRecordExporterInternal}
 
 
