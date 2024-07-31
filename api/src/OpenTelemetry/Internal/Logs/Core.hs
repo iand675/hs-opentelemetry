@@ -21,6 +21,7 @@ module OpenTelemetry.Internal.Logs.Core (
 
 import Control.Applicative
 import Control.Concurrent.Async
+import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
@@ -108,15 +109,36 @@ setGlobalLoggerProvider :: (MonadIO m) => LoggerProvider -> m ()
 setGlobalLoggerProvider = liftIO . writeIORef globalLoggerProvider
 
 
+defaultShutdownTimeout :: Int
+defaultShutdownTimeout = 5_000_000
+
+
 {- | This method provides a way for provider to do any cleanup required.
 
  This will also trigger shutdowns on all internal processors.
 -}
-shutdownLoggerProvider :: (MonadIO m) => LoggerProvider -> m ()
-shutdownLoggerProvider LoggerProvider {loggerProviderProcessors} = liftIO $ do
-  asyncShutdownResults <- V.forM loggerProviderProcessors $ \processor -> do
-    logRecordProcessorShutdown processor
-  mapM_ wait asyncShutdownResults
+shutdownLoggerProvider
+  :: (MonadIO m)
+  => Maybe Int
+  -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  -> LoggerProvider
+  -> m ShutdownResult
+  -- ^ Result that denotes whether the shutdown action succeeded, failed, or timed out.
+shutdownLoggerProvider mtimeout LoggerProvider {loggerProviderProcessors} = liftIO $ do
+  mresult <-
+    timeout (fromMaybe defaultShutdownTimeout mtimeout) $
+      takeWorstShutdownResult
+        <$> forConcurrently
+          loggerProviderProcessors
+          (handle shutdownErrorHandler . logRecordProcessorShutdown)
+
+  case mresult of
+    Nothing -> pure ShutdownTimeout
+    Just res -> pure res
+
+
+defaultForceFlushTimeout :: Int
+defaultForceFlushTimeout = 5_000_000
 
 
 {- | This method provides a way for provider to immediately export all @LogRecord@s that have not yet
@@ -124,25 +146,19 @@ shutdownLoggerProvider LoggerProvider {loggerProviderProcessors} = liftIO $ do
 -}
 forceFlushLoggerProvider
   :: (MonadIO m)
-  => LoggerProvider
-  -> Maybe Int
+  => Maybe Int
   -- ^ Optional timeout in microseconds, defaults to 5,000,000 (5s)
+  -> LoggerProvider
   -> m FlushResult
   -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
-forceFlushLoggerProvider LoggerProvider {loggerProviderProcessors} mtimeout = liftIO $ do
-  jobs <- V.forM loggerProviderProcessors $ \processor -> async $ do
-    logRecordProcessorForceFlush processor
+forceFlushLoggerProvider mtimeout LoggerProvider {loggerProviderProcessors} = liftIO $ do
   mresult <-
-    timeout (fromMaybe 5_000_000 mtimeout) $
-      V.foldM
-        ( \status action -> do
-            res <- waitCatch action
-            pure $! case res of
-              Left _err -> FlushError
-              Right _ok -> status
-        )
-        FlushSuccess
-        jobs
+    timeout (fromMaybe defaultForceFlushTimeout mtimeout) $
+      takeWorstFlushResult
+        <$> forConcurrently
+          loggerProviderProcessors
+          (handle flushErrorHandler . logRecordProcessorForceFlush)
+
   case mresult of
     Nothing -> pure FlushTimeout
     Just res -> pure res

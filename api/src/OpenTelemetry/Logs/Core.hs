@@ -7,7 +7,9 @@ module OpenTelemetry.Logs.Core (
   setGlobalLoggerProvider,
   getGlobalLoggerProvider,
   shutdownLoggerProvider,
+  ShutdownResult (..),
   forceFlushLoggerProvider,
+  FlushResult (..),
 
   -- * @Logger@ operations
   InstrumentationLibrary (..),
@@ -16,10 +18,13 @@ module OpenTelemetry.Logs.Core (
 
   -- * @LogRecord@ operations
   ReadableLogRecord,
+  mkReadableLogRecord,
   ReadWriteLogRecord,
   IsReadableLogRecord (..),
   IsReadWriteLogRecord (..),
+  ImmutableLogRecord (..),
   LogRecordArguments (..),
+  emptyLogRecordArguments,
   AnyValue (..),
   ToValue (..),
   SeverityNumber (..),

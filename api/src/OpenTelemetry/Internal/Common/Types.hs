@@ -10,13 +10,20 @@ module OpenTelemetry.Internal.Common.Types (
   AnyValue (..),
   ToValue (..),
   ShutdownResult (..),
+  shutdownErrorHandler,
+  takeWorstShutdownResult,
+  flushResultToShutdownResult,
   FlushResult (..),
+  flushErrorHandler,
+  takeWorstFlushResult,
+  exportResultToFlushResult,
   ExportResult (..),
 ) where
 
-import Control.Exception (SomeException)
+import Control.Exception (Exception, SomeException)
 import Data.ByteString (ByteString)
 import Data.Data (Data)
+import Data.Foldable (fold, toList)
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
 import Data.Int (Int64)
@@ -159,22 +166,91 @@ instance ToValue AnyValue where
   toValue = id
 
 
-data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
+data ShutdownResult
+  = ShutdownSuccess
+  | ShutdownTimeout
+  | ShutdownError [SomeException]
+
+
+{- | (<>) concatenates the error lists if both arguments are @ShutdownError@, otherwise it returns the worst of the two in this order
+- @ShutdownError@
+- @ShutdownTimeout@
+- @ShutdownSuccess@
+-}
+instance Semigroup ShutdownResult where
+  ShutdownError l <> ShutdownError r = ShutdownError (l <> r)
+  ShutdownError es <> _ = ShutdownError es
+  _ <> ShutdownError es = ShutdownError es
+  ShutdownTimeout <> _ = ShutdownTimeout
+  _ <> ShutdownTimeout = ShutdownTimeout
+  ShutdownSuccess <> ShutdownSuccess = ShutdownSuccess
+
+
+-- | mempty is ShutdownSuccess
+instance Monoid ShutdownResult where
+  mempty = ShutdownSuccess
+
+
+shutdownErrorHandler :: SomeException -> IO ShutdownResult
+shutdownErrorHandler = pure . ShutdownError . pure
+
+
+flushResultToShutdownResult :: FlushResult -> ShutdownResult
+flushResultToShutdownResult FlushSuccess = ShutdownSuccess
+flushResultToShutdownResult FlushTimeout = ShutdownTimeout
+flushResultToShutdownResult (FlushError es) = ShutdownError es
+
+
+takeWorstShutdownResult :: (Foldable t) => t ShutdownResult -> ShutdownResult
+takeWorstShutdownResult = fold
 
 
 -- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logs.forceFlush@
 data FlushResult
-  = -- | One or more spans or @LogRecord@s did not export from all associated exporters
+  = -- | Flushing spans or @LogRecord@s to all associated exporters succeeded.
+    FlushSuccess
+  | -- | One or more spans or @LogRecord@s did not export from all associated exporters
     -- within the alotted timeframe.
     FlushTimeout
-  | -- | Flushing spans or @LogRecord@s to all associated exporters succeeded.
-    FlushSuccess
   | -- | One or more exporters failed to successfully export one or more
     -- unexported spans or @LogRecord@s.
-    FlushError
+    FlushError [SomeException]
   deriving (Show)
+
+
+{- | (<>) concatenates the error lists if both arguments are @FlushError@, otherwise it returns the worst of the two in this order
+- @FlushError@
+- @FlushTimeout@
+- @FlushSuccess@
+-}
+instance Semigroup FlushResult where
+  FlushError l <> FlushError r = FlushError (l <> r)
+  FlushError es <> _ = FlushError es
+  _ <> FlushError es = FlushError es
+  FlushTimeout <> _ = FlushTimeout
+  _ <> FlushTimeout = FlushTimeout
+  FlushSuccess <> FlushSuccess = FlushSuccess
+
+
+-- | mempty is FlushSuccess
+instance Monoid FlushResult where
+  mempty = FlushSuccess
+
+
+flushErrorHandler :: SomeException -> IO FlushResult
+flushErrorHandler = pure . FlushError . pure
+
+
+takeWorstFlushResult :: (Foldable t) => t FlushResult -> FlushResult
+takeWorstFlushResult = fold
+
+
+exportResultToFlushResult :: ExportResult -> FlushResult
+exportResultToFlushResult Success = FlushSuccess
+exportResultToFlushResult (Failure mErr) = FlushError $ toList mErr
 
 
 data ExportResult
   = Success
   | Failure (Maybe SomeException)
+  deriving (Show)
