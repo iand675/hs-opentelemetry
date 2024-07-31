@@ -2,7 +2,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module OpenTelemetry.Internal.Logging.Types (
+module OpenTelemetry.Internal.Logs.Types (
   LogRecordProcessor (..),
   LoggerProvider (..),
   Logger (..),

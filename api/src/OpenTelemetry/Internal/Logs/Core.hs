@@ -2,7 +2,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeApplications #-}
 
-module OpenTelemetry.Internal.Logging.Core (
+module OpenTelemetry.Internal.Logs.Core (
   LoggerProviderOptions (..),
   emptyLoggerProviderOptions,
   createLoggerProvider,
@@ -39,7 +39,7 @@ import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Types
+import OpenTelemetry.Internal.Logs.Types
 import OpenTelemetry.Internal.Trace.Types (SpanContext (..), getSpanContext)
 import OpenTelemetry.LogAttributes (LogAttributes, ToValue)
 import qualified OpenTelemetry.LogAttributes as LA

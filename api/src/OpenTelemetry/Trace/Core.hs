@@ -166,8 +166,8 @@ import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Core (emitOTelLogRecord, logDroppedAttributes)
-import qualified OpenTelemetry.Internal.Logging.Types as SeverityNumber (SeverityNumber (..))
+import OpenTelemetry.Internal.Logs.Core (emitOTelLogRecord, logDroppedAttributes)
+import qualified OpenTelemetry.Internal.Logs.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
 import OpenTelemetry.Propagator (Propagator)
@@ -290,7 +290,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
             when (A.attributesDropped (spanAttributes is) > 0) $ void logDroppedAttributes
 
             s <- newIORef is
-            eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            eResult <- try $ mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
               Left err -> void $ emitOTelLogRecord H.empty SeverityNumber.Error $ T.pack $ show (err :: SomeException)
               Right _ -> pure ()
@@ -574,7 +574,7 @@ endSpan (Span s) mts = liftIO $ do
     let ref = i {spanEnd = spanEnd i <|> Just ts}
     in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
-    eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    eResult <- try $ mapM_ (`spanProcessorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
       Left err -> print (err :: SomeException)
       Right _ -> pure ()
@@ -729,7 +729,7 @@ emptyTracerProviderOptions =
 
  You should generally use 'getGlobalTracerProvider' for most applications.
 -}
-createTracerProvider :: (MonadIO m) => [Processor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: (MonadIO m) => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
   pure $
@@ -848,7 +848,7 @@ defaultSpanArguments =
 shutdownTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
-    processorShutdown processor
+    spanProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
 
@@ -864,7 +864,7 @@ forceFlushTracerProvider
   -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
 forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   jobs <- forM tracerProviderProcessors $ \processor -> async $ do
-    processorForceFlush processor
+    spanProcessorForceFlush processor
   mresult <-
     timeout (fromMaybe 5_000_000 mtimeout) $
       foldM

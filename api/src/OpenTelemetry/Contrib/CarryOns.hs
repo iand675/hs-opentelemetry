@@ -35,11 +35,11 @@ Be cautious about adding too many additional attributes via carry ons. The attri
 and will be discarded if the span has attributes that exceed the configured attribute limits for the configured
 'TracerProvider'.
 -}
-withCarryOnProcessor :: Processor -> Processor
+withCarryOnProcessor :: SpanProcessor -> SpanProcessor
 withCarryOnProcessor p =
-  Processor
-    { processorOnStart = processorOnStart p
-    , processorOnEnd = \spanRef -> do
+  SpanProcessor
+    { spanProcessorOnStart = spanProcessorOnStart p
+    , spanProcessorOnEnd = \spanRef -> do
         ctxt <- getContext
         let carryOns = fromMaybe mempty $ Context.lookup carryOnKey ctxt
         if H.null carryOns
@@ -54,7 +54,7 @@ withCarryOnProcessor p =
                       (spanAttributes is)
                       carryOns
                 }
-        processorOnEnd p spanRef
-    , processorShutdown = processorShutdown p
-    , processorForceFlush = processorForceFlush p
+        spanProcessorOnEnd p spanRef
+    , spanProcessorShutdown = spanProcessorShutdown p
+    , spanProcessorForceFlush = spanProcessorForceFlush p
     }

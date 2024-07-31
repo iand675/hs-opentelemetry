@@ -4,19 +4,19 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:               hs-opentelemetry-exporter-otlp
-version:            0.0.1.5
-synopsis:           OpenTelemetry exporter supporting the standard OTLP protocol
-description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/otlp#readme>
-category:           OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
-homepage:           https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
-author:             Ian Duncan
-maintainer:         ian@iankduncan.com
-copyright:          2021 Ian Duncan
-license:            BSD3
-license-file:       LICENSE
-build-type:         Simple
+name:           hs-opentelemetry-exporter-otlp
+version:        0.0.1.5
+synopsis:       OpenTelemetry exporter supporting the standard OTLP protocol
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/otlp#readme>
+category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan
+maintainer:     ian@iankduncan.com
+copyright:      2021 Ian Duncan
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -28,6 +28,8 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Exporter.OTLP
+      OpenTelemetry.Exporter.OTLP.LogRecord
+      OpenTelemetry.Exporter.OTLP.Span
   other-modules:
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:

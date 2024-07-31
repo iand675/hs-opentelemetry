@@ -9,11 +9,11 @@
 
  SDK MUST allow users to implement and configure custom processors and decorate built-in processors for advanced scenarios such as tagging or filtering.
 -}
-module OpenTelemetry.LogRecordProcessor (
+module OpenTelemetry.Processor.LogRecord (
   LogRecordProcessor (..),
   ShutdownResult (..),
 ) where
 
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Types
+import OpenTelemetry.Internal.Logs.Types
 

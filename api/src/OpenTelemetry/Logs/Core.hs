@@ -1,4 +1,4 @@
-module OpenTelemetry.Logging.Core (
+module OpenTelemetry.Logs.Core (
   -- * @LoggerProvider@ operations
   LoggerProvider (..),
   LoggerProviderOptions (..),
@@ -31,6 +31,6 @@ module OpenTelemetry.Logging.Core (
 ) where
 
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Core
-import OpenTelemetry.Internal.Logging.Types
+import OpenTelemetry.Internal.Logs.Core
+import OpenTelemetry.Internal.Logs.Types
 

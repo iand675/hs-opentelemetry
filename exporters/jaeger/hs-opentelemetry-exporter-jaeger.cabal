@@ -4,17 +4,17 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:               hs-opentelemetry-exporter-jaeger
-version:            0.0.1.0
-description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/jaeger#readme>
-homepage:           https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
-author:             Ian Duncan
-maintainer:         ian@iankduncan.com
-copyright:          2021 Ian Duncan
-license:            BSD3
-license-file:       LICENSE
-build-type:         Simple
+name:           hs-opentelemetry-exporter-jaeger
+version:        0.0.1.0
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/jaeger#readme>
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan
+maintainer:     ian@iankduncan.com
+copyright:      2021 Ian Duncan
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
-      OpenTelemetry.Exporters.Jaeger
+      OpenTelemetry.Exporter.Jaeger
+      OpenTelemetry.Exporter.Jaeger.LogRecord
+      OpenTelemetry.Exporter.Jaeger.Span
   other-modules:
       Paths_hs_opentelemetry_exporter_jaeger
   hs-source-dirs:
