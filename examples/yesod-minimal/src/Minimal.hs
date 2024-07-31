@@ -28,13 +28,13 @@ import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Context (Context, HasContext (..))
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Exporter.OTLP
+import OpenTelemetry.Exporter.OTLP.Span
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
-import OpenTelemetry.Processor.Batch
+import OpenTelemetry.Processor.Batch.Span
 import OpenTelemetry.Propagator.W3CBaggage
 import OpenTelemetry.Propagator.W3CTraceContext
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')

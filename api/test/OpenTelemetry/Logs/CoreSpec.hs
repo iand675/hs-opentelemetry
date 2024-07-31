@@ -1,15 +1,15 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module OpenTelemetry.Logging.CoreSpec where
+module OpenTelemetry.Logs.CoreSpec where
 
 import qualified Data.HashMap.Strict as H
 import Data.IORef
 import qualified Data.Text as T
 import qualified OpenTelemetry.Attributes as A
-import OpenTelemetry.Internal.Logging.Types
+import OpenTelemetry.Internal.Logs.Types
 import qualified OpenTelemetry.LogAttributes as LA
-import OpenTelemetry.Logging.Core
+import OpenTelemetry.Logs.Core
 import OpenTelemetry.Resource
 import OpenTelemetry.Resource.OperatingSystem
 import Test.Hspec

@@ -11,8 +11,10 @@ module OpenTelemetry.Internal.Common.Types (
   ToValue (..),
   ShutdownResult (..),
   FlushResult (..),
+  ExportResult (..),
 ) where
 
+import Control.Exception (SomeException)
 import Data.ByteString (ByteString)
 import Data.Data (Data)
 import qualified Data.HashMap.Strict as H
@@ -160,7 +162,7 @@ instance ToValue AnyValue where
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
 
 
--- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logging.forceFlush@
+-- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logs.forceFlush@
 data FlushResult
   = -- | One or more spans or @LogRecord@s did not export from all associated exporters
     -- within the alotted timeframe.
@@ -171,3 +173,8 @@ data FlushResult
     -- unexported spans or @LogRecord@s.
     FlushError
   deriving (Show)
+
+
+data ExportResult
+  = Success
+  | Failure (Maybe SomeException)
