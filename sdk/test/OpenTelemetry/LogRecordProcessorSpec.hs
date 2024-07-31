@@ -22,7 +22,7 @@ getTestExporter = do
   numExportsRef <- newIORef 0
   shutdownRef <- newIORef False
 
-  let logRecordExporterExportInternal logRecords = do
+  let logRecordExporterArgumentsExport logRecords = do
         shutdown <- readIORef shutdownRef
         if shutdown
           then pure (Failure Nothing)
@@ -31,17 +31,17 @@ getTestExporter = do
 
             pure Success
 
-      logRecordExporterForceFlushInternal = pure FlushSuccess
+      logRecordExporterArgumentsForceFlush = pure FlushSuccess
 
-      logRecordExporterShutdownInternal = do
+      logRecordExporterArgumentsShutdown = do
         writeIORef shutdownRef True
         pure ShutdownSuccess
   testExporter <-
     mkLogRecordExporter $
-      LogRecordExporterInternal
-        { logRecordExporterExportInternal
-        , logRecordExporterForceFlushInternal
-        , logRecordExporterShutdownInternal
+      LogRecordExporterArguments
+        { logRecordExporterArgumentsExport
+        , logRecordExporterArgumentsForceFlush
+        , logRecordExporterArgumentsShutdown
         }
   pure
     ( numExportsRef
@@ -53,21 +53,21 @@ getTestExporterWithoutShutdown :: IO (IORef Int, LogRecordExporter)
 getTestExporterWithoutShutdown = do
   numExportsRef <- newIORef 0
 
-  let logRecordExporterExportInternal logRecords = do
+  let logRecordExporterArgumentsExport logRecords = do
         modifyIORef numExportsRef $ (+) $ V.length $ logRecords
 
         pure Success
 
-      logRecordExporterForceFlushInternal = pure FlushSuccess
+      logRecordExporterArgumentsForceFlush = pure FlushSuccess
 
-      logRecordExporterShutdownInternal = pure ShutdownSuccess
+      logRecordExporterArgumentsShutdown = pure ShutdownSuccess
 
   testExporter <-
     mkLogRecordExporter $
-      LogRecordExporterInternal
-        { logRecordExporterExportInternal
-        , logRecordExporterForceFlushInternal
-        , logRecordExporterShutdownInternal
+      LogRecordExporterArguments
+        { logRecordExporterArgumentsExport
+        , logRecordExporterArgumentsForceFlush
+        , logRecordExporterArgumentsShutdown
         }
   pure
     ( numExportsRef
