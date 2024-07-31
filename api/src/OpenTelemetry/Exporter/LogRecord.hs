@@ -1,6 +1,6 @@
 module OpenTelemetry.Exporter.LogRecord (
   LogRecordExporter,
-  LogRecordExporterInternal (..),
+  LogRecordExporterArguments (..),
   mkLogRecordExporter,
   logRecordExporterExport,
   logRecordExporterForceFlush,
@@ -10,7 +10,7 @@ module OpenTelemetry.Exporter.LogRecord (
 
 import OpenTelemetry.Internal.Logs.Types (
   LogRecordExporter,
-  LogRecordExporterInternal (..),
+  LogRecordExporterArguments (..),
   logRecordExporterExport,
   logRecordExporterForceFlush,
   logRecordExporterShutdown,

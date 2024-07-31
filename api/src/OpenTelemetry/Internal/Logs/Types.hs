@@ -2,7 +2,7 @@
 
 module OpenTelemetry.Internal.Logs.Types (
   LogRecordExporter,
-  LogRecordExporterInternal (..),
+  LogRecordExporterArguments (..),
   mkLogRecordExporter,
   logRecordExporterExport,
   logRecordExporterForceFlush,
@@ -39,71 +39,78 @@ import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
 
 
-{- | @LogRecordExporter@ defines the interface that protocol-specific exporters must implement so that they can be plugged into OpenTelemetry SDK and support sending of telemetry data.
-
-The goal of the interface is to minimize burden of implementation for protocol-dependent telemetry exporters. The protocol exporter is expected to be primarily a simple telemetry data encoder and transmitter.
--}
-data LogRecordExporterInternal = LogRecordExporterInternal
-  { logRecordExporterExportInternal :: Vector ReadableLogRecord -> IO ExportResult
-  -- ^ Exports a batch of ReadableLogRecords. Protocol exporters that will implement this function are typically expected to serialize
-  -- and transmit the data to the destination.
-  --
-  -- Export will never be called concurrently for the same exporter instance. Depending on the implementation the result of the export
-  -- may be returned to the Processor not in the return value of the call to Export but in a language specific way for signaling completion
-  -- of an asynchronous task. This means that while an instance of an exporter will never have it Export called concurrently it does not
-  -- mean that the task of exporting can not be done concurrently. How this is done is outside the scope of this specification.
-  -- Each implementation MUST document the concurrency characteristics the SDK requires of the exporter.
-  --
-  -- Export MUST NOT block indefinitely, there MUST be a reasonable upper limit after which the call must time out with an error result (Failure).
-  --
-  -- Concurrent requests and retry logic is the responsibility of the exporter. The default SDK’s LogRecordProcessors SHOULD NOT implement
-  -- retry logic, as the required logic is likely to depend heavily on the specific protocol and backend the logs are being sent to.
-  -- For example, the OpenTelemetry Protocol (OTLP) specification defines logic for both sending concurrent requests and retrying requests.
-  --
-  -- Result:
-  -- Success - The batch has been successfully exported. For protocol exporters this typically means that the data is sent over the wire and delivered to the destination server.
-  -- Failure - exporting failed. The batch must be dropped. For example, this can happen when the batch contains bad data and cannot be serialized.
-  , logRecordExporterForceFlushInternal :: IO ()
-  -- ^ This is a hint to ensure that the export of any ReadableLogRecords the exporter has received prior to the call to ForceFlush SHOULD
-  -- be completed as soon as possible, preferably before returning from this method.
-  --
-  -- ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-  --
-  -- ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend
-  -- the process after an invocation, but before the exporter exports the ReadlableLogRecords.
-  --
-  -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which
-  -- notifies the caller via a callback or an event. OpenTelemetry SDK authors MAY decide if they want to make the flush timeout configurable.
-  , logRecordExporterShutdownInternal :: IO ()
-  -- ^
-  -- Shuts down the exporter. Called when SDK is shut down. This is an opportunity for exporter to do any cleanup required.
-  --
-  -- Shutdown SHOULD be called only once for each LogRecordExporter instance. After the call to Shutdown subsequent calls to Export are not
-  -- allowed and SHOULD return a Failure result.
-  --
-  -- Shutdown SHOULD NOT block indefinitely (e.g. if it attempts to flush the data and the destination is unavailable).
-  -- OpenTelemetry SDK authors MAY decide if they want to make the shutdown timeout configurable.
+-- | See @LogRecordExporter@ for documentation
+data LogRecordExporterArguments = LogRecordExporterArguments
+  { logRecordExporterArgumentsExport :: Vector ReadableLogRecord -> IO ExportResult
+  -- ^ See @logRecordExporterExport@ for documentation
+  , logRecordExporterArgumentsForceFlush :: IO ()
+  -- ^ See @logRecordExporterArgumentsForceFlush@ for documentation
+  , logRecordExporterArgumentsShutdown :: IO ()
+  -- ^ See @logRecordExporterArgumentsShutdown@ for documentation
   }
 
 
--- | @LogRecordExporter@s are an @MVar@ wrapper around @LogRecordExporterInternal@ that prevent @logRecordExporterExport@ from being called concurrently for the same exporter.
-newtype LogRecordExporter = LogRecordExporter {unExporter :: MVar LogRecordExporterInternal}
+{- | @LogRecordExporter@ defines the interface that protocol-specific exporters must implement so that they can be plugged into OpenTelemetry SDK and support sending of telemetry data.
+
+The goal of the interface is to minimize burden of implementation for protocol-dependent telemetry exporters. The protocol exporter is expected to be primarily a simple telemetry data encoder and transmitter.
+
+@LogRecordExporter@s provide thread safety when calling @logRecordExporterExport@
+-}
+newtype LogRecordExporter = LogRecordExporter {unExporter :: MVar LogRecordExporterArguments}
 
 
-mkLogRecordExporter :: LogRecordExporterInternal -> IO LogRecordExporter
+mkLogRecordExporter :: LogRecordExporterArguments -> IO LogRecordExporter
 mkLogRecordExporter = fmap LogRecordExporter . newMVar
 
 
+{- | Exports a batch of ReadableLogRecords. Protocol exporters that will implement this function are typically expected to serialize
+and transmit the data to the destination.
+
+Export will never be called concurrently for the same exporter instance. Depending on the implementation the result of the export
+may be returned to the Processor not in the return value of the call to Export but in a language specific way for signaling completion
+of an asynchronous task. This means that while an instance of an exporter will never have it Export called concurrently it does not
+mean that the task of exporting can not be done concurrently. How this is done is outside the scope of this specification.
+Each implementation MUST document the concurrency characteristics the SDK requires of the exporter.
+
+Export MUST NOT block indefinitely, there MUST be a reasonable upper limit after which the call must time out with an error result (Failure).
+
+Concurrent requests and retry logic is the responsibility of the exporter. The default SDK’s LogRecordProcessors SHOULD NOT implement
+retry logic, as the required logic is likely to depend heavily on the specific protocol and backend the logs are being sent to.
+For example, the OpenTelemetry Protocol (OTLP) specification defines logic for both sending concurrent requests and retrying requests.
+
+Result:
+Success - The batch has been successfully exported. For protocol exporters this typically means that the data is sent over the wire and delivered to the destination server.
+Failure - exporting failed. The batch must be dropped. For example, this can happen when the batch contains bad data and cannot be serialized.
+-}
 logRecordExporterExport :: LogRecordExporter -> Vector ReadableLogRecord -> IO ExportResult
-logRecordExporterExport exporter lrs = withMVar (unExporter exporter) $ \e -> logRecordExporterExportInternal e lrs
+logRecordExporterExport exporter lrs = withMVar (unExporter exporter) $ \e -> logRecordExporterArgumentsExport e lrs
 
 
+{- | This is a hint to ensure that the export of any ReadableLogRecords the exporter has received prior to the call to ForceFlush SHOULD
+be completed as soon as possible, preferably before returning from this method.
+
+ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+
+ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend
+the process after an invocation, but before the exporter exports the ReadlableLogRecords.
+
+ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which
+notifies the caller via a callback or an event. OpenTelemetry SDK authors MAY decide if they want to make the flush timeout configurable.
+-}
 logRecordExporterForceFlush :: LogRecordExporter -> IO ()
-logRecordExporterForceFlush = flip withMVar logRecordExporterForceFlushInternal . unExporter
+logRecordExporterForceFlush = flip withMVar logRecordExporterArgumentsForceFlush . unExporter
 
 
+{- | Shuts down the exporter. Called when SDK is shut down. This is an opportunity for exporter to do any cleanup required.
+
+Shutdown SHOULD be called only once for each LogRecordExporter instance. After the call to Shutdown subsequent calls to Export are not
+allowed and SHOULD return a Failure result.
+
+Shutdown SHOULD NOT block indefinitely (e.g. if it attempts to flush the data and the destination is unavailable).
+OpenTelemetry SDK authors MAY decide if they want to make the shutdown timeout configurable.
+-}
 logRecordExporterShutdown :: LogRecordExporter -> IO ()
-logRecordExporterShutdown = flip withMVar logRecordExporterShutdownInternal . unExporter
+logRecordExporterShutdown = flip withMVar logRecordExporterArgumentsShutdown . unExporter
 
 
 {- | LogRecordProcessor is an interface which allows hooks for LogRecord emitting.
