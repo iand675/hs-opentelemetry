@@ -871,7 +871,7 @@ forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
         ( \status action -> do
             res <- waitCatch action
             pure $! case res of
-              Left _err -> FlushError
+              Left err -> FlushError $ pure err
               Right _ok -> status
         )
         FlushSuccess

@@ -1,10 +1,10 @@
 module OpenTelemetry.Processor.LogRecord (
   LogRecordProcessor (..),
   FlushResult (..),
-  takeWorseFlushResult,
+  flushErrorHandler,
   takeWorstFlushResult,
   ShutdownResult (..),
-  takeWorseShutdownResult,
+  shutdownErrorHandler,
   takeWorstShutdownResult,
   flushResultToShutdownResult,
 ) where

@@ -28,7 +28,8 @@ simpleProcessor exporter = do
       (logRecordExporterExport exporter . V.singleton)
 
   let logRecordProcessorForceFlush =
-        ( do
+        handle flushErrorHandler $
+          do
             chanFlushRes <-
               takeWorstFlushResult
                 . fmap exportResultToFlushResult
@@ -36,20 +37,18 @@ simpleProcessor exporter = do
 
             exporterFlushRes <- logRecordExporterForceFlush exporter
 
-            pure $ takeWorseFlushResult exporterFlushRes chanFlushRes
-        )
-          `catch` \(SomeException _) -> pure FlushError
+            pure $ exporterFlushRes <> chanFlushRes
 
   pure $
     LogRecordProcessor
       { logRecordProcessorOnEmit = \lr _ -> writeChan inChan $ mkReadableLogRecord lr
-      , logRecordProcessorShutdown = mask $ \restore -> do
+      , logRecordProcessorShutdown = handle shutdownErrorHandler $ mask $ \restore -> do
           cancel exportWorker
           flushResult <- restore logRecordProcessorForceFlush
 
           shutdownResult <- logRecordExporterShutdown exporter
 
-          pure $ takeWorseShutdownResult shutdownResult $ flushResultToShutdownResult flushResult
+          pure $ (shutdownResult <>) $ flushResultToShutdownResult flushResult
       , logRecordProcessorForceFlush
       }
   where

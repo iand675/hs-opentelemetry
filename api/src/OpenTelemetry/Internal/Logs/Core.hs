@@ -130,7 +130,7 @@ shutdownLoggerProvider mtimeout LoggerProvider {loggerProviderProcessors} = lift
       takeWorstShutdownResult
         <$> forConcurrently
           loggerProviderProcessors
-          (\lrp -> logRecordProcessorShutdown lrp `catch` \(SomeException _) -> pure ShutdownFailure)
+          (handle shutdownErrorHandler . logRecordProcessorShutdown)
 
   case mresult of
     Nothing -> pure ShutdownTimeout
@@ -157,7 +157,7 @@ forceFlushLoggerProvider mtimeout LoggerProvider {loggerProviderProcessors} = li
       takeWorstFlushResult
         <$> forConcurrently
           loggerProviderProcessors
-          (\lrp -> logRecordProcessorForceFlush lrp `catch` \(SomeException _) -> pure FlushError)
+          (handle flushErrorHandler . logRecordProcessorForceFlush)
 
   case mresult of
     Nothing -> pure FlushTimeout

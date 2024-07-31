@@ -343,8 +343,8 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
                   ShutdownTimeout
                 Just er ->
                   case er of
-                    Left _ ->
-                      ShutdownFailure
+                    Left e ->
+                      ShutdownError $ pure e
                     Right _ ->
                       ShutdownSuccess
       }

@@ -7,7 +7,9 @@ module OpenTelemetry.Logs.Core (
   setGlobalLoggerProvider,
   getGlobalLoggerProvider,
   shutdownLoggerProvider,
+  ShutdownResult (..),
   forceFlushLoggerProvider,
+  FlushResult (..),
 
   -- * @Logger@ operations
   InstrumentationLibrary (..),

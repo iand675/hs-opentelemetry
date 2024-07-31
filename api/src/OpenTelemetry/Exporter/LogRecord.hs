@@ -7,11 +7,11 @@ module OpenTelemetry.Exporter.LogRecord (
   logRecordExporterShutdown,
   ExportResult (..),
   FlushResult (..),
-  takeWorseFlushResult,
+  flushErrorHandler,
   takeWorstFlushResult,
   exportResultToFlushResult,
   ShutdownResult (..),
-  takeWorseShutdownResult,
+  shutdownErrorHandler,
   takeWorstShutdownResult,
   flushResultToShutdownResult,
 ) where
