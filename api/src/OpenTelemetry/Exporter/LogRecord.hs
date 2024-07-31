@@ -1,8 +1,20 @@
 module OpenTelemetry.Exporter.LogRecord (
-  LogRecordExporter (..),
+  LogRecordExporter,
+  LogRecordExporterInternal (..),
+  mkLogRecordExporter,
+  logRecordExporterExport,
+  logRecordExporterForceFlush,
+  logRecordExporterShutdown,
   ShutdownResult (..),
 ) where
 
-import OpenTelemetry.Internal.Logs.Types (LogRecordExporter (..))
+import OpenTelemetry.Internal.Logs.Types (
+  LogRecordExporter,
+  LogRecordExporterInternal (..),
+  logRecordExporterExport,
+  logRecordExporterForceFlush,
+  logRecordExporterShutdown,
+  mkLogRecordExporter,
+ )
 import OpenTelemetry.Processor.LogRecord (ShutdownResult (..))
 

@@ -1,9 +1,12 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module OpenTelemetry.Internal.Logs.Types (
-  LogRecordExporter (..),
+  LogRecordExporter,
+  LogRecordExporterInternal (..),
+  mkLogRecordExporter,
+  logRecordExporterExport,
+  logRecordExporterForceFlush,
+  logRecordExporterShutdown,
   LogRecordProcessor (..),
   LoggerProvider (..),
   Logger (..),
@@ -20,6 +23,7 @@ module OpenTelemetry.Internal.Logs.Types (
   toShortName,
 ) where
 
+import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Concurrent.Async
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
@@ -39,8 +43,8 @@ import OpenTelemetry.Resource (MaterializedResources)
 
 The goal of the interface is to minimize burden of implementation for protocol-dependent telemetry exporters. The protocol exporter is expected to be primarily a simple telemetry data encoder and transmitter.
 -}
-data LogRecordExporter = LogRecordExporter
-  { logRecordExporterExport :: Vector ReadableLogRecord -> IO ExportResult
+data LogRecordExporterInternal = LogRecordExporterInternal
+  { logRecordExporterExportInternal :: Vector ReadableLogRecord -> IO ExportResult
   -- ^ Exports a batch of ReadableLogRecords. Protocol exporters that will implement this function are typically expected to serialize
   -- and transmit the data to the destination.
   --
@@ -59,7 +63,7 @@ data LogRecordExporter = LogRecordExporter
   -- Result:
   -- Success - The batch has been successfully exported. For protocol exporters this typically means that the data is sent over the wire and delivered to the destination server.
   -- Failure - exporting failed. The batch must be dropped. For example, this can happen when the batch contains bad data and cannot be serialized.
-  , logRecordExporterForceFlush :: IO ()
+  , logRecordExporterForceFlushInternal :: IO ()
   -- ^ This is a hint to ensure that the export of any ReadableLogRecords the exporter has received prior to the call to ForceFlush SHOULD
   -- be completed as soon as possible, preferably before returning from this method.
   --
@@ -70,7 +74,7 @@ data LogRecordExporter = LogRecordExporter
   --
   -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which
   -- notifies the caller via a callback or an event. OpenTelemetry SDK authors MAY decide if they want to make the flush timeout configurable.
-  , logRecordExporterShutdown :: IO ()
+  , logRecordExporterShutdownInternal :: IO ()
   -- ^
   -- Shuts down the exporter. Called when SDK is shut down. This is an opportunity for exporter to do any cleanup required.
   --
@@ -80,6 +84,25 @@ data LogRecordExporter = LogRecordExporter
   -- Shutdown SHOULD NOT block indefinitely (e.g. if it attempts to flush the data and the destination is unavailable).
   -- OpenTelemetry SDK authors MAY decide if they want to make the shutdown timeout configurable.
   }
+
+
+newtype LogRecordExporter = LogRecordExporter {unExporter :: MVar LogRecordExporterInternal}
+
+
+mkLogRecordExporter :: LogRecordExporterInternal -> IO LogRecordExporter
+mkLogRecordExporter = fmap LogRecordExporter . newMVar
+
+
+logRecordExporterExport :: LogRecordExporter -> Vector ReadableLogRecord -> IO ExportResult
+logRecordExporterExport exporter lrs = withMVar (unExporter exporter) $ \e -> logRecordExporterExportInternal e lrs
+
+
+logRecordExporterForceFlush :: LogRecordExporter -> IO ()
+logRecordExporterForceFlush = flip withMVar logRecordExporterForceFlushInternal . unExporter
+
+
+logRecordExporterShutdown :: LogRecordExporter -> IO ()
+logRecordExporterShutdown = flip withMVar logRecordExporterShutdownInternal . unExporter
 
 
 {- | LogRecordProcessor is an interface which allows hooks for LogRecord emitting.
