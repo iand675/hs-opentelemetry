@@ -2,8 +2,21 @@ cabal-version: 2.4
 
 name: hs-opentelemetry-propagator-datadog
 version: 0.0.0.0
+x-revision: 1
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
+copyright: Kazuki Okamoto (岡本和樹), HERP, Inc.
+license: BSD-3-Clause
+license-file: LICENSE
+category: Telemetry
+homepage: https://github.com/iand675/hs-opentelemetry
+bug-reports: https://github.com/iand675/hs-opentelemetry/issues
+synopsis: Datadog Propagator for OpenTelemetry
+description: This package provides a Datadog style propagator for hs-opentelemetry suite.
+
+extra-doc-files:
+  CHANGELOG.md
+  LICENSE
 
 common common
   build-depends: base >= 4 && < 5
@@ -17,12 +30,12 @@ library
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Propagator.Datadog
                    OpenTelemetry.Propagator.Datadog.Internal
-  build-depends: bytestring,
-                 hs-opentelemetry-api,
-                 hs-opentelemetry-sdk,
-                 http-types,
-                 primitive,
-                 text
+  build-depends: bytestring < 0.12,
+                 hs-opentelemetry-api >= 0.1 && < 0.2,
+                 hs-opentelemetry-sdk >= 0.0 && < 0.1,
+                 http-types < 0.13,
+                 primitive < 0.9,
+                 text < 1.3,
   ghc-options: -Wcompat
                -Wno-name-shadowing
   if impl(ghc >= 6.4)
