@@ -1,0 +1,45 @@
+cabal-version: 1.12
+
+name: yesod-subsite
+version: 0.0.0
+build-type: Simple
+
+executable yesod-subsite
+  main-is: main.hs
+  other-modules: Subsite
+                 Subsite.Data
+  hs-source-dirs: src
+  build-depends: base,
+                 containers,
+                 hs-opentelemetry-instrumentation-wai,
+                 hs-opentelemetry-instrumentation-yesod,
+                 hs-opentelemetry-sdk,
+                 text,
+                 unliftio,
+                 warp,
+                 yesod-core
+  ghc-options: -threaded
+               -with-rtsopts=-N
+               -Wall
+               -Wcompat
+               -Widentities
+               -Wincomplete-record-updates
+               -Wincomplete-uni-patterns
+               -Wmissing-export-lists
+               -Wmissing-exported-signatures
+               -Wmissing-home-modules
+               -Wmissing-import-lists
+               -Wmissing-export-lists
+               -Wmonomorphism-restriction
+               -Wno-name-shadowing
+               -Wpartial-fields
+               -Wredundant-constraints
+               -Wunused-packages
+  if impl(ghc >= 9.0)
+    ghc-options: -Winvalid-haddock
+  if impl(ghc >= 9.2)
+    ghc-options: -Wmissing-kind-signatures
+                 -Woperator-whitespace
+                 -Wredundant-bang-patterns
+
+  default-language: Haskell2010

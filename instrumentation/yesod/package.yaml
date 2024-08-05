@@ -20,6 +20,7 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
+- containers
 - mtl
 - microlens
 - yesod-core
@@ -28,6 +29,7 @@ dependencies:
 - unliftio
 - text
 - template-haskell
+- vault
 - wai
 - unordered-containers
 
