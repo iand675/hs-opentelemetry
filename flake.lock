@@ -368,17 +368,17 @@
     "otlp-protobufs": {
       "flake": false,
       "locked": {
-        "lastModified": 1633637899,
-        "narHash": "sha256-gQB+H2TfZxCV4ldtLJrGJ4vzTB33sdmv06b7gFDrWKk=",
+        "lastModified": 1659548469,
+        "narHash": "sha256-Rdc2fTnsmi0BfRLRDvtNeTLMZirYhVhDVYFx1PV9Q78=",
         "owner": "open-telemetry",
         "repo": "opentelemetry-proto",
-        "rev": "b43e9b18b76abf3ee040164b55b9c355217151f3",
+        "rev": "6459e1aae1c22e273ac92be86016f0ae55a2430a",
         "type": "github"
       },
       "original": {
         "owner": "open-telemetry",
+        "ref": "v0.19.0",
         "repo": "opentelemetry-proto",
-        "rev": "b43e9b18b76abf3ee040164b55b9c355217151f3",
         "type": "github"
       }
     },
