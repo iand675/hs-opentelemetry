@@ -88,9 +88,16 @@
               #   devenvRootFileContent = builtins.readFile devenv-root.outPath;
               # in
               #   pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
-              # packages = with pkgs; [
-              #   ghciwatch
-              # ];
+              packages = with pkgs; [
+                libffi
+                mysql80
+                openssl
+                pcre
+                postgresql
+                protobuf
+                zlib
+                zstd
+              ];
 
               dotenv.enable = true;
 
