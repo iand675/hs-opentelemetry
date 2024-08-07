@@ -7,7 +7,7 @@ module OpenTelemetry.LogAttributes (
   emptyAttributes,
   addAttribute,
   addAttributes,
-  getAttributes,
+  getAttributeMap,
   lookupAttribute,
   AnyValue (..),
   ToValue (..),
@@ -72,8 +72,8 @@ addAttributes AttributeLimits {..} LogAttributes {..} attrs = case attributeCoun
 {-# INLINE addAttributes #-}
 
 
-getAttributes :: LogAttributes -> (Int, H.HashMap Text AnyValue)
-getAttributes LogAttributes {..} = (attributesCount, attributes)
+getAttributeMap :: LogAttributes -> (Int, H.HashMap Text AnyValue)
+getAttributeMap LogAttributes {..} = (attributesCount, attributes)
 
 
 lookupAttribute :: LogAttributes -> Text -> Maybe AnyValue

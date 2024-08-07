@@ -69,6 +69,8 @@ extra-deps:
 - persistent-postgresql-2.13.4.0
 - proto-lens-0.7.1.1
 - proto-lens-runtime-0.7.0.2
+- proto-lens-protoc-0.8.0.1@sha256:1a3cad568151d028079281db17ed9c07ebfad7db24d51b184357ef3abcc9a361,2235
+- proto-lens-setup-0.4.0.8@sha256:dd5622c949c17b72abe72a3f8e52638318e0e9ce157092ff3ae9de0c57b4f036,3128
 # just for testing
 # - mwc-random-0.14.0.0
 # - random-1.1

@@ -24,16 +24,25 @@
  - Attribute values expressing a numerical value of zero, an empty string, or an empty array are considered meaningful and MUST be stored and passed on to processors / exporters.
 -}
 module OpenTelemetry.Attributes (
-  Attributes (attributesDropped),
+  Attributes,
   emptyAttributes,
   addAttribute,
+  addAttributeByKey,
   addAttributes,
-  getAttributes,
   lookupAttribute,
+  lookupAttributeByKey,
+  getAttributeMap,
+  getCount,
+  getDropped,
   Attribute (..),
   ToAttribute (..),
+  FromAttribute (..),
   PrimitiveAttribute (..),
   ToPrimitiveAttribute (..),
+  FromPrimitiveAttribute (..),
+  Map.AttributeMap,
+  Key (..),
+  module Key,
 
   -- * Attribute limits
   AttributeLimits (..),
@@ -47,11 +56,12 @@ module OpenTelemetry.Attributes (
 import Data.Data (Data)
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
-import Data.Int (Int64)
-import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import OpenTelemetry.Attributes.Attribute (Attribute (..), FromAttribute (..), FromPrimitiveAttribute (..), PrimitiveAttribute (..), ToAttribute (..), ToPrimitiveAttribute (..))
+import OpenTelemetry.Attributes.Key as Key
+import qualified OpenTelemetry.Attributes.Map as Map
 
 
 {- | Default attribute limits used in the global attribute limit configuration if no environment variables are set.
@@ -70,7 +80,7 @@ defaultAttributeLimits =
 
 
 data Attributes = Attributes
-  { attributes :: !(H.HashMap Text Attribute)
+  { attributeMap :: !Map.AttributeMap
   , attributesCount :: {-# UNPACK #-} !Int
   , attributesDropped :: {-# UNPACK #-} !Int
   }
@@ -89,12 +99,16 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
   Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ ->
     if newCount > limit_
-      then Attributes attributes attributesCount (attributesDropped + 1)
+      then Attributes attributeMap attributesCount (attributesDropped + 1)
       else Attributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.insert k (maybe id limitLengths attributeLengthLimit $ toAttribute v) attributes
+    newAttrs = H.insert k (maybe id limitLengths attributeLengthLimit $ toAttribute v) attributeMap
     newCount = H.size newAttrs
 {-# INLINE addAttribute #-}
+
+
+addAttributeByKey :: (ToAttribute a) => AttributeLimits -> Attributes -> Key a -> a -> Attributes
+addAttributeByKey limits attrs (Key k) !v = addAttribute limits attrs k v
 
 
 addAttributes :: (ToAttribute a) => AttributeLimits -> Attributes -> H.HashMap Text a -> Attributes
@@ -102,10 +116,10 @@ addAttributes AttributeLimits {..} Attributes {..} attrs = case attributeCountLi
   Nothing -> Attributes newAttrs newCount attributesDropped
   Just limit_ ->
     if newCount > limit_
-      then Attributes attributes attributesCount (attributesDropped + H.size attrs)
+      then Attributes attributeMap attributesCount (attributesDropped + H.size attrs)
       else Attributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.union attributes $ H.map (maybe id limitLengths attributeLengthLimit . toAttribute) attrs
+    newAttrs = H.union attributeMap $ H.map (maybe id limitLengths attributeLengthLimit . toAttribute) attrs
     newCount = H.size newAttrs
 {-# INLINE addAttributes #-}
 
@@ -120,12 +134,24 @@ limitLengths limit (AttributeValue val) = AttributeValue $ limitPrimAttr limit v
 limitLengths limit (AttributeArray arr) = AttributeArray $ fmap (limitPrimAttr limit) arr
 
 
-getAttributes :: Attributes -> (Int, H.HashMap Text Attribute)
-getAttributes Attributes {..} = (attributesCount, attributes)
+getAttributeMap :: Attributes -> Map.AttributeMap
+getAttributeMap Attributes {..} = attributeMap
+
+
+getCount :: Attributes -> Int
+getCount Attributes {..} = attributesCount
+
+
+getDropped :: Attributes -> Int
+getDropped Attributes {..} = attributesDropped
 
 
 lookupAttribute :: Attributes -> Text -> Maybe Attribute
-lookupAttribute Attributes {..} k = H.lookup k attributes
+lookupAttribute Attributes {..} k = H.lookup k attributeMap
+
+
+lookupAttributeByKey :: FromAttribute a => Attributes -> Key a -> Maybe a
+lookupAttributeByKey Attributes {..} k = Map.lookupByKey k attributeMap
 
 
 {- | It is possible when adding attributes that a programming error might cause too many
@@ -143,128 +169,11 @@ data AttributeLimits = AttributeLimits
   deriving anyclass (Hashable)
 
 
--- | Convert a Haskell value to a 'PrimitiveAttribute' value.
-class ToPrimitiveAttribute a where
-  toPrimitiveAttribute :: a -> PrimitiveAttribute
-
-
-{- | An attribute represents user-provided metadata about a span, link, or event.
-
- Telemetry tools may use this data to support high-cardinality querying, visualization
- in waterfall diagrams, trace sampling decisions, and more.
--}
-data Attribute
-  = -- | An attribute representing a single primitive value
-    AttributeValue PrimitiveAttribute
-  | -- | An attribute representing an array of primitive values.
-    --
-    -- All values in the array MUST be of the same primitive attribute type.
-    AttributeArray [PrimitiveAttribute]
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
-  deriving anyclass (Hashable)
-
-
-{- | Create a `TextAttribute` from the string value.
-
- @since 0.0.2.1
--}
-instance IsString PrimitiveAttribute where
-  fromString = TextAttribute . fromString
-
-
-{- | Create a `TextAttribute` from the string value.
-
- @since 0.0.2.1
--}
-instance IsString Attribute where
-  fromString = AttributeValue . fromString
-
-
-data PrimitiveAttribute
-  = TextAttribute Text
-  | BoolAttribute Bool
-  | DoubleAttribute Double
-  | IntAttribute Int64
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
-  deriving anyclass (Hashable)
-
-
-{- | Convert a Haskell value to an 'Attribute' value.
-
- For most values, you can define an instance of 'ToPrimitiveAttribute' and use the default 'toAttribute' implementation:
-
- @
-
- data Foo = Foo
-
- instance ToPrimitiveAttribute Foo where
-   toPrimitiveAttribute Foo = TextAttribute "Foo"
- instance ToAttribute foo
-
- @
--}
-class ToAttribute a where
-  toAttribute :: a -> Attribute
-  default toAttribute :: (ToPrimitiveAttribute a) => a -> Attribute
-  toAttribute = AttributeValue . toPrimitiveAttribute
-
-
-instance ToPrimitiveAttribute PrimitiveAttribute where
-  toPrimitiveAttribute = id
-
-
-instance ToAttribute PrimitiveAttribute where
-  toAttribute = AttributeValue
-
-
-instance ToPrimitiveAttribute Text where
-  toPrimitiveAttribute = TextAttribute
-
-
-instance ToAttribute Text
-
-
-instance ToPrimitiveAttribute Bool where
-  toPrimitiveAttribute = BoolAttribute
-
-
-instance ToAttribute Bool
-
-
-instance ToPrimitiveAttribute Double where
-  toPrimitiveAttribute = DoubleAttribute
-
-
-instance ToAttribute Double
-
-
-instance ToPrimitiveAttribute Int64 where
-  toPrimitiveAttribute = IntAttribute
-
-
-instance ToAttribute Int64
-
-
-instance ToPrimitiveAttribute Int where
-  toPrimitiveAttribute = IntAttribute . fromIntegral
-
-
-instance ToAttribute Int
-
-
-instance ToAttribute Attribute where
-  toAttribute = id
-
-
-instance (ToPrimitiveAttribute a) => ToAttribute [a] where
-  toAttribute = AttributeArray . map toPrimitiveAttribute
-
-
 -- | Left-biased merge.
 unsafeMergeAttributesIgnoringLimits :: Attributes -> Attributes -> Attributes
 unsafeMergeAttributesIgnoringLimits left right = Attributes hm c d
   where
-    hm = attributes left <> attributes right
+    hm = attributeMap left <> attributeMap right
     c = H.size hm
     d = attributesDropped left + attributesDropped right
 
