@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.TraceSpec where
 
@@ -7,6 +8,8 @@ import Control.Monad
 import Data.IORef
 import Data.Int
 import Data.Text (Text)
+import GHC.Stack (withFrozenCallStack)
+import OpenTelemetry.Attributes (lookupAttribute)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Core
@@ -187,7 +190,23 @@ spec = describe "Trace" $ do
       let t = makeTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
       addAttribute s "🚀" ("🚀" :: Text)
-  -- TODO actually get attributes out
+    -- TODO actually get attributes out
+
+    specify "Source code attributes are added correctly" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< f t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "f")
+          && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+
+    specify "Source code attributes are added correctly in the presence of frozen call stacks" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< g3 t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "g")
+          && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
 
   describe "Span events" $ do
     specify "AddEvent" $ asIO $ do
@@ -217,3 +236,27 @@ spec = describe "Trace" $ do
   specify "SpanLimits" pending
   specify "Built-in Processors implement ForceFlush spec" pending
   specify "Attribute Limits" pending
+
+
+f :: HasCallStack => Tracer -> IO Span
+f tracer =
+  createSpan tracer Context.empty "name" defaultSpanArguments
+
+
+helper :: HasCallStack => Tracer -> IO Span
+helper tracer =
+  createSpan tracer Context.empty "name" defaultSpanArguments
+
+
+g :: HasCallStack => Tracer -> IO Span
+-- block createSpan and callerAttributes from appearing in the call stack
+g tracer = withFrozenCallStack $ helper tracer
+
+
+g2 :: HasCallStack => Tracer -> IO Span
+g2 tracer = g tracer
+
+
+-- Make a 3-deep call stack
+g3 :: HasCallStack => Tracer -> IO Span
+g3 tracer = g2 tracer

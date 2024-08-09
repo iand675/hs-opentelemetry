@@ -63,9 +63,9 @@
     };
   in
     {
-      # overlays = {
-      #   default = import ./nix/overlays/temporal-sdk.nix;
-      # };
+      lib = {
+        haskellOverlay = import ./nix/haskell-overlay.nix;
+      };
     }
     // flake-utils.lib.eachSystem supportedSystems (system: let
       pkgs = import nixpkgs {inherit system;};

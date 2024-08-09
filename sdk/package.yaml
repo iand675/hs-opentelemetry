@@ -60,7 +60,11 @@ library:
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal
+    - OpenTelemetry.Exporter.Span
+    - OpenTelemetry.Exporter.LogRecord
     - OpenTelemetry.Exporter
+    - OpenTelemetry.Processor.Span
+    - OpenTelemetry.Processor.LogRecord
     - OpenTelemetry.Processor
     - OpenTelemetry.Propagator
     - OpenTelemetry.Resource

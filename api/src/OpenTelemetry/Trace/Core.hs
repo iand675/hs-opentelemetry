@@ -166,7 +166,8 @@ import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logging.Types (LogRecord)
+import OpenTelemetry.Internal.Logs.Core (emitOTelLogRecord, logDroppedAttributes)
+import qualified OpenTelemetry.Internal.Logs.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
 import OpenTelemetry.Propagator (Propagator)
@@ -285,10 +286,13 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                     , spanEnd = Nothing
                     , spanTracer = t
                     }
+
+            when (A.attributesDropped (spanAttributes is) > 0) $ void logDroppedAttributes
+
             s <- newIORef is
-            eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            eResult <- try $ mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
-              Left err -> print (err :: SomeException)
+              Left err -> void $ emitOTelLogRecord H.empty SeverityNumber.Error $ T.pack $ show (err :: SomeException)
               Right _ -> pure ()
             pure $ Span s
 
@@ -307,13 +311,23 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
 
 ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
 ownCodeAttributes = case getCallStack callStack of
-  _ : caller : _ -> srcAttributes caller
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look one further step up for our own code.
+  (("ownCodeAttributes", _) : ownCode : _) -> srcAttributes ownCode
+  -- The call stack doesn't look like we expect, potentially frozen or empty. In this case we can't
+  -- really do much, so give up.
   _ -> mempty
 
 
 callerAttributes :: (HasCallStack) => H.HashMap Text Attribute
 callerAttributes = case getCallStack callStack of
-  _ : _ : caller : _ -> srcAttributes caller
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look two further steps up for the caller.
+  (("callerAttributes", _) : _ : caller : _) -> srcAttributes caller
+  -- The call stack doesn't look like we expect. Guess that it got frozen, and so the most
+  -- useful thing to do is to assume that the "caller" is the top of the frozen call stack
+  (caller : _) -> srcAttributes caller
+  -- Empty call stack
   _ -> mempty
 
 
@@ -560,7 +574,7 @@ endSpan (Span s) mts = liftIO $ do
     let ref = i {spanEnd = spanEnd i <|> Just ts}
     in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
-    eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    eResult <- try $ mapM_ (`spanProcessorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
       Left err -> print (err :: SomeException)
       Right _ -> pure ()
@@ -691,7 +705,6 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
-  , tracerProviderOptionsLogger :: LogRecord Text -> IO ()
   }
 
 
@@ -710,14 +723,13 @@ emptyTracerProviderOptions =
     defaultAttributeLimits
     defaultSpanLimits
     mempty
-    (\_ -> pure ())
 
 
 {- | Initialize a new tracer provider
 
  You should generally use 'getGlobalTracerProvider' for most applications.
 -}
-createTracerProvider :: (MonadIO m) => [Processor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: (MonadIO m) => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
   pure $
@@ -729,7 +741,6 @@ createTracerProvider ps opts = liftIO $ do
       (tracerProviderOptionsAttributeLimits opts)
       (tracerProviderOptionsSpanLimits opts)
       (tracerProviderOptionsPropagators opts)
-      (tracerProviderOptionsLogger opts)
 
 
 {- | Access the globally configured 'TracerProvider'. Once the
@@ -837,7 +848,7 @@ defaultSpanArguments =
 shutdownTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
-    processorShutdown processor
+    spanProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
 
@@ -853,7 +864,7 @@ forceFlushTracerProvider
   -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
 forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   jobs <- forM tracerProviderProcessors $ \processor -> async $ do
-    processorForceFlush processor
+    spanProcessorForceFlush processor
   mresult <-
     timeout (fromMaybe 5_000_000 mtimeout) $
       foldM

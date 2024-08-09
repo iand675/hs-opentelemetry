@@ -90,7 +90,7 @@ cradle:
     - path: "instrumentation/yesod/test"
       component: "hs-opentelemetry-instrumentation-yesod:test:hs-opentelemetry-instrumentation-yesod-test"
 
-    - path: "otlp/src"
+    - path: "otlp/./"
       component: "hs-opentelemetry-otlp:lib"
 
     - path: "propagators/b3/src"
