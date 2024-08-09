@@ -23,6 +23,7 @@ import Database.Persist.SqlBackend
 import Database.Persist.SqlBackend.SqlPoolHooks
 import GHC.Stack
 import Lens.Micro (lens)
+import Network.HTTP.Client
 import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Context (Context, HasContext (..))
@@ -98,11 +99,12 @@ instance YesodPersist Minimal where
 getRootR :: (HasCallStack) => Handler Text
 getRootR = do
   -- Wouldn't put this here in a real app
+  tracerProvider <- getGlobalTracerProvider
+  managerSettings <- appendModifierToSettings tracerProvider defaultManagerSettings
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
-    liftIO $ newManager defaultManagerSettings
-  let httpConfig = httpClientInstrumentationConfig
+    liftIO $ newManager managerSettings
   req <- parseUrlThrow "http://localhost:3000/api"
-  resp <- httpLbs httpConfig req m
+  resp <- liftIO $ httpLbs req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 

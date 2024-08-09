@@ -2,6 +2,7 @@ packages:
     api
   , sdk
   , otlp
+  , semantic-conventions
   , examples/hspec
   , examples/yesod-minimal
   , exporters/handle
