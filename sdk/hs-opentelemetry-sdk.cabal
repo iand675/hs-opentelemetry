@@ -93,11 +93,24 @@ library
     , text
     , transformers
     , unagi-chan
-    , unix
+    , unix-compat >=0.7.1
     , unordered-containers
     , vector
     , vector-builder
   default-language: Haskell2010
+  if !os(windows)
+    build-depends:
+        unix
+  if os(windows)
+    other-modules:
+        OpenTelemetry.Platform
+    hs-source-dirs:
+        src/platform/windows
+  else
+    other-modules:
+        OpenTelemetry.Platform
+    hs-source-dirs:
+        src/platform/unix
 
 test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
@@ -130,8 +143,11 @@ test-suite hs-opentelemetry-sdk-test
     , text
     , transformers
     , unagi-chan
-    , unix
+    , unix-compat >=0.7.1
     , unordered-containers
     , vector
     , vector-builder
   default-language: Haskell2010
+  if !os(windows)
+    build-depends:
+        unix

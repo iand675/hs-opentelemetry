@@ -65,6 +65,7 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
+- unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
 - thread-utils-context-0.3.0.4
 - thread-utils-finalizers-0.1.1.0
 - proto-lens-0.7.1.1
