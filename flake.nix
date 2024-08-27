@@ -89,6 +89,7 @@
               # in
               #   pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
               packages = with pkgs; [
+                grpc
                 libffi
                 mysql80
                 openssl
