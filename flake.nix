@@ -4,6 +4,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     devenv.url = "github:cachix/devenv/v1.0.5";
+    git-hooks.url = "github:kakkun61/git-hooks.nix/customizable-run";
     # Hack to avoid needing to use impure when loading the devenv root.
     #
     # See .envrc for how we substitute this with the actual path.
@@ -25,6 +26,8 @@
     nixpkgs,
     devenv,
     flake-utils,
+    otlp-protobufs,
+    git-hooks,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -61,6 +64,9 @@
       };
       hpack.enable = true;
     };
+    submodules = {
+      inherit otlp-protobufs;
+    };
   in
     {
       lib = {
@@ -73,6 +79,7 @@
         inherit
           lib
           pkgs
+          submodules
           ;
       };
       inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
@@ -126,9 +133,49 @@
       };
 
       checks = {
-        pre-commit-check = devenv.inputs.pre-commit-hooks.lib.${system}.run {
+        pre-commit-check = git-hooks.lib.${system}.run {
           src = ./.;
           hooks = pre-commit-hooks;
+          imports = [
+            ({
+              config,
+              lib,
+              pkgs,
+              ...
+            }: {
+              # Copy the original "run" and insert commands about submodules
+              run = pkgs.runCommand "pre-commit-run" {buildInputs = [pkgs.git config.package];} ''
+                set +e
+                HOME=$PWD
+                # Use `chmod +w` instead of `cp --no-preserve=mode` to be able to write and to
+                # preserve the executable bit at the same time
+                cp -R ${config.rootSrc} src
+                chmod -R +w src
+                ln -fs ${config.configFile} src/.pre-commit-config.yaml
+                mkdir src/otlp/proto
+                ln -s ${submodules.otlp-protobufs}/* -t src/otlp/proto
+                cd src
+                rm -rf .git
+                git init -q
+                git add .
+                git config --global user.email "you@example.com"
+                git config --global user.name "Your Name"
+                git commit -m "init" -q
+                if [[ ${toString (lib.compare config.installStages ["manual"])} -eq 0 ]]
+                then
+                  echo "Running: $ pre-commit run --hook-stage manual --all-files"
+                  pre-commit run --hook-stage manual --all-files
+                else
+                  echo "Running: $ pre-commit run --all-files"
+                  pre-commit run --all-files
+                fi
+                exitcode=$?
+                git --no-pager diff --color
+                touch $out
+                [ $? -eq 0 ] && exit $exitcode
+              '';
+            })
+          ];
         };
       };
     });
