@@ -14,21 +14,28 @@ fi
 
 PROTO_LENS=$(type -P proto-lens-protoc)
 
-SCRIPT_PATH=$(dirname -- "${BASH_SOURCE[0]}")
-cd "${SCRIPT_PATH}"
-
 OTLP_VERSION="$1"
 
 if ! test -n "$OTLP_VERSION"; then
-  printf '%s\n' 'OTLP protobuf version is not specified.'
-  printf '%s\n' 'You should pass the corresponding git tag as an argument.'
-  printf '%s\n' 'e.g.: ./generate-protocol.sh v1.0.0'
+  printf '%s\n' 'Missing OTLP git tag version as first argument.'
   exit 1
 fi
 
+DESTINATION_DIR="$2"
+
+if ! test -n "$DESTINATION_DIR"; then
+  DESTINATION_DIR='.'
+fi
+
+if ! test -d "$DESTINATION_DIR"; then
+  mkdir "$DESTINATION_DIR"
+fi
+
+cd "$DESTINATION_DIR"
+
 # clone opentelemetry-proto repository
 OTLP_REPO='https://github.com/open-telemetry/opentelemetry-proto.git'
-OTLP_REPO_DIR='opentelemetry-proto.git'
+OTLP_REPO_DIR='tmp/opentelemetry-proto.git'
 test -e "$OTLP_REPO_DIR" && rm -fr "$OTLP_REPO_DIR"
 git clone -q "$OTLP_REPO" "$OTLP_REPO_DIR"
 
@@ -42,8 +49,17 @@ fi
 # switch to the right release
 git -C "$OTLP_REPO_DIR" switch --detach "tags/$OTLP_VERSION" >/dev/null 2>&1
 
+# make protobuf output dir
+OTLP_PROTO_DIR="proto"
+test -e "$OTLP_PROTO_DIR" && rm -fr "$OTLP_PROTO_DIR"
+mkdir "$OTLP_PROTO_DIR"
+
+find "$OTLP_REPO_DIR" -type f -name \*.proto -print0 |
+  tar -cf - --null --transform "s|$OTLP_REPO_DIR/||" --files-from=- |
+  tar -xf - -C "$OTLP_PROTO_DIR"
+
 # make Haskell output dir
-HASKELL_OUT_DIR='src'
+HASKELL_OUT_DIR='modules'
 test -e "$HASKELL_OUT_DIR" && rm -fr "$HASKELL_OUT_DIR"
 mkdir "$HASKELL_OUT_DIR"
 
@@ -53,7 +69,7 @@ find "$OTLP_REPO_DIR" -type f -name \*.proto -print0 |
     --haskell_out="$HASKELL_OUT_DIR" --proto_path="$OTLP_REPO_DIR"
 
 # patch generated files for ignoring linting
-find ./ -type f -name \*.hs -print0 |
+find "$HASKELL_OUT_DIR" -type f -name \*.hs -print0 |
   xargs -r0 -L1 grep -FLZ '{- HLINT ignore -}' |
   xargs -r0 sed -i '1i{- HLINT ignore -}'
 
@@ -61,6 +77,6 @@ find ./ -type f -name \*.hs -print0 |
 echo "$OTLP_VERSION" >"$HASKELL_OUT_DIR/OTLP_VERSION"
 
 # print the list of generated modules
-printf '%s\n' ">>> Haskell modules for OTLP version $OTLP_VERSION:"
 find "$HASKELL_OUT_DIR" -type f -name \*.hs |
-  sed -r -e "s|^${HASKELL_OUT_DIR}/||" -e 's|\.hs$||' -e 's|/|.|g' | sort
+  sed -r -e "s|^${HASKELL_OUT_DIR}/||" -e 's|\.hs$||' -e 's|/|.|g' |
+  sort >"$HASKELL_OUT_DIR/HASKELL_MODULES"
