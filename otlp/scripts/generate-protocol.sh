@@ -35,7 +35,7 @@ cd "$DESTINATION_DIR"
 
 # clone opentelemetry-proto repository
 OTLP_REPO='https://github.com/open-telemetry/opentelemetry-proto.git'
-OTLP_REPO_DIR='tmp/opentelemetry-proto.git'
+OTLP_REPO_DIR='opentelemetry-proto.git'
 test -e "$OTLP_REPO_DIR" && rm -fr "$OTLP_REPO_DIR"
 git clone -q "$OTLP_REPO" "$OTLP_REPO_DIR"
 
@@ -79,4 +79,7 @@ echo "$OTLP_VERSION" >"OTLP_VERSION"
 # print the list of generated modules
 find "$HASKELL_OUT_DIR" -type f -name \*.hs |
   sed -r -e "s|^${HASKELL_OUT_DIR}/||" -e 's|\.hs$||' -e 's|/|.|g' |
-  sort >"$HASKELL_OUT_DIR/HASKELL_MODULES"
+  sort >HASKELL_MODULES
+
+# clean up git repository
+test -e "$OTLP_REPO_DIR" && rm -fr "$OTLP_REPO_DIR"
