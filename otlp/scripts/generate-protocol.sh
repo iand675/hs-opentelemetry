@@ -74,7 +74,7 @@ find "$HASKELL_OUT_DIR" -type f -name \*.hs -print0 |
   xargs -r0 sed -i '1i{- HLINT ignore -}'
 
 # write version in the OTLP_VERSION file
-echo "$OTLP_VERSION" >"$HASKELL_OUT_DIR/OTLP_VERSION"
+echo "$OTLP_VERSION" >"OTLP_VERSION"
 
 # print the list of generated modules
 find "$HASKELL_OUT_DIR" -type f -name \*.hs |
