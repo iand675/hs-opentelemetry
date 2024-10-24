@@ -1,5 +1,9 @@
 # Changelog for otlp
 
+## 0.0.2.0
+
+Support OTLP specification v1.0.0
+
 ## 0.0.1.2
 
 Support additional status codes (408, 5xx) as transient & able to retry
