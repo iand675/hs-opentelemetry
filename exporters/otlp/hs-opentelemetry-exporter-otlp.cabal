@@ -41,7 +41,7 @@ library
     , case-insensitive
     , clock
     , hs-opentelemetry-api >=0.0.3 && <0.2
-    , hs-opentelemetry-otlp ==0.0.1.*
+    , hs-opentelemetry-otlp ==0.0.2.*
     , http-client
     , http-conduit
     , http-types
@@ -70,7 +70,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
     , clock
     , hs-opentelemetry-api >=0.0.3 && <0.2
     , hs-opentelemetry-exporter-otlp
-    , hs-opentelemetry-otlp ==0.0.1.*
+    , hs-opentelemetry-otlp ==0.0.2.*
     , http-client
     , http-conduit
     , http-types
