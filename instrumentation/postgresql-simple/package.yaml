@@ -27,6 +27,7 @@ dependencies:
 - postgresql-libpq
 - text
 - bytestring
+- unliftio-core
 - unliftio # todo, unliftio-core
 - unordered-containers
 
