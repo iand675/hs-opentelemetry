@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  submodules,
   ...
 }: let
   inherit
@@ -39,7 +40,15 @@ in rec {
   in
     baseConfig
     // {
-      hs-opentelemetry-otlp = pkgs.haskell.lib.addSetupDepends baseConfig.hs-opentelemetry-otlp [pkgs.protobuf];
+      hs-opentelemetry-otlp = pkgs.lib.pipe baseConfig.hs-opentelemetry-otlp (with pkgs.haskell.lib.compose; [
+        (addSetupDepends [pkgs.protobuf])
+        (overrideCabal (_drv: {
+          preBuild = ''
+            mkdir -p proto
+            ln -s ${submodules.otlp-protobufs}/* -t proto
+          '';
+        }))
+      ]);
     };
 
   pluckLocalPackages = hpkgs: let
