@@ -40,6 +40,7 @@ library
     , postgresql-simple
     , text
     , unliftio
+    , unliftio-core
     , unordered-containers
   default-language: Haskell2010
 
@@ -62,5 +63,6 @@ test-suite hs-opentelemetry-instrumentation-postgresql-simple-test
     , postgresql-simple
     , text
     , unliftio
+    , unliftio-core
     , unordered-containers
   default-language: Haskell2010
