@@ -18,6 +18,11 @@
       url = "github:open-telemetry/opentelemetry-proto/b43e9b18b76abf3ee040164b55b9c355217151f3";
       flake = false;
     };
+
+    semantic-conventions = {
+      url = "github:open-telemetry/semantic-conventions/v1.24.0";
+      flake = false;
+    };
   };
 
   outputs = inputs @ {
@@ -25,6 +30,7 @@
     nixpkgs,
     devenv,
     flake-utils,
+    semantic-conventions,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -61,6 +67,9 @@
       };
       hpack.enable = true;
     };
+    submodules = {
+      inherit semantic-conventions;
+    };
   in
     {
       lib = {
@@ -73,6 +82,7 @@
         inherit
           lib
           pkgs
+          submodules
           ;
       };
       inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;

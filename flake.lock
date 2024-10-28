@@ -440,7 +440,25 @@
         "devenv": "devenv",
         "flake-utils": "flake-utils_3",
         "nixpkgs": "nixpkgs_3",
-        "otlp-protobufs": "otlp-protobufs"
+        "otlp-protobufs": "otlp-protobufs",
+        "semantic-conventions": "semantic-conventions"
+      }
+    },
+    "semantic-conventions": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1702665362,
+        "narHash": "sha256-uQFMPJwfymGEqwQk5XYWX+rJQYUxTnuVApWOV+OvPEk=",
+        "owner": "open-telemetry",
+        "repo": "semantic-conventions",
+        "rev": "cafda7127683b7f667e27cdbd3220510b6f998c9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "open-telemetry",
+        "ref": "v1.24.0",
+        "repo": "semantic-conventions",
+        "type": "github"
       }
     },
     "systems": {

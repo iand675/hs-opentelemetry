@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  submodules,
   ...
 }: let
   inherit
@@ -17,6 +18,7 @@ in rec {
     hs-opentelemetry-api = ../api;
     hs-opentelemetry-sdk = ../sdk;
     hs-opentelemetry-otlp = ../otlp;
+    hs-opentelemetry-semantic-conventions = ../semantic-conventions;
     hs-opentelemetry-exporter-handle = ../exporters/handle;
     hs-opentelemetry-exporter-in-memory = ../exporters/in-memory;
     hs-opentelemetry-exporter-otlp = ../exporters/otlp;
@@ -40,6 +42,13 @@ in rec {
     baseConfig
     // {
       hs-opentelemetry-otlp = pkgs.haskell.lib.addSetupDepends baseConfig.hs-opentelemetry-otlp [pkgs.protobuf];
+      hs-opentelemetry-semantic-conventions =
+        pkgs.haskell.lib.compose.overrideCabal (_drv: {
+          preBuild = ''
+            ln -s ${submodules.semantic-conventions}/* -t model
+          '';
+        })
+        baseConfig.hs-opentelemetry-semantic-conventions;
     };
 
   pluckLocalPackages = hpkgs: let
