@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -59,6 +60,10 @@ data Minimal = Minimal
   }
 
 
+instance MonadTracer (HandlerFor Minimal) where
+  getTracer = getTracerWithGlobalTracerProvider
+
+
 $( do
     let routes =
           [parseRoutes|
@@ -67,8 +72,8 @@ $( do
         |]
     Prelude.concat
       <$> Prelude.sequence
-        [ mkRouteToRenderer ''Minimal routes
-        , mkRouteToPattern ''Minimal routes
+        [ mkRouteToRenderer ''Minimal mempty routes
+        , mkRouteToPattern ''Minimal mempty routes
         , mkYesod "Minimal" routes
         ]
  )
