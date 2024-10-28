@@ -22,7 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 - hs-opentelemetry-api >= 0.0.3 && < 0.2
-- hs-opentelemetry-otlp == 0.0.2.*
+- hs-opentelemetry-otlp == 0.0.1.*
 - text
 - bytestring
 - case-insensitive
