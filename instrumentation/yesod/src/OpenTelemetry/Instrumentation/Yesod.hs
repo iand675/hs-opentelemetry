@@ -256,6 +256,10 @@ openTelemetryYesodMiddleware rr m = do
         Right normal -> pure normal
     Just waiSpan -> do
       addAttributes waiSpan sharedAttributes
+
+      -- Explicitly record any exceptions here. When Yesod is in use, exceptions
+      -- are handled as error-pages before reaching the WAI middleware's inSpan,
+      -- meaning the exception details would not be otherwise attached.
       withException m $ \ex -> do
         when (shouldMarkException ex) $ do
           recordException waiSpan mempty Nothing ex
