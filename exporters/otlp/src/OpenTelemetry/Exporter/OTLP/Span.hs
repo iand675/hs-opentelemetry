@@ -72,6 +72,7 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
+import OpenTelemetry.Environment
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
@@ -108,9 +109,9 @@ data OTLPExporterConfig = OTLPExporterConfig
   { otlpEndpoint :: Maybe String
   , otlpTracesEndpoint :: Maybe String
   , otlpMetricsEndpoint :: Maybe String
-  , otlpInsecure :: Maybe Bool
-  , otlpSpanInsecure :: Maybe Bool
-  , otlpMetricInsecure :: Maybe Bool
+  , otlpInsecure :: Bool
+  , otlpSpanInsecure :: Bool
+  , otlpMetricInsecure :: Bool
   , otlpCertificate :: Maybe FilePath
   , otlpTracesCertificate :: Maybe FilePath
   , otlpMetricCertificate :: Maybe FilePath
@@ -136,9 +137,9 @@ loadExporterEnvironmentVariables = liftIO $ do
     <$> lookupEnv "OTEL_EXPORTER_OTLP_ENDPOINT"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"
-    <*> (fmap (== "true") <$> lookupEnv "OTEL_EXPORTER_OTLP_INSECURE")
-    <*> (fmap (== "true") <$> lookupEnv "OTEL_EXPORTER_OTLP_SPAN_INSECURE")
-    <*> (fmap (== "true") <$> lookupEnv "OTEL_EXPORTER_OTLP_METRIC_INSECURE")
+    <*> lookupBooleanEnv "OTEL_EXPORTER_OTLP_INSECURE"
+    <*> lookupBooleanEnv "OTEL_EXPORTER_OTLP_SPAN_INSECURE"
+    <*> lookupBooleanEnv "OTEL_EXPORTER_OTLP_METRIC_INSECURE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_CERTIFICATE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE"

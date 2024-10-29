@@ -34,6 +34,7 @@ library
       OpenTelemetry.Context.ThreadLocal
       OpenTelemetry.Contrib.CarryOns
       OpenTelemetry.Contrib.SpanTraversals
+      OpenTelemetry.Environment
       OpenTelemetry.Exporter
       OpenTelemetry.Exporter.LogRecord
       OpenTelemetry.Exporter.Span
