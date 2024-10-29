@@ -126,6 +126,7 @@ module OpenTelemetry.Trace (
   NewEvent (..),
   addEvent,
   inSpan'',
+  getSpanContext,
 
   -- * Primitive span and tracing operations
 
