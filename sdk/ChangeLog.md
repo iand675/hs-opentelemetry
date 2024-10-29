@@ -34,3 +34,4 @@
 ## Unreleased changes
 
 - Documentation improvements
+- Windows: Replace POSIX-only functionality with a stub, so the package could be built at all
