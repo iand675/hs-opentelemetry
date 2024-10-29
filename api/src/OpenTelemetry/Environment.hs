@@ -1,12 +1,17 @@
 module OpenTelemetry.Environment (
-  isTrue,
+  lookupBooleanEnv,
 ) where
 
-import qualified Data.CaseInsensitive as CI
+import qualified Data.Char as C
+import System.Environment (lookupEnv)
 
 
--- Have a look here for the specification.
--- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#boolean-value
-
+{- | Does the given value of an environment variable correspond to "true" according
+to [the OpenTelemetry specification](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#boolean-value)?
+-}
 isTrue :: String -> Bool
-isTrue = ("true" ==) . CI.mk
+isTrue = ("true" ==) . map C.toLower
+
+
+lookupBooleanEnv :: String -> IO (Maybe Bool)
+lookupBooleanEnv = fmap (fmap isTrue) . lookupEnv
