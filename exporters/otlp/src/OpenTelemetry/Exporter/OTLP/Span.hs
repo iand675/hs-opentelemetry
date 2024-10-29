@@ -81,7 +81,7 @@ import OpenTelemetry.Util
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import Proto.Opentelemetry.Proto.Common.V1.Common_Fields
-import Proto.Opentelemetry.Proto.Trace.V1.Trace (InstrumentationLibrarySpans, Span, Span'Event, Span'Link, Span'SpanKind (Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_SERVER), Status'StatusCode (Status'STATUS_CODE_ERROR, Status'STATUS_CODE_OK, Status'STATUS_CODE_UNSET))
+import Proto.Opentelemetry.Proto.Trace.V1.Trace (Span, Span'Event, Span'Link, Span'SpanKind (Span'SPAN_KIND_CLIENT, Span'SPAN_KIND_CONSUMER, Span'SPAN_KIND_INTERNAL, Span'SPAN_KIND_PRODUCER, Span'SPAN_KIND_SERVER), Status'StatusCode (Status'STATUS_CODE_ERROR, Status'STATUS_CODE_OK, Status'STATUS_CODE_UNSET))
 import Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
 import System.Environment
 import Text.Read (readMaybe)
