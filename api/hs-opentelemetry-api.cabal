@@ -86,7 +86,6 @@ library
     , base >=4.7 && <5
     , binary
     , bytestring
-    , case-insensitive
     , charset
     , clock
     , containers
@@ -129,7 +128,6 @@ test-suite hs-opentelemetry-api-test
     , base >=4.7 && <5
     , binary
     , bytestring
-    , case-insensitive
     , charset
     , clock
     , containers
