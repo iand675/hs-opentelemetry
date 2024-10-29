@@ -45,6 +45,7 @@ dependencies:
 - unliftio-core
 - vector-builder
 - safe-exceptions
+- case-insensitive
 
 library:
   source-dirs: src

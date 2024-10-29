@@ -72,6 +72,7 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
+import qualified OpenTelemetry.Environment as Env
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
@@ -136,9 +137,9 @@ loadExporterEnvironmentVariables = liftIO $ do
     <$> lookupEnv "OTEL_EXPORTER_OTLP_ENDPOINT"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"
-    <*> (fmap (== "true") <$> lookupEnv "OTEL_EXPORTER_OTLP_INSECURE")
-    <*> (fmap (== "true") <$> lookupEnv "OTEL_EXPORTER_OTLP_SPAN_INSECURE")
-    <*> (fmap (== "true") <$> lookupEnv "OTEL_EXPORTER_OTLP_METRIC_INSECURE")
+    <*> (fmap Env.isTrue <$> lookupEnv "OTEL_EXPORTER_OTLP_INSECURE")
+    <*> (fmap Env.isTrue <$> lookupEnv "OTEL_EXPORTER_OTLP_SPAN_INSECURE")
+    <*> (fmap Env.isTrue <$> lookupEnv "OTEL_EXPORTER_OTLP_METRIC_INSECURE")
     <*> lookupEnv "OTEL_EXPORTER_OTLP_CERTIFICATE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE"
