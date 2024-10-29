@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
+    pantry-tree:
+      sha256: c65e0937d1972e9a2824235082b6d8b70d4c3c60ce720ff11f5ab4e66fb6b85d
+      size: 1329
+  original:
+    hackage: unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
+- completed:
     hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
     pantry-tree:
       sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
