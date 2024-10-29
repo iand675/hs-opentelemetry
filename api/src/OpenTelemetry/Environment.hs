@@ -13,5 +13,5 @@ isTrue :: String -> Bool
 isTrue = ("true" ==) . map C.toLower
 
 
-lookupBooleanEnv :: String -> IO (Maybe Bool)
-lookupBooleanEnv = fmap (fmap isTrue) . lookupEnv
+lookupBooleanEnv :: String -> IO Bool
+lookupBooleanEnv = fmap (maybe False isTrue) . lookupEnv

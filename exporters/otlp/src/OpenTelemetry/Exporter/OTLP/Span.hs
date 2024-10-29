@@ -109,9 +109,9 @@ data OTLPExporterConfig = OTLPExporterConfig
   { otlpEndpoint :: Maybe String
   , otlpTracesEndpoint :: Maybe String
   , otlpMetricsEndpoint :: Maybe String
-  , otlpInsecure :: Maybe Bool
-  , otlpSpanInsecure :: Maybe Bool
-  , otlpMetricInsecure :: Maybe Bool
+  , otlpInsecure :: Bool
+  , otlpSpanInsecure :: Bool
+  , otlpMetricInsecure :: Bool
   , otlpCertificate :: Maybe FilePath
   , otlpTracesCertificate :: Maybe FilePath
   , otlpMetricCertificate :: Maybe FilePath
