@@ -1,15 +1,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.TraceSpec where
 
 import Control.Monad
+import qualified Data.HashMap.Strict as HM
 import Data.IORef
 import Data.Int
 import Data.Text (Text)
+import qualified Data.Text as Text
 import GHC.Stack (withFrozenCallStack)
-import OpenTelemetry.Attributes (lookupAttribute)
+import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits, lookupAttribute)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Core
@@ -207,6 +210,22 @@ spec = describe "Trace" $ do
       spanAttributes s `shouldSatisfy` \attrs ->
         (lookupAttribute attrs "code.function") == Just (toAttribute @Text "g")
           && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+
+    specify "Attribute length limit is respected" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- createSpan t Context.empty "test_span" defaultSpanArguments
+      let
+        longAttribute :: Text = "looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong"
+        -- We set this limit in Spec.hs
+        -- The long attribute should be truncated down to this length
+        truncatedAttribute :: Text = Text.take 50 longAttribute
+      addAttribute s "attr1" longAttribute
+      addAttributes s (HM.singleton "attr2" (toAttribute longAttribute))
+      s <- unsafeReadSpan s
+
+      lookupAttribute (spanAttributes s) "attr1" `shouldBe` Just (toAttribute truncatedAttribute)
+      lookupAttribute (spanAttributes s) "attr2" `shouldBe` Just (toAttribute truncatedAttribute)
 
   describe "Span events" $ do
     specify "AddEvent" $ asIO $ do
