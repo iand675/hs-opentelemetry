@@ -49,6 +49,7 @@ packages:
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
+- instrumentation/tasty
 - instrumentation/yesod
 - instrumentation/wai
 - examples/yesod-minimal
