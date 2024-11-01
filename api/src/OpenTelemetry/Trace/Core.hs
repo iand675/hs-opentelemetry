@@ -94,8 +94,6 @@ module OpenTelemetry.Trace.Core (
   SpanKind (..),
   defaultSpanArguments,
   SpanArguments (..),
-  NewLink (..),
-  Link (..),
 
   -- ** Recording @Event@s
   Event (..),
@@ -111,6 +109,9 @@ module OpenTelemetry.Trace.Core (
   ToAttribute (..),
   PrimitiveAttribute (..),
   ToPrimitiveAttribute (..),
+  Link (..),
+  NewLink (..),
+  addLink,
 
   -- ** Recording error information
   recordException,
@@ -278,8 +279,8 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                           emptyAttributes
                           (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
-                        let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                        in frozenBoundedCollection limitedLinks $ fmap freezeLink links
+                        let emptyLinks = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
+                        in foldl (\c l -> appendToBoundedCollection c l) emptyLinks (fmap (freezeLink t) links)
                     , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                     , spanStatus = Unset
                     , spanStart = st
@@ -300,13 +301,6 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         Drop -> pure $ Dropped ctxtForSpan
         RecordOnly -> mkRecordingSpan
         RecordAndSample -> mkRecordingSpan
-  where
-    freezeLink :: NewLink -> Link
-    freezeLink NewLink {..} =
-      Link
-        { frozenLinkContext = linkContext
-        , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
-        }
 
 
 ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
@@ -503,6 +497,22 @@ addEvent (Span s) NewEvent {..} = liftIO $ do
       }
 addEvent (FrozenSpan _) _ = pure ()
 addEvent (Dropped _) _ = pure ()
+
+
+-- | Add a link to a recording span.
+addLink :: (MonadIO m) => Span -> NewLink -> m ()
+addLink (Span s) l = liftIO $ do
+  modifyIORef' s $ \(!i) -> i {spanLinks = appendToBoundedCollection (spanLinks i) (freezeLink (spanTracer i) l)}
+addLink (FrozenSpan _) _ = pure ()
+addLink (Dropped _) _ = pure ()
+
+
+freezeLink :: Tracer -> NewLink -> Link
+freezeLink t NewLink {..} =
+  Link
+    { frozenLinkContext = linkContext
+    , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
+    }
 
 
 {- | Sets the Status of the Span. If used, this will override the default @Span@ status, which is @Unset@.
