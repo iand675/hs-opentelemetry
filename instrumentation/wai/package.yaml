@@ -20,19 +20,19 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- http-types
-- wai
-- hs-opentelemetry-api == 0.1.*
-- vault
-- text
-- bytestring
-- network
-- iproute
-- unordered-containers
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - http-types
+  - wai
+  - hs-opentelemetry-api == 0.1.*
+  - vault
+  - text
+  - network
+  - iproute
+  - unordered-containers
 
 tests:
   hs-opentelemetry-instrumentation-wai-test:
@@ -42,5 +42,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-wai

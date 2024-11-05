@@ -20,18 +20,17 @@ category:            OpenTelemetry, Tracing, Web
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
 
 dependencies:
-- attoparsec
-- base >=4.7 && <5
-- bytestring
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- http-types
-- memory
-- primitive
-- text
+- base >= 4.7 && < 5
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - attoparsec
+  - bytestring
+  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - http-types
+  - text
 
 tests:
   hs-opentelemetry-propagator-b3-test:
@@ -41,5 +40,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-propagator-b3

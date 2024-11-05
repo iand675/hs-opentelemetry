@@ -48,8 +48,4 @@ test-suite hs-opentelemetry-instrumentation-conduit-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , conduit
-    , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-instrumentation-conduit
-    , text
   default-language: Haskell2010

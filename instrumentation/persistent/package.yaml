@@ -20,19 +20,20 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.1.*
-- persistent >= 2.13.3
-- text
-- vault
-- resourcet
-- unliftio # TODO, unliftio-core
-- mtl
-- unordered-containers
-- clock
 
 library:
   # ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api == 0.1.*
+  - persistent >= 2.13.3
+  - text
+  - vault
+  - resourcet
+  - unliftio # TODO, unliftio-core
+  - mtl
+  - unordered-containers
+  - clock
 
 tests:
   hs-opentelemetry-persistent-test:
@@ -42,5 +43,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-persistent

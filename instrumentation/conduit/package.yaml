@@ -20,13 +20,14 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- conduit
-- text
-- hs-opentelemetry-api == 0.1.*
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - conduit
+  - text
+  - hs-opentelemetry-api == 0.1.*
 
 tests:
   hs-opentelemetry-instrumentation-conduit-test:
@@ -36,5 +37,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-conduit

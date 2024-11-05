@@ -20,19 +20,19 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api == 0.1.*
-- network
-- iproute
-- postgresql-simple
-- postgresql-libpq
-- text
-- bytestring
-- unliftio-core
-- unliftio # todo, unliftio-core
-- unordered-containers
 
 library:
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api == 0.1.*
+  - iproute
+  - postgresql-simple
+  - postgresql-libpq
+  - text
+  - bytestring
+  - unliftio-core
+  - unliftio # todo, unliftio-core
+  - unordered-containers
 
 tests:
   hs-opentelemetry-instrumentation-postgresql-simple-test:
@@ -42,5 +42,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-postgresql-simple

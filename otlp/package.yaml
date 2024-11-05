@@ -28,7 +28,6 @@ build-tools: proto-lens-protoc:proto-lens-protoc
 
 dependencies:
 - base >= 4.7 && < 5
-- proto-lens
 - proto-lens-runtime
 
 library:

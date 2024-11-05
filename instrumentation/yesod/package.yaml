@@ -20,20 +20,20 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- mtl
-- microlens
-- yesod-core
-- hs-opentelemetry-api == 0.1.*
-- hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
-- unliftio
-- text
-- template-haskell
-- wai
-- unordered-containers
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
+  - microlens
+  - template-haskell
+  - text
+  - unliftio
+  - unordered-containers
+  - wai
+  - yesod-core
 
 tests:
   hs-opentelemetry-instrumentation-yesod-test:
@@ -43,5 +43,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - hs-opentelemetry-instrumentation-yesod

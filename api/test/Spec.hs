@@ -35,7 +35,7 @@ instance Exception TestException
 exceptionTest :: IO ()
 exceptionTest = do
   tp <- getGlobalTracerProvider
-  t <- OpenTelemetry.Trace.Core.getTracer tp "test" tracerOptions
+  let t = OpenTelemetry.Trace.Core.makeTracer tp "test" tracerOptions
   spanToCheck <- newIORef undefined
   handle (\(TestException _) -> pure ()) $ do
     inSpan' t "test" defaultSpanArguments $ \span -> do

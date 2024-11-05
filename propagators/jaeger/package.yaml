@@ -22,8 +22,8 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 
-library:
-  source-dirs: src
+# library:
+#   source-dirs: src
 
 tests:
   hs-opentelemetry-propagator-jaeger-test:

@@ -42,7 +42,6 @@ library
     , hs-opentelemetry-api ==0.1.*
     , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
     , http-client
-    , http-client-tls
     , http-conduit
     , http-types
     , text
@@ -59,19 +58,5 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.7 && <5
-    , bytestring
-    , case-insensitive
-    , conduit
-    , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
-    , hs-opentelemetry-instrumentation-http-client
-    , http-client
-    , http-client-tls
-    , http-conduit
-    , http-types
-    , text
-    , unliftio
-    , unordered-containers
+      base >=4.7 && <5
   default-language: Haskell2010
