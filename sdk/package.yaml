@@ -100,3 +100,4 @@ tests:
     - hs-opentelemetry-sdk
     - hspec
     - text
+    - unordered-containers

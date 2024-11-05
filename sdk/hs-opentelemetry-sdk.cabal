@@ -129,4 +129,5 @@ test-suite hs-opentelemetry-sdk-test
     , hs-opentelemetry-sdk
     , hspec
     , text
+    , unordered-containers
   default-language: Haskell2010
