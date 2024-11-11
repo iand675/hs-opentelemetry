@@ -115,6 +115,7 @@ module OpenTelemetry.Trace (
   SpanArguments (..),
   SpanKind (..),
   NewLink (..),
+  addLink,
   inSpan',
   updateName,
   addAttribute,

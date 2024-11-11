@@ -36,10 +36,6 @@ module OpenTelemetry.Util (
   appendOnlyBoundedCollectionSize,
   appendOnlyBoundedCollectionValues,
   appendOnlyBoundedCollectionDroppedElementCount,
-  FrozenBoundedCollection,
-  frozenBoundedCollection,
-  frozenBoundedCollectionValues,
-  frozenBoundedCollectionDroppedElementCount,
 ) where
 
 import Control.Exception (SomeException)
@@ -138,27 +134,6 @@ appendToBoundedCollection c@(AppendOnlyBoundedCollection b ms d) x =
   if appendOnlyBoundedCollectionSize c < ms
     then AppendOnlyBoundedCollection (b <> Builder.singleton x) ms d
     else AppendOnlyBoundedCollection b ms (d + 1)
-
-
-data FrozenBoundedCollection a = FrozenBoundedCollection
-  { collection :: !(V.Vector a)
-  , dropped :: !Int
-  }
-  deriving (Show)
-
-
-frozenBoundedCollection :: (Foldable f) => Int -> f a -> FrozenBoundedCollection a
-frozenBoundedCollection maxSize_ coll = FrozenBoundedCollection (V.fromListN maxSize_ $ toList coll) (collLength - maxSize_)
-  where
-    collLength = length coll
-
-
-frozenBoundedCollectionValues :: FrozenBoundedCollection a -> V.Vector a
-frozenBoundedCollectionValues (FrozenBoundedCollection coll _) = coll
-
-
-frozenBoundedCollectionDroppedElementCount :: FrozenBoundedCollection a -> Int
-frozenBoundedCollectionDroppedElementCount (FrozenBoundedCollection _ dropped_) = dropped_
 
 
 {- | Like 'Context.Exception.bracket', but provides the @after@ function with information about
