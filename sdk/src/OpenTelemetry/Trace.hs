@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 -----------------------------------------------------------------------------
@@ -335,7 +336,11 @@ getTracerProviderInitializationOptions = getTracerProviderInitializationOptions'
 
  @since 0.0.3.1
 -}
-getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Resource any -> IO ([SpanProcessor], TracerProviderOptions)
+getTracerProviderInitializationOptions'
+  :: forall schema
+   . (MaterializeResource schema)
+  => Resource schema
+  -> IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions' rs = do
   disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
   if disabled
@@ -349,7 +354,9 @@ getTracerProviderInitializationOptions' rs = do
       exporters <- detectExporters
       builtInRs <- detectBuiltInResources
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
-      let allRs = mergeResources (builtInRs <> envVarRs) rs
+      let
+        -- NB: Resource merge prioritizes the left value on attribute key conflict.
+        allRs = mergeResources rs (envVarRs <> builtInRs)
       processors <- case exporters of
         [] -> do
           pure []
