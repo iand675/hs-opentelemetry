@@ -270,7 +270,7 @@ data ImmutableSpan = ImmutableSpan
   , spanEnd :: Maybe Timestamp
   -- ^ A timestamp that corresponds to the end of the span, if the span has ended.
   , spanAttributes :: Attributes
-  , spanLinks :: FrozenBoundedCollection Link
+  , spanLinks :: AppendOnlyBoundedCollection Link
   -- ^ Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
   , spanEvents :: AppendOnlyBoundedCollection Event
   -- ^ Events, which denote a point in time occurrence. These can be useful for recording data about a span such as when an exception was thrown, or to emit structured logs into the span tree.

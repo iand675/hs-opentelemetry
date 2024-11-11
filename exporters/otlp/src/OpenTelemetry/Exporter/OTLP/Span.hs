@@ -430,9 +430,9 @@ makeSpan completedSpan = do
       & Trace_Fields.droppedEventsCount
         .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanEvents completedSpan))
       & Trace_Fields.vec'links
-        .~ fmap makeLink (frozenBoundedCollectionValues $ OT.spanLinks completedSpan)
+        .~ fmap makeLink (appendOnlyBoundedCollectionValues $ OT.spanLinks completedSpan)
       & Trace_Fields.droppedLinksCount
-        .~ fromIntegral (frozenBoundedCollectionDroppedElementCount (OT.spanLinks completedSpan))
+        .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanLinks completedSpan))
       & Trace_Fields.status
         .~ ( case OT.spanStatus completedSpan of
               OT.Unset ->
