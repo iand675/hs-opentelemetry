@@ -11,9 +11,11 @@ import qualified Data.Vector as V
 import OpenTelemetry.Attributes (lookupAttribute)
 -- Specs
 
+import qualified OpenTelemetry.AttributesSpec as Attributes
 import qualified OpenTelemetry.BaggageSpec as Baggage
 import OpenTelemetry.Context
 import qualified OpenTelemetry.Logs.CoreSpec as CoreSpec
+import qualified OpenTelemetry.ResourceSpec as Resource
 import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
 import OpenTelemetry.Trace.Core
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
@@ -53,7 +55,9 @@ main = hspec $ do
   -- describe "inSpan" $ do
   --   it "records exceptions" $ do
   --     exceptionTest
+  Attributes.spec
   Baggage.spec
+  Resource.spec
   Sampler.spec
   TraceFlags.spec
   SemanticsConfigSpec.spec

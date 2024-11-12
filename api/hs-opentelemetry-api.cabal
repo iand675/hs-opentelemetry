@@ -110,8 +110,10 @@ test-suite hs-opentelemetry-api-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.AttributesSpec
       OpenTelemetry.BaggageSpec
       OpenTelemetry.Logs.CoreSpec
+      OpenTelemetry.ResourceSpec
       OpenTelemetry.SemanticsConfigSpec
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec

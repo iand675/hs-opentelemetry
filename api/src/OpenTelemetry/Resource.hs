@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 -----------------------------------------------------------------------------
 
@@ -34,6 +35,7 @@ module OpenTelemetry.Resource (
 
   -- * Creating resources from data structures
   ToResource (..),
+  MaterializeResource,
   materializeResources,
 
   -- * Using resources with a 'OpenTelemetry.Trace.TracerProvider'
@@ -91,6 +93,7 @@ k .= v = Just (k, toAttribute v)
 k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
 
 
+-- | Merge two resources, taking the left-biased union of attributes.
 instance Semigroup (Resource s) where
   (<>) (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
@@ -121,10 +124,9 @@ instance Monoid (Resource s) where
    and updating resources are not empty and are different). The resulting resource is
    therefore statically prohibited by this type-level function.
 -}
-type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
-  ResourceMerge 'Nothing 'Nothing = 'Nothing
-  ResourceMerge 'Nothing ('Just s) = 'Just s
-  ResourceMerge ('Just s) 'Nothing = 'Just s
+type family ResourceMerge (schemaLeft :: Maybe Symbol) (schemaRight :: Maybe Symbol) :: Maybe Symbol where
+  ResourceMerge 'Nothing a = a
+  ResourceMerge a 'Nothing = a
   ResourceMerge ('Just s) ('Just s) = 'Just s
 
 
@@ -136,11 +138,11 @@ type family ResourceMerge schemaLeft schemaRight :: Maybe Symbol where
  @since 0.0.1.0
 -}
 mergeResources
-  :: Resource old
-  -- ^ the old resource
-  -> Resource new
+  :: Resource new
   -- ^ the updating resource whose attributes take precedence
-  -> Resource (ResourceMerge old new)
+  -> Resource old
+  -- ^ the old resource
+  -> Resource (ResourceMerge new old)
 mergeResources (Resource l) (Resource r) = Resource (unsafeMergeAttributesIgnoringLimits l r)
 
 

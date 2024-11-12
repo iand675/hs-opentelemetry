@@ -260,8 +260,13 @@ instance (ToPrimitiveAttribute a) => ToAttribute [a] where
   toAttribute = AttributeArray . map toPrimitiveAttribute
 
 
+-- | Left-biased merge.
 unsafeMergeAttributesIgnoringLimits :: Attributes -> Attributes -> Attributes
-unsafeMergeAttributesIgnoringLimits (Attributes l lc ld) (Attributes r rc rd) = Attributes (l <> r) (lc + rc) (ld + rd)
+unsafeMergeAttributesIgnoringLimits left right = Attributes hm c d
+  where
+    hm = attributes left <> attributes right
+    c = H.size hm
+    d = attributesDropped left + attributesDropped right
 
 
 unsafeAttributesFromListIgnoringLimits :: [(Text, Attribute)] -> Attributes

@@ -1,19 +1,22 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.TraceSpec where
 
 import Control.Monad
+import Data.Foldable (traverse_)
 import qualified Data.HashMap.Strict as HM
 import Data.IORef
 import Data.Int
 import Data.Text (Text)
 import qualified Data.Text as Text
 import GHC.Stack (withFrozenCallStack)
-import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits, lookupAttribute)
+import OpenTelemetry.Attributes (AttributeLimits (..), Attributes, defaultAttributeLimits, lookupAttribute)
 import qualified OpenTelemetry.Context as Context
+import OpenTelemetry.Resource
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
@@ -26,6 +29,22 @@ import Test.Hspec
 
 asIO :: IO a -> IO a
 asIO = id
+
+
+pattern HostName :: Text
+pattern HostName = "host.name"
+
+
+pattern TelemetrySdkLanguage :: Text
+pattern TelemetrySdkLanguage = "telemetry.sdk.language"
+
+
+pattern ExampleName :: Text
+pattern ExampleName = "example.name"
+
+
+pattern ExampleCount :: Text
+pattern ExampleCount = "example.count"
 
 
 spec :: Spec
@@ -43,6 +62,37 @@ spec = describe "Trace" $ do
     specify "Safe for concurrent calls" pending
     specify "Shutdown" pending
     specify "ForceFlush" pending
+    specify "Resource initialization prioritizes user override, then OTEL_RESOURCE_ATTRIBUTES env var" $ do
+      let getInitialResourceAttrs :: Resource 'Nothing -> IO Attributes
+          getInitialResourceAttrs resource = do
+            opts <- snd <$> getTracerProviderInitializationOptions' resource
+            pure . getMaterializedResourcesAttributes $ tracerProviderOptionsResources opts
+          shouldHaveAttrPair :: Attributes -> (Text, Attribute) -> Expectation
+          shouldHaveAttrPair attrs (k, v) = lookupAttribute attrs k `shouldBe` Just v
+      attrsFromEnv <- getInitialResourceAttrs mempty
+      traverse_
+        (attrsFromEnv `shouldHaveAttrPair`)
+        [ (HostName, toAttribute @Text "env_host_name")
+        , (TelemetrySdkLanguage, toAttribute @Text "haskell")
+        , (ExampleName, toAttribute @Text "env_example_name")
+        , -- OTEL_RESOURCE_ATTRIBUTES uses Baggage format, where attribute values are always text
+          (ExampleCount, toAttribute @Text "42")
+        ]
+      attrsFromUser <-
+        getInitialResourceAttrs $
+          mkResource @'Nothing
+            [ HostName .= toAttribute @Text "user_host_name"
+            , TelemetrySdkLanguage .= toAttribute @Text "GHC2021"
+            , ExampleCount .= toAttribute @Int 11
+            ]
+      traverse_
+        (attrsFromUser `shouldHaveAttrPair`)
+        [ (HostName, toAttribute @Text "user_host_name")
+        , (TelemetrySdkLanguage, toAttribute @Text "GHC2021")
+        , -- No user override for "example.name", so the value from OTEL_RESOURCES_ATTRIBUTES shines through
+          (ExampleName, toAttribute @Text "env_example_name")
+        , (ExampleCount, toAttribute @Int 11)
+        ]
 
   describe "Trace / Context interaction" $ do
     specify "Set active span, Get active span" $ do
