@@ -21,7 +21,6 @@ library
                  iproute,
                  monad-logger,
                  mysql,
-                 mysql-simple,
                  persistent,
                  persistent-mysql,
                  resource-pool,

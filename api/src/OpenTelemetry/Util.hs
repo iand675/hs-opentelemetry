@@ -41,7 +41,6 @@ module OpenTelemetry.Util (
 import Control.Exception (SomeException)
 import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
-import Data.Foldable
 import Data.Kind
 import qualified Data.Vector as V
 import Foreign.C (CInt (..))

@@ -81,6 +81,5 @@ library
       proto-lens-protoc:proto-lens-protoc
   build-depends:
       base >=4.7 && <5
-    , proto-lens
     , proto-lens-runtime
   default-language: Haskell2010

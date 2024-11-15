@@ -21,15 +21,17 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- async
-- unagi-chan
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - async
+  - unagi-chan
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-exporter-in-memory-test:
     main:                Spec.hs
     source-dirs:         test

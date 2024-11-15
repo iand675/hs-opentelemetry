@@ -20,17 +20,18 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- bytestring
-- text
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- http-types
-- attoparsec
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - bytestring
+  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - http-types
+  - attoparsec
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-propagator-w3c-test:
     main:                Spec.hs
     source-dirs:         test
