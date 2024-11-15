@@ -29,7 +29,8 @@ library:
   - text
   - hs-opentelemetry-api == 0.1.*
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-instrumentation-conduit-test:
     main:                Spec.hs
     source-dirs:         test
@@ -37,3 +38,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-conduit

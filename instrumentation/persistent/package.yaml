@@ -35,7 +35,8 @@ library:
   - unordered-containers
   - clock
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-persistent-test:
     main:                Spec.hs
     source-dirs:         test
@@ -43,3 +44,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-persistent

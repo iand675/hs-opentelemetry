@@ -32,7 +32,8 @@ library:
   - http-types
   - text
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-propagator-b3-test:
     main:                Spec.hs
     source-dirs:         test
@@ -40,3 +41,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-propagator-b3

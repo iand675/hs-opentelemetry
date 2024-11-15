@@ -35,7 +35,8 @@ library:
   - wai
   - yesod-core
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-instrumentation-yesod-test:
     main:                Spec.hs
     source-dirs:         test
@@ -43,3 +44,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-yesod

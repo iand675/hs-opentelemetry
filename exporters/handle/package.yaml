@@ -28,7 +28,8 @@ library:
   - hs-opentelemetry-api >= 0.0.3 && < 0.2
   - text
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-exporter-handle-test:
     main:                Spec.hs
     source-dirs:         test
@@ -36,3 +37,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-exporter-handle

@@ -31,7 +31,8 @@ library:
   - unordered-containers
   - wai
 
-tests:
+# Test suite not yet implemented
+_tests:
   cloudflare-test:
     main:                Spec.hs
     source-dirs:         test
@@ -39,3 +40,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-cloudflare
