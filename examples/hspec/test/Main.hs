@@ -5,7 +5,7 @@ import Data.Text (Text, unpack)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Exporter.Handle.Span
-import OpenTelemetry.Instrumentation.Hspec (instrumentSpec, wrapSpec)
+import OpenTelemetry.Instrumentation.Hspec (instrumentSpec)
 import OpenTelemetry.Processor.Batch.Span
 import OpenTelemetry.Trace hiding (inSpan)
 import qualified OpenTelemetry.Trace as Trace

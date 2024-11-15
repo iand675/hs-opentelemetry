@@ -128,12 +128,12 @@ indexByteArrayNbo ba offset =
 
 
 showWord64BS :: Word64 -> ByteString
-showWord64BS v =
+showWord64BS value =
   unsafeDupablePerformIO $
     BI.createUptoN 20 writeWord64Ptr -- 20 = length (show (maxBound :: Word64))
   where
     writeWord64Ptr ptr =
-      loop (19 :: Int) v 0 False
+      loop (19 :: Int) value 0 False
       where
         loop 0 v offset _ = do
           writeOffPtr ptr offset (word8ToAsciiWord8 $ fromIntegral v)

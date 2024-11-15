@@ -21,15 +21,9 @@ module OpenTelemetry.LogAttributes (
   unsafeMergeLogAttributesIgnoringLimits,
 ) where
 
-import Data.ByteString (ByteString)
-import Data.Data (Data)
 import qualified Data.HashMap.Strict as H
-import Data.Hashable (Hashable)
-import Data.Int (Int64)
-import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Generics (Generic)
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Internal.Common.Types
 

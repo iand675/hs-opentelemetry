@@ -8,18 +8,14 @@
 module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
-import Control.Exception (SomeException)
 import Control.Monad.IO.Class
 import Data.Bits
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
-import Data.Hashable (Hashable)
 import Data.IORef (IORef, readIORef)
-import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word8)
-import GHC.Generics
 import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common

@@ -22,10 +22,12 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 
-library:
+# Library not yet implemented
+_library:
   source-dirs: src
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-propagator-jaeger-test:
     main:                Spec.hs
     source-dirs:         test

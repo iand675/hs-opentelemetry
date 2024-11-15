@@ -88,8 +88,6 @@ library
     , bytestring
     , charset
     , clock
-    , containers
-    , ghc-prim
     , hashable
     , http-types
     , memory
@@ -125,29 +123,13 @@ test-suite hs-opentelemetry-api-test
       RecordWildCards
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
-    , attoparsec
-    , base >=4.7 && <5
-    , binary
-    , bytestring
-    , charset
-    , clock
-    , containers
-    , ghc-prim
-    , hashable
+      base >=4.7 && <5
     , hs-opentelemetry-api
     , hspec
-    , http-types
-    , memory
     , mtl
-    , safe-exceptions
-    , template-haskell
     , text
-    , thread-utils-context ==0.3.*
-    , transformers
     , unliftio-core
     , unordered-containers
-    , vault
     , vector
     , vector-builder
   default-language: Haskell2010

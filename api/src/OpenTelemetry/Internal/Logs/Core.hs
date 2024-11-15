@@ -41,7 +41,7 @@ import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logs.Types
 import OpenTelemetry.Internal.Trace.Types (SpanContext (..), getSpanContext)
-import OpenTelemetry.LogAttributes (LogAttributes, ToValue)
+import OpenTelemetry.LogAttributes (LogAttributes)
 import qualified OpenTelemetry.LogAttributes as LA
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources)
 import Paths_hs_opentelemetry_api (version)

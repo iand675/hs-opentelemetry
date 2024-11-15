@@ -46,19 +46,19 @@ ghc-options:
 
 dependencies:
 - base >= 4.7 && < 5
-- bytestring
-- hs-opentelemetry-api
-- honeycomb >= 0.1.0.1
-- unordered-containers
-- text
-- mtl
-- time
-- transformers
-- uri-bytestring
 
 library:
   source-dirs: src
-
+  dependencies:
+  - bytestring
+  - honeycomb >= 0.1.0.1
+  - hs-opentelemetry-api
+  - mtl
+  - text
+  - time
+  - transformers
+  - unordered-containers
+  - uri-bytestring
 
 tests:
   test:
@@ -76,7 +76,7 @@ tests:
       hspec-discover
 
     dependencies:
-      - hspec
-      - hspec-core
-      - hspec-expectations
+      - hs-opentelemetry-api
       - hs-opentelemetry-vendor-honeycomb
+      - hspec
+      - time

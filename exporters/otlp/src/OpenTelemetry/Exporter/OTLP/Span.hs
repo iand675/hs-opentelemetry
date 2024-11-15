@@ -281,9 +281,9 @@ otlpExporter conf = do
                 sendReq req (backoffCount + 1)
 
       case eResp of
-        Left err@(HttpExceptionRequest req e)
-          | HTTPClient.host req == "localhost"
-          , HTTPClient.port req == 4317 || HTTPClient.port req == 4318
+        Left err@(HttpExceptionRequest req' e)
+          | HTTPClient.host req' == "localhost"
+          , HTTPClient.port req' == 4317 || HTTPClient.port req' == 4318
           , ConnectionFailure _someExn <- e ->
               do
                 pure $ Failure Nothing

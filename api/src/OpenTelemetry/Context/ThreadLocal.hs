@@ -54,11 +54,7 @@ module OpenTelemetry.Context.ThreadLocal (
 ) where
 
 import Control.Concurrent
--- import Control.Concurrent.Async
 import Control.Concurrent.Thread.Storage
--- import Control.Monad
-
-import Control.Monad (void)
 import Control.Monad.IO.Class
 import Data.Maybe (fromMaybe)
 import OpenTelemetry.Context (Context, empty)

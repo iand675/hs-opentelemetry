@@ -9,34 +9,21 @@
 module Minimal where
 
 import Conduit
-import Control.Monad.IO.Class
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as L
-import Data.Conduit.List as CL
-import Data.Pool (Pool, withResource)
+import Data.Pool (Pool)
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8)
 import Database.Persist.Postgresql
-import Database.Persist.Sql
 import Database.Persist.Sql.Raw.QQ
-import Database.Persist.SqlBackend
 import Database.Persist.SqlBackend.SqlPoolHooks
 import GHC.Stack
-import Lens.Micro (lens)
-import Network.HTTP.Types
 import Network.Wai.Handler.Warp (run)
-import OpenTelemetry.Context (Context, HasContext (..))
-import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Exporter.OTLP.Span
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
-import OpenTelemetry.Processor.Batch.Span
-import OpenTelemetry.Propagator.W3CBaggage
-import OpenTelemetry.Propagator.W3CTraceContext
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO hiding (Handler)
@@ -44,7 +31,6 @@ import Yesod.Core (
   RenderRoute (..),
   Yesod (..),
   defaultYesodMiddleware,
-  getYesod,
   mkYesod,
   parseRoutes,
   toWaiApp,
