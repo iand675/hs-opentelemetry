@@ -14,16 +14,18 @@ fi
 
 PROTO_LENS=$(command -v proto-lens-protoc)
 
-OTLP_VERSION="$1"
+OTLP_PACKAGE_DIR='otlp'
+
+# use the package directory as the default destination directory
+DESTINATION_DIR="$(git rev-parse --show-toplevel)/$OTLP_PACKAGE_DIR"
+cd "$DESTINATION_DIR"
+
+OTLP_VERSION=$(cat OTLP_VERSION)
 
 if [ -z "$OTLP_VERSION" ]; then
   printf '%s\n' 'Missing OTLP git tag version as first argument.'
   exit 1
 fi
-
-# use the package directory as the default destination directory
-DESTINATION_DIR="$(git rev-parse --show-toplevel)/otlp"
-cd "$DESTINATION_DIR"
 
 # clone the opentelemetry-proto repository
 OTLP_REPO='https://github.com/open-telemetry/opentelemetry-proto.git'
@@ -34,7 +36,7 @@ git clone -q "$OTLP_REPO" "$OTLP_REPO_DIR"
 # check if the version exist
 OTLP_GIT_TAG=$(git -C "$OTLP_REPO_DIR" tag -l "$OTLP_VERSION" | head -n1)
 if [ "$OTLP_GIT_TAG" != "$OTLP_VERSION" ]; then
-  printf '%s\n' "The git tag does not exist: $OTLP_VERSION"
+  printf '%s\n' "The following git tag does not exist: $OTLP_VERSION"
   exit 1
 fi
 
