@@ -1,7 +1,9 @@
 # otlp
-A package containing `.hs` files with data types generated from `.proto` files in the `proto` submodule.
+A package containing `.hs` files with data types generated from the Protobuf definitions (i.e.: `.proto` files) of the OpenTelemetry protocol (OTLP).
 
 ## Auto-generation Instructions
-To generate `.hs` files from a new version of the `proto` submodule, check that all of the modules that should be generated are listed under `generated-other-modules` in `package.yaml` and run `stack build`.
+To generate `.hs` files from a new version of OTLP, you need to take the corresponding Git tag from the opentelemetry-proto repository [1], write it into the `OTLP_VERSION` file, and run the `./scripts/generate-modules.sh` script.
 
-Auto-generated files can be found in the `.stack-work/build/autogen/Proto` directory.
+Auto-generated files can be found in the `src` directory.
+
+[1] https://github.com/open-telemetry/opentelemetry-proto
