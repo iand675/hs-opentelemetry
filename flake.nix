@@ -90,6 +90,7 @@
               #   pkgs.lib.mkIf (devenvRootFileContent != "") devenvRootFileContent;
               packages = with pkgs; [
                 grpc
+                haskellPackages.proto-lens-protoc
                 libffi
                 mysql80
                 openssl
