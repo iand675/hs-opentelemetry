@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module OpenTelemetry.Instrumentation.HttpClient.Raw where
 
@@ -54,7 +55,7 @@ httpClientInstrumentationConfig = mempty
 httpTracerProvider :: (MonadIO m) => m Tracer
 httpTracerProvider = do
   tp <- getGlobalTracerProvider
-  pure $ makeTracer tp "hs-opentelemetry-instrumentation-http-client" tracerOptions
+  pure $ makeTracer tp $detectInstrumentationLibrary tracerOptions
 
 
 instrumentRequest
