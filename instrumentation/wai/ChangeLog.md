@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- Bracket WAIT middleware spans with detachChontext (#116).
+
 ## 0.1.0.0
 
 ### Breaking changes

@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- Support `OTEL_SDK_DISABLED`
+- Support new versions of dependencies.
+- Build on Windows (#114).
+- Support `OTEL_SDK_DISABLED` (#148).
+- Add Datadog as a known propagator (#117).
 
 ## 0.0.3.6
 

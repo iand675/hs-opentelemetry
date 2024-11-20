@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- Set exception details when using WAI and Yesod instrumentation together (#121).
+
 ## 0.1.0.0
 
 ### Breaking changes
