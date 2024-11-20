@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE StrictData #-}
 
@@ -52,6 +53,7 @@ import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import qualified Language.Haskell.TH.Syntax as TH
 
 
 {- | Default attribute limits used in the global attribute limit configuration if no environment variables are set.
@@ -74,7 +76,7 @@ data Attributes = Attributes
   , attributesCount :: {-# UNPACK #-} !Int
   , attributesDropped :: {-# UNPACK #-} !Int
   }
-  deriving stock (Show, Generic, Eq, Ord)
+  deriving stock (Show, Generic, Eq, Ord, TH.Lift)
 
 
 instance Hashable Attributes
@@ -160,7 +162,7 @@ data Attribute
     --
     -- All values in the array MUST be of the same primitive attribute type.
     AttributeArray [PrimitiveAttribute]
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
+  deriving stock (Read, Show, Eq, Ord, Data, Generic, TH.Lift)
   deriving anyclass (Hashable)
 
 
@@ -185,7 +187,7 @@ data PrimitiveAttribute
   | BoolAttribute Bool
   | DoubleAttribute Double
   | IntAttribute Int64
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
+  deriving stock (Read, Show, Eq, Ord, Data, Generic, TH.Lift)
   deriving anyclass (Hashable)
 
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {- |
 [New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
@@ -46,7 +47,7 @@ newOpenTelemetryWaiMiddleware' tp =
   let waiTracer =
         makeTracer
           tp
-          "opentelemetry-instrumentation-wai"
+          $detectInstrumentationLibrary
           (TracerOptions Nothing)
   in middleware waiTracer
   where

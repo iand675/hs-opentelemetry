@@ -92,6 +92,7 @@ library
     , http-types
     , memory
     , mtl
+    , regex-tdfa
     , safe-exceptions
     , template-haskell
     , text
@@ -110,6 +111,7 @@ test-suite hs-opentelemetry-api-test
   other-modules:
       OpenTelemetry.AttributesSpec
       OpenTelemetry.BaggageSpec
+      OpenTelemetry.InstrumentationLibrarySpec
       OpenTelemetry.Logs.CoreSpec
       OpenTelemetry.ResourceSpec
       OpenTelemetry.SemanticsConfigSpec

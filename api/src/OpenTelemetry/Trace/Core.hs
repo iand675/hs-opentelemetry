@@ -66,6 +66,7 @@ module OpenTelemetry.Trace.Core (
   getImmutableSpanTracer,
   getTracerTracerProvider,
   InstrumentationLibrary (..),
+  detectInstrumentationLibrary,
   TracerOptions (..),
   tracerOptions,
 

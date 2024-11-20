@@ -108,6 +108,7 @@ module OpenTelemetry.Trace (
   tracerOptions,
   HasTracer (..),
   InstrumentationLibrary (..),
+  detectInstrumentationLibrary,
 
   -- * 'Span' operations
   Span,

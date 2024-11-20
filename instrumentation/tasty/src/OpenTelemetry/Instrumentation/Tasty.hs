@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module OpenTelemetry.Instrumentation.Tasty (instrumentTestTree, instrumentTestTreeWithTracer) where
 
@@ -13,6 +14,7 @@ import Data.Text qualified as T
 import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
 import OpenTelemetry.Trace (Span, SpanStatus (Error, Ok), Tracer, addAttribute, createSpan, defaultSpanArguments, endSpan, getGlobalTracerProvider, inSpan, makeTracer, setStatus, tracerOptions)
+import OpenTelemetry.Trace.Core (detectInstrumentationLibrary)
 import Test.Tasty (TestTree, withResource)
 import Test.Tasty.Options (OptionDescription)
 import Test.Tasty.Providers (IsTest (run, testOptions))
@@ -50,7 +52,7 @@ instance IsTest t => IsTest (WrappedTest t) where
 instrumentTestTree :: TestTree -> IO TestTree
 instrumentTestTree t = do
   provider <- getGlobalTracerProvider
-  let tracer = makeTracer provider "hs-opentelemetry-instrumentation-tasty" tracerOptions
+  let tracer = makeTracer provider $detectInstrumentationLibrary tracerOptions
   pure $ instrumentTestTreeWithTracer tracer t
 
 

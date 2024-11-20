@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {- |
 [New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
@@ -156,7 +157,7 @@ pgsSpan conn statement f = do
       attrs = connAttr <> callAttr
       spanArgs = SpanArguments Client attrs [] Nothing
   tracerProvider <- getGlobalTracerProvider
-  let tracer = makeTracer tracerProvider "hs-opentelemetry-postgresql-simple" tracerOptions
+  let tracer = makeTracer tracerProvider $detectInstrumentationLibrary tracerOptions
   TC.inSpan tracer dbName spanArgs f
 
 
