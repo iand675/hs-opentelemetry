@@ -38,6 +38,7 @@ library:
   - http-types
   - memory
   - mtl
+  - regex-tdfa
   - safe-exceptions
   - template-haskell
   - text
