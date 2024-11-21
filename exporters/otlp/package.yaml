@@ -29,7 +29,7 @@ library:
   - bytestring
   - case-insensitive
   - hs-opentelemetry-api ^>= 0.2 
-  - hs-opentelemetry-otlp == 0.0.1.*
+  - hs-opentelemetry-otlp ^>= 0.1
   - http-client
   - http-conduit
   - http-types
