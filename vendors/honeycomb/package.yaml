@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-vendor-honeycomb
-version:             0.0.1.1
+version:             0.0.1.2
 
 <<: *preface
 

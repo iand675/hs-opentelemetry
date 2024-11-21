@@ -1,6 +1,6 @@
 # Changelog for hs-opentelemetry-instrumentation-wai
 
-## Unreleased changes
+## 0.1.1
 
 - Bracket WAIT middleware spans with detachChontext (#116).
 

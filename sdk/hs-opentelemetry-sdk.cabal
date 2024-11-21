@@ -82,10 +82,10 @@ library
     , base >=4.7 && <5
     , bytestring
     , hs-opentelemetry-api ==0.2.*
-    , hs-opentelemetry-exporter-otlp ==0.0.1.*
-    , hs-opentelemetry-propagator-b3 ==0.0.1.*
-    , hs-opentelemetry-propagator-datadog ==0.0.0.*
-    , hs-opentelemetry-propagator-w3c ==0.0.1.*
+    , hs-opentelemetry-exporter-otlp ==0.1.*
+    , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
+    , hs-opentelemetry-propagator-datadog >=0.0.0 && <0.1
+    , hs-opentelemetry-propagator-w3c >=0.0.1 && <0.1
     , http-types
     , network-bsd
     , random >=1.2.0

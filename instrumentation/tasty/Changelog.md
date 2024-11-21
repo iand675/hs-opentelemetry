@@ -1,5 +1,5 @@
 # Changelog for hs-opentelemetry-instrumentation-tasty
 
-## Unreleased changes
+## 0.1.0.0
 
 - Initial release

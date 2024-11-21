@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-propagator-b3
-version:            0.0.1.1
+version:            0.0.1.2
 synopsis:           Trace propagation via HTTP headers following the b3 tracestate spec.
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
 category:           OpenTelemetry, Tracing, Web

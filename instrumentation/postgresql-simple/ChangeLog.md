@@ -1,5 +1,5 @@
 # Changelog for hs-opentelemetry-instrumentation-postgresql-simple
 
-## Unreleased changes
+## 0.2.0.0
 
 - Significantly reworked implementation

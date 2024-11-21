@@ -1,6 +1,6 @@
 # Changelog for hs-opentelemetry-instrumentation-yesod
 
-## Unreleased changes
+## 0.1.1.0
 
 - Set exception details when using WAI and Yesod instrumentation together (#121).
 

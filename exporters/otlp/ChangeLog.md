@@ -1,6 +1,6 @@
 # Changelog for hs-opentelemetry-exporter-otlp
 
-## Unreleased
+## 0.1.0.0
 
 - Export dropped span, link, event, and attribute counts
 - Add gzip compression support

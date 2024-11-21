@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-instrumentation-conduit
-version:            0.1.0.0
+version:            0.1.0.1
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/conduit#readme>
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues

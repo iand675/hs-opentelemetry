@@ -47,10 +47,10 @@ library:
   - vector-builder
   # These are "distribution" packages
   - hs-opentelemetry-api ^>= 0.2
-  - hs-opentelemetry-propagator-w3c == 0.0.1.*
-  - hs-opentelemetry-exporter-otlp == 0.0.1.*
-  - hs-opentelemetry-propagator-b3 ==0.0.1.*
-  - hs-opentelemetry-propagator-datadog ==0.0.0.*
+  - hs-opentelemetry-propagator-w3c ^>= 0.0.1
+  - hs-opentelemetry-exporter-otlp ^>= 0.1
+  - hs-opentelemetry-propagator-b3 ^>=0.0.1
+  - hs-opentelemetry-propagator-datadog ^>=0.0.0
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
