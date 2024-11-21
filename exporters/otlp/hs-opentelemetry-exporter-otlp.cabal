@@ -39,7 +39,7 @@ library
       base >=4.7 && <5
     , bytestring
     , case-insensitive
-    , hs-opentelemetry-api >=0.0.3 && <0.2
+    , hs-opentelemetry-api ==0.2.*
     , hs-opentelemetry-otlp ==0.0.1.*
     , http-client
     , http-conduit

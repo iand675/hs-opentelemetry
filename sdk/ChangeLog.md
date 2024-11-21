@@ -1,6 +1,6 @@
 # Changelog for hs-opentelemetry-sdk
 
-## Unreleased
+## 0.1.0.0
 
 - Support new versions of dependencies.
 - Build on Windows (#114).

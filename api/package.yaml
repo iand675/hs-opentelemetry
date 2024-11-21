@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-api
-version:             0.1.0.0
+version:             0.2.0.0
 
 <<: *preface
 

@@ -33,7 +33,7 @@ library
   build-depends:
       base >=4.7 && <5
     , clock
-    , hs-opentelemetry-api ==0.1.*
+    , hs-opentelemetry-api ==0.2.*
     , mtl
     , persistent >=2.13.3
     , resourcet

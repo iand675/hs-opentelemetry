@@ -24,8 +24,8 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api == 0.1.*
-  - hs-opentelemetry-sdk == 0.0.3.*
+  - hs-opentelemetry-api ^>= 0.2
+  - hs-opentelemetry-sdk ^>= 0.1
   - text
   - exceptions
 

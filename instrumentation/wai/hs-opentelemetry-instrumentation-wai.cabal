@@ -35,7 +35,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.1.*
+    , hs-opentelemetry-api ==0.2.*
     , http-types
     , iproute
     , network

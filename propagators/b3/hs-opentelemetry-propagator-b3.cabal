@@ -38,7 +38,7 @@ library
       attoparsec
     , base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api >=0.0.3 && <0.2
+    , hs-opentelemetry-api ==0.2.*
     , http-types
     , text
   default-language: Haskell2010

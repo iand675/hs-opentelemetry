@@ -26,7 +26,7 @@ library:
   source-dirs: src
   dependencies:
   - bytestring
-  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - hs-opentelemetry-api ^>= 0.2
   - http-types
   - attoparsec
 

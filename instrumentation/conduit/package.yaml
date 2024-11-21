@@ -27,7 +27,7 @@ library:
   dependencies:
   - conduit
   - text
-  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-api ^>= 0.2
 
 # Test suite not yet implemented
 _tests:

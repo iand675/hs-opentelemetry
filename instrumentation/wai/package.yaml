@@ -27,7 +27,7 @@ library:
   dependencies:
   - http-types
   - wai
-  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-api ^>= 0.2
   - vault
   - text
   - network

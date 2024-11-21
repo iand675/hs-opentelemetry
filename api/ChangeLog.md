@@ -1,6 +1,6 @@
 # Changelog for hs-opentelemetry-api
 
-## Unreleased changes
+## 0.2.0.0
 
 - `callerAttributes` and `ownCodeAttributes` now work properly if the call stack has been frozen. Hence most
   span-construction functions should now get correct source code attributes in this situation also (#137.
