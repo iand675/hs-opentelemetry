@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-yesod
-version:             0.1.0.0
+version:             0.1.1.0
 
 <<: *preface
 
@@ -25,7 +25,7 @@ library:
   ghc-options: -Wall
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-api ^>= 0.2
   - hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
   - microlens
   - template-haskell

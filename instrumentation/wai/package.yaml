@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-wai
-version:             0.1.0.0
+version:             0.1.1.0
 
 <<: *preface
 
@@ -27,7 +27,7 @@ library:
   dependencies:
   - http-types
   - wai
-  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-api ^>= 0.2
   - vault
   - text
   - network

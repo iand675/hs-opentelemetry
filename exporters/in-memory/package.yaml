@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-exporter-in-memory
-version:             0.0.1.3
+version:             0.0.1.4
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -26,7 +26,7 @@ library:
   ghc-options: -Wall
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - hs-opentelemetry-api ^>= 0.2
   - async
   - unagi-chan
 

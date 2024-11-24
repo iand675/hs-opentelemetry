@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-postgresql-simple
-version:             0.1.0.0
+version:             0.2.0.0
 
 <<: *preface
 
@@ -24,7 +24,7 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-api ^>= 0.2
   - iproute
   - postgresql-simple
   - postgresql-libpq

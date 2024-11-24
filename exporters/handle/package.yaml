@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-exporter-handle
-version:             0.0.1.1
+version:             0.0.1.2
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -25,7 +25,7 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - hs-opentelemetry-api ^>= 0.2 
   - text
 
 # Test suite not yet implemented
