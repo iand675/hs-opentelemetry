@@ -8,7 +8,7 @@
 - Fixed precedence order of resource merge (#156).
 - Added the ability to add links to spans after creation (#152).
 - Correctly compute attribute length limits (#151).
-- Add helper for reading boolean environment variables correctly.
+- Add helper for reading boolean environment variables correctly (#11).
 - Initial scaffolding for logging support. Renamed `Processor` to `SpanProcessor`.
 - Export `FlushResult` (#960
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes
