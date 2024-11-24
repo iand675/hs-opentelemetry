@@ -1,1 +1,0 @@
-# hs-opentelemetry-propagator-jaeger
