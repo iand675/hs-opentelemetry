@@ -6,17 +6,16 @@ stack upload \
   sdk \
   exporters/in-memory \
   exporters/otlp \
+  exporters/handle \
   propagators/w3c \
+  instrumentation/cloudflare \
   instrumentation/conduit \
+  instrumentation/hspec \
+  instrumentation/http-client \
+  instrumentation/persistent \
+  instrumentation/postgresql-simple \
+  instrumentation/tasty \
   instrumentation/wai \
   instrumentation/yesod \
-  instrumentation/http-client \
-  instrumentation/postgresql-simple
-  # Pending upstream merges
-  # instrumentation/persistent
-  # Pending dev
-  # propagators/b3
-  # propagators/jaeger
-  # exporters/handle
-  # exporters/jaeger
-  # exporters/zipkin
+  utils/exceptions \
+  vendors/honeycomb

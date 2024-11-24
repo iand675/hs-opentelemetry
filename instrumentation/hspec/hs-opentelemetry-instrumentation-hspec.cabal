@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-instrumentation-hspec
-version:            0.0.1.1
+version:            0.0.1.2
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/hspec#readme>
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
@@ -32,7 +32,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api >=0.0.3 && <0.2
+    , hs-opentelemetry-api ==0.2.*
     , hspec-core >=2.9.4
     , mtl
     , text

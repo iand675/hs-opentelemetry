@@ -1,8 +1,12 @@
 # Changelog for hs-opentelemetry-sdk
 
-## Unreleased
+## 0.1.0.0
 
-- Support `OTEL_SDK_DISABLED`
+- Support new versions of dependencies.
+- Windows: Replace POSIX-only functionality with a stub, so the package could be built at all (#114).
+- Support `OTEL_SDK_DISABLED` (#148).
+- Add Datadog as a known propagator (#117).
+- Documentation improvements
 
 ## 0.0.3.6
 
@@ -34,8 +38,3 @@
 ## 0.0.1.0
 
 - Initial release
-
-## Unreleased changes
-
-- Documentation improvements
-- Windows: Replace POSIX-only functionality with a stub, so the package could be built at all

@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-hspec
-version:             0.0.1.1
+version:             0.0.1.2
 
 <<: *preface
 
@@ -25,7 +25,7 @@ library:
   # ghc-options: -Wall
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api >= 0.0.3 && < 0.2
+  - hs-opentelemetry-api ^>= 0.2
   - hspec-core >= 2.9.4
   - text
   - mtl

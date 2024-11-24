@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-http-client
-version:             0.1.0.0
+version:             0.1.0.1
 
 <<: *preface
 
@@ -29,7 +29,7 @@ library:
   - bytestring
   - case-insensitive
   - conduit
-  - hs-opentelemetry-api == 0.1.*
+  - hs-opentelemetry-api ^>= 0.2
   - hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
   - http-client
   - http-conduit
