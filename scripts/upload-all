@@ -7,6 +7,8 @@ stack upload \
   exporters/in-memory \
   exporters/otlp \
   exporters/handle \
+  propagators/b3 \
+  propagators/datadog \
   propagators/w3c \
   instrumentation/cloudflare \
   instrumentation/conduit \
