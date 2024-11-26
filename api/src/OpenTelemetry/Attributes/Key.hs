@@ -22,6 +22,19 @@ import GHC.Generics (Generic)
 import OpenTelemetry.Attributes.Attribute (Attribute)
 
 
+{- | A 'Key' is a name for an attribute. The type parameter sets the type of the
+attribute the key should be associated with. This is useful for standardising
+attribute keys, since we can define both the key and the type of value it is
+intended to record.
+
+For example, we might define:
+
+@
+-- See https://opentelemetry.io/docs/specs/semconv/attributes-registry/server/
+serverPortKey :: Key Int
+serverPortKey = "server.port"
+@
+-}
 newtype Key a = Key {unkey :: Text} deriving stock (Show, Eq, Ord, Generic)
 
 
