@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 {- |
-Module      :  OpenTelemetry.Attributes.Attribute
+Module      :  OpenTelemetry.Attributes.Map
 Copyright   :  (c) Ian Duncan, 2021
 License     :  BSD-3
 Description :  Key-value pair metadata used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
