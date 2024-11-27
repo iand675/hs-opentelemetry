@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-api
-version:            0.1.0.0
+version:            0.2.0.0
 synopsis:           OpenTelemetry API for use by libraries for direct instrumentation or wrapper packages.
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/api#readme>
 category:           OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
@@ -91,12 +91,11 @@ library
     , bytestring
     , charset
     , clock
-    , containers
-    , ghc-prim
     , hashable
     , http-types
     , memory
     , mtl
+    , regex-tdfa
     , safe-exceptions
     , template-haskell
     , text
@@ -115,6 +114,7 @@ test-suite hs-opentelemetry-api-test
   other-modules:
       OpenTelemetry.AttributesSpec
       OpenTelemetry.BaggageSpec
+      OpenTelemetry.InstrumentationLibrarySpec
       OpenTelemetry.Logs.CoreSpec
       OpenTelemetry.ResourceSpec
       OpenTelemetry.SemanticsConfigSpec
@@ -128,29 +128,13 @@ test-suite hs-opentelemetry-api-test
       RecordWildCards
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
-    , attoparsec
-    , base >=4.7 && <5
-    , binary
-    , bytestring
-    , charset
-    , clock
-    , containers
-    , ghc-prim
-    , hashable
+      base >=4.7 && <5
     , hs-opentelemetry-api
     , hspec
-    , http-types
-    , memory
     , mtl
-    , safe-exceptions
-    , template-haskell
     , text
-    , thread-utils-context ==0.3.*
-    , transformers
     , unliftio-core
     , unordered-containers
-    , vault
     , vector
     , vector-builder
   default-language: Haskell2010

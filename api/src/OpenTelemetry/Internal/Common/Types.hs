@@ -1,9 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module OpenTelemetry.Internal.Common.Types (
   InstrumentationLibrary (..),
@@ -12,6 +15,8 @@ module OpenTelemetry.Internal.Common.Types (
   ShutdownResult (..),
   FlushResult (..),
   ExportResult (..),
+  parseInstrumentationLibrary,
+  detectInstrumentationLibrary,
 ) where
 
 import Control.Exception (SomeException)
@@ -22,8 +27,12 @@ import Data.Hashable (Hashable)
 import Data.Int (Int64)
 import Data.String (IsString (fromString))
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
+import qualified Language.Haskell.TH as TH
+import qualified Language.Haskell.TH.Syntax as TH
 import OpenTelemetry.Attributes (Attributes, emptyAttributes)
+import Text.Regex.TDFA ((=~~))
 
 
 {- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
@@ -39,24 +48,7 @@ import OpenTelemetry.Attributes (Attributes, emptyAttributes)
 
  If there is no established name, the recommendation is to prefix packages with "hs-opentelemetry-instrumentation", followed by the instrumented library name itself.
 
- In general, you can initialize the instrumentation library like so:
-
- @
-
- import qualified Data.Text as T
- import Data.Version (showVersion)
- import OpenTelemetry.Attributes (emptyAttributes)
- import Paths_your_package_name (version)
-
- instrumentationLibrary :: InstrumentationLibrary
- instrumentationLibrary = InstrumentationLibrary
-   { libraryName = "your_package_name"
-   , libraryVersion = T.pack $ showVersion version
-   , librarySchemaUrl = T.pack "" -- to specify a URL, refer to this documentation: https://opentelemetry.io/docs/specs/otel/schemas/#schema-url
-   , libraryAttributes = emptyAttributes
-   }
-
- @
+ In general, the simplest way to get the instrumentation library is to use 'detectInstrumentationLibrary', which uses the Haskell package name and version.
 -}
 data InstrumentationLibrary = InstrumentationLibrary
   { libraryName :: {-# UNPACK #-} !Text
@@ -66,7 +58,7 @@ data InstrumentationLibrary = InstrumentationLibrary
   , librarySchemaUrl :: {-# UNPACK #-} !Text
   , libraryAttributes :: Attributes
   }
-  deriving (Ord, Eq, Generic, Show)
+  deriving (Ord, Eq, Generic, Show, TH.Lift)
 
 
 instance Hashable InstrumentationLibrary
@@ -178,3 +170,28 @@ data FlushResult
 data ExportResult
   = Success
   | Failure (Maybe SomeException)
+
+
+-- | Parses a package-version string into an InstrumentationLibrary'.
+parseInstrumentationLibrary :: (MonadFail m) => String -> m InstrumentationLibrary
+parseInstrumentationLibrary packageString = do
+  let packageNameRegex :: String = "([a-zA-Z0-9-]+[a-zA-Z0-9]+)"
+  let versionRegex :: String = "([0-9\\.]+)"
+  -- First try and parse with a mandatory version string on the end. If that fails, try
+  -- to parse just a package name
+  let fullRegex :: String = "(" <> packageNameRegex <> "-" <> versionRegex <> ")|" <> packageNameRegex
+  (_ :: String, _ :: String, _ :: String, groups :: [String]) <- packageString =~~ fullRegex
+  -- We end up with 5 groups overall
+  (name, version) <- case groups of
+    [_, name, version, ""] -> pure (name, version)
+    [_, _, _, name] -> pure (name, "")
+    _ -> fail $ "could not parse package string: " <> packageString
+  pure $ InstrumentationLibrary {libraryName = T.pack name, libraryVersion = T.pack version, librarySchemaUrl = "", libraryAttributes = emptyAttributes}
+
+
+-- | Works out the instrumentation library for your package.
+detectInstrumentationLibrary :: forall m. (TH.Quasi m, TH.Quote m) => m TH.Exp
+detectInstrumentationLibrary = do
+  TH.Loc {loc_package} <- TH.qLocation
+  lib <- parseInstrumentationLibrary loc_package
+  TH.lift lib

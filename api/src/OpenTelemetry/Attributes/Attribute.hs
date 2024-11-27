@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -35,6 +36,7 @@ import qualified Data.List as L
 import Data.String (IsString (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import qualified Language.Haskell.TH.Syntax as TH
 import Prelude hiding (lookup, map)
 
 
@@ -59,7 +61,7 @@ data Attribute
     --
     -- All values in the array MUST be of the same primitive attribute type.
     AttributeArray [PrimitiveAttribute]
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
+  deriving stock (Read, Show, Eq, Ord, Data, Generic, TH.Lift)
   deriving anyclass (Hashable)
 
 
@@ -84,7 +86,7 @@ data PrimitiveAttribute
   | BoolAttribute Bool
   | DoubleAttribute Double
   | IntAttribute Int64
-  deriving stock (Read, Show, Eq, Ord, Data, Generic)
+  deriving stock (Read, Show, Eq, Ord, Data, Generic, TH.Lift)
   deriving anyclass (Hashable)
 
 

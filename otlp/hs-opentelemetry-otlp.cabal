@@ -1,11 +1,11 @@
-cabal-version: 2.0
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-otlp
-version:        0.0.1.0
+version:        0.1.0.0
 synopsis:       OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
 category:       OpenTelemetry
@@ -16,7 +16,7 @@ maintainer:     ian@iankduncan.com
 copyright:      2024 Ian Duncan, Mercury Technologies
 license:        BSD3
 license-file:   LICENSE
-build-type:     Custom
+build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -32,12 +32,6 @@ extra-source-files:
 source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry
-
-custom-setup
-  setup-depends:
-      Cabal >=2.0 && <3.12
-    , base >=4.7 && <5
-    , proto-lens-setup
 
 library
   exposed-modules:
@@ -59,28 +53,9 @@ library
       Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
   other-modules:
       Paths_hs_opentelemetry_otlp
-  autogen-modules:
-      Paths_hs_opentelemetry_otlp
-      Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService
-      Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields
-      Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService
-      Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields
-      Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService
-      Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService_Fields
-      Proto.Opentelemetry.Proto.Common.V1.Common
-      Proto.Opentelemetry.Proto.Common.V1.Common_Fields
-      Proto.Opentelemetry.Proto.Logs.V1.Logs
-      Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields
-      Proto.Opentelemetry.Proto.Metrics.V1.Metrics
-      Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields
-      Proto.Opentelemetry.Proto.Resource.V1.Resource
-      Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields
-      Proto.Opentelemetry.Proto.Trace.V1.Trace
-      Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields
-  build-tool-depends:
-      proto-lens-protoc:proto-lens-protoc
+  hs-source-dirs:
+      src
   build-depends:
       base >=4.7 && <5
-    , proto-lens
     , proto-lens-runtime
   default-language: Haskell2010

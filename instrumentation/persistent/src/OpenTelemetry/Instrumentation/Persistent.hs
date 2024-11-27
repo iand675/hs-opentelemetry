@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -107,7 +108,7 @@ wrapSqlBackend' tp attrs conn_ = do
   connParentSpan <- liftIO $ newIORef Nothing
   connSpanInFlight <- liftIO $ newIORef Nothing
   -- TODO add schema to tracerOptions?
-  let t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
+  let t = makeTracer tp $detectInstrumentationLibrary tracerOptions
   let hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do

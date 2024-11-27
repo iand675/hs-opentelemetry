@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-propagator-b3
-version:             0.0.1.1
+version:             0.0.1.2
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -20,20 +20,20 @@ category:            OpenTelemetry, Tracing, Web
 description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3#readme>
 
 dependencies:
-- attoparsec
-- base >=4.7 && <5
-- bytestring
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- http-types
-- memory
-- primitive
-- text
+- base >= 4.7 && < 5
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - attoparsec
+  - bytestring
+  - hs-opentelemetry-api ^>= 0.2
+  - http-types
+  - text
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-propagator-b3-test:
     main:                Spec.hs
     source-dirs:         test

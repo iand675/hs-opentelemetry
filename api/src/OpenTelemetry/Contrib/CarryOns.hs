@@ -14,7 +14,6 @@ import OpenTelemetry.Context
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Trace.Types
-import OpenTelemetry.Trace.Core
 import System.IO.Unsafe (unsafePerformIO)
 
 

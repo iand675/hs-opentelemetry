@@ -57,7 +57,7 @@ rheSiteL = lens rheSite (\rhe new -> rhe {rheSite = new})
 instance MonadTracer (HandlerFor site) where
   getTracer = do
     tp <- getGlobalTracerProvider
-    pure $ makeTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions
+    pure $ makeTracer tp $detectInstrumentationLibrary tracerOptions
 
 
 {- | Template Haskell to generate a function named routeToRendererFunction.

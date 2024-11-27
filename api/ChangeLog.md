@@ -1,13 +1,18 @@
 # Changelog for hs-opentelemetry-api
 
-## Unreleased changes
+## 0.2.0.0
 
 - `callerAttributes` and `ownCodeAttributes` now work properly if the call stack has been frozen. Hence most
-  span-construction functions should now get correct source code attributes in this situation also.
-
-## 0.1.0.0
-
+  span-construction functions should now get correct source code attributes in this situation also (#137.
+- Added `detectInstrumentationLibrary` for producing `InstrumentationLibrary`s with TH (#2).
+- Fixed precedence order of resource merge (#156).
+- Added the ability to add links to spans after creation (#152).
+- Correctly compute attribute length limits (#151).
+- Add helper for reading boolean environment variables correctly (#153).
+- Initial scaffolding for logging support. Renamed `Processor` to `SpanProcessor`.
+- Export `FlushResult` (#96)
 - Use `HashMap Text Attribute` instead of `[(Text, Attribute)]` as attributes
+- Improved conformance with semantic conventions.
 
 ## 0.0.3.6
 
