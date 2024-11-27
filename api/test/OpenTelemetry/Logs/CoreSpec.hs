@@ -64,7 +64,7 @@ spec = describe "Core" $ do
 
       addAttribute lr "anotherThing" ("another thing" :: LA.AnyValue)
 
-      (_, attrs) <- LA.getAttributes <$> logRecordGetAttributes lr
+      (_, attrs) <- LA.getAttributeMap <$> logRecordGetAttributes lr
       attrs
         `shouldBe` H.fromList
           [ ("anotherThing", "another thing")
@@ -82,7 +82,7 @@ spec = describe "Core" $ do
           , ("twoThing", "the second another thing")
           ]
 
-      (_, attrs) <- LA.getAttributes <$> logRecordGetAttributes lr
+      (_, attrs) <- LA.getAttributeMap <$> logRecordGetAttributes lr
       attrs
         `shouldBe` H.fromList
           [ ("anotherThing", "another thing")

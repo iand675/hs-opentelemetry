@@ -8,7 +8,8 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef (modifyIORef')
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import OpenTelemetry.Attributes
+import qualified OpenTelemetry.Attributes as Attributes
+import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Context
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
@@ -16,12 +17,12 @@ import OpenTelemetry.Internal.Trace.Types
 import System.IO.Unsafe (unsafePerformIO)
 
 
-carryOnKey :: Key (H.HashMap Text Attribute)
+carryOnKey :: Key AttributeMap
 carryOnKey = unsafePerformIO $ newKey "carryOn"
 {-# NOINLINE carryOnKey #-}
 
 
-alterCarryOns :: (MonadIO m) => (H.HashMap Text Attribute -> H.HashMap Text Attribute) -> m ()
+alterCarryOns :: (MonadIO m) => (AttributeMap -> AttributeMap) -> m ()
 alterCarryOns f = adjustContext $ \ctxt ->
   Context.insert carryOnKey (f $ fromMaybe mempty $ Context.lookup carryOnKey ctxt) ctxt
 
@@ -48,7 +49,7 @@ withCarryOnProcessor p =
             modifyIORef' spanRef $ \is ->
               is
                 { spanAttributes =
-                    OpenTelemetry.Attributes.addAttributes
+                    Attributes.addAttributes
                       (tracerProviderAttributeLimits $ tracerProvider $ spanTracer is)
                       (spanAttributes is)
                       carryOns

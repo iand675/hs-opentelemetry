@@ -29,7 +29,7 @@ module OpenTelemetry.Trace.Monad (
   -- , updateName
   -- , addAttribute
   -- , addAttributes
-  -- , getAttributes
+  -- , getAttributeMap
   -- , addEvent
   -- , NewEvent (..)
   -- Fundamental monad instances

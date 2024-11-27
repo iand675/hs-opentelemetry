@@ -289,7 +289,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                     , spanTracer = t
                     }
 
-            when (A.attributesDropped (spanAttributes is) > 0) $ void logDroppedAttributes
+            when (A.getDropped (spanAttributes is) > 0) $ void logDroppedAttributes
 
             s <- newIORef is
             eResult <- try $ mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
@@ -304,7 +304,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         RecordAndSample -> mkRecordingSpan
 
 
-ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
+ownCodeAttributes :: (HasCallStack) => AttributeMap
 ownCodeAttributes = case getCallStack callStack of
   -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
   -- and look one further step up for our own code.
@@ -314,7 +314,7 @@ ownCodeAttributes = case getCallStack callStack of
   _ -> mempty
 
 
-callerAttributes :: (HasCallStack) => H.HashMap Text Attribute
+callerAttributes :: (HasCallStack) => AttributeMap
 callerAttributes = case getCallStack callStack of
   -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
   -- and look two further steps up for the caller.
@@ -326,7 +326,7 @@ callerAttributes = case getCallStack callStack of
   _ -> mempty
 
 
-srcAttributes :: (String, SrcLoc) -> H.HashMap Text Attribute
+srcAttributes :: (String, SrcLoc) -> AttributeMap
 srcAttributes (fn, loc) =
   H.fromList
     [ ("code.function", toAttribute $ T.pack fn)
@@ -340,7 +340,7 @@ srcAttributes (fn, loc) =
 {- | Attributes are added to the end of the span argument list, so will be discarded
  if the number of attributes in the span exceeds the limit.
 -}
-addAttributesToSpanArguments :: H.HashMap Text Attribute -> SpanArguments -> SpanArguments
+addAttributesToSpanArguments :: AttributeMap -> SpanArguments -> SpanArguments
 addAttributesToSpanArguments attrs args = args {attributes = H.union (attributes args) attrs}
 
 
@@ -599,7 +599,7 @@ endSpan (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-recordException :: (MonadIO m, Exception e) => Span -> H.HashMap Text Attribute -> Maybe Timestamp -> e -> m ()
+recordException :: (MonadIO m, Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e

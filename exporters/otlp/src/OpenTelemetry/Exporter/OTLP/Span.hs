@@ -318,7 +318,7 @@ attributesToProto =
     . fmap attributeToKeyValue
     . H.toList
     . snd
-    . getAttributes
+    . ((,) <$> getCount <*> getAttributeMap)
   where
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
@@ -424,7 +424,7 @@ makeSpan completedSpan = do
       & Trace_Fields.vec'attributes
         .~ attributesToProto (OT.spanAttributes completedSpan)
       & Trace_Fields.droppedAttributesCount
-        .~ fromIntegral (fst (getAttributes $ OT.spanAttributes completedSpan))
+        .~ fromIntegral (getCount $ OT.spanAttributes completedSpan)
       & Trace_Fields.vec'events
         .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.spanEvents completedSpan)
       & Trace_Fields.droppedEventsCount
@@ -463,7 +463,7 @@ makeEvent e =
     & Trace_Fields.vec'attributes
       .~ attributesToProto (OT.eventAttributes e)
     & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (fst (getAttributes $ OT.eventAttributes e))
+      .~ fromIntegral (getCount $ OT.eventAttributes e)
 
 
 makeLink :: OT.Link -> Span'Link
@@ -476,4 +476,4 @@ makeLink l =
     & Trace_Fields.vec'attributes
       .~ attributesToProto (OT.frozenLinkAttributes l)
     & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (fst (getAttributes $ OT.frozenLinkAttributes l))
+      .~ fromIntegral (getCount $ OT.frozenLinkAttributes l)

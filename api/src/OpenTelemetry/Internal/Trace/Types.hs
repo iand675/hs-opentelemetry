@@ -122,7 +122,7 @@ This is not the case in scatter/gather and batch scenarios.
 data NewLink = NewLink
   { linkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , linkAttributes :: H.HashMap Text Attribute
+  , linkAttributes :: AttributeMap
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
@@ -163,7 +163,7 @@ data SpanArguments = SpanArguments
   { kind :: SpanKind
   -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
   -- of the various values that may be specified.
-  , attributes :: H.HashMap Text Attribute
+  , attributes :: AttributeMap
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
@@ -397,7 +397,7 @@ newtype NonRecordingSpan = NonRecordingSpan SpanContext
 data NewEvent = NewEvent
   { newEventName :: Text
   -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
-  , newEventAttributes :: H.HashMap Text Attribute
+  , newEventAttributes :: AttributeMap
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
   -- ^ The time that the event occurred.
@@ -448,7 +448,7 @@ data SamplingResult
 data Sampler = Sampler
   { getDescription :: Text
   -- ^ Returns the sampler name or short description with the configuration. This may be displayed on debug pages or in the logs.
-  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, H.HashMap Text Attribute, TraceState)
+  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, AttributeMap, TraceState)
   }
 
 
