@@ -24,6 +24,7 @@ import Database.Persist.Sql
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
 import OpenTelemetry.Attributes (Attributes)
+import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
@@ -68,7 +69,7 @@ lookupOriginalConnection :: SqlBackend -> Maybe SqlBackend
 lookupOriginalConnection = Vault.lookup originalConnectionKey . getConnVault
 
 
-connectionLevelAttributesKey :: Vault.Key (H.HashMap Text Attribute)
+connectionLevelAttributesKey :: Vault.Key AttributeMap
 connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {-# NOINLINE connectionLevelAttributesKey #-}
 
@@ -78,7 +79,7 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 -}
 wrapSqlBackend
   :: MonadIO m
-  => H.HashMap Text Attribute
+  => AttributeMap
   -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
   -> SqlBackend
   -> m SqlBackend
@@ -93,7 +94,7 @@ so that queries are tracked appropriately in the tracing hierarchy.
 wrapSqlBackend'
   :: MonadIO m
   => TracerProvider
-  -> H.HashMap Text Attribute
+  -> AttributeMap
   -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
   -> SqlBackend
   -> m SqlBackend
