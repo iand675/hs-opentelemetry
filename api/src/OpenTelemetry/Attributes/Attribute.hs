@@ -15,7 +15,7 @@
 Module      :  OpenTelemetry.Attributes.Attribute
 Copyright   :  (c) Ian Duncan, 2021
 License     :  BSD-3
-Description :  Key-value pair metadata used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
+Description :  Metadata values
 Maintainer  :  Ian Duncan
 Stability   :  experimental
 Portability :  non-portable (GHC extensions)
