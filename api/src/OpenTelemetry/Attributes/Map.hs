@@ -36,7 +36,7 @@ import OpenTelemetry.Attributes.Attribute (
   ToAttribute (toAttribute),
  )
 import OpenTelemetry.Attributes.Key (
-  Key (Key),
+  AttributeKey (AttributeKey),
  )
 import Prelude hiding (lookup, map)
 
@@ -44,17 +44,17 @@ import Prelude hiding (lookup, map)
 type AttributeMap = H.HashMap Text Attribute
 
 
-insertByKey :: ToAttribute a => Key a -> a -> AttributeMap -> AttributeMap
-insertByKey (Key !k) !v = H.insert k $ toAttribute v
+insertByKey :: ToAttribute a => AttributeKey a -> a -> AttributeMap -> AttributeMap
+insertByKey (AttributeKey !k) !v = H.insert k $ toAttribute v
 
 
-insertAttributeByKey :: Key a -> Attribute -> AttributeMap -> AttributeMap
-insertAttributeByKey (Key !k) !v = H.insert k v
+insertAttributeByKey :: AttributeKey a -> Attribute -> AttributeMap -> AttributeMap
+insertAttributeByKey (AttributeKey !k) !v = H.insert k v
 
 
-lookupByKey :: FromAttribute a => Key a -> AttributeMap -> Maybe a
-lookupByKey (Key k) attributes = H.lookup k attributes >>= fromAttribute
+lookupByKey :: FromAttribute a => AttributeKey a -> AttributeMap -> Maybe a
+lookupByKey (AttributeKey k) attributes = H.lookup k attributes >>= fromAttribute
 
 
-lookupAttributeByKey :: Key a -> AttributeMap -> Maybe Attribute
-lookupAttributeByKey (Key k) = H.lookup k
+lookupAttributeByKey :: AttributeKey a -> AttributeMap -> Maybe Attribute
+lookupAttributeByKey (AttributeKey k) = H.lookup k

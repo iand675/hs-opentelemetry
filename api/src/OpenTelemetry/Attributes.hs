@@ -42,7 +42,7 @@ module OpenTelemetry.Attributes (
   ToPrimitiveAttribute (..),
   FromPrimitiveAttribute (..),
   Map.AttributeMap,
-  Key (..),
+  AttributeKey (..),
   module Key,
 
   -- * Attribute limits
@@ -109,8 +109,8 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
 {-# INLINE addAttribute #-}
 
 
-addAttributeByKey :: (ToAttribute a) => AttributeLimits -> Attributes -> Key a -> a -> Attributes
-addAttributeByKey limits attrs (Key k) !v = addAttribute limits attrs k v
+addAttributeByKey :: (ToAttribute a) => AttributeLimits -> Attributes -> AttributeKey a -> a -> Attributes
+addAttributeByKey limits attrs (AttributeKey k) !v = addAttribute limits attrs k v
 
 
 addAttributes :: (ToAttribute a) => AttributeLimits -> Attributes -> H.HashMap Text a -> Attributes
@@ -152,7 +152,7 @@ lookupAttribute :: Attributes -> Text -> Maybe Attribute
 lookupAttribute Attributes {..} k = H.lookup k attributeMap
 
 
-lookupAttributeByKey :: FromAttribute a => Attributes -> Key a -> Maybe a
+lookupAttributeByKey :: FromAttribute a => Attributes -> AttributeKey a -> Maybe a
 lookupAttributeByKey Attributes {..} k = Map.lookupByKey k attributeMap
 
 
