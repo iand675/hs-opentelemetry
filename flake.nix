@@ -33,7 +33,8 @@
       supportedSystems
       ;
     ignoreGeneratedFiles = attrs:
-      {
+      attrs
+      // {
         excludes =
           attrs.excludes
           or []
@@ -41,8 +42,7 @@
             "^otlp/src/"
             ".*\\.cabal$"
           ];
-      }
-      // attrs;
+      };
     pre-commit-hooks = {
       # General hooks
       end-of-file-fixer = ignoreGeneratedFiles {
