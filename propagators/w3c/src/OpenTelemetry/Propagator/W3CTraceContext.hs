@@ -41,7 +41,7 @@ import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as L
 import Data.Char (isHexDigit)
 import Data.Word (Word8)
-import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
+import Network.HTTP.Types (RequestHeaders)
 import qualified OpenTelemetry.Context as Ctxt
 import OpenTelemetry.Propagator (Propagator (..))
 import OpenTelemetry.Trace.Core (
@@ -149,7 +149,7 @@ encodeSpanContext s = do
 
  @since 0.0.1.0
 -}
-w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders ResponseHeaders
+w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders RequestHeaders
 w3cTraceContextPropagator = Propagator {..}
   where
     propagatorNames = ["tracecontext"]
