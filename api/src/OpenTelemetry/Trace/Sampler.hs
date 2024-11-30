@@ -36,7 +36,7 @@ import Data.Binary.Get
 import Data.Bits
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
-import Data.Text
+import Data.Text hiding (show)
 import Data.Word (Word64)
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Context
