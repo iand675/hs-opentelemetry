@@ -20,7 +20,7 @@ encodeBaggage :: Baggage.Baggage -> ByteString
 encodeBaggage = Baggage.encodeBaggageHeader
 
 
-w3cBaggagePropagator :: Propagator Context RequestHeaders ResponseHeaders
+w3cBaggagePropagator :: Propagator Context RequestHeaders RequestHeaders
 w3cBaggagePropagator = Propagator {..}
   where
     propagatorNames = ["baggage"]

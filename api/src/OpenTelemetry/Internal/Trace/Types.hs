@@ -16,7 +16,7 @@ import Data.IORef (IORef, readIORef)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word8)
-import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
+import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
@@ -73,7 +73,7 @@ data TracerProvider = TracerProvider
   , tracerProviderResources :: !MaterializedResources
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
-  , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
+  , tracerProviderPropagators :: !(Propagator Context RequestHeaders RequestHeaders)
   }
 
 
