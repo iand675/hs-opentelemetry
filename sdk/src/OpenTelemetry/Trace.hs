@@ -291,7 +291,7 @@ import Text.Read (readMaybe)
 -}
 
 
-knownPropagators :: [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
+knownPropagators :: [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
 knownPropagators =
   [ ("tracecontext", w3cTraceContextPropagator)
   , ("baggage", w3cBaggagePropagator)
@@ -303,7 +303,7 @@ knownPropagators =
 
 
 -- TODO, actually implement a registry systme
-readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
+readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
 readRegisteredPropagators = pure knownPropagators
 
 
@@ -375,7 +375,7 @@ getTracerProviderInitializationOptions' rs = do
       pure (processors, providerOpts)
 
 
-detectPropagators :: IO (Propagator Context RequestHeaders ResponseHeaders)
+detectPropagators :: IO (Propagator Context RequestHeaders RequestHeaders)
 detectPropagators = do
   registeredPropagators <- readRegisteredPropagators
   propagatorsInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_PROPAGATORS"

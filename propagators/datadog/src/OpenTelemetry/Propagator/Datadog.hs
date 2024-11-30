@@ -14,10 +14,7 @@ import Data.Primitive (ByteArray (ByteArray))
 import Data.String (IsString)
 import qualified Data.Text as T
 import Data.Word (Word64)
-import Network.HTTP.Types (
-  RequestHeaders,
-  ResponseHeaders,
- )
+import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Common (TraceFlags (TraceFlags))
 import OpenTelemetry.Context (
   Context,
@@ -48,7 +45,7 @@ import qualified OpenTelemetry.Trace.TraceState as TS
 -- Reference: bi-directional conversion of IDs of Open Telemetry and ones of Datadog
 -- - English: https://docs.datadoghq.com/tracing/other_telemetry/connect_logs_and_traces/opentelemetry/
 -- - Japanese: https://docs.datadoghq.com/ja/tracing/connect_logs_and_traces/opentelemetry/
-datadogTraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
+datadogTraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
 datadogTraceContextPropagator =
   Propagator
     { propagatorNames = ["datadog trace context"]

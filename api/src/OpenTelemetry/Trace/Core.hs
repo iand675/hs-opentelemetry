@@ -715,7 +715,7 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsResources :: MaterializedResources
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
-  , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
+  , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders RequestHeaders
   }
 
 
@@ -782,7 +782,7 @@ getTracerProviderResources :: TracerProvider -> MaterializedResources
 getTracerProviderResources = tracerProviderResources
 
 
-getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders ResponseHeaders
+getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders RequestHeaders
 getTracerProviderPropagators = tracerProviderPropagators
 
 
