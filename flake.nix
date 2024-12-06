@@ -41,6 +41,7 @@
           ++ [
             "^otlp/src/"
             ".*\\.cabal$"
+            "^semantic-conventions/src/OpenTelemetry/SemanticConventions\\.hs$"
           ];
       };
     pre-commit-hooks = {
