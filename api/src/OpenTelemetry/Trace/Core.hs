@@ -209,7 +209,9 @@ createSpan
   -- ^ Additional span information
   -> m Span
   -- ^ The created span.
-createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes = H.union (attributes args) callerAttributes})
+  -- Try and infer source code information unless the user has set any of the attributes already, which
+  -- we take as an indication that our automatic strategy won't work well.
+createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -304,33 +306,65 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         RecordAndSample -> mkRecordingSpan
 
 
+{- |
+Creates source code attributes describing the caller of the current function. You should use this if you are getting
+source code attributes from inside a function that is creating a span.
+
+Note: this will return nothing if the call stack is frozen.
+-}
 ownCodeAttributes :: (HasCallStack) => AttributeMap
 ownCodeAttributes = case getCallStack callStack of
   -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
   -- and look one further step up for our own code.
-  (("ownCodeAttributes", _) : ownCode : _) -> srcAttributes ownCode
+  (("ownCodeAttributes", ownCodeCalledAt) : (ownFunction, _ownFunctionCalledAt) : _) ->
+    -- The source location attributes for the call to 'ownCode' will do well enough to identify the function
+    fnAttributes ownFunction <> srcLocAttributes ownCodeCalledAt
+  (("ownCodeAttributes", ownCodeCalledAt) : _) ->
+    -- We couldn't determine the calling function, but we should still be able to see the call location
+    fnAttributes "<unknown>" <> srcLocAttributes ownCodeCalledAt
   -- The call stack doesn't look like we expect, potentially frozen or empty. In this case we can't
-  -- really do much, so give up.
+  -- really do much, so give up. (see discussion below in 'callerAttributes')
   _ -> mempty
 
 
+{- |
+Creates source code attributes describing where the current function is called. You should use this if
+you are getting source code attributes from inside a "span creation" function.
+
+Note: this will return nothing if the call stack is frozen.
+-}
 callerAttributes :: (HasCallStack) => AttributeMap
 callerAttributes = case getCallStack callStack of
   -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
   -- and look two further steps up for the caller.
-  (("callerAttributes", _) : _ : caller : _) -> srcAttributes caller
-  -- The call stack doesn't look like we expect. Guess that it got frozen, and so the most
-  -- useful thing to do is to assume that the "caller" is the top of the frozen call stack
-  (caller : _) -> srcAttributes caller
-  -- Empty call stack
+  (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : (callerFunction, _) : _) ->
+    fnAttributes callerFunction <> srcLocAttributes ownFunctionCalledAt
+  (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : _) ->
+    -- We couldn't determine the calling function, but we should still be able to see the call location
+    fnAttributes "<unknown>" <> srcLocAttributes ownFunctionCalledAt
+  -- The call stack doesn't look like we expect. It could be empty (in which case we can't do anything), or frozen
+  --
+  -- If it's frozen, there are at least two ways we could interpret it:
+  -- 1. The "current function" is the top of the call stack. This is likely if the call stack got frozen in a
+  -- helper function.
+  -- 2. The "caller" is the top of the call stack. This is likely if the call stack got frozen further up.
+  --
+  -- This means we really don't know what is going on, so we can't pick something that will work in all
+  -- circumstances. So we do nothing, and rely on the user to set these themselves.
   _ -> mempty
 
 
-srcAttributes :: (String, SrcLoc) -> AttributeMap
-srcAttributes (fn, loc) =
+fnAttributes :: String -> AttributeMap
+fnAttributes fn =
   H.fromList
     [ ("code.function", toAttribute $ T.pack fn)
-    , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+    ]
+
+
+srcLocAttributes :: SrcLoc -> AttributeMap
+srcLocAttributes loc =
+  H.fromList
+    [ ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
     , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
     , ("code.lineno", toAttribute $ srcLocStartLine loc)
     , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
@@ -342,6 +376,14 @@ srcAttributes (fn, loc) =
 -}
 addAttributesToSpanArguments :: AttributeMap -> SpanArguments -> SpanArguments
 addAttributesToSpanArguments attrs args = args {attributes = H.union (attributes args) attrs}
+
+
+-- | Add the given attributes to the span arguments, but only if *none* of them are present already.
+addAttributesToSpanArgumentsIfNonePresent :: AttributeMap -> SpanArguments -> SpanArguments
+addAttributesToSpanArgumentsIfNonePresent attrs args | shouldAddAttrs = addAttributesToSpanArguments attrs args
+  where
+    shouldAddAttrs = H.null $ H.intersection attrs (attributes args)
+addAttributesToSpanArgumentsIfNonePresent _ args = args
 
 
 {- | The simplest function for annotating code with trace information.
@@ -361,7 +403,9 @@ inSpan
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
   -> m a
-inSpan t n args m = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
+-- Try and infer source code information unless the user has set any of the attributes already, which
+-- we take as an indication that our automatic strategy won't work well.
+inSpan t n args m = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args) (const m)
 
 
 inSpan'
@@ -372,7 +416,9 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' t n args = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
+-- Try and infer source code information unless the user has set any of the attributes already, which
+-- we take as an indication that our automatic strategy won't work well.
+inSpan' t n args = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
 
 
 inSpan''
