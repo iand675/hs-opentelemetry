@@ -1,0 +1,70 @@
+cabal-version: 2.4
+
+name: hs-opentelemetry-semantic-conventions
+version: 0.0.1.0
+author: Kazuki Okamoto (岡本和樹)
+maintainer: kazuki.okamoto@herp.co.jp
+synopsis: OpenTelemetry Semantic Conventions for Haskell
+description:
+  OpenTelemetry Semantic Conventions for Haskell is a library that is automatically generated
+  based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.24.
+
+common common
+  build-depends: base >= 4 && < 5
+  ghc-options: -Wall
+  if impl(ghc >= 8.0)
+    ghc-options: -Wcompat
+  default-language: Haskell2010
+
+common artifact
+  import: common
+  ghc-options: -Wno-name-shadowing
+  if impl(ghc >= 6.4)
+    ghc-options: -Wincomplete-record-updates
+  if impl(ghc >= 6.8)
+    ghc-options: -Wmonomorphism-restriction
+  if impl(ghc >= 7.0)
+    ghc-options: -Wmissing-import-lists
+  if impl(ghc >= 7.2)
+    ghc-options: -Wincomplete-uni-patterns
+                 -Widentities
+  if impl(ghc >= 8.0)
+    ghc-options: -Wmissing-exported-signatures
+                 -Wredundant-constraints
+  if impl(ghc >= 8.2)
+    ghc-options: -Wmissing-home-modules
+  if impl(ghc >= 8.4)
+    ghc-options: -Wmissing-export-lists
+                 -Wpartial-fields
+  if impl(ghc >= 8.8)
+    ghc-options: -Wmissing-deriving-strategies
+  if impl(ghc >= 8.10)
+    ghc-options: -Wunused-packages
+  if impl(ghc >= 9.0)
+    ghc-options: -Winvalid-haddock
+  if impl(ghc >= 9.2)
+    ghc-options: -Wmissing-kind-signatures
+                 -Woperator-whitespace
+                 -Wredundant-bang-patterns
+
+library
+  import: artifact
+  hs-source-dirs: src
+  exposed-modules: OpenTelemetry.SemanticConventions
+  build-depends: hs-opentelemetry-api,
+                 text,
+
+executable generate
+  import: artifact
+  hs-source-dirs: dev
+  main-is: generate.hs
+  build-depends: aeson,
+                 base,
+                 Glob,
+                 directory,
+                 filepath,
+                 yaml,
+                 text,
+                 -- unordered-containers is necessary only when aeson < 2 is used
+                 unordered-containers,
+                 vector
