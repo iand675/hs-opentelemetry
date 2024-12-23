@@ -252,14 +252,25 @@ spec = describe "Trace" $ do
       spanAttributes s `shouldSatisfy` \attrs ->
         (lookupAttribute attrs "code.function") == Just (toAttribute @Text "f")
           && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+          && (lookupAttribute attrs "code.lineno") == Just (toAttribute @Int 323)
 
-    specify "Source code attributes are added correctly in the presence of frozen call stacks" $ asIO $ do
+    specify "Source code attributes are not added in the presence of frozen call stacks" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
       s <- unsafeReadSpan =<< g3 t
       spanAttributes s `shouldSatisfy` \attrs ->
-        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "g")
-          && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+        (lookupAttribute attrs "code.function") == Nothing
+          && (lookupAttribute attrs "code.namespace") == Nothing
+          && (lookupAttribute attrs "code.lineno") == Nothing
+
+    specify "Source code attributes are not added if source attributes are already present" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< h t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "something")
+          && (lookupAttribute attrs "code.namespace") == Nothing
+          && (lookupAttribute attrs "code.lineno") == Nothing
 
     specify "Attribute length limit is respected" $ asIO $ do
       p <- getGlobalTracerProvider
@@ -329,3 +340,8 @@ g2 tracer = g tracer
 -- Make a 3-deep call stack
 g3 :: HasCallStack => Tracer -> IO Span
 g3 tracer = g2 tracer
+
+
+h :: HasCallStack => Tracer -> IO Span
+h tracer =
+  createSpan tracer Context.empty "name" (addAttributesToSpanArguments (HM.singleton "code.function" "something") defaultSpanArguments)
