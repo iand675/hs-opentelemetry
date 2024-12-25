@@ -80,8 +80,4 @@ Maintainers:
 ## PRs and Reviews
 
 When creating a PR please follow the process [described
-here](https://github.com/iand675/hs-opentelemetry/blob/main/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
-
-PRs will be automatically associated with the reviewers based on
-[CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
-maintainers or approvers for facilitation.
+here](https://github.com/iand675/hs-opentelemetry/blob/main/CONTRIBUTING.md).
