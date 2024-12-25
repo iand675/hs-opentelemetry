@@ -48,6 +48,7 @@ Fully instrumented application examples are available in the [examples](examples
 | http-client       | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
 | http-conduit      | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
 | conduit           | [hs-opentelemetry-instrumentation-conduit](instrumentation/conduit)                     |
+| hw-kafka-client   | [hs-opentelemetry-instrumentation-hw-kafka-client](instrumentation/hw-kafka-client)     |
 
 ## Provided Exporters
 
