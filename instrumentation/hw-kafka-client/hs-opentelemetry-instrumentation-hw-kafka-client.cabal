@@ -1,23 +1,32 @@
-cabal-version:      3.0
-name:               hs-opentelemetry-instrumentation-hw-kafka-client
-version:            0.1.0.0
-license:            BSD-3-Clause
-license-file:       LICENSE
-author:             Alberto Fanton
-maintainer:         alberto.fanton@protonmail.com
+cabal-version:   3.0
+name:            hs-opentelemetry-instrumentation-hw-kafka-client
+version:         0.1.0.0
+license:         BSD-3-Clause
+license-file:    LICENSE
+author:          Alberto Fanton
+maintainer:      alberto.fanton@protonmail.com
+
 -- copyright:
-build-type:         Simple
-extra-doc-files:    CHANGELOG.md
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
 -- extra-source-files:
 
 common warnings
-    ghc-options: -Wall
+  ghc-options: -Wall
 
 library
-    import:           warnings
-    exposed-modules:  OpenTelemetry.Instrumentation.Kafka
-    -- other-modules:
-    -- other-extensions:
-    build-depends:     hw-kafka-client
-    hs-source-dirs:   src
-    default-language: Haskell2010
+  import:           warnings
+  exposed-modules:  OpenTelemetry.Instrumentation.Kafka
+
+  -- other-modules:
+  -- other-extensions:
+  build-depends:
+    , base                  >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api
+    , hw-kafka-client
+    , unliftio-core
+
+  hs-source-dirs:   src
+  default-language: Haskell2010
