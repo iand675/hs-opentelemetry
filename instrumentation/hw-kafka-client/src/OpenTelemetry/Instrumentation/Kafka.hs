@@ -8,7 +8,9 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.ByteString (ByteString)
 import GHC.Stack.Types (HasCallStack)
 import Kafka.Consumer (ConsumerRecord, KafkaConsumer)
+import qualified Kafka.Consumer as KC
 import Kafka.Producer (KafkaError, KafkaProducer, ProducerRecord)
+import qualified Kafka.Producer as KP
 import Kafka.Types (Timeout)
 import OpenTelemetry.Trace.Core (Tracer, defaultSpanArguments, detectInstrumentationLibrary, getGlobalTracerProvider, inSpan, makeTracer, tracerOptions)
 
@@ -27,7 +29,7 @@ produceMessage
 produceMessage producer record = do
   tracer <- rdkafkaTracer
   inSpan tracer "produceMessage" defaultSpanArguments $ do
-    produceMessage producer record
+    KP.produceMessage producer record
 
 
 -- | Polls a single message
@@ -44,4 +46,4 @@ pollMessage
 pollMessage consumer timeout = do
   tracer <- rdkafkaTracer
   inSpan tracer "pollMessage" defaultSpanArguments $ do
-    pollMessage consumer timeout
+    KC.pollMessage consumer timeout
