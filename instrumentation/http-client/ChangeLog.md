@@ -4,6 +4,10 @@
 
 - Support newer dependencies
 
+### Breaking changes
+
+- Use `managerModifyRequest` and `managerModifyResponse` to implement this instrumentation
+
 ## 0.1.0.0
 
 ### Breaking changes
