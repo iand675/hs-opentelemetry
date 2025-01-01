@@ -252,14 +252,32 @@ spec = describe "Trace" $ do
       spanAttributes s `shouldSatisfy` \attrs ->
         (lookupAttribute attrs "code.function") == Just (toAttribute @Text "f")
           && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+          && (lookupAttribute attrs "code.lineno") == Just (toAttribute @Int 330)
 
-    specify "Source code attributes are added correctly in the presence of frozen call stacks" $ asIO $ do
+    specify "Source code attributes are not added in the presence of frozen call stacks" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
       s <- unsafeReadSpan =<< g3 t
       spanAttributes s `shouldSatisfy` \attrs ->
-        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "g")
-          && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+        (lookupAttribute attrs "code.function") == Nothing
+          && (lookupAttribute attrs "code.namespace") == Nothing
+          && (lookupAttribute attrs "code.lineno") == Nothing
+
+    specify "Source code attributes are not added if source attributes are already present" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< h t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "something")
+          && (lookupAttribute attrs "code.namespace") == Nothing
+          && (lookupAttribute attrs "code.lineno") == Nothing
+
+    specify "Source code attributes can be added for span creation wrappers" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< useSpanHelper t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "useSpanHelper")
 
     specify "Attribute length limit is respected" $ asIO $ do
       p <- getGlobalTracerProvider
@@ -312,14 +330,9 @@ f tracer =
   createSpan tracer Context.empty "name" defaultSpanArguments
 
 
-helper :: HasCallStack => Tracer -> IO Span
-helper tracer =
-  createSpan tracer Context.empty "name" defaultSpanArguments
-
-
 g :: HasCallStack => Tracer -> IO Span
 -- block createSpan and callerAttributes from appearing in the call stack
-g tracer = withFrozenCallStack $ helper tracer
+g tracer = withFrozenCallStack $ createSpan tracer Context.empty "name" defaultSpanArguments
 
 
 g2 :: HasCallStack => Tracer -> IO Span
@@ -329,3 +342,18 @@ g2 tracer = g tracer
 -- Make a 3-deep call stack
 g3 :: HasCallStack => Tracer -> IO Span
 g3 tracer = g2 tracer
+
+
+h :: HasCallStack => Tracer -> IO Span
+h tracer =
+  createSpan tracer Context.empty "name" (addAttributesToSpanArguments (HM.singleton "code.function" "something") defaultSpanArguments)
+
+
+myInSpan :: HasCallStack => Tracer -> Text -> IO a -> IO (a, Span)
+myInSpan tracer name act = inSpan' tracer name (addAttributesToSpanArguments callerAttributes defaultSpanArguments) $ \traceSpan -> do
+  res <- act
+  pure (res, traceSpan)
+
+
+useSpanHelper :: HasCallStack => Tracer -> IO Span
+useSpanHelper tracer = snd <$> myInSpan tracer "useSpanHelper" (pure ())
