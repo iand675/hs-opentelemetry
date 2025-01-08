@@ -306,6 +306,14 @@ instance Show Span where
   showsPrec d (Dropped ctx) = showParen (d > 10) $ showString "Dropped " . showsPrec 11 ctx
 
 
+-- | Extracts the values from a @Span@ if it is still mutable. Returns @Nothing@ if the @Span@ is frozen or dropped.
+toImmutableSpan :: Span -> IO (Maybe ImmutableSpan)
+toImmutableSpan s = case s of
+  Span ioref -> Just <$> readIORef ioref
+  FrozenSpan ctx -> pure Nothing
+  Dropped ctx -> pure Nothing
+
+
 {- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
  sampling configuration to decide whether or not to sample the trace.
 -}
