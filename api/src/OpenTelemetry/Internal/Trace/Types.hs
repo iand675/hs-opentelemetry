@@ -309,7 +309,7 @@ instance Show Span where
 data FrozenOrDropped = SpanFrozen | SpanDropped deriving (Show, Eq)
 
 
--- | Extracts the values from a @Span@ if it is still mutable. Returns @Nothing@ if the @Span@ is frozen or dropped.
+-- | Extracts the values from a @Span@ if it is still mutable. Returns a @Left@ with @FrozenOrDropped@ if the @Span@ is frozen or dropped.
 toImmutableSpan :: MonadIO m => Span -> m (Either FrozenOrDropped ImmutableSpan)
 toImmutableSpan s = case s of
   Span ioref -> Right <$> liftIO (readIORef ioref)
