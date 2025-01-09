@@ -72,6 +72,8 @@ module OpenTelemetry.Trace.Core (
 
   -- * Span operations
   Span,
+  toImmutableSpan,
+  FrozenOrDropped (..),
   ImmutableSpan (..),
   SpanContext (..),
   -- | W3c Trace flags
@@ -688,10 +690,12 @@ spanIsRemote (Dropped _) = pure False
  to semantic versioning .
 -}
 unsafeReadSpan :: (MonadIO m) => Span -> m ImmutableSpan
-unsafeReadSpan = \case
-  Span ref -> liftIO $ readIORef ref
-  FrozenSpan _s -> error "This span is from another process"
-  Dropped _s -> error "This span was dropped"
+unsafeReadSpan s =
+  toImmutableSpan s >>= \case
+    Right span -> pure span
+    Left frozenOrDropped -> case frozenOrDropped of
+      SpanFrozen -> error "This span is from another process"
+      SpanDropped -> error "This span was dropped"
 
 
 wrapSpanContext :: SpanContext -> Span

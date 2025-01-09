@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-api
 
+## 0.2.1.0
+
+- defined and exported `toImmutableSpan` and `FrozenOrDropped` from `OpenTelemetry.Trace.Core`
+
 ## 0.2.0.0
 
 - `callerAttributes` and `ownCodeAttributes` now work properly if the call stack has been frozen. Hence most
