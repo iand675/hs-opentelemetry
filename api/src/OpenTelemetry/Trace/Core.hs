@@ -73,7 +73,7 @@ module OpenTelemetry.Trace.Core (
   -- * Span operations
   Span,
   toImmutableSpan,
-  FrozenOrDropped,
+  FrozenOrDropped (..),
   ImmutableSpan (..),
   SpanContext (..),
   -- | W3c Trace flags
