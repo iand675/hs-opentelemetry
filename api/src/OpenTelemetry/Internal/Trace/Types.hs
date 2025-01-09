@@ -306,12 +306,15 @@ instance Show Span where
   showsPrec d (Dropped ctx) = showParen (d > 10) $ showString "Dropped " . showsPrec 11 ctx
 
 
+data FrozenOrDropped = SpanFrozen | SpanDropped deriving (Show, Eq)
+
+
 -- | Extracts the values from a @Span@ if it is still mutable. Returns @Nothing@ if the @Span@ is frozen or dropped.
-toImmutableSpan :: Span -> IO (Maybe ImmutableSpan)
+toImmutableSpan :: MonadIO m => Span -> m (Either FrozenOrDropped ImmutableSpan)
 toImmutableSpan s = case s of
-  Span ioref -> Just <$> readIORef ioref
-  FrozenSpan ctx -> pure Nothing
-  Dropped ctx -> pure Nothing
+  Span ioref -> Right <$> liftIO (readIORef ioref)
+  FrozenSpan _ctx -> pure $ Left SpanFrozen
+  Dropped _ctx -> pure $ Left SpanDropped
 
 
 {- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
