@@ -2,7 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module OpenTelemetry.Instrumentation.Kafka (produceMessage, pollMessage, commitAllOffsets) where
+{- |
+Module      : OpenTelemetry.Instrumentation.Kafka
+Description : OpenTelemetry instrumentation for hw-kafka-client
+
+This module provides OpenTelemetry instrumentation for the hw-kafka-client library.
+It adds distributed tracing capabilities to Kafka producer and consumer operations,
+automatically propagating context between services via Kafka message headers.
+-}
+module OpenTelemetry.Instrumentation.Kafka (
+  -- * Producer
+  produceMessage,
+
+  -- * Consumer
+  pollMessage,
+) where
 
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
@@ -11,7 +25,7 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.CaseInsensitive as CI
 import GHC.Stack.Types (HasCallStack)
-import Kafka.Consumer (ConsumerRecord (crHeaders), KafkaConsumer, OffsetCommit)
+import Kafka.Consumer (ConsumerRecord (crHeaders), KafkaConsumer)
 import qualified Kafka.Consumer as KC
 import Kafka.Producer (KafkaError, KafkaProducer, ProducerRecord (prHeaders))
 import qualified Kafka.Producer as KP
@@ -23,23 +37,39 @@ import OpenTelemetry.Propagator (extract, inject)
 import OpenTelemetry.Trace.Core (SpanArguments (kind), SpanKind (Consumer, Producer), Tracer, addAttributesToSpanArguments, callerAttributes, defaultSpanArguments, detectInstrumentationLibrary, getGlobalTracerProvider, getTracerProviderPropagators, inSpan'', makeTracer, tracerOptions)
 
 
+-- | Span arguments for producer operations
 producerSpanArgs :: SpanArguments
 producerSpanArgs = defaultSpanArguments {kind = Producer}
 
 
+-- | Span arguments for consumer operations
 consumerSpanArgs :: SpanArguments
 consumerSpanArgs = defaultSpanArguments {kind = Consumer}
 
 
--- TODO see how to properly link spans, remove the root span in the app if needed
--- TODO documentation
--- TODO see how other instrumentation work
+-- | Get the tracer for rdkafka instrumentation
 rdkafkaTracer :: (MonadIO m) => m Tracer
 rdkafkaTracer = do
   provider <- getGlobalTracerProvider
   return $ makeTracer provider $detectInstrumentationLibrary tracerOptions
 
 
+-- | Convert Kafka headers to HTTP headers format
+kafkaHeadersToHttpHeaders :: Headers -> RequestHeaders
+kafkaHeadersToHttpHeaders = map (first CI.mk) . headersToList
+
+
+-- | Convert HTTP headers to Kafka headers format
+httpHeadersToKafkaHeaders :: RequestHeaders -> Headers
+httpHeadersToKafkaHeaders = headersFromList . map (first CI.foldedCase)
+
+
+{- | Produce a message to Kafka with OpenTelemetry instrumentation.
+
+This function wraps the standard Kafka producer with OpenTelemetry tracing.
+It creates a new span for the produce operation and injects the current context
+into the message headers.
+-}
 produceMessage
   :: (MonadUnliftIO m, HasCallStack)
   => KafkaProducer
@@ -53,21 +83,21 @@ produceMessage producer record = do
     headers <- inject propagator (Context.insertSpan newSpan ctxt) []
     let newKafkaHeaders = prHeaders record <> httpHeadersToKafkaHeaders headers
     let newKafkaRecord = record {prHeaders = newKafkaHeaders}
-    -- TODO put data in span to tracep properly with otel
     KP.produceMessage producer newKafkaRecord
 
 
--- | Polls a single message
+{- | Poll for a single message from Kafka with OpenTelemetry instrumentation.
+
+This function wraps the standard Kafka consumer with OpenTelemetry tracing.
+It creates a new span for the poll operation and extracts any tracing context
+from the message headers.
+-}
 pollMessage
   :: (MonadUnliftIO m, HasCallStack)
   => KafkaConsumer
   -> Timeout
-  -> m
-      ( Either
-          KafkaError
-          (ConsumerRecord (Maybe ByteString) (Maybe ByteString))
-      )
-  -- ^ Left on error or timeout, right for success
+  -> m (Either KafkaError (ConsumerRecord (Maybe ByteString) (Maybe ByteString)))
+  -- ^ Returns either an error or the consumed record
 pollMessage consumer timeout = do
   KC.pollMessage consumer timeout >>= \case
     Left err -> pure $ Left err
@@ -77,26 +107,5 @@ pollMessage consumer timeout = do
       propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
       ctx <- extract propagator (kafkaHeadersToHttpHeaders $ crHeaders cr) ctxt
       void $ attachContext ctx
-      inSpan'' tracer "pollMessage" (addAttributesToSpanArguments callerAttributes consumerSpanArgs) $ \newSpan -> do
+      inSpan'' tracer "pollMessage" (addAttributesToSpanArguments callerAttributes consumerSpanArgs) $ \_span -> do
         return $ Right cr
-
-
--- TODO add span argument, does it make sense to trace this?
-commitAllOffsets
-  :: (MonadIO m, MonadUnliftIO m)
-  => OffsetCommit
-  -> KafkaConsumer
-  -> m (Maybe KafkaError)
-commitAllOffsets offsetCommit kafka = do
-  tracer <- rdkafkaTracer
-  -- TODO add offsetCommit in the attributes
-  inSpan'' tracer "commitAllOffsets" (addAttributesToSpanArguments callerAttributes consumerSpanArgs) $ \_span -> do
-    KC.commitAllOffsets offsetCommit kafka
-
-
-kafkaHeadersToHttpHeaders :: Headers -> RequestHeaders
-kafkaHeadersToHttpHeaders = map (first CI.mk) . headersToList
-
-
-httpHeadersToKafkaHeaders :: RequestHeaders -> Headers
-httpHeadersToKafkaHeaders = headersFromList . map (first CI.foldedCase)

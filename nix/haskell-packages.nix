@@ -28,7 +28,7 @@ in rec {
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
-    hs-opentelemetry-instrumentation-hw-kafka-client= ../instrumentation/hw-kafka-client;
+    hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
     hs-opentelemetry-instrumentation-persistent = ../instrumentation/persistent;
     hs-opentelemetry-instrumentation-persistent-mysql = ../instrumentation/persistent-mysql;
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
