@@ -31,10 +31,3 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
-
-source-repository-package
-    type: git
-    location: https://github.com/google/proto-lens
-    tag: c927e0341715a2ff7f87f219c9a36517f06cef80
-    subdir: proto-lens proto-lens-runtime
-
