@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-conduit
-version:             0.1.0.0
+version:             0.1.0.1
 
 <<: *preface
 
@@ -20,15 +20,17 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- conduit
-- text
-- hs-opentelemetry-api == 0.1.*
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - conduit
+  - text
+  - hs-opentelemetry-api ^>= 0.2
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-instrumentation-conduit-test:
     main:                Spec.hs
     source-dirs:         test

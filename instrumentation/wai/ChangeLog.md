@@ -1,6 +1,8 @@
 # Changelog for hs-opentelemetry-instrumentation-wai
 
-## Unreleased changes
+## 0.1.1
+
+- Bracket WAI middleware spans with detachChontext (#116).
 
 ## 0.1.0.0
 

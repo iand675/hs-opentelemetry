@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-http-client
-version:             0.1.0.0
+version:             0.1.0.1
 
 <<: *preface
 
@@ -20,25 +20,26 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- case-insensitive
-- conduit
-- http-client
-- http-client-tls
-- http-conduit
-- http-types
-- hs-opentelemetry-api == 0.1.*
-- text
-- bytestring
-- unliftio
-- aeson
-- hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
-- unordered-containers
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - aeson
+  - bytestring
+  - case-insensitive
+  - conduit
+  - hs-opentelemetry-api ^>= 0.2
+  - hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
+  - http-client
+  - http-conduit
+  - http-types
+  - text
+  - unliftio
+  - unordered-containers
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-instrumentation-http-client-test:
     main:                Spec.hs
     source-dirs:         test

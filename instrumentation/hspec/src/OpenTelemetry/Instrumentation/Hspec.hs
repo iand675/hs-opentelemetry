@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | Instrumentation for Hspec test suites
 module OpenTelemetry.Instrumentation.Hspec (
@@ -31,7 +32,7 @@ import Test.Hspec.Core.Spec (ActionWith, Item (..), Spec, SpecWith, Tree (..), m
 wrapSpec :: (MonadIO m) => m (SpecWith a -> SpecWith a)
 wrapSpec = do
   tp <- getGlobalTracerProvider
-  let tracer = makeTracer tp "hs-opentelemetry-instrumentation-hspec" tracerOptions
+  let tracer = makeTracer tp $detectInstrumentationLibrary tracerOptions
   context <- getContext
 
   -- FIXME: this kind of just dumps everything flat into one span per `it`. We

@@ -8,21 +8,21 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef (modifyIORef')
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import OpenTelemetry.Attributes
+import qualified OpenTelemetry.Attributes as Attributes
+import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Context
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Internal.Trace.Types
-import OpenTelemetry.Trace.Core
 import System.IO.Unsafe (unsafePerformIO)
 
 
-carryOnKey :: Key (H.HashMap Text Attribute)
+carryOnKey :: Key AttributeMap
 carryOnKey = unsafePerformIO $ newKey "carryOn"
 {-# NOINLINE carryOnKey #-}
 
 
-alterCarryOns :: (MonadIO m) => (H.HashMap Text Attribute -> H.HashMap Text Attribute) -> m ()
+alterCarryOns :: (MonadIO m) => (AttributeMap -> AttributeMap) -> m ()
 alterCarryOns f = adjustContext $ \ctxt ->
   Context.insert carryOnKey (f $ fromMaybe mempty $ Context.lookup carryOnKey ctxt) ctxt
 
@@ -35,11 +35,11 @@ Be cautious about adding too many additional attributes via carry ons. The attri
 and will be discarded if the span has attributes that exceed the configured attribute limits for the configured
 'TracerProvider'.
 -}
-withCarryOnProcessor :: Processor -> Processor
+withCarryOnProcessor :: SpanProcessor -> SpanProcessor
 withCarryOnProcessor p =
-  Processor
-    { processorOnStart = processorOnStart p
-    , processorOnEnd = \spanRef -> do
+  SpanProcessor
+    { spanProcessorOnStart = spanProcessorOnStart p
+    , spanProcessorOnEnd = \spanRef -> do
         ctxt <- getContext
         let carryOns = fromMaybe mempty $ Context.lookup carryOnKey ctxt
         if H.null carryOns
@@ -49,12 +49,12 @@ withCarryOnProcessor p =
             modifyIORef' spanRef $ \is ->
               is
                 { spanAttributes =
-                    OpenTelemetry.Attributes.addAttributes
+                    Attributes.addAttributes
                       (tracerProviderAttributeLimits $ tracerProvider $ spanTracer is)
                       (spanAttributes is)
                       carryOns
                 }
-        processorOnEnd p spanRef
-    , processorShutdown = processorShutdown p
-    , processorForceFlush = processorForceFlush p
+        spanProcessorOnEnd p spanRef
+    , spanProcessorShutdown = spanProcessorShutdown p
+    , spanProcessorForceFlush = spanProcessorForceFlush p
     }

@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 -----------------------------------------------------------------------------
@@ -107,6 +108,7 @@ module OpenTelemetry.Trace (
   tracerOptions,
   HasTracer (..),
   InstrumentationLibrary (..),
+  detectInstrumentationLibrary,
 
   -- * 'Span' operations
   Span,
@@ -115,6 +117,7 @@ module OpenTelemetry.Trace (
   SpanArguments (..),
   SpanKind (..),
   NewLink (..),
+  addLink,
   inSpan',
   updateName,
   addAttribute,
@@ -160,12 +163,14 @@ import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (Context)
-import OpenTelemetry.Exporter (Exporter)
-import OpenTelemetry.Exporter.OTLP (loadExporterEnvironmentVariables, otlpExporter)
-import OpenTelemetry.Processor (Processor)
-import OpenTelemetry.Processor.Batch (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
+import OpenTelemetry.Environment
+import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpExporter)
+import OpenTelemetry.Exporter.Span (SpanExporter)
+import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
+import OpenTelemetry.Processor.Span (SpanProcessor)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
+import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Resource
@@ -221,21 +226,23 @@ import Text.Read (readMaybe)
 
 {- $envGeneral
 
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | Name                      | Description                                                                                                   | Default                                                                                                                                        | Notes                                                                                                                                                                                                                                                                          |
- +===========================+===============================================================================================================+================================================================================================================================================+================================================================================================================================================================================================================================================================================+
- | OTEL_RESOURCE_ATTRIBUTES  | Key-value pairs to be used as resource attributes                                                             | See [Resource semantic conventions](resource/semantic_conventions/README.md#semantic-attributes-with-sdk-provided-default-value) for details.  | See [Resource SDK](./resource/sdk.md#specifying-resource-information-via-an-environment-variable) for more details.                                                                                                                                                            |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_SERVICE_NAME         | Sets the value of the [`service.name`](./resource/semantic_conventions/README.md#service) resource attribute  |                                                                                                                                                | If `service.name` is also provided in `OTEL_RESOURCE_ATTRIBUTES`, then `OTEL_SERVICE_NAME` takes precedence.                                                                                                                                                                   |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_LOG_LEVEL            | Log level used by the SDK logger                                                                              | "info"                                                                                                                                         |                                                                                                                                                                                                                                                                                |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_PROPAGATORS          | Propagators to be used as a comma-separated list                                                              | "tracecontext,baggage"                                                                                                                         | Values MUST be deduplicated in order to register a `Propagator` only once.                                                                                                                                                                                                     |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_TRACES_SAMPLER       | Sampler to be used for traces                                                                                 | "parentbased_always_on"                                                                                                                        | See [Sampling](./trace/sdk.md#sampling)                                                                                                                                                                                                                                        |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_TRACES_SAMPLER_ARG   | String value to be used as the sampler argument                                                               |                                                                                                                                                | The specified value will only be used if OTEL_TRACES_SAMPLER is set. Each Sampler type defines its own expected input, if any. Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the SDK MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | Name                      | Description                                                                                                   | Default                                                                                                                                        | Notes                                                                                                                                                                                                                                                                                    |
+ +===========================+===============================================================================================================+================================================================================================================================================+==========================================================================================================================================================================================================================================================================================+
+ | OTEL_SDK_DISABLED         | Disable the SDK for all signals                                                                               | false                                                                                                                                          | Boolean value. If “true”, a no-op SDK implementation will be used for all telemetry signals. Any other value or absence of the variable will have no effect and the SDK will remain enabled. This setting has no effect on propagators configured through the OTEL_PROPAGATORS variable. |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | OTEL_RESOURCE_ATTRIBUTES  | Key-value pairs to be used as resource attributes                                                             | See [Resource semantic conventions](resource/semantic_conventions/README.md#semantic-attributes-with-sdk-provided-default-value) for details.  | See [Resource SDK](./resource/sdk.md#specifying-resource-information-via-an-environment-variable) for more details.                                                                                                                                                                      |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | OTEL_SERVICE_NAME         | Sets the value of the [`service.name`](./resource/semantic_conventions/README.md#service) resource attribute  |                                                                                                                                                | If `service.name` is also provided in `OTEL_RESOURCE_ATTRIBUTES`, then `OTEL_SERVICE_NAME` takes precedence.                                                                                                                                                                             |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | OTEL_LOG_LEVEL            | Log level used by the SDK logger                                                                              | "info"                                                                                                                                         |                                                                                                                                                                                                                                                                                          |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | OTEL_PROPAGATORS          | Propagators to be used as a comma-separated list                                                              | "tracecontext,baggage"                                                                                                                         | Values MUST be deduplicated in order to register a `Propagator` only once.                                                                                                                                                                                                               |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | OTEL_TRACES_SAMPLER       | Sampler to be used for traces                                                                                 | "parentbased_always_on"                                                                                                                        | See [Sampling](./trace/sdk.md#sampling)                                                                                                                                                                                                                                                  |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ | OTEL_TRACES_SAMPLER_ARG   | String value to be used as the sampler argument                                                               |                                                                                                                                                | The specified value will only be used if OTEL_TRACES_SAMPLER is set. Each Sampler type defines its own expected input, if any. Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the SDK MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.            |
+ +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 -}
 
 
@@ -284,18 +291,19 @@ import Text.Read (readMaybe)
 -}
 
 
-knownPropagators :: [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
+knownPropagators :: [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
 knownPropagators =
   [ ("tracecontext", w3cTraceContextPropagator)
   , ("baggage", w3cBaggagePropagator)
   , ("b3", b3TraceContextPropagator)
   , ("b3multi", b3MultiTraceContextPropagator)
+  , ("datadog", datadogTraceContextPropagator)
   , ("jaeger", error "Jaeger not yet implemented")
   ]
 
 
 -- TODO, actually implement a registry systme
-readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders ResponseHeaders)]
+readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
 readRegisteredPropagators = pure knownPropagators
 
 
@@ -321,7 +329,7 @@ initializeTracerProvider = do
   createTracerProvider processors opts
 
 
-getTracerProviderInitializationOptions :: IO ([Processor], TracerProviderOptions)
+getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
 
 
@@ -329,35 +337,45 @@ getTracerProviderInitializationOptions = getTracerProviderInitializationOptions'
 
  @since 0.0.3.1
 -}
-getTracerProviderInitializationOptions' :: (ResourceMerge 'Nothing any ~ 'Nothing) => Resource any -> IO ([Processor], TracerProviderOptions)
+getTracerProviderInitializationOptions'
+  :: forall schema
+   . (MaterializeResource schema)
+  => Resource schema
+  -> IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions' rs = do
-  sampler <- detectSampler
-  attrLimits <- detectAttributeLimits
-  spanLimits <- detectSpanLimits
-  propagators <- detectPropagators
-  processorConf <- detectBatchProcessorConfig
-  exporters <- detectExporters
-  builtInRs <- detectBuiltInResources
-  envVarRs <- mkResource . map Just <$> detectResourceAttributes
-  let allRs = mergeResources (builtInRs <> envVarRs) rs
-  processors <- case exporters of
-    [] -> do
-      pure []
-    e : _ -> do
-      pure <$> batchProcessor processorConf e
-  let providerOpts =
-        emptyTracerProviderOptions
-          { tracerProviderOptionsIdGenerator = defaultIdGenerator
-          , tracerProviderOptionsSampler = sampler
-          , tracerProviderOptionsAttributeLimits = attrLimits
-          , tracerProviderOptionsSpanLimits = spanLimits
-          , tracerProviderOptionsPropagators = propagators
-          , tracerProviderOptionsResources = materializeResources allRs
-          }
-  pure (processors, providerOpts)
+  disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
+  if disabled
+    then pure ([], emptyTracerProviderOptions)
+    else do
+      sampler <- detectSampler
+      attrLimits <- detectAttributeLimits
+      spanLimits <- detectSpanLimits
+      propagators <- detectPropagators
+      processorConf <- detectBatchProcessorConfig
+      exporters <- detectExporters
+      builtInRs <- detectBuiltInResources
+      envVarRs <- mkResource . map Just <$> detectResourceAttributes
+      let
+        -- NB: Resource merge prioritizes the left value on attribute key conflict.
+        allRs = mergeResources rs (envVarRs <> builtInRs)
+      processors <- case exporters of
+        [] -> do
+          pure []
+        e : _ -> do
+          pure <$> batchProcessor processorConf e
+      let providerOpts =
+            emptyTracerProviderOptions
+              { tracerProviderOptionsIdGenerator = defaultIdGenerator
+              , tracerProviderOptionsSampler = sampler
+              , tracerProviderOptionsAttributeLimits = attrLimits
+              , tracerProviderOptionsSpanLimits = spanLimits
+              , tracerProviderOptionsPropagators = propagators
+              , tracerProviderOptionsResources = materializeResources allRs
+              }
+      pure (processors, providerOpts)
 
 
-detectPropagators :: IO (Propagator Context RequestHeaders ResponseHeaders)
+detectPropagators :: IO (Propagator Context RequestHeaders RequestHeaders)
 detectPropagators = do
   registeredPropagators <- readRegisteredPropagators
   propagatorsInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_PROPAGATORS"
@@ -441,7 +459,7 @@ detectSpanLimits =
     <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
 
 
-knownExporters :: [(T.Text, IO (Exporter ImmutableSpan))]
+knownExporters :: [(T.Text, IO SpanExporter)]
 knownExporters =
   [
     ( "otlp"
@@ -455,7 +473,7 @@ knownExporters =
 
 
 -- TODO, support multiple exporters
-detectExporters :: IO [Exporter ImmutableSpan]
+detectExporters :: IO [SpanExporter]
 detectExporters = do
   exportersInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
   if exportersInEnv == Just ["none"]

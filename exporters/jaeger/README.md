@@ -1,1 +1,0 @@
-# hs-opentelemetry-exporter-jaeger

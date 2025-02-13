@@ -30,7 +30,7 @@ convertWord64ToBinaryByteString =
     toWord8s acc 0 = acc
     toWord8s acc n =
       let (p, q) = n `divMod` (2 ^ (8 :: Int))
-       in toWord8s (fromIntegral q : acc) p
+      in toWord8s (fromIntegral q : acc) p
 
 
 fillLeadingZeros :: Word -> ByteString -> ByteString

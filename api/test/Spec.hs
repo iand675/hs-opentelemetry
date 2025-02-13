@@ -11,8 +11,13 @@ import qualified Data.Vector as V
 import OpenTelemetry.Attributes (lookupAttribute)
 -- Specs
 
+import qualified OpenTelemetry.AttributesSpec as Attributes
 import qualified OpenTelemetry.BaggageSpec as Baggage
 import OpenTelemetry.Context
+import qualified OpenTelemetry.InstrumentationLibrarySpec as InstrumentationLibrary
+import qualified OpenTelemetry.Logs.CoreSpec as CoreSpec
+import qualified OpenTelemetry.ResourceSpec as Resource
+import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
 import OpenTelemetry.Trace.Core
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
@@ -31,7 +36,7 @@ instance Exception TestException
 exceptionTest :: IO ()
 exceptionTest = do
   tp <- getGlobalTracerProvider
-  t <- OpenTelemetry.Trace.Core.getTracer tp "test" tracerOptions
+  let t = OpenTelemetry.Trace.Core.makeTracer tp "test" tracerOptions
   spanToCheck <- newIORef undefined
   handle (\(TestException _) -> pure ()) $ do
     inSpan' t "test" defaultSpanArguments $ \span -> do
@@ -51,6 +56,11 @@ main = hspec $ do
   -- describe "inSpan" $ do
   --   it "records exceptions" $ do
   --     exceptionTest
+  Attributes.spec
   Baggage.spec
+  Resource.spec
+  InstrumentationLibrary.spec
   Sampler.spec
   TraceFlags.spec
+  SemanticsConfigSpec.spec
+  CoreSpec.spec

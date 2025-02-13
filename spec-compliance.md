@@ -132,6 +132,7 @@ Note: Support for environment variables is optional.
 
 |Feature                                       | Haskell |
 |----------------------------------------------|---|
+|OTEL_SDK_DISABLED                             | + |
 |OTEL_RESOURCE_ATTRIBUTES                      | + |
 |OTEL_SERVICE_NAME                             | + |
 |OTEL_LOG_LEVEL                                |   |

@@ -8,23 +8,19 @@
 module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
-import Control.Exception (SomeException)
 import Control.Monad.IO.Class
 import Data.Bits
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
-import Data.Hashable (Hashable)
 import Data.IORef (IORef, readIORef)
-import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word8)
-import GHC.Generics
-import Network.HTTP.Types (RequestHeaders, ResponseHeaders)
+import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
-import OpenTelemetry.Logging.Core (Log)
+import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -33,71 +29,18 @@ import OpenTelemetry.Trace.TraceState
 import OpenTelemetry.Util
 
 
-data ExportResult
-  = Success
-  | Failure (Maybe SomeException)
-
-
-{- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
- Instrumented Library and Instrumentation Library may be the same library if it has built-in OpenTelemetry instrumentation.
-
- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly.
- However, many libraries will not have such integration, and as such there is a need for a separate library which would inject such calls, using mechanisms such as wrapping interfaces,
- subscribing to library-specific callbacks, or translating existing telemetry into the OpenTelemetry model.
-
- A library that enables OpenTelemetry observability for another library is called an Instrumentation Library.
-
- An instrumentation library should be named to follow any naming conventions of the instrumented library (e.g. 'middleware' for a web framework).
-
- If there is no established name, the recommendation is to prefix packages with "hs-opentelemetry-instrumentation", followed by the instrumented library name itself.
-
- In general, you can initialize the instrumentation library like so:
-
- @
-
- import qualified Data.Text as T
- import Data.Version (showVersion)
- import Paths_your_package_name
-
- instrumentationLibrary :: InstrumentationLibrary
- instrumentationLibrary = InstrumentationLibrary
-   { libraryName = "your_package_name"
-   , libraryVersion = T.pack $ showVersion version
-   }
-
- @
--}
-data InstrumentationLibrary = InstrumentationLibrary
-  { libraryName :: {-# UNPACK #-} !Text
-  -- ^ The name of the instrumentation library
-  , libraryVersion :: {-# UNPACK #-} !Text
-  -- ^ The version of the instrumented library
-  }
-  deriving (Ord, Eq, Generic, Show)
-
-
-instance Hashable InstrumentationLibrary
-
-
-instance IsString InstrumentationLibrary where
-  fromString str = InstrumentationLibrary (fromString str) ""
-
-
-data Exporter a = Exporter
-  { exporterExport :: HashMap InstrumentationLibrary (Vector a) -> IO ExportResult
-  , exporterShutdown :: IO ()
+data SpanExporter = SpanExporter
+  { spanExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+  , spanExporterShutdown :: IO ()
   }
 
 
-data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
-
-
-data Processor = Processor
-  { processorOnStart :: IORef ImmutableSpan -> Context -> IO ()
+data SpanProcessor = SpanProcessor
+  { spanProcessorOnStart :: IORef ImmutableSpan -> Context -> IO ()
   -- ^ Called when a span is started. This method is called synchronously on the thread that started the span, therefore it should not block or throw exceptions.
-  , processorOnEnd :: IORef ImmutableSpan -> IO ()
+  , spanProcessorOnEnd :: IORef ImmutableSpan -> IO ()
   -- ^ Called after a span is ended (i.e., the end timestamp is already set). This method is called synchronously within the 'OpenTelemetry.Trace.endSpan' API, therefore it should not block or throw an exception.
-  , processorShutdown :: IO (Async ShutdownResult)
+  , spanProcessorShutdown :: IO (Async ShutdownResult)
   -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
   --
   -- Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
@@ -107,7 +50,7 @@ data Processor = Processor
   -- Shutdown MUST include the effects of ForceFlush.
   --
   -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
-  , processorForceFlush :: IO ()
+  , spanProcessorForceFlush :: IO ()
   -- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
   --
   -- In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
@@ -124,14 +67,13 @@ data Processor = Processor
 'Tracer's can be created from a 'TracerProvider'.
 -}
 data TracerProvider = TracerProvider
-  { tracerProviderProcessors :: !(Vector Processor)
+  { tracerProviderProcessors :: !(Vector SpanProcessor)
   , tracerProviderIdGenerator :: !IdGenerator
   , tracerProviderSampler :: !Sampler
   , tracerProviderResources :: !MaterializedResources
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
-  , tracerProviderPropagators :: !(Propagator Context RequestHeaders ResponseHeaders)
-  , tracerProviderLogger :: Log Text -> IO ()
+  , tracerProviderPropagators :: !(Propagator Context RequestHeaders RequestHeaders)
   }
 
 
@@ -180,7 +122,7 @@ This is not the case in scatter/gather and batch scenarios.
 data NewLink = NewLink
   { linkContext :: !SpanContext
   -- ^ @SpanContext@ of the @Span@ to link to.
-  , linkAttributes :: H.HashMap Text Attribute
+  , linkAttributes :: AttributeMap
   -- ^ Zero or more Attributes further describing the link.
   }
   deriving (Show)
@@ -221,7 +163,7 @@ data SpanArguments = SpanArguments
   { kind :: SpanKind
   -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
   -- of the various values that may be specified.
-  , attributes :: H.HashMap Text Attribute
+  , attributes :: AttributeMap
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
@@ -230,19 +172,6 @@ data SpanArguments = SpanArguments
   , startTime :: Maybe Timestamp
   -- ^ An explicit start time, if the span has already begun.
   }
-
-
--- | The outcome of a call to 'OpenTelemetry.Trace.forceFlush'
-data FlushResult
-  = -- | One or more spans did not export from all associated exporters
-    -- within the alotted timeframe.
-    FlushTimeout
-  | -- | Flushing spans to all associated exporters succeeded.
-    FlushSuccess
-  | -- | One or more exporters failed to successfully export one or more
-    -- unexported spans.
-    FlushError
-  deriving (Show)
 
 
 {- |
@@ -337,7 +266,7 @@ data ImmutableSpan = ImmutableSpan
   , spanEnd :: Maybe Timestamp
   -- ^ A timestamp that corresponds to the end of the span, if the span has ended.
   , spanAttributes :: Attributes
-  , spanLinks :: FrozenBoundedCollection Link
+  , spanLinks :: AppendOnlyBoundedCollection Link
   -- ^ Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
   , spanEvents :: AppendOnlyBoundedCollection Event
   -- ^ Events, which denote a point in time occurrence. These can be useful for recording data about a span such as when an exception was thrown, or to emit structured logs into the span tree.
@@ -375,6 +304,17 @@ instance Show Span where
   showsPrec d (Span _ioref) = showParen (d > 10) $ showString "Span _ioref"
   showsPrec d (FrozenSpan ctx) = showParen (d > 10) $ showString "FrozenSpan " . showsPrec 11 ctx
   showsPrec d (Dropped ctx) = showParen (d > 10) $ showString "Dropped " . showsPrec 11 ctx
+
+
+data FrozenOrDropped = SpanFrozen | SpanDropped deriving (Show, Eq)
+
+
+-- | Extracts the values from a @Span@ if it is still mutable. Returns a @Left@ with @FrozenOrDropped@ if the @Span@ is frozen or dropped.
+toImmutableSpan :: MonadIO m => Span -> m (Either FrozenOrDropped ImmutableSpan)
+toImmutableSpan s = case s of
+  Span ioref -> Right <$> liftIO (readIORef ioref)
+  FrozenSpan _ctx -> pure $ Left SpanFrozen
+  Dropped _ctx -> pure $ Left SpanDropped
 
 
 {- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
@@ -468,7 +408,7 @@ newtype NonRecordingSpan = NonRecordingSpan SpanContext
 data NewEvent = NewEvent
   { newEventName :: Text
   -- ^ The name of an event. Ideally this should be a relatively unique, but low cardinality value.
-  , newEventAttributes :: H.HashMap Text Attribute
+  , newEventAttributes :: AttributeMap
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
   -- ^ The time that the event occurred.
@@ -519,7 +459,7 @@ data SamplingResult
 data Sampler = Sampler
   { getDescription :: Text
   -- ^ Returns the sampler name or short description with the configuration. This may be displayed on debug pages or in the logs.
-  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, H.HashMap Text Attribute, TraceState)
+  , shouldSample :: Context -> TraceId -> Text -> SpanArguments -> IO (SamplingResult, AttributeMap, TraceState)
   }
 
 

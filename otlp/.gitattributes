@@ -1,0 +1,2 @@
+proto/**/*.proto linguist-generated=true
+src/Proto/**/*.hs linguist-generated=true

@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-yesod
-version:             0.1.0.0
+version:             0.1.1.0
 
 <<: *preface
 
@@ -20,22 +20,23 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- mtl
-- microlens
-- yesod-core
-- hs-opentelemetry-api == 0.1.*
-- hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
-- unliftio
-- text
-- template-haskell
-- wai
-- unordered-containers
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  dependencies:
+  - hs-opentelemetry-api ^>= 0.2
+  - hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
+  - microlens
+  - template-haskell
+  - text
+  - unliftio
+  - unordered-containers
+  - wai
+  - yesod-core
 
-tests:
+# Test suite not yet implemented
+_tests:
   hs-opentelemetry-instrumentation-yesod-test:
     main:                Spec.hs
     source-dirs:         test

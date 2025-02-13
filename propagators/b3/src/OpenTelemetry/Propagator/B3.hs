@@ -20,7 +20,7 @@ import Data.ByteString (ByteString)
 import Data.List (intersperse)
 import Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Text.Encoding as Text
-import Network.HTTP.Types (HeaderName, RequestHeaders, ResponseHeaders)
+import Network.HTTP.Types (HeaderName, RequestHeaders)
 import OpenTelemetry.Common (TraceFlags (..))
 import OpenTelemetry.Context (Context)
 import qualified OpenTelemetry.Context as Context
@@ -33,7 +33,7 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
-b3TraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
+b3TraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
 b3TraceContextPropagator =
   Propagator
     { propagatorNames = ["B3 Trace Context"]
@@ -55,7 +55,7 @@ b3TraceContextPropagator =
     }
 
 
-b3MultiTraceContextPropagator :: Propagator Context RequestHeaders ResponseHeaders
+b3MultiTraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
 b3MultiTraceContextPropagator =
   Propagator
     { propagatorNames = ["B3 Multi Trace Context"]

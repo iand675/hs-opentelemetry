@@ -1,13 +1,22 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.TraceSpec where
 
 import Control.Monad
+import Data.Foldable (traverse_)
+import qualified Data.HashMap.Strict as HM
 import Data.IORef
 import Data.Int
 import Data.Text (Text)
+import qualified Data.Text as Text
+import GHC.Stack (withFrozenCallStack)
+import OpenTelemetry.Attributes (AttributeLimits (..), Attributes, defaultAttributeLimits, lookupAttribute)
 import qualified OpenTelemetry.Context as Context
+import OpenTelemetry.Resource
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
@@ -20,6 +29,22 @@ import Test.Hspec
 
 asIO :: IO a -> IO a
 asIO = id
+
+
+pattern HostName :: Text
+pattern HostName = "host.name"
+
+
+pattern TelemetrySdkLanguage :: Text
+pattern TelemetrySdkLanguage = "telemetry.sdk.language"
+
+
+pattern ExampleName :: Text
+pattern ExampleName = "example.name"
+
+
+pattern ExampleCount :: Text
+pattern ExampleCount = "example.count"
 
 
 spec :: Spec
@@ -37,6 +62,37 @@ spec = describe "Trace" $ do
     specify "Safe for concurrent calls" pending
     specify "Shutdown" pending
     specify "ForceFlush" pending
+    specify "Resource initialization prioritizes user override, then OTEL_RESOURCE_ATTRIBUTES env var" $ do
+      let getInitialResourceAttrs :: Resource 'Nothing -> IO Attributes
+          getInitialResourceAttrs resource = do
+            opts <- snd <$> getTracerProviderInitializationOptions' resource
+            pure . getMaterializedResourcesAttributes $ tracerProviderOptionsResources opts
+          shouldHaveAttrPair :: Attributes -> (Text, Attribute) -> Expectation
+          shouldHaveAttrPair attrs (k, v) = lookupAttribute attrs k `shouldBe` Just v
+      attrsFromEnv <- getInitialResourceAttrs mempty
+      traverse_
+        (attrsFromEnv `shouldHaveAttrPair`)
+        [ (HostName, toAttribute @Text "env_host_name")
+        , (TelemetrySdkLanguage, toAttribute @Text "haskell")
+        , (ExampleName, toAttribute @Text "env_example_name")
+        , -- OTEL_RESOURCE_ATTRIBUTES uses Baggage format, where attribute values are always text
+          (ExampleCount, toAttribute @Text "42")
+        ]
+      attrsFromUser <-
+        getInitialResourceAttrs $
+          mkResource @'Nothing
+            [ HostName .= toAttribute @Text "user_host_name"
+            , TelemetrySdkLanguage .= toAttribute @Text "GHC2021"
+            , ExampleCount .= toAttribute @Int 11
+            ]
+      traverse_
+        (attrsFromUser `shouldHaveAttrPair`)
+        [ (HostName, toAttribute @Text "user_host_name")
+        , (TelemetrySdkLanguage, toAttribute @Text "GHC2021")
+        , -- No user override for "example.name", so the value from OTEL_RESOURCES_ATTRIBUTES shines through
+          (ExampleName, toAttribute @Text "env_example_name")
+        , (ExampleCount, toAttribute @Int 11)
+        ]
 
   describe "Trace / Context interaction" $ do
     specify "Set active span, Get active span" $ do
@@ -187,7 +243,57 @@ spec = describe "Trace" $ do
       let t = makeTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
       addAttribute s "🚀" ("🚀" :: Text)
-  -- TODO actually get attributes out
+    -- TODO actually get attributes out
+
+    specify "Source code attributes are added correctly" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< f t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "f")
+          && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+          && (lookupAttribute attrs "code.lineno") == Just (toAttribute @Int 330)
+
+    specify "Source code attributes are not added in the presence of frozen call stacks" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< g3 t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Nothing
+          && (lookupAttribute attrs "code.namespace") == Nothing
+          && (lookupAttribute attrs "code.lineno") == Nothing
+
+    specify "Source code attributes are not added if source attributes are already present" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< h t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "something")
+          && (lookupAttribute attrs "code.namespace") == Nothing
+          && (lookupAttribute attrs "code.lineno") == Nothing
+
+    specify "Source code attributes can be added for span creation wrappers" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- unsafeReadSpan =<< useSpanHelper t
+      spanAttributes s `shouldSatisfy` \attrs ->
+        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "useSpanHelper")
+
+    specify "Attribute length limit is respected" $ asIO $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- createSpan t Context.empty "test_span" defaultSpanArguments
+      let
+        longAttribute :: Text = "looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong"
+        -- We set this limit in Spec.hs
+        -- The long attribute should be truncated down to this length
+        truncatedAttribute :: Text = Text.take 50 longAttribute
+      addAttribute s "attr1" longAttribute
+      addAttributes s (HM.singleton "attr2" (toAttribute longAttribute))
+      s <- unsafeReadSpan s
+
+      lookupAttribute (spanAttributes s) "attr1" `shouldBe` Just (toAttribute truncatedAttribute)
+      lookupAttribute (spanAttributes s) "attr2" `shouldBe` Just (toAttribute truncatedAttribute)
 
   describe "Span events" $ do
     specify "AddEvent" $ asIO $ do
@@ -217,3 +323,37 @@ spec = describe "Trace" $ do
   specify "SpanLimits" pending
   specify "Built-in Processors implement ForceFlush spec" pending
   specify "Attribute Limits" pending
+
+
+f :: HasCallStack => Tracer -> IO Span
+f tracer =
+  createSpan tracer Context.empty "name" defaultSpanArguments
+
+
+g :: HasCallStack => Tracer -> IO Span
+-- block createSpan and callerAttributes from appearing in the call stack
+g tracer = withFrozenCallStack $ createSpan tracer Context.empty "name" defaultSpanArguments
+
+
+g2 :: HasCallStack => Tracer -> IO Span
+g2 tracer = g tracer
+
+
+-- Make a 3-deep call stack
+g3 :: HasCallStack => Tracer -> IO Span
+g3 tracer = g2 tracer
+
+
+h :: HasCallStack => Tracer -> IO Span
+h tracer =
+  createSpan tracer Context.empty "name" (addAttributesToSpanArguments (HM.singleton "code.function" "something") defaultSpanArguments)
+
+
+myInSpan :: HasCallStack => Tracer -> Text -> IO a -> IO (a, Span)
+myInSpan tracer name act = inSpan' tracer name (addAttributesToSpanArguments callerAttributes defaultSpanArguments) $ \traceSpan -> do
+  res <- act
+  pure (res, traceSpan)
+
+
+useSpanHelper :: HasCallStack => Tracer -> IO Span
+useSpanHelper tracer = snd <$> myInSpan tracer "useSpanHelper" (pure ())
