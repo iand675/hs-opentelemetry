@@ -4,6 +4,7 @@ packages:
   , otlp
   , semantic-conventions
   , examples/hspec
+  , examples/hw-kafka-client-example
   , examples/yesod-minimal
   , exporters/handle
   , exporters/in-memory
