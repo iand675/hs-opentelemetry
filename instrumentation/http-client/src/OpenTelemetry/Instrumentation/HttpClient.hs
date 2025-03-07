@@ -43,7 +43,7 @@ import OpenTelemetry.Trace.Core (
   defaultSpanArguments,
   inSpan'',
  )
-import UnliftIO (askRunInIO)
+import UnliftIO (MonadUnliftIO, askRunInIO)
 
 
 spanArgs :: SpanArguments
@@ -66,12 +66,12 @@ spanArgs = defaultSpanArguments {kind = Client}
  body.
 -}
 withResponse
-  :: (HasCallStack)
+  :: (MonadUnliftIO m, HasCallStack)
   => HttpClientInstrumentationConfig
   -> Client.Request
   -> Client.Manager
-  -> (Client.Response Client.BodyReader -> IO a)
-  -> IO a
+  -> (Client.Response Client.BodyReader -> m a)
+  -> m a
 withResponse httpConf req man f = do
   tracer <- httpTracerProvider
   inSpan'' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
@@ -91,7 +91,7 @@ withResponse httpConf req man f = do
  for memory efficiency. If you are anticipating a large response body, you
  are encouraged to use 'withResponse' and 'brRead' instead.
 -}
-httpLbs :: (HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> IO (Client.Response L.ByteString)
+httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
 httpLbs httpConf req man = do
   tracer <- httpTracerProvider
   inSpan'' tracer "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
@@ -105,7 +105,7 @@ httpLbs httpConf req man = do
 {- | A convenient wrapper around 'withResponse' which ignores the response
  body. This is useful, for example, when performing a HEAD request.
 -}
-httpNoBody :: (HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> IO (Client.Response ())
+httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
 httpNoBody httpConf req man = do
   tracer <- httpTracerProvider
   inSpan'' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
@@ -144,7 +144,7 @@ httpNoBody httpConf req man = do
  Content-Encoding: and Accept-Encoding: from request and response
  headers to be relayed.
 -}
-responseOpen :: (HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> IO (Client.Response Client.BodyReader)
+responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
 responseOpen httpConf req man = do
   tracer <- httpTracerProvider
   inSpan'' tracer "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
