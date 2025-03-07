@@ -27,11 +27,13 @@ library:
   dependencies:
   - hs-opentelemetry-api ^>= 0.2
   - hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
+  - containers
   - microlens
   - template-haskell
   - text
   - unliftio
   - unordered-containers
+  - vault
   - wai
   - yesod-core
 
