@@ -1,0 +1,64 @@
+name:                sqlcommenter
+version:             0.1.0.0
+github:              "iand675/hs-opentelemetry"
+license:             BSD-3-Clause
+author:              "Ian Duncan"
+maintainer:          "ian@iankduncan.com"
+copyright:           "2024 Ian Duncan"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/sqlcommenter#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- text >= 2.0 && < 2.2
+- attoparsec
+- containers
+- hs-opentelemetry-api
+- hs-opentelemetry-propagator-w3c
+- hedgehog
+- http-types
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-export-lists
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+tests:
+  sqlcommenter-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - sqlcommenter
+    - bytestring
+    - text
+    - containers
+    - hspec
+    - hspec-hedgehog
+    - hedgehog
+    - http-types
+    - hs-opentelemetry-api
