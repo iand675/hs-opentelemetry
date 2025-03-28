@@ -16,7 +16,7 @@
 -}
 module OpenTelemetry.Resource.Service where
 
-import Data.Text
+import Data.Text (Text)
 import OpenTelemetry.Resource
 
 
