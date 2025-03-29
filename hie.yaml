@@ -12,6 +12,9 @@ cradle:
     - path: "examples/hspec/test"
       component: "hspec-example:test:test"
 
+    - path: "examples/http-server/main.hs"
+      component: "http-server:exe:http-server"
+
     - path: "examples/yesod-minimal/src"
       component: "yesod-minimal:lib"
 
