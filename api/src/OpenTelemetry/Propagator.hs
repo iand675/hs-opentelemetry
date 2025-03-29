@@ -31,7 +31,7 @@ module OpenTelemetry.Propagator where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Text
+import Data.Text (Text)
 
 
 {- |
