@@ -20,7 +20,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vault.Strict as Vault
-import Database.Persist.Sql
+import Database.Persist.Sql (IsolationLevel (..), SqlReadBackend, SqlWriteBackend, Statement (..))
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
 import OpenTelemetry.Attributes (Attributes)

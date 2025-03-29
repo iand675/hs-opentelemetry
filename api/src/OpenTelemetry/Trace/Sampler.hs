@@ -36,7 +36,7 @@ import Data.Binary.Get
 import Data.Bits
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
-import Data.Text
+import qualified Data.Text as T
 import Data.Word (Word64)
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Context
@@ -100,7 +100,7 @@ traceIdRatioBased fraction =
     traceIdUpperBound = floor (fraction * fromIntegral ((1 :: Word64) `shiftL` 63)) :: Word64
     sampler =
       Sampler
-        { getDescription = "TraceIdRatioBased{" <> pack (show fraction) <> "}"
+        { getDescription = "TraceIdRatioBased{" <> T.pack (show fraction) <> "}"
         , shouldSample = \ctxt tid _ _ -> do
             mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
             let x = runGet getWord64be (L.fromStrict $ B.take 8 $ traceIdBytes tid) `shiftR` 1
