@@ -26,25 +26,19 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.HttpClient
-      OpenTelemetry.Instrumentation.HttpClient.Raw
-      OpenTelemetry.Instrumentation.HttpClient.Simple
   other-modules:
       Paths_hs_opentelemetry_instrumentation_http_client
   hs-source-dirs:
       src
-  ghc-options: -Wall
+  ghc-options: -Wunused-packages -Wall
   build-depends:
-      aeson
-    , base >=4.7 && <5
-    , bytestring
+      base >=4.7 && <5
     , case-insensitive
-    , conduit
     , hs-opentelemetry-api ==0.2.*
-    , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
+    , hs-opentelemetry-semantic-conventions
     , http-client
-    , http-conduit
     , http-types
     , text
-    , unliftio
+    , thread-local-storage
     , unordered-containers
   default-language: Haskell2010
