@@ -21,6 +21,8 @@ packages:
   , instrumentation/tasty
   , instrumentation/yesod
   , instrumentation/wai
+  , examples/yesod-minimal
+  , examples/yesod-subsite
   , utils/exceptions
   , vendors/honeycomb
 
