@@ -49,6 +49,7 @@ module OpenTelemetry.Trace.Core (
   createTracerProvider,
   shutdownTracerProvider,
   forceFlushTracerProvider,
+  FlushResult (..),
   getTracerProviderResources,
   getTracerProviderPropagators,
   getGlobalTracerProvider,
@@ -65,11 +66,14 @@ module OpenTelemetry.Trace.Core (
   getImmutableSpanTracer,
   getTracerTracerProvider,
   InstrumentationLibrary (..),
+  detectInstrumentationLibrary,
   TracerOptions (..),
   tracerOptions,
 
   -- * Span operations
   Span,
+  toImmutableSpan,
+  FrozenOrDropped (..),
   ImmutableSpan (..),
   SpanContext (..),
   -- | W3c Trace flags
@@ -93,8 +97,6 @@ module OpenTelemetry.Trace.Core (
   SpanKind (..),
   defaultSpanArguments,
   SpanArguments (..),
-  NewLink (..),
-  Link (..),
 
   -- ** Recording @Event@s
   Event (..),
@@ -110,6 +112,9 @@ module OpenTelemetry.Trace.Core (
   ToAttribute (..),
   PrimitiveAttribute (..),
   ToPrimitiveAttribute (..),
+  Link (..),
+  NewLink (..),
+  addLink,
 
   -- ** Recording error information
   recordException,
@@ -164,9 +169,11 @@ import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Internal.Common.Types
+import OpenTelemetry.Internal.Logs.Core (emitOTelLogRecord, logDroppedAttributes)
+import qualified OpenTelemetry.Internal.Logs.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
-import OpenTelemetry.Logging.Core (Log)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
@@ -204,7 +211,9 @@ createSpan
   -- ^ Additional span information
   -> m Span
   -- ^ The created span.
-createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (args {attributes = H.union (attributes args) callerAttributes})
+  -- Try and infer source code information unless the user has set any of the attributes already, which
+  -- we take as an indication that our automatic strategy won't work well.
+createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -278,18 +287,21 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
                           emptyAttributes
                           (H.unions [additionalInfo, attrs, attributes])
                     , spanLinks =
-                        let limitedLinks = fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
-                         in frozenBoundedCollection limitedLinks $ fmap freezeLink links
+                        let emptyLinks = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
+                        in foldl (\c l -> appendToBoundedCollection c l) emptyLinks (fmap (freezeLink t) links)
                     , spanEvents = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (eventCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                     , spanStatus = Unset
                     , spanStart = st
                     , spanEnd = Nothing
                     , spanTracer = t
                     }
+
+            when (A.getDropped (spanAttributes is) > 0) $ void logDroppedAttributes
+
             s <- newIORef is
-            eResult <- try $ mapM_ (\processor -> processorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
+            eResult <- try $ mapM_ (\processor -> spanProcessorOnStart processor s ctxt) $ tracerProviderProcessors $ tracerProvider t
             case eResult of
-              Left err -> print (err :: SomeException)
+              Left err -> void $ emitOTelLogRecord H.empty SeverityNumber.Error $ T.pack $ show (err :: SomeException)
               Right _ -> pure ()
             pure $ Span s
 
@@ -297,42 +309,86 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
         Drop -> pure $ Dropped ctxtForSpan
         RecordOnly -> mkRecordingSpan
         RecordAndSample -> mkRecordingSpan
-  where
-    freezeLink :: NewLink -> Link
-    freezeLink NewLink {..} =
-      Link
-        { frozenLinkContext = linkContext
-        , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
-        }
 
 
-ownCodeAttributes :: (HasCallStack) => H.HashMap Text Attribute
+{- |
+Creates source code attributes describing the caller of the current function. You should use this if you are getting
+source code attributes from inside a function that is creating a span.
+
+Note: this will return nothing if the call stack is frozen.
+-}
+ownCodeAttributes :: (HasCallStack) => AttributeMap
 ownCodeAttributes = case getCallStack callStack of
-  _ : caller : _ -> srcAttributes caller
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look one further step up for our own code.
+  (("ownCodeAttributes", ownCodeCalledAt) : (ownFunction, _ownFunctionCalledAt) : _) ->
+    -- The source location attributes for the call to 'ownCode' will do well enough to identify the function
+    fnAttributes ownFunction <> srcLocAttributes ownCodeCalledAt
+  (("ownCodeAttributes", ownCodeCalledAt) : _) ->
+    -- We couldn't determine the calling function, but we should still be able to see the call location
+    fnAttributes "<unknown>" <> srcLocAttributes ownCodeCalledAt
+  -- The call stack doesn't look like we expect, potentially frozen or empty. In this case we can't
+  -- really do much, so give up. (see discussion below in 'callerAttributes')
   _ -> mempty
 
 
-callerAttributes :: (HasCallStack) => H.HashMap Text Attribute
+{- |
+Creates source code attributes describing where the current function is called. You should use this if
+you are getting source code attributes from inside a "span creation" function.
+
+Note: this will return nothing if the call stack is frozen.
+-}
+callerAttributes :: (HasCallStack) => AttributeMap
 callerAttributes = case getCallStack callStack of
-  _ : _ : caller : _ -> srcAttributes caller
+  -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
+  -- and look two further steps up for the caller.
+  (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : (callerFunction, _) : _) ->
+    fnAttributes callerFunction <> srcLocAttributes ownFunctionCalledAt
+  (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : _) ->
+    -- We couldn't determine the calling function, but we should still be able to see the call location
+    fnAttributes "<unknown>" <> srcLocAttributes ownFunctionCalledAt
+  -- The call stack doesn't look like we expect. It could be empty (in which case we can't do anything), or frozen
+  --
+  -- If it's frozen, there are at least two ways we could interpret it:
+  -- 1. The "current function" is the top of the call stack. This is likely if the call stack got frozen in a
+  -- helper function.
+  -- 2. The "caller" is the top of the call stack. This is likely if the call stack got frozen further up.
+  --
+  -- This means we really don't know what is going on, so we can't pick something that will work in all
+  -- circumstances. So we do nothing, and rely on the user to set these themselves.
   _ -> mempty
 
 
-srcAttributes :: (String, SrcLoc) -> H.HashMap Text Attribute
-srcAttributes (fn, loc) = H.fromList
-  [ ("code.function", toAttribute $ T.pack fn)
-  , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-  , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-  , ("code.lineno", toAttribute $ srcLocStartLine loc)
-  , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-  ]
+fnAttributes :: String -> AttributeMap
+fnAttributes fn =
+  H.fromList
+    [ ("code.function", toAttribute $ T.pack fn)
+    ]
+
+
+srcLocAttributes :: SrcLoc -> AttributeMap
+srcLocAttributes loc =
+  H.fromList
+    [ ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+    , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
+    , ("code.lineno", toAttribute $ srcLocStartLine loc)
+    , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+    ]
 
 
 {- | Attributes are added to the end of the span argument list, so will be discarded
  if the number of attributes in the span exceeds the limit.
 -}
-addAttributesToSpanArguments :: H.HashMap Text Attribute -> SpanArguments -> SpanArguments
+addAttributesToSpanArguments :: AttributeMap -> SpanArguments -> SpanArguments
 addAttributesToSpanArguments attrs args = args {attributes = H.union (attributes args) attrs}
+
+
+-- | Add the given attributes to the span arguments, but only if *none* of them are present already.
+addAttributesToSpanArgumentsIfNonePresent :: AttributeMap -> SpanArguments -> SpanArguments
+addAttributesToSpanArgumentsIfNonePresent attrs args | shouldAddAttrs = addAttributesToSpanArguments attrs args
+  where
+    shouldAddAttrs = H.null $ H.intersection attrs (attributes args)
+addAttributesToSpanArgumentsIfNonePresent _ args = args
 
 
 {- | The simplest function for annotating code with trace information.
@@ -352,7 +408,9 @@ inSpan
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
   -> m a
-inSpan t n args m = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes}) (const m)
+-- Try and infer source code information unless the user has set any of the attributes already, which
+-- we take as an indication that our automatic strategy won't work well.
+inSpan t n args m = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args) (const m)
 
 
 inSpan'
@@ -363,7 +421,9 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' t n args = inSpan'' t n (args {attributes = H.union (attributes args) callerAttributes})
+-- Try and infer source code information unless the user has set any of the attributes already, which
+-- we take as an indication that our automatic strategy won't work well.
+inSpan' t n args = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
 
 
 inSpan''
@@ -491,6 +551,22 @@ addEvent (FrozenSpan _) _ = pure ()
 addEvent (Dropped _) _ = pure ()
 
 
+-- | Add a link to a recording span.
+addLink :: (MonadIO m) => Span -> NewLink -> m ()
+addLink (Span s) l = liftIO $ do
+  modifyIORef' s $ \(!i) -> i {spanLinks = appendToBoundedCollection (spanLinks i) (freezeLink (spanTracer i) l)}
+addLink (FrozenSpan _) _ = pure ()
+addLink (Dropped _) _ = pure ()
+
+
+freezeLink :: Tracer -> NewLink -> Link
+freezeLink t NewLink {..} =
+  Link
+    { frozenLinkContext = linkContext
+    , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
+    }
+
+
 {- | Sets the Status of the Span. If used, this will override the default @Span@ status, which is @Unset@.
 
  These values form a total order: Ok > Error > Unset. This means that setting Status with StatusCode=Ok will override any prior or future attempts to set span Status with StatusCode=Error or StatusCode=Unset.
@@ -558,9 +634,9 @@ endSpan (Span s) mts = liftIO $ do
   ts <- maybe getTimestamp pure mts
   (alreadyFinished, frozenS) <- atomicModifyIORef' s $ \(!i) ->
     let ref = i {spanEnd = spanEnd i <|> Just ts}
-     in (ref, (isJust $ spanEnd i, ref))
+    in (ref, (isJust $ spanEnd i, ref))
   unless alreadyFinished $ do
-    eResult <- try $ mapM_ (`processorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
+    eResult <- try $ mapM_ (`spanProcessorOnEnd` s) $ tracerProviderProcessors $ tracerProvider $ spanTracer frozenS
     case eResult of
       Left err -> print (err :: SomeException)
       Right _ -> pure ()
@@ -574,7 +650,7 @@ endSpan (Dropped _) _ = pure ()
 
  @since 0.0.1.0
 -}
-recordException :: (MonadIO m, Exception e) => Span -> H.HashMap Text Attribute -> Maybe Timestamp -> e -> m ()
+recordException :: (MonadIO m, Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> m ()
 recordException s attrs ts e = liftIO $ do
   cs <- whoCreated e
   let message = T.pack $ show e
@@ -617,10 +693,12 @@ spanIsRemote (Dropped _) = pure False
  to semantic versioning .
 -}
 unsafeReadSpan :: (MonadIO m) => Span -> m ImmutableSpan
-unsafeReadSpan = \case
-  Span ref -> liftIO $ readIORef ref
-  FrozenSpan _s -> error "This span is from another process"
-  Dropped _s -> error "This span was dropped"
+unsafeReadSpan s =
+  toImmutableSpan s >>= \case
+    Right span -> pure span
+    Left frozenOrDropped -> case frozenOrDropped of
+      SpanFrozen -> error "This span is from another process"
+      SpanDropped -> error "This span was dropped"
 
 
 wrapSpanContext :: SpanContext -> Span
@@ -690,8 +768,7 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsResources :: MaterializedResources
   , tracerProviderOptionsAttributeLimits :: AttributeLimits
   , tracerProviderOptionsSpanLimits :: SpanLimits
-  , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders ResponseHeaders
-  , tracerProviderOptionsLogger :: Log Text -> IO ()
+  , tracerProviderOptionsPropagators :: Propagator Context RequestHeaders RequestHeaders
   }
 
 
@@ -710,14 +787,13 @@ emptyTracerProviderOptions =
     defaultAttributeLimits
     defaultSpanLimits
     mempty
-    (\_ -> pure ())
 
 
 {- | Initialize a new tracer provider
 
  You should generally use 'getGlobalTracerProvider' for most applications.
 -}
-createTracerProvider :: (MonadIO m) => [Processor] -> TracerProviderOptions -> m TracerProvider
+createTracerProvider :: (MonadIO m) => [SpanProcessor] -> TracerProviderOptions -> m TracerProvider
 createTracerProvider ps opts = liftIO $ do
   let g = tracerProviderOptionsIdGenerator opts
   pure $
@@ -729,7 +805,6 @@ createTracerProvider ps opts = liftIO $ do
       (tracerProviderOptionsAttributeLimits opts)
       (tracerProviderOptionsSpanLimits opts)
       (tracerProviderOptionsPropagators opts)
-      (tracerProviderOptionsLogger opts)
 
 
 {- | Access the globally configured 'TracerProvider'. Once the
@@ -760,7 +835,7 @@ getTracerProviderResources :: TracerProvider -> MaterializedResources
 getTracerProviderResources = tracerProviderResources
 
 
-getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders ResponseHeaders
+getTracerProviderPropagators :: TracerProvider -> Propagator Context RequestHeaders RequestHeaders
 getTracerProviderPropagators = tracerProviderPropagators
 
 
@@ -837,7 +912,7 @@ defaultSpanArguments =
 shutdownTracerProvider :: (MonadIO m) => TracerProvider -> m ()
 shutdownTracerProvider TracerProvider {..} = liftIO $ do
   asyncShutdownResults <- forM tracerProviderProcessors $ \processor -> do
-    processorShutdown processor
+    spanProcessorShutdown processor
   mapM_ wait asyncShutdownResults
 
 
@@ -853,7 +928,7 @@ forceFlushTracerProvider
   -- ^ Result that denotes whether the flush action succeeded, failed, or timed out.
 forceFlushTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   jobs <- forM tracerProviderProcessors $ \processor -> async $ do
-    processorForceFlush processor
+    spanProcessorForceFlush processor
   mresult <-
     timeout (fromMaybe 5_000_000 mtimeout) $
       foldM

@@ -1,13 +1,14 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-otlp
-version:             0.0.1.0
+version:             0.1.0.0
 
 <<: *preface
 
 extra-source-files:
 - README.md
 - ChangeLog.md
+- proto/**/*/*.proto
 
 synopsis:            OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
 category:            OpenTelemetry
@@ -19,9 +20,8 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- proto-lens
-- proto-lens-runtime
 
 library:
   source-dirs: src
-
+  dependencies:
+  - proto-lens-runtime

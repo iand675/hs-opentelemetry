@@ -1,24 +1,28 @@
------------------------------------------------------------------------------
+{-# LANGUAGE PatternSynonyms #-}
 
------------------------------------------------------------------------------
-
-{- |
- Module      :  OpenTelemetry.Exporter
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Encode and transmit telemetry to external systems
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
-
- Span Exporter defines the interface that protocol-specific exporters must implement so that they can be plugged into OpenTelemetry SDK and support sending of telemetry data.
-
- The goal of the interface is to minimize burden of implementation for protocol-dependent telemetry exporters. The protocol exporter is expected to be primarily a simple telemetry data encoder and transmitter.
--}
-module OpenTelemetry.Exporter (
-  Exporter (..),
+module OpenTelemetry.Exporter
+  {-# DEPRECATED "use OpenTelemetry.Exporter.Span instead" #-} (
+  Exporter,
+  SpanExporter (Exporter, exporterExport, exporterShutdown),
   ExportResult (..),
 ) where
 
-import OpenTelemetry.Internal.Trace.Types
+import Data.HashMap.Strict (HashMap)
+import Data.Vector (Vector)
+import OpenTelemetry.Exporter.Span
+import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
+import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 
+
+{-# DEPRECATED Exporter "use SpanExporter instead" #-}
+
+
+type Exporter a = SpanExporter
+
+
+pattern Exporter :: (HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult) -> IO () -> Exporter ImmutableSpan
+pattern Exporter {exporterExport, exporterShutdown} =
+  SpanExporter
+    { spanExporterExport = exporterExport
+    , spanExporterShutdown = exporterShutdown
+    }

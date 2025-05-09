@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -13,16 +14,17 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Acquire.Internal
-import Data.IORef
 import qualified Data.HashMap.Strict as H
+import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vault.Strict as Vault
-import Database.Persist.Sql
+import Database.Persist.Sql (IsolationLevel (..), SqlReadBackend, SqlWriteBackend, Statement (..))
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
 import OpenTelemetry.Attributes (Attributes)
+import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
@@ -67,7 +69,7 @@ lookupOriginalConnection :: SqlBackend -> Maybe SqlBackend
 lookupOriginalConnection = Vault.lookup originalConnectionKey . getConnVault
 
 
-connectionLevelAttributesKey :: Vault.Key (H.HashMap Text Attribute)
+connectionLevelAttributesKey :: Vault.Key AttributeMap
 connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {-# NOINLINE connectionLevelAttributesKey #-}
 
@@ -75,12 +77,12 @@ connectionLevelAttributesKey = unsafePerformIO Vault.newKey
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
  so that queries are tracked appropriately in the tracing hierarchy.
 -}
-wrapSqlBackend ::
-  MonadIO m =>
-  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  H.HashMap Text Attribute ->
-  SqlBackend ->
-  m SqlBackend
+wrapSqlBackend
+  :: MonadIO m
+  => AttributeMap
+  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  -> SqlBackend
+  -> m SqlBackend
 wrapSqlBackend attrs conn_ = do
   tp <- getGlobalTracerProvider
   wrapSqlBackend' tp attrs conn_
@@ -89,12 +91,13 @@ wrapSqlBackend attrs conn_ = do
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
 so that queries are tracked appropriately in the tracing hierarchy.
 -}
-wrapSqlBackend' :: MonadIO m =>
-  TracerProvider ->
-  -- | Attributes that are specific to providers like MySQL, PostgreSQL, etc.
-  H.HashMap Text Attribute ->
-  SqlBackend ->
-  m SqlBackend
+wrapSqlBackend'
+  :: MonadIO m
+  => TracerProvider
+  -> AttributeMap
+  -- ^ Attributes that are specific to providers like MySQL, PostgreSQL, etc.
+  -> SqlBackend
+  -> m SqlBackend
 wrapSqlBackend' tp attrs conn_ = do
   let conn = Data.Maybe.fromMaybe conn_ (lookupOriginalConnection conn_)
   {- A connection is acquired when the connection pool is asked for a connection. The runSqlPool function in Persistent then
@@ -105,7 +108,7 @@ wrapSqlBackend' tp attrs conn_ = do
   connParentSpan <- liftIO $ newIORef Nothing
   connSpanInFlight <- liftIO $ newIORef Nothing
   -- TODO add schema to tracerOptions?
-  let t = makeTracer tp "hs-opentelemetry-persistent" tracerOptions
+  let t = makeTracer tp $detectInstrumentationLibrary tracerOptions
   let hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do

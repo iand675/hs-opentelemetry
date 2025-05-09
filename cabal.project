@@ -2,6 +2,7 @@ packages:
     api
   , sdk
   , otlp
+  , semantic-conventions
   , examples/hspec
   , examples/yesod-minimal
   , exporters/handle
@@ -17,6 +18,7 @@ packages:
   , instrumentation/persistent
   , instrumentation/persistent-mysql
   , instrumentation/postgresql-simple
+  , instrumentation/tasty
   , instrumentation/yesod
   , instrumentation/wai
   , utils/exceptions

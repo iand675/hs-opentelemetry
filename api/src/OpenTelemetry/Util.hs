@@ -36,16 +36,11 @@ module OpenTelemetry.Util (
   appendOnlyBoundedCollectionSize,
   appendOnlyBoundedCollectionValues,
   appendOnlyBoundedCollectionDroppedElementCount,
-  FrozenBoundedCollection,
-  frozenBoundedCollection,
-  frozenBoundedCollectionValues,
-  frozenBoundedCollectionDroppedElementCount,
 ) where
 
 import Control.Exception (SomeException)
 import qualified Control.Exception as EUnsafe
 import Control.Monad.IO.Unlift
-import Data.Foldable
 import Data.Kind
 import qualified Data.Vector as V
 import Foreign.C (CInt (..))
@@ -103,14 +98,14 @@ data AppendOnlyBoundedCollection a = AppendOnlyBoundedCollection
 instance forall a. (Show a) => Show (AppendOnlyBoundedCollection a) where
   showsPrec d AppendOnlyBoundedCollection {collection = c, maxSize = m, dropped = r} =
     let vec = Builder.build c :: V.Vector a
-     in showParen (d > 10) $
-          showString "AppendOnlyBoundedCollection {collection = "
-            . shows vec
-            . showString ", maxSize = "
-            . shows m
-            . showString ", dropped = "
-            . shows r
-            . showString "}"
+    in showParen (d > 10) $
+        showString "AppendOnlyBoundedCollection {collection = "
+          . shows vec
+          . showString ", maxSize = "
+          . shows m
+          . showString ", dropped = "
+          . shows r
+          . showString "}"
 
 
 -- | Initialize a bounded collection that admits a maximum size
@@ -138,27 +133,6 @@ appendToBoundedCollection c@(AppendOnlyBoundedCollection b ms d) x =
   if appendOnlyBoundedCollectionSize c < ms
     then AppendOnlyBoundedCollection (b <> Builder.singleton x) ms d
     else AppendOnlyBoundedCollection b ms (d + 1)
-
-
-data FrozenBoundedCollection a = FrozenBoundedCollection
-  { collection :: !(V.Vector a)
-  , dropped :: !Int
-  }
-  deriving (Show)
-
-
-frozenBoundedCollection :: (Foldable f) => Int -> f a -> FrozenBoundedCollection a
-frozenBoundedCollection maxSize_ coll = FrozenBoundedCollection (V.fromListN maxSize_ $ toList coll) (collLength - maxSize_)
-  where
-    collLength = length coll
-
-
-frozenBoundedCollectionValues :: FrozenBoundedCollection a -> V.Vector a
-frozenBoundedCollectionValues (FrozenBoundedCollection coll _) = coll
-
-
-frozenBoundedCollectionDroppedElementCount :: FrozenBoundedCollection a -> Int
-frozenBoundedCollectionDroppedElementCount (FrozenBoundedCollection _ dropped_) = dropped_
 
 
 {- | Like 'Context.Exception.bracket', but provides the @after@ function with information about

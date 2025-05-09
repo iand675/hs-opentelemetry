@@ -1,46 +1,32 @@
 name: yesod-minimal
 
 dependencies:
-# minimal example dependencies
-- base
-- bytestring
-- conduit
-- yesod-core
-- yesod-form
-- http-client
-- http-types
-- wai
-- warp
-- text
-- vault
-- unliftio
-# database
-- yesod-persistent
-- monad-logger
-- persistent >= 2.13.3
-- persistent-postgresql >= 2.13.4
-- persistent-qq
-- resource-pool
-# convenience
-- microlens
-# opentelemetry dependencies
-- hs-opentelemetry-sdk
-- hs-opentelemetry-exporter-handle
-- hs-opentelemetry-instrumentation-wai
-- hs-opentelemetry-instrumentation-yesod
-- hs-opentelemetry-instrumentation-http-client
-- hs-opentelemetry-instrumentation-persistent
-- hs-opentelemetry-instrumentation-postgresql-simple
-- hs-opentelemetry-propagator-w3c
-- hs-opentelemetry-exporter-otlp
+  - base >= 4.7 && < 5
 
 executables:
   yesod-minimal:
     main: Minimal
     source-dirs: src
-    dependencies:
-    - yesod-minimal
     ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
-
-library:
-    source-dirs: src
+    dependencies:
+      # minimal example dependencies
+      - bytestring
+      - conduit
+      - yesod-core
+      - warp
+      - text
+      - unliftio
+      # database
+      - yesod-persistent
+      - monad-logger
+      - persistent >= 2.13.3
+      - persistent-postgresql >= 2.13.4
+      - persistent-qq
+      - resource-pool
+      # opentelemetry dependencies
+      - hs-opentelemetry-sdk
+      - hs-opentelemetry-instrumentation-wai
+      - hs-opentelemetry-instrumentation-yesod
+      - hs-opentelemetry-instrumentation-http-client
+      - hs-opentelemetry-instrumentation-persistent
+      - hs-opentelemetry-instrumentation-postgresql-simple

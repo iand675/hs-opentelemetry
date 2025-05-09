@@ -1,38 +1,20 @@
 cabal-version: 1.12
 
-<<<<<<< HEAD
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-utils-exceptions
-version:            0.1.0.0
+version:            0.2.0.1
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/utils/exceptions#readme>
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
 maintainer:         ian@iankduncan.com
-copyright:          2023 Ian Duncan, Mercury Technologies
+copyright:          2024 Ian Duncan, Mercury Technologies
 license:            BSD3
 license-file:       LICENSE
 build-type:         Simple
-=======
--- This file has been generated from package.yaml by hpack version 0.35.0.
---
--- see: https://github.com/sol/hpack
-
-name:           hs-opentelemetry-utils-exceptions
-version:        0.2.0.0
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/utils/exceptions#readme>
-homepage:       https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
-author:         Ian Duncan, Jade Lovelace
-maintainer:     ian@iankduncan.com
-copyright:      2022 Ian Duncan
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
->>>>>>> origin/main
 extra-source-files:
     README.md
     ChangeLog.md
@@ -51,8 +33,8 @@ library
   build-depends:
       base >=4.7 && <5
     , exceptions
-    , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-sdk ==0.0.3.*
+    , hs-opentelemetry-api ==0.2.*
+    , hs-opentelemetry-sdk ==0.1.*
     , text
   default-language: Haskell2010
 
@@ -66,8 +48,4 @@ test-suite exceptions-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , exceptions
-    , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-sdk ==0.0.3.*
-    , text
   default-language: Haskell2010

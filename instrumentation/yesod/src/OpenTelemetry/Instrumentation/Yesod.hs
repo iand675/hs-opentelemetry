@@ -1,9 +1,16 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+{- |
+[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "http" - to use the stable conventions
+- "http/dup" - to emit both the old and the stable conventions
+Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+-}
 module OpenTelemetry.Instrumentation.Yesod (
   -- * Middleware functionality
   openTelemetryYesodMiddleware,
@@ -16,6 +23,7 @@ module OpenTelemetry.Instrumentation.Yesod (
   handlerEnvL,
 ) where
 
+import Control.Monad (when)
 import qualified Data.HashMap.Strict as H
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
@@ -26,9 +34,8 @@ import Language.Haskell.TH.Syntax
 import Lens.Micro
 import Network.Wai (requestHeaders)
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Contrib.SpanTraversals
 import OpenTelemetry.Instrumentation.Wai (requestContext)
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO.Exception
@@ -50,7 +57,7 @@ rheSiteL = lens rheSite (\rhe new -> rhe {rheSite = new})
 instance MonadTracer (HandlerFor site) where
   getTracer = do
     tp <- getGlobalTracerProvider
-    OpenTelemetry.Trace.Core.getTracer tp "hs-opentelemetry-instrumentation-yesod" tracerOptions
+    pure $ makeTracer tp $detectInstrumentationLibrary tracerOptions
 
 
 {- | Template Haskell to generate a function named routeToRendererFunction.
@@ -174,11 +181,9 @@ renderPattern FlatResource {..} =
           pieces -> pieces
       , case frDispatch of
           Methods {..} ->
-            concat
-              [ case methodsMulti of
-                  Nothing -> []
-                  Just t -> ["/+", t]
-              ]
+            case methodsMulti of
+              Nothing -> []
+              Just t -> ["/+", t]
           Subsite {} -> []
       ]
   where
@@ -210,20 +215,31 @@ openTelemetryYesodMiddleware
 openTelemetryYesodMiddleware rr m = do
   req <- waiRequest
   mr <- getCurrentRoute
+  semanticsOptions <- liftIO getSemanticsOptions
   let mspan = requestContext req >>= Context.lookupSpan
-      sharedAttributes = H.fromList $
-        ("http.framework", toAttribute ("yesod" :: Text))
-          : catMaybes
-            [ do
-                r <- mr
-                pure ("http.route", toAttribute $ pathRender rr r)
-            , do
-                r <- mr
-                pure ("http.handler", toAttribute $ nameRender rr r)
-            , do
-                ff <- lookup "X-Forwarded-For" $ requestHeaders req
-                pure ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
-            ]
+      sharedAttributes =
+        H.fromList $
+          ("http.framework", toAttribute ("yesod" :: Text))
+            : catMaybes
+              [ do
+                  r <- mr
+                  Just ("http.route", toAttribute $ pathRender rr r)
+              , do
+                  r <- mr
+                  Just ("http.handler", toAttribute $ nameRender rr r)
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case httpOption semanticsOptions of
+                    Stable -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    StableAndOld -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Nothing
+              , do
+                  ff <- lookup "X-Forwarded-For" $ requestHeaders req
+                  case httpOption semanticsOptions of
+                    Stable -> Nothing
+                    StableAndOld -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+                    Old -> Just ("http.client_ip", toAttribute $ T.decodeUtf8 ff)
+              ]
       args =
         defaultSpanArguments
           { kind = maybe Server (const Internal) mspan
@@ -231,18 +247,33 @@ openTelemetryYesodMiddleware rr m = do
           }
   case mspan of
     Nothing -> do
-      eResult <- inSpan' (maybe "notFound" (\r -> nameRender rr r) mr) args $ \_s -> do
+      eResult <- inSpan' (maybe "notFound" (nameRender rr) mr) args $ \_s -> do
         catch (Right <$> m) $ \e -> do
-          -- We want to mark the span as an error if it's an InternalError,
-          -- the other HCError values are 4xx status codes which don't
-          -- really count as a server error in OpenTelemetry spec parlance.
-          case e of
-            HCError (InternalError _) -> throwIO e
-            _ -> pure ()
+          when (isInternalError e) $ throwIO e
           pure (Left (e :: HandlerContents))
       case eResult of
         Left hc -> throwIO hc
         Right normal -> pure normal
     Just waiSpan -> do
       addAttributes waiSpan sharedAttributes
-      m
+
+      -- Explicitly record any exceptions here. When Yesod is in use, exceptions
+      -- are handled as error-pages before reaching the WAI middleware's inSpan,
+      -- meaning the exception details would not be otherwise attached.
+      withException m $ \ex -> do
+        when (shouldMarkException ex) $ do
+          recordException waiSpan mempty Nothing ex
+          setStatus waiSpan $ Error $ T.pack $ displayException ex
+
+
+shouldMarkException :: SomeException -> Bool
+shouldMarkException = maybe True isInternalError . fromException
+
+
+-- We want to mark the span as an error if it's an InternalError, the other
+-- HCError values are 4xx status codes which don't really count as a server
+-- error in OpenTelemetry spec parlance.
+isInternalError :: HandlerContents -> Bool
+isInternalError = \case
+  HCError (InternalError _) -> True
+  _ -> False

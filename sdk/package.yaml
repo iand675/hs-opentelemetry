@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-sdk
-version:             0.0.3.6
+version:             0.1.0.0
 
 <<: *preface
 
@@ -21,35 +21,46 @@ description:         Please see the README on GitHub at <https://github.com/iand
 
 dependencies:
 - base >= 4.7 && < 5
-- bytestring
-- text
-# These are "distribution" packages
-- hs-opentelemetry-api >= 0.0.3 && < 0.2
-- hs-opentelemetry-propagator-w3c == 0.0.1.*
-- hs-opentelemetry-exporter-otlp == 0.0.1.*
-- hs-opentelemetry-propagator-b3 ==0.0.1.*
-
-- async
-- vector
-- stm
-- unagi-chan
-- unordered-containers
-- vector-builder
-- http-types
-- network-bsd
-- unix
-- transformers
-- random >= 1.2.0
 
 library:
   ghc-options: -Wall
   source-dirs: src
+  when:
+    - condition: os(windows)
+      then:
+        source-dirs: src/platform/windows
+      else:
+        source-dirs: src/platform/unix
+        dependencies: unix # for getEffectiveUserID
+  dependencies:
+  - async
+  - bytestring
+  - http-types
+  - network-bsd
+  - random >= 1.2.0
+  - stm
+  - text
+  - unagi-chan
+  - unix-compat >= 0.7.1 # for getProcessID
+  - unordered-containers
+  - vector
+  - vector-builder
+  # These are "distribution" packages
+  - hs-opentelemetry-api ^>= 0.2
+  - hs-opentelemetry-propagator-w3c ^>= 0.0.1
+  - hs-opentelemetry-exporter-otlp ^>= 0.1
+  - hs-opentelemetry-propagator-b3 ^>=0.0.1
+  - hs-opentelemetry-propagator-datadog ^>=0.0.0
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
     - OpenTelemetry.Context.ThreadLocal
+    - OpenTelemetry.Exporter.Span
+    - OpenTelemetry.Exporter.LogRecord
     - OpenTelemetry.Exporter
+    - OpenTelemetry.Processor.Span
+    - OpenTelemetry.Processor.LogRecord
     - OpenTelemetry.Processor
     - OpenTelemetry.Propagator
     - OpenTelemetry.Resource
@@ -84,7 +95,9 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hspec
-    - hs-opentelemetry-sdk
-    - hs-opentelemetry-api
     - clock
+    - hs-opentelemetry-api
+    - hs-opentelemetry-sdk
+    - hspec
+    - text
+    - unordered-containers

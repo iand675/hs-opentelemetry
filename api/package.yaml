@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-api
-version:             0.1.0.0
+version:             0.2.0.0
 
 <<: *preface
 
@@ -23,34 +23,36 @@ default-extensions:
 
 dependencies:
 - base >= 4.7 && < 5
-- async
-- bytestring
-- text
-- vault
-- containers
-- hashable
-- thread-utils-context == 0.3.*
-- unordered-containers
-- binary
-- vector
-- clock
-- memory
-- mtl
-- transformers
-- http-types
-- attoparsec
-- template-haskell
-- charset
-- ghc-prim
-- unliftio-core
-- vector-builder
 
 library:
   source-dirs: src
   ghc-options: -Wall
+  dependencies:
+  - async
+  - attoparsec
+  - binary
+  - bytestring
+  - charset
+  - clock
+  - hashable
+  - http-types
+  - memory
+  - mtl
+  - regex-tdfa
+  - safe-exceptions
+  - template-haskell
+  - text
+  - thread-utils-context == 0.3.*
+  - transformers
+  - unliftio-core
+  - unordered-containers
+  - vault
+  - vector
+  - vector-builder
   other-modules:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Types
+  - Paths_hs_opentelemetry_api
 
 tests:
   hs-opentelemetry-api-test:
@@ -61,7 +63,11 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hspec
     - hs-opentelemetry-api
+    - hspec
+    - mtl
+    - text
+    - unliftio-core
+    - unordered-containers
     - vector
     - vector-builder

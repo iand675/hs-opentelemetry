@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-instrumentation-yesod
-version:            0.1.0.0
+version:            0.1.1.0
 synopsis:           Yesod middleware for providing OpenTelemetry instrumentation
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/yesod#readme>
 category:           OpenTelemetry, Web
@@ -13,7 +13,7 @@ homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
 maintainer:         ian@iankduncan.com
-copyright:          2023 Ian Duncan, Mercury Technologies
+copyright:          2024 Ian Duncan, Mercury Technologies
 license:            BSD3
 license-file:       LICENSE
 build-type:         Simple
@@ -35,33 +35,9 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.1.*
+    , hs-opentelemetry-api ==0.2.*
     , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
     , microlens
-    , mtl
-    , template-haskell
-    , text
-    , unliftio
-    , unordered-containers
-    , wai
-    , yesod-core
-  default-language: Haskell2010
-
-test-suite hs-opentelemetry-instrumentation-yesod-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_hs_opentelemetry_instrumentation_yesod
-  hs-source-dirs:
-      test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.7 && <5
-    , hs-opentelemetry-api ==0.1.*
-    , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
-    , hs-opentelemetry-instrumentation-yesod
-    , microlens
-    , mtl
     , template-haskell
     , text
     , unliftio
