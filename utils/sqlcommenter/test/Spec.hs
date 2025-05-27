@@ -1,19 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Data.Text (Text)
+
 import Data.Foldable
-import Data.Maybe
 import qualified Data.Map.Strict as M
+import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Network.HTTP.Types (urlDecode)
 import OpenTelemetry.Trace.Core
+import SqlCommenter
 import Test.Hspec
 import Test.Hspec.Hedgehog
-import SqlCommenter
+
 
 textValGen :: Gen Text
 textValGen = Gen.text (Range.linear 1 400) Gen.unicode
+
 
 main :: IO ()
 main = hspec $ do
@@ -35,7 +38,7 @@ main = hspec $ do
       t === (T.decodeUtf8 $ urlDecode True $ T.encodeUtf8 $ SqlCommenter.urlEncode t)
   specify "Span attributes are picked up from thread-local context" $ do
     tp <- createTracerProvider [] emptyTracerProviderOptions
-    let t = makeTracer tp (InstrumentationLibrary "test" "test") tracerOptions
+    let t = makeTracer tp "test" tracerOptions
     inSpan t "test" defaultSpanArguments $ do
       attrs <- getSqlCommenterAttributesWithTraceData
       M.lookup "traceparent" attrs `shouldSatisfy` isJust
