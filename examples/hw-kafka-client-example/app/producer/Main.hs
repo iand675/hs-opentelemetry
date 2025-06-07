@@ -9,7 +9,7 @@ import Kafka.Producer (
   KafkaError,
   KafkaLogLevel (KafkaLogDebug),
   KafkaProducer,
-  ProducePartition (UnassignedPartition),
+  ProducePartition (SpecifiedPartition),
   ProducerProperties,
   ProducerRecord (..),
   TopicName,
@@ -36,7 +36,7 @@ targetTopic = "example-topic"
 
 sendMessages :: KafkaProducer -> IO (Either KafkaError ())
 sendMessages prod = do
-  err1 <- produceMessage prod (mkMessage Nothing "test from producer")
+  err1 <- produceMessage prod (mkMessage (Just "mykey") "test from producer")
   forM_ err1 print
   return $ Right ()
 
@@ -45,7 +45,7 @@ mkMessage :: Maybe ByteString -> ByteString -> ProducerRecord
 mkMessage k v =
   ProducerRecord
     { prTopic = targetTopic
-    , prPartition = UnassignedPartition
+    , prPartition = SpecifiedPartition 42
     , prKey = k
     , prValue = Just v
     , prHeaders = mempty

@@ -23,8 +23,10 @@ library
   -- other-extensions:
   build-depends:
     , base                  >=4.7 && <5
+    , text
     , bytestring
     , hs-opentelemetry-api
+    , hs-opentelemetry-semantic-conventions
     , hw-kafka-client
     , unliftio-core
     , case-insensitive

@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 {- |
 Module      : OpenTelemetry.Instrumentation.Kafka
@@ -24,22 +25,76 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.CaseInsensitive as CI
+import Data.String (IsString, fromString)
+import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8Lenient)
 import GHC.Stack.Types (HasCallStack)
 import Kafka.Consumer (ConsumerRecord (crHeaders), KafkaConsumer)
 import qualified Kafka.Consumer as KC
-import Kafka.Producer (KafkaError, KafkaProducer, ProducerRecord (prHeaders))
+import Kafka.Producer (
+  KafkaError,
+  KafkaProducer,
+  ProducePartition (SpecifiedPartition, UnassignedPartition),
+  ProducerRecord (prHeaders, prKey, prPartition, prTopic),
+ )
 import qualified Kafka.Producer as KP
-import Kafka.Types (Headers, Timeout, headersFromList, headersToList)
+import Kafka.Types (Headers, Timeout, TopicName (unTopicName), headersFromList, headersToList)
 import Network.HTTP.Types (RequestHeaders)
+import OpenTelemetry.Attributes.Map (AttributeMap, insertAttributeByKey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Propagator (extract, inject)
-import OpenTelemetry.Trace.Core (SpanArguments (kind), SpanKind (Consumer, Producer), Tracer, addAttributesToSpanArguments, callerAttributes, defaultSpanArguments, detectInstrumentationLibrary, getGlobalTracerProvider, getTracerProviderPropagators, inSpan'', makeTracer, tracerOptions)
+import OpenTelemetry.SemanticConventions (messaging_destination_name, messaging_kafka_destination_partition, messaging_kafka_message_key, messaging_operation)
+import OpenTelemetry.Trace.Core (
+  SpanArguments (kind),
+  SpanKind (Consumer, Producer),
+  Tracer,
+  addAttributesToSpanArguments,
+  callerAttributes,
+  defaultSpanArguments,
+  detectInstrumentationLibrary,
+  getGlobalTracerProvider,
+  getTracerProviderPropagators,
+  inSpan'',
+  makeTracer,
+  toAttribute,
+  tracerOptions,
+ )
+
+
+producerOperationName :: IsString a => a
+producerOperationName = "send"
 
 
 -- | Span arguments for producer operations
 producerSpanArgs :: SpanArguments
-producerSpanArgs = defaultSpanArguments {kind = Producer}
+producerSpanArgs =
+  defaultSpanArguments {kind = Producer}
+
+
+-- | Span attributes with caller information and kafka specifics
+producerAttributes :: HasCallStack => ProducerRecord -> AttributeMap
+producerAttributes record =
+  let
+    addOperationName =
+      insertAttributeByKey messaging_operation producerOperationName
+    addDestination =
+      insertAttributeByKey messaging_destination_name $ toAttribute . unTopicName . prTopic $ record
+    addPartition =
+      case prPartition record of
+        SpecifiedPartition p64 ->
+          insertAttributeByKey messaging_kafka_destination_partition $ toAttribute $ p64
+        UnassignedPartition ->
+          id
+    addKey =
+      case prKey record of
+        Just key ->
+          insertAttributeByKey messaging_kafka_message_key $ toAttribute . decodeUtf8Lenient $ key
+        Nothing ->
+          id
+  in
+    (addOperationName . addDestination . addPartition . addKey)
+      callerAttributes
 
 
 -- | Span arguments for consumer operations
@@ -75,15 +130,23 @@ produceMessage
   => KafkaProducer
   -> ProducerRecord
   -> m (Maybe KafkaError)
-produceMessage producer record = do
-  tracer <- rdkafkaTracer
-  ctxt <- getContext
-  inSpan'' tracer "produceMessage" (addAttributesToSpanArguments callerAttributes producerSpanArgs) $ \newSpan -> do
-    propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
-    headers <- inject propagator (Context.insertSpan newSpan ctxt) []
-    let newKafkaHeaders = prHeaders record <> httpHeadersToKafkaHeaders headers
-    let newKafkaRecord = record {prHeaders = newKafkaHeaders}
-    KP.produceMessage producer newKafkaRecord
+produceMessage producer record =
+  let
+    headers = prHeaders record
+    topicName = prTopic record
+    spanName = producerOperationName <> " " <> unTopicName topicName
+    attributes = producerAttributes record
+    spanArguments = addAttributesToSpanArguments attributes producerSpanArgs
+  in
+    do
+      tracer <- rdkafkaTracer
+      ctxt <- getContext
+      inSpan'' tracer spanName spanArguments $ \newSpan -> do
+        propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
+        extraHeaders <- inject propagator (Context.insertSpan newSpan ctxt) []
+        let newKafkaHeaders = headers <> httpHeadersToKafkaHeaders extraHeaders
+        let newKafkaRecord = record {prHeaders = newKafkaHeaders}
+        KP.produceMessage producer newKafkaRecord
 
 
 {- | Poll for a single message from Kafka with OpenTelemetry instrumentation.
@@ -98,14 +161,18 @@ pollMessage
   -> Timeout
   -> m (Either KafkaError (ConsumerRecord (Maybe ByteString) (Maybe ByteString)))
   -- ^ Returns either an error or the consumed record
-pollMessage consumer timeout = do
-  KC.pollMessage consumer timeout >>= \case
-    Left err -> pure $ Left err
-    Right cr -> do
-      tracer <- rdkafkaTracer
-      ctxt <- getContext
-      propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
-      ctx <- extract propagator (kafkaHeadersToHttpHeaders $ crHeaders cr) ctxt
-      void $ attachContext ctx
-      inSpan'' tracer "pollMessage" (addAttributesToSpanArguments callerAttributes consumerSpanArgs) $ \_span -> do
-        return $ Right cr
+pollMessage consumer timeout =
+  let
+    spanName = "process "
+  in
+    do
+      KC.pollMessage consumer timeout >>= \case
+        Left err -> pure $ Left err
+        Right cr -> do
+          tracer <- rdkafkaTracer
+          ctxt <- getContext
+          propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
+          ctx <- extract propagator (kafkaHeadersToHttpHeaders $ crHeaders cr) ctxt
+          void $ attachContext ctx
+          inSpan'' tracer spanName (addAttributesToSpanArguments callerAttributes consumerSpanArgs) $ \_span -> do
+            return $ Right cr
