@@ -42,14 +42,15 @@ withTracer f =
 main :: IO ()
 main = withTracer $ const $ do
   -- NOTE: do proper args parsing
-  customerGroupText <- pack . head <$> getArgs
-  res <- Control.Exception.bracket (mkConsumer customerGroupText) clConsumer runHandler
+  consumerGroupText <- pack . head <$> getArgs
+  let cp = consumerProps consumerGroupText
+  res <- Control.Exception.bracket (mkConsumer cp) clConsumer (runHandler cp)
   case res of
     Left err -> putStrLn $ "Error consuming the message: " <> show err
     Right msg -> putStrLn $ "Message consumed: " <> show msg
   where
-    mkConsumer customerGroup = newConsumer (consumerProps customerGroup) consumerSub
+    mkConsumer cp = newConsumer cp consumerSub
     clConsumer (Left err) = return (Left err)
     clConsumer (Right kc) = maybeToLeft () <$> closeConsumer kc
-    runHandler (Left err) = return (Left err)
-    runHandler (Right kc) = pollMessage kc (Timeout 1000)
+    runHandler _ (Left err) = return (Left err)
+    runHandler cp (Right kc) = pollMessage cp kc (Timeout 1000)

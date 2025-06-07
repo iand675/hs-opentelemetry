@@ -25,11 +25,16 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.CaseInsensitive as CI
-import Data.String (IsString, fromString)
-import Data.Text (Text)
+import qualified Data.Map as M
+import Data.String (IsString)
 import Data.Text.Encoding (decodeUtf8Lenient)
 import GHC.Stack.Types (HasCallStack)
-import Kafka.Consumer (ConsumerRecord (crHeaders), KafkaConsumer)
+import Kafka.Consumer (
+  ConsumerProperties (cpProps),
+  ConsumerRecord (crHeaders, crKey, crOffset, crPartition, crTopic),
+  KafkaConsumer,
+  Offset (unOffset),
+ )
 import qualified Kafka.Consumer as KC
 import Kafka.Producer (
   KafkaError,
@@ -38,13 +43,27 @@ import Kafka.Producer (
   ProducerRecord (prHeaders, prKey, prPartition, prTopic),
  )
 import qualified Kafka.Producer as KP
-import Kafka.Types (Headers, Timeout, TopicName (unTopicName), headersFromList, headersToList)
+import Kafka.Types (
+  Headers,
+  PartitionId (unPartitionId),
+  Timeout,
+  TopicName (unTopicName),
+  headersFromList,
+  headersToList,
+ )
 import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes.Map (AttributeMap, insertAttributeByKey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Propagator (extract, inject)
-import OpenTelemetry.SemanticConventions (messaging_destination_name, messaging_kafka_destination_partition, messaging_kafka_message_key, messaging_operation)
+import OpenTelemetry.SemanticConventions (
+  messaging_destination_name,
+  messaging_kafka_consumer_group,
+  messaging_kafka_destination_partition,
+  messaging_kafka_message_key,
+  messaging_kafka_message_offset,
+  messaging_operation,
+ )
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
   SpanKind (Consumer, Producer),
@@ -64,6 +83,10 @@ import OpenTelemetry.Trace.Core (
 
 producerOperationName :: IsString a => a
 producerOperationName = "send"
+
+
+consumerOperationName :: IsString a => a
+consumerOperationName = "process"
 
 
 -- | Span arguments for producer operations
@@ -100,6 +123,38 @@ producerAttributes record =
 -- | Span arguments for consumer operations
 consumerSpanArgs :: SpanArguments
 consumerSpanArgs = defaultSpanArguments {kind = Consumer}
+
+
+-- | Span attributes for consumer with caller information and kafka specifics
+consumerAttributes
+  :: HasCallStack
+  => ConsumerProperties
+  -> ConsumerRecord (Maybe ByteString) (Maybe ByteString)
+  -> AttributeMap
+consumerAttributes consumerProperties record =
+  let
+    addOperationName =
+      insertAttributeByKey messaging_operation consumerOperationName
+    addDestination =
+      insertAttributeByKey messaging_destination_name $ toAttribute . unTopicName . crTopic $ record
+    addConsumerGroup =
+      -- NOTE: unfortunately, hw-kafka-client does not expose an API to get the consumer, this a flaky workaround
+      case M.lookup "group.id" $ cpProps consumerProperties of
+        Just groupId -> insertAttributeByKey messaging_kafka_consumer_group $ toAttribute groupId
+        Nothing -> id
+    addPartition =
+      insertAttributeByKey messaging_kafka_destination_partition $ toAttribute . unPartitionId . crPartition $ record
+    addOffset =
+      insertAttributeByKey messaging_kafka_message_offset $ toAttribute . unOffset . crOffset $ record
+    addKey =
+      case crKey record of
+        Just key ->
+          insertAttributeByKey messaging_kafka_message_key $ toAttribute . decodeUtf8Lenient $ key
+        Nothing ->
+          id
+  in
+    (addOperationName . addDestination . addConsumerGroup . addPartition . addOffset . addKey)
+      callerAttributes
 
 
 -- | Get the tracer for rdkafka instrumentation
@@ -157,22 +212,26 @@ from the message headers.
 -}
 pollMessage
   :: (MonadUnliftIO m, HasCallStack)
-  => KafkaConsumer
+  => ConsumerProperties
+  -> KafkaConsumer
   -> Timeout
   -> m (Either KafkaError (ConsumerRecord (Maybe ByteString) (Maybe ByteString)))
   -- ^ Returns either an error or the consumed record
-pollMessage consumer timeout =
-  let
-    spanName = "process "
-  in
-    do
-      KC.pollMessage consumer timeout >>= \case
-        Left err -> pure $ Left err
-        Right cr -> do
-          tracer <- rdkafkaTracer
-          ctxt <- getContext
-          propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
-          ctx <- extract propagator (kafkaHeadersToHttpHeaders $ crHeaders cr) ctxt
-          void $ attachContext ctx
-          inSpan'' tracer spanName (addAttributesToSpanArguments callerAttributes consumerSpanArgs) $ \_span -> do
-            return $ Right cr
+pollMessage consumerProperties consumer timeout =
+  do
+    KC.pollMessage consumer timeout >>= \case
+      Left err -> pure $ Left err
+      Right cr ->
+        let
+          attributes = consumerAttributes consumerProperties cr
+          topicName = crTopic cr
+          spanName = consumerOperationName <> " " <> unTopicName topicName
+        in
+          do
+            tracer <- rdkafkaTracer
+            ctxt <- getContext
+            propagator <- getTracerProviderPropagators <$> getGlobalTracerProvider
+            ctx <- extract propagator (kafkaHeadersToHttpHeaders $ crHeaders cr) ctxt
+            void $ attachContext ctx
+            inSpan'' tracer spanName (addAttributesToSpanArguments attributes consumerSpanArgs) $ \_span -> do
+              return $ Right cr
