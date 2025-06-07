@@ -27,7 +27,7 @@ import Data.ByteString (ByteString)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Map as M
 import Data.String (IsString)
-import Data.Text.Encoding (decodeUtf8Lenient)
+import Data.Text.Encoding (decodeUtf8')
 import GHC.Stack.Types (HasCallStack)
 import Kafka.Consumer (
   ConsumerProperties (cpProps),
@@ -95,6 +95,11 @@ producerSpanArgs =
   defaultSpanArguments {kind = Producer}
 
 
+rightToMaybe :: Either a b -> Maybe b
+rightToMaybe (Right b) = Just b
+rightToMaybe _ = Nothing
+
+
 -- | Span attributes with caller information and kafka specifics
 producerAttributes :: HasCallStack => ProducerRecord -> AttributeMap
 producerAttributes record =
@@ -110,9 +115,9 @@ producerAttributes record =
         UnassignedPartition ->
           id
     addKey =
-      case prKey record of
+      case prKey record >>= rightToMaybe . decodeUtf8' of
         Just key ->
-          insertAttributeByKey messaging_kafka_message_key $ toAttribute . decodeUtf8Lenient $ key
+          insertAttributeByKey messaging_kafka_message_key $ toAttribute key
         Nothing ->
           id
   in
@@ -147,9 +152,9 @@ consumerAttributes consumerProperties record =
     addOffset =
       insertAttributeByKey messaging_kafka_message_offset $ toAttribute . unOffset . crOffset $ record
     addKey =
-      case crKey record of
+      case crKey record >>= rightToMaybe . decodeUtf8' of
         Just key ->
-          insertAttributeByKey messaging_kafka_message_key $ toAttribute . decodeUtf8Lenient $ key
+          insertAttributeByKey messaging_kafka_message_key $ toAttribute key
         Nothing ->
           id
   in

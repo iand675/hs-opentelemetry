@@ -9,7 +9,7 @@ import Kafka.Producer (
   KafkaError,
   KafkaLogLevel (KafkaLogDebug),
   KafkaProducer,
-  ProducePartition (SpecifiedPartition),
+  ProducePartition (UnassignedPartition),
   ProducerProperties,
   ProducerRecord (..),
   TopicName,
@@ -45,7 +45,7 @@ mkMessage :: Maybe ByteString -> ByteString -> ProducerRecord
 mkMessage k v =
   ProducerRecord
     { prTopic = targetTopic
-    , prPartition = SpecifiedPartition 42
+    , prPartition = UnassignedPartition
     , prKey = k
     , prValue = Just v
     , prHeaders = mempty
