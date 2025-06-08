@@ -365,23 +365,6 @@
         "type": "github"
       }
     },
-    "otlp-protobufs": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1688070153,
-        "narHash": "sha256-1IylAZs8gElpruSX52A+ZopU8jXH/MjRE+FQV3gQ+Gk=",
-        "owner": "open-telemetry",
-        "repo": "opentelemetry-proto",
-        "rev": "c4dfbc51f3cd4089778555a2ac5d9bc093ed2956",
-        "type": "github"
-      },
-      "original": {
-        "owner": "open-telemetry",
-        "ref": "v1.0.0",
-        "repo": "opentelemetry-proto",
-        "type": "github"
-      }
-    },
     "poetry2nix": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -439,8 +422,7 @@
       "inputs": {
         "devenv": "devenv",
         "flake-utils": "flake-utils_3",
-        "nixpkgs": "nixpkgs_3",
-        "otlp-protobufs": "otlp-protobufs"
+        "nixpkgs": "nixpkgs_3"
       }
     },
     "systems": {
