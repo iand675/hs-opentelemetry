@@ -47,6 +47,9 @@ library
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
       OpenTelemetry.Logs.Core
+      OpenTelemetry.Metric.Instrument
+      OpenTelemetry.Metric.Meter
+      OpenTelemetry.Metric.Point
       OpenTelemetry.Processor
       OpenTelemetry.Processor.LogRecord
       OpenTelemetry.Processor.Span
