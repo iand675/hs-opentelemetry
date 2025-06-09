@@ -9,6 +9,12 @@ module OpenTelemetry.Metric.Meter (
   UnitOfMeasure,
   createGauge,
   createObservableGauge,
+  createCounter,
+  createObservableCounter,
+  createUpDownCounter,
+  createObservableUpDownCounter,
+  createHistogram,
+  createObservableHistogram,
   record,
   observe,
 ) where
@@ -39,10 +45,32 @@ createGauge :: Meter -> Text -> Description -> UnitOfMeasure -> IO SynchronousIn
 createGauge meter = mkSynchronousInstrument meter GaugeKind
 
 
-createObservableGauge :: Meter -> Text -> Description -> UnitOfMeasure -> (() -> IO [(Int64, AttributeMap)]) -> IO AsynchronousInstrument
-createObservableGauge meter name desc unit measure = do
-  meter <- createGauge meter name desc unit
-  pure $ AsynchronousInstrument meter measure
+createObservableGauge :: Meter -> Text -> Description -> UnitOfMeasure -> TakeMeasurements -> IO AsynchronousInstrument
+createObservableGauge meter name desc unit measure = AsynchronousInstrument measure <$> createGauge meter name desc unit
+
+
+createCounter :: Meter -> Text -> Description -> UnitOfMeasure -> AggregationTemporality -> IO SynchronousInstrument
+createCounter meter name desc unit aggregation = mkSynchronousInstrument meter (SumKind OnlyUp aggregation) name desc unit
+
+
+createObservableCounter :: Meter -> Text -> Description -> UnitOfMeasure -> AggregationTemporality -> TakeMeasurements -> IO AsynchronousInstrument
+createObservableCounter meter name desc unit aggregation measure = AsynchronousInstrument measure <$> createCounter meter name desc unit aggregation
+
+
+createUpDownCounter :: Meter -> Text -> Description -> UnitOfMeasure -> AggregationTemporality -> IO SynchronousInstrument
+createUpDownCounter meter name desc unit aggregation = mkSynchronousInstrument meter (SumKind UpAndDown aggregation) name desc unit
+
+
+createObservableUpDownCounter :: Meter -> Text -> Description -> UnitOfMeasure -> AggregationTemporality -> TakeMeasurements -> IO AsynchronousInstrument
+createObservableUpDownCounter meter name desc unit aggregation measure = AsynchronousInstrument measure <$> createUpDownCounter meter name desc unit aggregation
+
+
+createHistogram :: Meter -> Text -> Description -> UnitOfMeasure -> AggregationTemporality -> IO SynchronousInstrument
+createHistogram meter name desc unit aggregation = mkSynchronousInstrument meter (HistogramKind aggregation) name desc unit
+
+
+createObservableHistogram :: Meter -> Text -> Description -> UnitOfMeasure -> AggregationTemporality -> TakeMeasurements -> IO AsynchronousInstrument
+createObservableHistogram meter name desc unit aggregation measure = AsynchronousInstrument measure <$> createHistogram meter name desc unit aggregation
 
 
 data SynchronousInstrument = SynchronousInstrument
@@ -54,9 +82,12 @@ data SynchronousInstrument = SynchronousInstrument
   }
 
 
+type TakeMeasurements = (() -> IO [(Int64, AttributeMap)])
+
+
 data AsynchronousInstrument = AsynchronousInstrument
-  { synch :: SynchronousInstrument
-  , measure :: (() -> IO [(Int64, AttributeMap)])
+  { measure :: TakeMeasurements
+  , synch :: SynchronousInstrument
   }
 
 
@@ -93,7 +124,7 @@ data UnitOfMeasure
 -- Refreshes the value for the given asynchronous instrument
 -- Called by the exporters.
 observe :: AsynchronousInstrument -> IO ()
-observe (AsynchronousInstrument instr measure) = do
+observe (AsynchronousInstrument measure instr) = do
   measurements <- measure ()
   sequence_ $ map recordOne measurements
   where
