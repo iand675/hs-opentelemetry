@@ -48,6 +48,12 @@ droppedAttributesCount ::
   Lens.Family2.LensLike' f s a
 droppedAttributesCount
   = Data.ProtoLens.Field.field @"droppedAttributesCount"
+eventName ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "eventName" a) =>
+  Lens.Family2.LensLike' f s a
+eventName = Data.ProtoLens.Field.field @"eventName"
 flags ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "flags" a) =>

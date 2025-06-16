@@ -495,8 +495,8 @@ packedFileDescriptor
     \\rerror_message\CAN\STX \SOH(\tR\ferrorMessage2\157\SOH\n\
     \\vLogsService\DC2\141\SOH\n\
     \\ACKExport\DC2?.opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest\SUB@.opentelemetry.proto.collector.logs.v1.ExportLogsServiceResponse\"\NULB\152\SOH\n\
-    \(io.opentelemetry.proto.collector.logs.v1B\DLELogsServiceProtoP\SOHZ0go.opentelemetry.io/proto/otlp/collector/logs/v1\170\STX%OpenTelemetry.Proto.Collector.Logs.V1J\155\CAN\n\
-    \\ACK\DC2\EOT\SO\NULN\SOH\n\
+    \(io.opentelemetry.proto.collector.logs.v1B\DLELogsServiceProtoP\SOHZ0go.opentelemetry.io/proto/otlp/collector/logs/v1\170\STX%OpenTelemetry.Proto.Collector.Logs.V1J\173\ETB\n\
+    \\ACK\DC2\EOT\SO\NULL\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2020, OpenTelemetry Authors\n\
     \\n\
@@ -538,53 +538,51 @@ packedFileDescriptor
     \\t\n\
     \\STX\b\v\DC2\ETX\CAN\NULG\n\
     \\245\SOH\n\
-    \\STX\ACK\NUL\DC2\EOT\GS\NUL!\SOH\SUB\232\SOH Service that can be used to push logs between one Application instrumented with\n\
+    \\STX\ACK\NUL\DC2\EOT\GS\NUL\US\SOH\SUB\232\SOH Service that can be used to push logs between one Application instrumented with\n\
     \ OpenTelemetry and an collector, or between an collector and a central collector (in this\n\
     \ case logs are sent/received to/from multiple Applications).\n\
     \\n\
     \\n\
     \\n\
     \\ETX\ACK\NUL\SOH\DC2\ETX\GS\b\DC3\n\
-    \y\n\
-    \\EOT\ACK\NUL\STX\NUL\DC2\ETX \STXM\SUBl For performance reasons, it is recommended to keep this RPC\n\
-    \ alive for the entire life of the application.\n\
-    \\n\
+    \\v\n\
+    \\EOT\ACK\NUL\STX\NUL\DC2\ETX\RS\STXM\n\
     \\f\n\
-    \\ENQ\ACK\NUL\STX\NUL\SOH\DC2\ETX \ACK\f\n\
+    \\ENQ\ACK\NUL\STX\NUL\SOH\DC2\ETX\RS\ACK\f\n\
     \\f\n\
-    \\ENQ\ACK\NUL\STX\NUL\STX\DC2\ETX \r%\n\
+    \\ENQ\ACK\NUL\STX\NUL\STX\DC2\ETX\RS\r%\n\
     \\f\n\
-    \\ENQ\ACK\NUL\STX\NUL\ETX\DC2\ETX 0I\n\
+    \\ENQ\ACK\NUL\STX\NUL\ETX\DC2\ETX\RS0I\n\
     \\n\
     \\n\
-    \\STX\EOT\NUL\DC2\EOT#\NUL*\SOH\n\
+    \\STX\EOT\NUL\DC2\EOT!\NUL(\SOH\n\
     \\n\
     \\n\
-    \\ETX\EOT\NUL\SOH\DC2\ETX#\b \n\
+    \\ETX\EOT\NUL\SOH\DC2\ETX!\b \n\
     \\207\STX\n\
-    \\EOT\EOT\NUL\STX\NUL\DC2\ETX)\STXF\SUB\193\STX An array of ResourceLogs.\n\
+    \\EOT\EOT\NUL\STX\NUL\DC2\ETX'\STXF\SUB\193\STX An array of ResourceLogs.\n\
     \ For data coming from a single resource this array will typically contain one\n\
     \ element. Intermediary nodes (such as OpenTelemetry Collector) that receive\n\
     \ data from multiple origins typically batch the data before forwarding further and\n\
     \ in that case this array will contain multiple elements.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\EOT\DC2\ETX)\STX\n\
+    \\ENQ\EOT\NUL\STX\NUL\EOT\DC2\ETX'\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\ACK\DC2\ETX)\v3\n\
+    \\ENQ\EOT\NUL\STX\NUL\ACK\DC2\ETX'\v3\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\SOH\DC2\ETX)4A\n\
+    \\ENQ\EOT\NUL\STX\NUL\SOH\DC2\ETX'4A\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\ETX\DC2\ETX)DE\n\
+    \\ENQ\EOT\NUL\STX\NUL\ETX\DC2\ETX'DE\n\
     \\n\
     \\n\
-    \\STX\EOT\SOH\DC2\EOT,\NUL=\SOH\n\
+    \\STX\EOT\SOH\DC2\EOT*\NUL;\SOH\n\
     \\n\
     \\n\
-    \\ETX\EOT\SOH\SOH\DC2\ETX,\b!\n\
+    \\ETX\EOT\SOH\SOH\DC2\ETX*\b!\n\
     \\148\ACK\n\
-    \\EOT\EOT\SOH\STX\NUL\DC2\ETX<\STX/\SUB\134\ACK The details of a partially successful export request.\n\
+    \\EOT\EOT\SOH\STX\NUL\DC2\ETX:\STX/\SUB\134\ACK The details of a partially successful export request.\n\
     \\n\
     \ If the request is only partially accepted\n\
     \ (i.e. when the server accepts only parts of the data and rejects the rest)\n\
@@ -601,31 +599,31 @@ packedFileDescriptor
     \ SHOULD interpret it the same way as in the full success case.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\ACK\DC2\ETX<\STX\SUB\n\
+    \\ENQ\EOT\SOH\STX\NUL\ACK\DC2\ETX:\STX\SUB\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\SOH\DC2\ETX<\ESC*\n\
+    \\ENQ\EOT\SOH\STX\NUL\SOH\DC2\ETX:\ESC*\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\ETX\DC2\ETX<-.\n\
+    \\ENQ\EOT\SOH\STX\NUL\ETX\DC2\ETX:-.\n\
     \\n\
     \\n\
-    \\STX\EOT\STX\DC2\EOT?\NULN\SOH\n\
+    \\STX\EOT\STX\DC2\EOT=\NULL\SOH\n\
     \\n\
     \\n\
-    \\ETX\EOT\STX\SOH\DC2\ETX?\b \n\
+    \\ETX\EOT\STX\SOH\DC2\ETX=\b \n\
     \\149\SOH\n\
-    \\EOT\EOT\STX\STX\NUL\DC2\ETXD\STX!\SUB\135\SOH The number of rejected log records.\n\
+    \\EOT\EOT\STX\STX\NUL\DC2\ETXB\STX!\SUB\135\SOH The number of rejected log records.\n\
     \\n\
     \ A `rejected_<signal>` field holding a `0` value indicates that the\n\
     \ request was fully accepted.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\ENQ\DC2\ETXD\STX\a\n\
+    \\ENQ\EOT\STX\STX\NUL\ENQ\DC2\ETXB\STX\a\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\SOH\DC2\ETXD\b\FS\n\
+    \\ENQ\EOT\STX\STX\NUL\SOH\DC2\ETXB\b\FS\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\ETX\DC2\ETXD\US \n\
+    \\ENQ\EOT\STX\STX\NUL\ETX\DC2\ETXB\US \n\
     \\159\ETX\n\
-    \\EOT\EOT\STX\STX\SOH\DC2\ETXM\STX\ESC\SUB\145\ETX A developer-facing human-readable message in English. It should be used\n\
+    \\EOT\EOT\STX\STX\SOH\DC2\ETXK\STX\ESC\SUB\145\ETX A developer-facing human-readable message in English. It should be used\n\
     \ either to explain why the server rejected parts of the data during a partial\n\
     \ success or to convey warnings/suggestions during a full success. The message\n\
     \ should offer guidance on how users can address such issues.\n\
@@ -634,8 +632,8 @@ packedFileDescriptor
     \ is equivalent to it not being set.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\SOH\ENQ\DC2\ETXM\STX\b\n\
+    \\ENQ\EOT\STX\STX\SOH\ENQ\DC2\ETXK\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\SOH\SOH\DC2\ETXM\t\SYN\n\
+    \\ENQ\EOT\STX\STX\SOH\SOH\DC2\ETXK\t\SYN\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\SOH\ETX\DC2\ETXM\EM\SUBb\ACKproto3"
+    \\ENQ\EOT\STX\STX\SOH\ETX\DC2\ETXK\EM\SUBb\ACKproto3"

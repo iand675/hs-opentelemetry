@@ -13,11 +13,6 @@
     #   url = "file+file:///dev/null";
     #   flake = false;
     # };
-
-    otlp-protobufs = {
-      url = "github:open-telemetry/opentelemetry-proto/v1.0.0";
-      flake = false;
-    };
   };
 
   outputs = inputs @ {
@@ -114,7 +109,6 @@
 
               pre-commit.hooks = pre-commit-hooks;
             })
-            (import ./nix/devenv/otlp-protobuf-setup.nix)
           ];
         };
     in {
