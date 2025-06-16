@@ -18,8 +18,8 @@ cradle:
     - path: "examples/yesod-minimal/src/Minimal.hs"
       component: "yesod-minimal:exe:yesod-minimal"
 
-    - path: "examples/yesod-minimal/src/Paths_yesod_minimal.hs"
-      component: "yesod-minimal:exe:yesod-minimal"
+    - path: "examples/yesod-subsite/src/main.hs"
+      component: "yesod-subsite:exe:yesod-subsite"
 
     - path: "exporters/handle/src"
       component: "hs-opentelemetry-exporter-handle:lib"
