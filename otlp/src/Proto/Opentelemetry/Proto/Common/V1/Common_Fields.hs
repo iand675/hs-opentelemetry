@@ -52,6 +52,12 @@ bytesValue ::
    Data.ProtoLens.Field.HasField s "bytesValue" a) =>
   Lens.Family2.LensLike' f s a
 bytesValue = Data.ProtoLens.Field.field @"bytesValue"
+descriptionKeys ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "descriptionKeys" a) =>
+  Lens.Family2.LensLike' f s a
+descriptionKeys = Data.ProtoLens.Field.field @"descriptionKeys"
 doubleValue ::
   forall f s a.
   (Prelude.Functor f,
@@ -65,6 +71,11 @@ droppedAttributesCount ::
   Lens.Family2.LensLike' f s a
 droppedAttributesCount
   = Data.ProtoLens.Field.field @"droppedAttributesCount"
+idKeys ::
+  forall f s a.
+  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "idKeys" a) =>
+  Lens.Family2.LensLike' f s a
+idKeys = Data.ProtoLens.Field.field @"idKeys"
 intValue ::
   forall f s a.
   (Prelude.Functor f,
@@ -135,12 +146,23 @@ name ::
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "name" a) =>
   Lens.Family2.LensLike' f s a
 name = Data.ProtoLens.Field.field @"name"
+schemaUrl ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "schemaUrl" a) =>
+  Lens.Family2.LensLike' f s a
+schemaUrl = Data.ProtoLens.Field.field @"schemaUrl"
 stringValue ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "stringValue" a) =>
   Lens.Family2.LensLike' f s a
 stringValue = Data.ProtoLens.Field.field @"stringValue"
+type' ::
+  forall f s a.
+  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "type'" a) =>
+  Lens.Family2.LensLike' f s a
+type' = Data.ProtoLens.Field.field @"type'"
 value ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "value" a) =>
@@ -157,6 +179,19 @@ vec'attributes ::
    Data.ProtoLens.Field.HasField s "vec'attributes" a) =>
   Lens.Family2.LensLike' f s a
 vec'attributes = Data.ProtoLens.Field.field @"vec'attributes"
+vec'descriptionKeys ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "vec'descriptionKeys" a) =>
+  Lens.Family2.LensLike' f s a
+vec'descriptionKeys
+  = Data.ProtoLens.Field.field @"vec'descriptionKeys"
+vec'idKeys ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "vec'idKeys" a) =>
+  Lens.Family2.LensLike' f s a
+vec'idKeys = Data.ProtoLens.Field.field @"vec'idKeys"
 vec'values ::
   forall f s a.
   (Prelude.Functor f,

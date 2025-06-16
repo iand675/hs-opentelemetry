@@ -37,10 +37,13 @@ import qualified Proto.Opentelemetry.Proto.Common.V1.Common
      
          * 'Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields.attributes' @:: Lens' Resource [Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue]@
          * 'Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields.vec'attributes' @:: Lens' Resource (Data.Vector.Vector Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue)@
-         * 'Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields.droppedAttributesCount' @:: Lens' Resource Data.Word.Word32@ -}
+         * 'Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields.droppedAttributesCount' @:: Lens' Resource Data.Word.Word32@
+         * 'Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields.entityRefs' @:: Lens' Resource [Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef]@
+         * 'Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields.vec'entityRefs' @:: Lens' Resource (Data.Vector.Vector Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef)@ -}
 data Resource
   = Resource'_constructor {_Resource'attributes :: !(Data.Vector.Vector Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue),
                            _Resource'droppedAttributesCount :: !Data.Word.Word32,
+                           _Resource'entityRefs :: !(Data.Vector.Vector Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef),
                            _Resource'_unknownFields :: !Data.ProtoLens.FieldSet}
   deriving stock (Prelude.Eq, Prelude.Ord)
 instance Prelude.Show Resource where
@@ -72,6 +75,22 @@ instance Data.ProtoLens.Field.HasField Resource "droppedAttributesCount" Data.Wo
            _Resource'droppedAttributesCount
            (\ x__ y__ -> x__ {_Resource'droppedAttributesCount = y__}))
         Prelude.id
+instance Data.ProtoLens.Field.HasField Resource "entityRefs" [Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef] where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _Resource'entityRefs
+           (\ x__ y__ -> x__ {_Resource'entityRefs = y__}))
+        (Lens.Family2.Unchecked.lens
+           Data.Vector.Generic.toList
+           (\ _ y__ -> Data.Vector.Generic.fromList y__))
+instance Data.ProtoLens.Field.HasField Resource "vec'entityRefs" (Data.Vector.Vector Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef) where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _Resource'entityRefs
+           (\ x__ y__ -> x__ {_Resource'entityRefs = y__}))
+        Prelude.id
 instance Data.ProtoLens.Message Resource where
   messageName _
     = Data.Text.pack "opentelemetry.proto.resource.v1.Resource"
@@ -81,7 +100,9 @@ instance Data.ProtoLens.Message Resource where
       \\n\
       \attributes\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\n\
       \attributes\DC28\n\
-      \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCount"
+      \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCount\DC2I\n\
+      \\ventity_refs\CAN\ETX \ETX(\v2(.opentelemetry.proto.common.v1.EntityRefR\n\
+      \entityRefs"
   packedFileDescriptor _ = packedFileDescriptor
   fieldsByTag
     = let
@@ -103,10 +124,20 @@ instance Data.ProtoLens.Message Resource where
                  Data.ProtoLens.Optional
                  (Data.ProtoLens.Field.field @"droppedAttributesCount")) ::
               Data.ProtoLens.FieldDescriptor Resource
+        entityRefs__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "entity_refs"
+              (Data.ProtoLens.MessageField Data.ProtoLens.MessageType ::
+                 Data.ProtoLens.FieldTypeDescriptor Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef)
+              (Data.ProtoLens.RepeatedField
+                 Data.ProtoLens.Unpacked
+                 (Data.ProtoLens.Field.field @"entityRefs")) ::
+              Data.ProtoLens.FieldDescriptor Resource
       in
         Data.Map.fromList
           [(Data.ProtoLens.Tag 1, attributes__field_descriptor),
-           (Data.ProtoLens.Tag 2, droppedAttributesCount__field_descriptor)]
+           (Data.ProtoLens.Tag 2, droppedAttributesCount__field_descriptor),
+           (Data.ProtoLens.Tag 3, entityRefs__field_descriptor)]
   unknownFields
     = Lens.Family2.Unchecked.lens
         _Resource'_unknownFields
@@ -115,19 +146,24 @@ instance Data.ProtoLens.Message Resource where
     = Resource'_constructor
         {_Resource'attributes = Data.Vector.Generic.empty,
          _Resource'droppedAttributesCount = Data.ProtoLens.fieldDefault,
+         _Resource'entityRefs = Data.Vector.Generic.empty,
          _Resource'_unknownFields = []}
   parseMessage
     = let
         loop ::
           Resource
           -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.KeyValue
-             -> Data.ProtoLens.Encoding.Bytes.Parser Resource
-        loop x mutable'attributes
+             -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Proto.Opentelemetry.Proto.Common.V1.Common.EntityRef
+                -> Data.ProtoLens.Encoding.Bytes.Parser Resource
+        loop x mutable'attributes mutable'entityRefs
           = do end <- Data.ProtoLens.Encoding.Bytes.atEnd
                if end then
                    do frozen'attributes <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
                                              (Data.ProtoLens.Encoding.Growing.unsafeFreeze
                                                 mutable'attributes)
+                      frozen'entityRefs <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                             (Data.ProtoLens.Encoding.Growing.unsafeFreeze
+                                                mutable'entityRefs)
                       (let missing = []
                        in
                          if Prelude.null missing then
@@ -142,7 +178,9 @@ instance Data.ProtoLens.Message Resource where
                            Data.ProtoLens.unknownFields (\ !t -> Prelude.reverse t)
                            (Lens.Family2.set
                               (Data.ProtoLens.Field.field @"vec'attributes") frozen'attributes
-                              x))
+                              (Lens.Family2.set
+                                 (Data.ProtoLens.Field.field @"vec'entityRefs") frozen'entityRefs
+                                 x)))
                else
                    do tag <- Data.ProtoLens.Encoding.Bytes.getVarInt
                       case tag of
@@ -155,7 +193,7 @@ instance Data.ProtoLens.Message Resource where
                                         "attributes"
                                 v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
                                        (Data.ProtoLens.Encoding.Growing.append mutable'attributes y)
-                                loop x v
+                                loop x v mutable'entityRefs
                         16
                           -> do y <- (Data.ProtoLens.Encoding.Bytes.<?>)
                                        (Prelude.fmap
@@ -165,19 +203,32 @@ instance Data.ProtoLens.Message Resource where
                                 loop
                                   (Lens.Family2.set
                                      (Data.ProtoLens.Field.field @"droppedAttributesCount") y x)
-                                  mutable'attributes
+                                  mutable'attributes mutable'entityRefs
+                        26
+                          -> do !y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                        (do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                                            Data.ProtoLens.Encoding.Bytes.isolate
+                                              (Prelude.fromIntegral len)
+                                              Data.ProtoLens.parseMessage)
+                                        "entity_refs"
+                                v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                       (Data.ProtoLens.Encoding.Growing.append mutable'entityRefs y)
+                                loop x mutable'attributes v
                         wire
                           -> do !y <- Data.ProtoLens.Encoding.Wire.parseTaggedValueFromWire
                                         wire
                                 loop
                                   (Lens.Family2.over
                                      Data.ProtoLens.unknownFields (\ !t -> (:) y t) x)
-                                  mutable'attributes
+                                  mutable'attributes mutable'entityRefs
       in
         (Data.ProtoLens.Encoding.Bytes.<?>)
           (do mutable'attributes <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
                                       Data.ProtoLens.Encoding.Growing.new
-              loop Data.ProtoLens.defMessage mutable'attributes)
+              mutable'entityRefs <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                      Data.ProtoLens.Encoding.Growing.new
+              loop
+                Data.ProtoLens.defMessage mutable'attributes mutable'entityRefs)
           "Resource"
   buildMessage
     = \ _x
@@ -208,8 +259,22 @@ instance Data.ProtoLens.Message Resource where
                          (Data.ProtoLens.Encoding.Bytes.putVarInt 16)
                          ((Prelude..)
                             Data.ProtoLens.Encoding.Bytes.putVarInt Prelude.fromIntegral _v))
-                (Data.ProtoLens.Encoding.Wire.buildFieldSet
-                   (Lens.Family2.view Data.ProtoLens.unknownFields _x)))
+                ((Data.Monoid.<>)
+                   (Data.ProtoLens.Encoding.Bytes.foldMapBuilder
+                      (\ _v
+                         -> (Data.Monoid.<>)
+                              (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
+                              ((Prelude..)
+                                 (\ bs
+                                    -> (Data.Monoid.<>)
+                                         (Data.ProtoLens.Encoding.Bytes.putVarInt
+                                            (Prelude.fromIntegral (Data.ByteString.length bs)))
+                                         (Data.ProtoLens.Encoding.Bytes.putBytes bs))
+                                 Data.ProtoLens.encodeMessage _v))
+                      (Lens.Family2.view
+                         (Data.ProtoLens.Field.field @"vec'entityRefs") _x))
+                   (Data.ProtoLens.Encoding.Wire.buildFieldSet
+                      (Lens.Family2.view Data.ProtoLens.unknownFields _x))))
 instance Control.DeepSeq.NFData Resource where
   rnf
     = \ x__
@@ -218,18 +283,22 @@ instance Control.DeepSeq.NFData Resource where
              (Control.DeepSeq.deepseq
                 (_Resource'attributes x__)
                 (Control.DeepSeq.deepseq
-                   (_Resource'droppedAttributesCount x__) ()))
+                   (_Resource'droppedAttributesCount x__)
+                   (Control.DeepSeq.deepseq (_Resource'entityRefs x__) ())))
 packedFileDescriptor :: Data.ByteString.ByteString
 packedFileDescriptor
   = "\n\
-    \.opentelemetry/proto/resource/v1/resource.proto\DC2\USopentelemetry.proto.resource.v1\SUB*opentelemetry/proto/common/v1/common.proto\"\141\SOH\n\
+    \.opentelemetry/proto/resource/v1/resource.proto\DC2\USopentelemetry.proto.resource.v1\SUB*opentelemetry/proto/common/v1/common.proto\"\216\SOH\n\
     \\bResource\DC2G\n\
     \\n\
     \attributes\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\n\
     \attributes\DC28\n\
-    \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCountB\131\SOH\n\
-    \\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\SOHZ*go.opentelemetry.io/proto/otlp/resource/v1\170\STX\USOpenTelemetry.Proto.Resource.V1J\143\t\n\
-    \\ACK\DC2\EOT\SO\NUL$\SOH\n\
+    \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCount\DC2I\n\
+    \\ventity_refs\CAN\ETX \ETX(\v2(.opentelemetry.proto.common.v1.EntityRefR\n\
+    \entityRefsB\131\SOH\n\
+    \\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\SOHZ*go.opentelemetry.io/proto/otlp/resource/v1\170\STX\USOpenTelemetry.Proto.Resource.V1J\237\n\
+    \\n\
+    \\ACK\DC2\EOT\SO\NUL+\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
     \\n\
@@ -271,7 +340,7 @@ packedFileDescriptor
     \\t\n\
     \\STX\b\v\DC2\ETX\CAN\NULA\n\
     \#\n\
-    \\STX\EOT\NUL\DC2\EOT\ESC\NUL$\SOH\SUB\ETB Resource information.\n\
+    \\STX\EOT\NUL\DC2\EOT\ESC\NUL+\SOH\SUB\ETB Resource information.\n\
     \\n\
     \\n\
     \\n\
@@ -299,4 +368,20 @@ packedFileDescriptor
     \\f\n\
     \\ENQ\EOT\NUL\STX\SOH\SOH\DC2\ETX#\t!\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\SOH\ETX\DC2\ETX#$%b\ACKproto3"
+    \\ENQ\EOT\NUL\STX\SOH\ETX\DC2\ETX#$%\n\
+    \\163\SOH\n\
+    \\EOT\EOT\NUL\STX\STX\DC2\ETX*\STXC\SUB\149\SOH Set of entities that participate in this Resource.\n\
+    \\n\
+    \ Note: keys in the references MUST exist in attributes of this message.\n\
+    \\n\
+    \ Status: [Development]\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\STX\EOT\DC2\ETX*\STX\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\STX\ACK\DC2\ETX*\v2\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\STX\SOH\DC2\ETX*3>\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\STX\ETX\DC2\ETX*ABb\ACKproto3"

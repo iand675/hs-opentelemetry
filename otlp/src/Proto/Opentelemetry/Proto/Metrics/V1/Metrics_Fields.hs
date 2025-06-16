@@ -221,6 +221,12 @@ maybe'value ::
    Data.ProtoLens.Field.HasField s "maybe'value" a) =>
   Lens.Family2.LensLike' f s a
 maybe'value = Data.ProtoLens.Field.field @"maybe'value"
+metadata ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "metadata" a) =>
+  Lens.Family2.LensLike' f s a
+metadata = Data.ProtoLens.Field.field @"metadata"
 metrics ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "metrics" a) =>
@@ -379,6 +385,12 @@ vec'filteredAttributes ::
   Lens.Family2.LensLike' f s a
 vec'filteredAttributes
   = Data.ProtoLens.Field.field @"vec'filteredAttributes"
+vec'metadata ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "vec'metadata" a) =>
+  Lens.Family2.LensLike' f s a
+vec'metadata = Data.ProtoLens.Field.field @"vec'metadata"
 vec'metrics ::
   forall f s a.
   (Prelude.Functor f,

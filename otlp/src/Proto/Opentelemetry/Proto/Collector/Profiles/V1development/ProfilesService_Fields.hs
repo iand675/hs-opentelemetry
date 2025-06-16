@@ -1,10 +1,10 @@
 {- HLINT ignore -}
-{- This file was auto-generated from opentelemetry/proto/resource/v1/resource.proto by the proto-lens-protoc program. -}
+{- This file was auto-generated from opentelemetry/proto/collector/profiles/v1development/profiles_service.proto by the proto-lens-protoc program. -}
 {-# LANGUAGE ScopedTypeVariables, DataKinds, TypeFamilies, UndecidableInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, PatternSynonyms, MagicHash, NoImplicitPrelude, DataKinds, BangPatterns, TypeApplications, OverloadedStrings, DerivingStrategies#-}
 {-# OPTIONS_GHC -Wno-unused-imports#-}
 {-# OPTIONS_GHC -Wno-duplicate-exports#-}
 {-# OPTIONS_GHC -Wno-dodgy-exports#-}
-module Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields where
+module Proto.Opentelemetry.Proto.Collector.Profiles.V1development.ProfilesService_Fields where
 import qualified Data.ProtoLens.Runtime.Prelude as Prelude
 import qualified Data.ProtoLens.Runtime.Data.Int as Data.Int
 import qualified Data.ProtoLens.Runtime.Data.Monoid as Data.Monoid
@@ -28,35 +28,54 @@ import qualified Data.ProtoLens.Runtime.Data.Vector as Data.Vector
 import qualified Data.ProtoLens.Runtime.Data.Vector.Generic as Data.Vector.Generic
 import qualified Data.ProtoLens.Runtime.Data.Vector.Unboxed as Data.Vector.Unboxed
 import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
-import qualified Proto.Opentelemetry.Proto.Common.V1.Common
-attributes ::
+import qualified Proto.Opentelemetry.Proto.Profiles.V1development.Profiles
+dictionary ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "attributes" a) =>
+   Data.ProtoLens.Field.HasField s "dictionary" a) =>
   Lens.Family2.LensLike' f s a
-attributes = Data.ProtoLens.Field.field @"attributes"
-droppedAttributesCount ::
+dictionary = Data.ProtoLens.Field.field @"dictionary"
+errorMessage ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "droppedAttributesCount" a) =>
+   Data.ProtoLens.Field.HasField s "errorMessage" a) =>
   Lens.Family2.LensLike' f s a
-droppedAttributesCount
-  = Data.ProtoLens.Field.field @"droppedAttributesCount"
-entityRefs ::
+errorMessage = Data.ProtoLens.Field.field @"errorMessage"
+maybe'dictionary ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "entityRefs" a) =>
+   Data.ProtoLens.Field.HasField s "maybe'dictionary" a) =>
   Lens.Family2.LensLike' f s a
-entityRefs = Data.ProtoLens.Field.field @"entityRefs"
-vec'attributes ::
+maybe'dictionary = Data.ProtoLens.Field.field @"maybe'dictionary"
+maybe'partialSuccess ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'attributes" a) =>
+   Data.ProtoLens.Field.HasField s "maybe'partialSuccess" a) =>
   Lens.Family2.LensLike' f s a
-vec'attributes = Data.ProtoLens.Field.field @"vec'attributes"
-vec'entityRefs ::
+maybe'partialSuccess
+  = Data.ProtoLens.Field.field @"maybe'partialSuccess"
+partialSuccess ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'entityRefs" a) =>
+   Data.ProtoLens.Field.HasField s "partialSuccess" a) =>
   Lens.Family2.LensLike' f s a
-vec'entityRefs = Data.ProtoLens.Field.field @"vec'entityRefs"
+partialSuccess = Data.ProtoLens.Field.field @"partialSuccess"
+rejectedProfiles ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "rejectedProfiles" a) =>
+  Lens.Family2.LensLike' f s a
+rejectedProfiles = Data.ProtoLens.Field.field @"rejectedProfiles"
+resourceProfiles ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "resourceProfiles" a) =>
+  Lens.Family2.LensLike' f s a
+resourceProfiles = Data.ProtoLens.Field.field @"resourceProfiles"
+vec'resourceProfiles ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "vec'resourceProfiles" a) =>
+  Lens.Family2.LensLike' f s a
+vec'resourceProfiles
+  = Data.ProtoLens.Field.field @"vec'resourceProfiles"

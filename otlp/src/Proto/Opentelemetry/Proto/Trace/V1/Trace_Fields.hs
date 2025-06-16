@@ -72,6 +72,11 @@ events ::
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "events" a) =>
   Lens.Family2.LensLike' f s a
 events = Data.ProtoLens.Field.field @"events"
+flags ::
+  forall f s a.
+  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "flags" a) =>
+  Lens.Family2.LensLike' f s a
+flags = Data.ProtoLens.Field.field @"flags"
 kind ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "kind" a) =>

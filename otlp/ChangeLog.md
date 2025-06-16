@@ -1,5 +1,9 @@
 # Changelog for otlp
 
+## Unreleased
+
+- Support OTLP specification v1.7
+
 ## 0.1.0.0
 
 Support OTLP specification v1.0.0
