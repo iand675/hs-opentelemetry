@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module OpenTelemetry.Metric.Point (
-  GuagePoint,
+  GaugePoint,
   SumPoint,
   HistogramPoint,
 ) where
@@ -12,7 +12,7 @@ import OpenTelemetry.Attributes (AttributeMap)
 import System.Clock (TimeSpec)
 
 
-data GuagePoint = GuagePoint
+data GaugePoint = GaugePoint
   { value :: Int64
   , time :: TimeSpec
   , attributes :: AttributeMap
