@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-20.24
+resolver: lts-23.24
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -70,8 +70,8 @@ extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
 - thread-utils-context-0.3.0.4
 - thread-utils-finalizers-0.1.1.0
-- proto-lens-0.7.1.1
-- proto-lens-runtime-0.7.0.2
+- proto-lens-0.7.1.6
+- proto-lens-runtime-0.7.0.7
 
 # just for testing
 # - mwc-random-0.14.0.0
