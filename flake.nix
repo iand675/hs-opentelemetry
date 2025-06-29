@@ -119,14 +119,14 @@
         // haskellPackageUtils.localPackageMatrix;
 
       devShells = rec {
-        default = ghc96;
+        default = ghc98;
         # ghc810 = mkShellForGHC "ghc810";
         # ghc90 = mkShellForGHC "ghc90";
         ghc92 = mkShellForGHC "ghc92";
         ghc94 = mkShellForGHC "ghc94";
         ghc96 = mkShellForGHC "ghc96";
         ghc98 = mkShellForGHC "ghc98";
-        ghc910 = mkShellForGHC "ghc98";
+        ghc910 = mkShellForGHC "ghc910";
       };
 
       checks = {
