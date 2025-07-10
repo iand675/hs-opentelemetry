@@ -261,6 +261,7 @@ returning = returningWith Simple.fromRow
 
 -- | A version of 'returning' taking parser as argument
 returningWith :: (HasCallStack, MonadIO m, ToRow q) => Simple.RowParser r -> Connection -> Query -> [q] -> m [r]
+returningWith _parser _conn _q [] = pure []
 returningWith parser conn q qs = liftIO $ do
   statement <- formatMany conn q qs
   pgsSpan conn statement $ Simple.returningWith parser conn q qs
@@ -282,6 +283,7 @@ execute_ conn q = liftIO $ do
 
 -- | Instrumented version of 'Simple.executeMany'
 executeMany :: (HasCallStack, MonadIO m, ToRow q) => Connection -> Query -> [q] -> m Int64
+executeMany _conn _q [] = pure 0
 executeMany conn q qs = liftIO $ do
   statement <- formatMany conn q qs
   pgsSpan conn statement $ Simple.executeMany conn q qs
