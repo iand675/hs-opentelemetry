@@ -140,23 +140,9 @@ loadExporterEnvironmentVariables = liftIO $ do
     <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_HEADERS")
     <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_HEADERS")
     <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_HEADERS")
-    <*>
-    -- TODO lookupEnv  <*>
-    ( fmap
-        ( \case
-            "gzip" -> GZip
-            "none" -> None
-            -- TODO
-            _ -> None
-        )
-        <$> lookupEnv "OTEL_EXPORTER_OTLP_COMPRESSION"
-    )
-    <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION" <*>
-    pure Nothing
-    <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_COMPRESSION" <*>
-    pure Nothing
+    <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_COMPRESSION")
+    <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION")
+    <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_COMPRESSION")
     <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_TIMEOUT" <*>
     pure Nothing
@@ -179,7 +165,23 @@ loadExporterEnvironmentVariables = liftIO $ do
 {- |
 The OpenTelemetry Protocol Compression Format.
 -}
-data CompressionFormat = None | GZip
+data CompressionFormat
+  = None
+  | GZip
+
+
+{- |
+Internal helper.
+Read the `CompressionFormat` from a `String`.
+Defaults to `None` for unsupported values.
+-}
+readCompressionFormat :: (MonadIO m) => String -> m CompressionFormat
+readCompressionFormat = \case
+  "gzip" -> pure GZip
+  "none" -> pure None
+  compressionFormat -> do
+    putWarningLn $ "Warning: unsupported compression format '" <> compressionFormat <> "'"
+    pure None
 
 
 {- |
