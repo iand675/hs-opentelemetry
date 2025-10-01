@@ -116,9 +116,11 @@ data OTLPExporterConfig = OTLPExporterConfig
   , otlpTracesCompression :: Maybe CompressionFormat
   , otlpMetricsCompression :: Maybe CompressionFormat
   , otlpTimeout :: Maybe Int
-  -- ^ Measured in seconds
+  -- ^ Measured in milliseconds.
   , otlpTracesTimeout :: Maybe Int
+  -- ^ Measured in milliseconds.
   , otlpMetricsTimeout :: Maybe Int
+  -- ^ Measured in milliseconds.
   , otlpProtocol :: Maybe Protocol
   , otlpTracesProtocol :: Maybe Protocol
   , otlpMetricsProtocol :: Maybe Protocol
@@ -259,8 +261,12 @@ httpOtlpExporter conf = do
   -- TODO make retryDelay and maximum retry counts configurable
   req <- liftIO $ parseRequest (httpHost conf <> "/v1/traces")
   let (encodingHeaders, encoder) = httpCompression conf
-  let baseReqHeaders = encodingHeaders <> httpBaseHeaders conf req
-  let baseReq = req {method = "POST", requestHeaders = baseReqHeaders}
+  let baseReq =
+        req
+          { method = "POST"
+          , requestHeaders = encodingHeaders <> httpBaseHeaders conf req
+          , responseTimeout = httpTracesResponseTimeout conf
+          }
   pure $
     SpanExporter
       { spanExporterExport = \spans_ -> do
@@ -344,6 +350,21 @@ httpOtlpExporter conf = do
                   print resp
                   pure $ Failure Nothing
                 else pure Success
+
+
+{- |
+Internal helper.
+Get the HTTP `ResponseTimeout` from the `OTLPExporterConfig`.
+-}
+httpTracesResponseTimeout :: OTLPExporterConfig -> ResponseTimeout
+httpTracesResponseTimeout conf = case otlpTracesTimeout conf <|> otlpTimeout conf of
+  Just timeoutMilli
+    | timeoutMilli == 0 -> responseTimeoutNone
+    | timeoutMilli >= 1 -> responseTimeoutMilli timeoutMilli
+  _otherwise -> responseTimeoutMilli defaultExporterTimeout
+  where
+    responseTimeoutMilli :: Int -> ResponseTimeout
+    responseTimeoutMilli = responseTimeoutMicro . (* 1_000)
 
 
 {- |
