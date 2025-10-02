@@ -88,22 +88,14 @@ import System.Environment
 import Text.Read (readMaybe)
 
 
-data CompressionFormat = None | GZip
+-- | Initial the OTLP 'Exporter'
+otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
+otlpExporter conf = httpOtlpExporter conf
 
 
-data Protocol {- GRpc | HttpJson | -}
-  = -- | Note: grpc and http/json will likely be supported eventually,
-    -- but not yet.
-    HttpProtobuf
-
-
-otlpExporterHttpEndpoint :: C.ByteString
-otlpExporterHttpEndpoint = "http://localhost:4318"
-
-
-otlpExporterGRpcEndpoint :: C.ByteString
-otlpExporterGRpcEndpoint = "http://localhost:4317"
-
+--------------------------------------------------------------------------------
+-- OTLP Exporter configuration.
+--------------------------------------------------------------------------------
 
 data OTLPExporterConfig = OTLPExporterConfig
   { otlpEndpoint :: Maybe String
@@ -192,41 +184,51 @@ loadExporterEnvironmentVariables = liftIO $ do
         (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
 
 
-protobufMimeType :: C.ByteString
-protobufMimeType = "application/x-protobuf"
+{- |
+The OpenTelemetry Protocol Compression Format.
+-}
+data CompressionFormat = None | GZip
 
 
--- | Initial the OTLP 'Exporter'
-otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
-otlpExporter conf = do
-  -- TODO, url parsing is janky
-  -- TODO configurable retryDelay, maximum retry counts
-  let
-    defaultHost = "http://localhost:4318"
-    host = fromMaybe defaultHost $ otlpEndpoint conf
-  req <- liftIO $ parseRequest (host <> "/v1/traces")
+{- |
+The OpenTelemetry Protocol. Either HTTP/Protobuf or gRPC.
 
-  let (encodingHeader, encoder) =
-        maybe
-          (id, id)
-          ( \case
-              None -> (id, id)
-              GZip -> (((hContentEncoding, "gzip") :), compress)
-          )
-          (otlpTracesCompression conf <|> otlpCompression conf)
+Note: gRPC and HTTP/JSON will likely be supported eventually, but not yet.
+-}
+data Protocol {- GRpc | HttpJson | -}
+  = HttpProtobuf
 
-      baseReqHeaders =
-        encodingHeader $
-          (hContentType, protobufMimeType)
-            : (hAcceptEncoding, protobufMimeType)
-            : fromMaybe [] (otlpHeaders conf)
-            ++ fromMaybe [] (otlpTracesHeaders conf)
-            ++ requestHeaders req
-      baseReq =
-        req
-          { method = "POST"
-          , requestHeaders = baseReqHeaders
-          }
+
+{- |
+The default OTLP HTTP endpoint.
+-}
+otlpExporterHttpEndpoint :: C.ByteString
+otlpExporterHttpEndpoint = "http://localhost:4318"
+
+
+{- |
+The default OTLP gRPC endpoint.
+-}
+otlpExporterGRpcEndpoint :: C.ByteString
+otlpExporterGRpcEndpoint = "http://localhost:4317"
+
+
+--------------------------------------------------------------------------------
+-- OTLP Exporter using HTTP/Protobuf.
+--------------------------------------------------------------------------------
+
+{- |
+Internal helper.
+Construct a `SpanExporter` that uses HTTP/Protobuf.
+-}
+httpOtlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
+httpOtlpExporter conf = do
+  -- TODO url parsing is jankym
+  -- TODO make retryDelay and maximum retry counts configurable
+  req <- liftIO $ parseRequest (httpHost conf <> "/v1/traces")
+  let (encodingHeaders, encoder) = httpCompression conf
+  let baseReqHeaders = encodingHeaders <> httpBaseHeaders conf req
+  let baseReq = req {method = "POST", requestHeaders = baseReqHeaders}
   pure $
     SpanExporter
       { spanExporterExport = \spans_ -> do
@@ -312,34 +314,65 @@ otlpExporter conf = do
                 else pure Success
 
 
-attributesToProto :: Attributes -> Vector KeyValue
-attributesToProto =
-  V.fromList
-    . fmap attributeToKeyValue
-    . H.toList
-    . snd
-    . ((,) <$> getCount <*> getAttributeMap)
+{- |
+Internal helper.
+Get the HTTP host from the `OTLPExporterConfig`.
+-}
+httpHost :: OTLPExporterConfig -> String
+httpHost conf = fromMaybe defaultHost $ otlpEndpoint conf
   where
-    primAttributeToAnyValue = \case
-      TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
-      BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b
-      DoubleAttribute d -> defMessage & Common_Fields.doubleValue .~ d
-      IntAttribute i -> defMessage & Common_Fields.intValue .~ i
-    attributeToKeyValue :: (Text, Attribute) -> KeyValue
-    attributeToKeyValue (k, v) =
-      defMessage
-        & Common_Fields.key
-          .~ k
-        & Common_Fields.value
-          .~ ( case v of
-                AttributeValue a -> primAttributeToAnyValue a
-                AttributeArray a ->
-                  defMessage
-                    & Common_Fields.arrayValue
-                      .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
-             )
+    -- TODO shouldn't this be http://localhost:4317 ?
+    defaultHost = "http://localhost:4318"
 
 
+{- |
+Internal helper.
+The type of `L.ByteString` encoders.
+-}
+type Encoder = L.ByteString -> L.ByteString
+
+
+{- |
+Internal helper.
+Get a function that adds the compression header to the HTTP headers and a function that performs the compression.
+-}
+httpCompression :: OTLPExporterConfig -> ([(HeaderName, C.ByteString)], Encoder)
+httpCompression conf =
+  case otlpTracesCompression conf <|> otlpCompression conf of
+    Just GZip -> ([(hContentEncoding, "gzip")], compress)
+    _otherwise -> ([], id)
+
+
+{- |
+Internal helper.
+The mimetype used by HTTP/Protobuf.
+-}
+httpProtobufMimeType :: C.ByteString
+httpProtobufMimeType = "application/x-protobuf"
+
+
+{- |
+Internal helper.
+Get the base HTTP headers for the request.
+-}
+httpBaseHeaders :: OTLPExporterConfig -> Request -> [(HeaderName, C.ByteString)]
+httpBaseHeaders conf req =
+  concat
+    [ [(hContentType, httpProtobufMimeType)]
+    , [(hAcceptEncoding, httpProtobufMimeType)]
+    , fromMaybe [] (otlpHeaders conf)
+    , fromMaybe [] (otlpTracesHeaders conf)
+    , requestHeaders req
+    ]
+
+
+--------------------------------------------------------------------------------
+-- Convert from `hs-opentelemetry-api` data model into OTLP Protobuf.
+--------------------------------------------------------------------------------
+
+{- |
+Translate a collection of `OT.ImmutableSpan` spans to an OTLP `ExportTraceServiceRequest`.
+-}
 immutableSpansToProtobuf :: (MonadIO m) => HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> m ExportTraceServiceRequest
 immutableSpansToProtobuf completedSpans = do
   spansByLibrary <- mapM makeScopeSpans spanGroupList
@@ -371,24 +404,33 @@ immutableSpansToProtobuf completedSpans = do
 
     spanGroupList = H.toList completedSpans
 
-    makeScopeSpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m ScopeSpans
-    makeScopeSpans (library, completedSpans_) = do
-      spans_ <- mapM makeSpan completedSpans_
-      pure $
-        defMessage
-          & Trace_Fields.scope
-            .~ ( defMessage
-                  & Trace_Fields.name
-                    .~ OT.libraryName library
-                  & Common_Fields.version
-                    .~ OT.libraryVersion library
-               )
-          & Trace_Fields.vec'spans
-            .~ spans_
+
+{- |
+Internal helper.
+Translate a collection of `OT.ImmutableSpan` spans to OTLP `ScopeSpans`.
+-}
+makeScopeSpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m ScopeSpans
+makeScopeSpans (library, completedSpans_) = do
+  spans_ <- mapM makeSpan completedSpans_
+  pure $
+    defMessage
+      & Trace_Fields.scope
+        .~ ( defMessage
+              & Trace_Fields.name
+                .~ OT.libraryName library
+              & Common_Fields.version
+                .~ OT.libraryVersion library
+           )
+      & Trace_Fields.vec'spans
+        .~ spans_
 
 
 -- & schemaUrl .~ "" -- TODO
 
+{- |
+Internal helper.
+Translate an `OT.ImmutableSpan` span to an OTLP `Span`.
+-}
 makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m Span
 makeSpan completedSpan = do
   let startTime = timestampNanoseconds (OT.spanStart completedSpan)
@@ -453,6 +495,10 @@ makeSpan completedSpan = do
       & parentSpanF
 
 
+{- |
+Internal helper.
+Translate an `OT.Event` to an OTLP `Span'Event`.
+-}
 makeEvent :: OT.Event -> Span'Event
 makeEvent e =
   defMessage
@@ -466,6 +512,10 @@ makeEvent e =
       .~ fromIntegral (getCount $ OT.eventAttributes e)
 
 
+{- |
+Internal helper.
+Translate an `OT.Link` to an OTLP `Span'Link`.
+-}
 makeLink :: OT.Link -> Span'Link
 makeLink l =
   defMessage
@@ -477,3 +527,35 @@ makeLink l =
       .~ attributesToProto (OT.frozenLinkAttributes l)
     & Trace_Fields.droppedAttributesCount
       .~ fromIntegral (getCount $ OT.frozenLinkAttributes l)
+
+
+{- |
+Internal helper.
+Translate a collection of `Attributes` to a vector of OTLP `KeyValue` pairs.
+-}
+attributesToProto :: Attributes -> Vector KeyValue
+attributesToProto =
+  V.fromList
+    . fmap attributeToKeyValue
+    . H.toList
+    . snd
+    . ((,) <$> getCount <*> getAttributeMap)
+  where
+    primAttributeToAnyValue = \case
+      TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
+      BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b
+      DoubleAttribute d -> defMessage & Common_Fields.doubleValue .~ d
+      IntAttribute i -> defMessage & Common_Fields.intValue .~ i
+    attributeToKeyValue :: (Text, Attribute) -> KeyValue
+    attributeToKeyValue (k, v) =
+      defMessage
+        & Common_Fields.key
+          .~ k
+        & Common_Fields.value
+          .~ ( case v of
+                AttributeValue a -> primAttributeToAnyValue a
+                AttributeArray a ->
+                  defMessage
+                    & Common_Fields.arrayValue
+                      .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
+             )
