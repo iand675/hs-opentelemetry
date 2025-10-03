@@ -24,7 +24,7 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api ^>= 0.2
+  - hs-opentelemetry-api ^>= 0.3
   - iproute
   - postgresql-simple
   - postgresql-libpq

@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-propagator-w3c
-version:             0.0.1.4
+version:             0.1.0.0
 
 <<: *preface
 
@@ -26,7 +26,7 @@ library:
   source-dirs: src
   dependencies:
   - bytestring
-  - hs-opentelemetry-api ^>= 0.2
+  - hs-opentelemetry-api ^>= 0.3
   - http-types
   - attoparsec
   - text
