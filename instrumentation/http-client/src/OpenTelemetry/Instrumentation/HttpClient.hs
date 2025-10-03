@@ -1,4 +1,6 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {- | Offer a few options for HTTP instrumentation
 
@@ -13,143 +15,144 @@
 Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
 -}
 module OpenTelemetry.Instrumentation.HttpClient (
-  withResponse,
-  httpLbs,
-  httpNoBody,
-  responseOpen,
-  httpClientInstrumentationConfig,
-  HttpClientInstrumentationConfig (..),
-  module X,
+  appendModifierToSettings,
 ) where
 
-import Control.Monad.IO.Class (MonadIO (..))
-import qualified Data.ByteString.Lazy as L
-import GHC.Stack
-import Network.HTTP.Client as X hiding (httpLbs, httpNoBody, responseOpen, withResponse)
-import qualified Network.HTTP.Client as Client
-import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Instrumentation.HttpClient.Raw (
-  HttpClientInstrumentationConfig (..),
-  httpClientInstrumentationConfig,
-  httpTracerProvider,
-  instrumentRequest,
-  instrumentResponse,
- )
-import OpenTelemetry.Trace.Core (
-  SpanArguments (kind),
-  SpanKind (Client),
-  addAttributesToSpanArguments,
-  callerAttributes,
-  defaultSpanArguments,
-  inSpan'',
- )
-import UnliftIO (MonadUnliftIO, askRunInIO)
+import Control.Exception (assert)
+import Control.Monad ((>=>))
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Data.Bifunctor (bimap)
+import qualified Data.CaseInsensitive as CI
+import Data.Foldable (fold)
+import Data.Function ((&))
+import qualified Data.HashMap.Strict as H
+import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.Int (Int64)
+import Data.Monoid (Endo (Endo, appEndo))
+import qualified Data.TLS.GHC as TLS
+import Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import GHC.Stack (HasCallStack, withFrozenCallStack)
+import qualified Network.HTTP.Client as Orig
+import qualified Network.HTTP.Types.Status as HT
+import qualified OpenTelemetry.Attributes.Map as Otel
+import qualified OpenTelemetry.Context.ThreadLocal as Otel
+import qualified OpenTelemetry.Propagator as Otel
+import qualified OpenTelemetry.SemanticConventions as Otel
+import qualified OpenTelemetry.Trace.Core as Otel
 
 
-spanArgs :: SpanArguments
-spanArgs = defaultSpanArguments {kind = Client}
+appendModifierToSettings :: (MonadIO m, HasCallStack) => Otel.TracerProvider -> Orig.ManagerSettings -> m Orig.ManagerSettings
+appendModifierToSettings tracerProvider settings = withFrozenCallStack $ liftIO $ do
+  let
+    tracer =
+      Otel.makeTracer
+        tracerProvider
+        $Otel.detectInstrumentationLibrary
+        Otel.tracerOptions
+    managerModifyRequest = Orig.managerModifyRequest settings
+    managerModifyResponse = Orig.managerModifyResponse settings
+  tls <- makeThreadLocalStorage
+  pure
+    settings
+      { Orig.managerModifyRequest = requestModifier tracer tls >=> managerModifyRequest
+      , Orig.managerModifyResponse = managerModifyResponse >=> responseModifier tls
+      }
 
 
-{- | Instrumented variant of @Network.HTTP.Client.withResponse@
-
- Perform a @Request@ using a connection acquired from the given @Manager@,
- and then provide the @Response@ to the given function. This function is
- fully exception safe, guaranteeing that the response will be closed when the
- inner function exits. It is defined as:
-
- > withResponse req man f = bracket (responseOpen req man) responseClose f
-
- It is recommended that you use this function in place of explicit calls to
- 'responseOpen' and 'responseClose'.
-
- You will need to use functions such as 'brRead' to consume the response
- body.
--}
-withResponse
-  :: (MonadUnliftIO m, HasCallStack)
-  => HttpClientInstrumentationConfig
-  -> Client.Request
-  -> Client.Manager
-  -> (Client.Response Client.BodyReader -> m a)
-  -> m a
-withResponse httpConf req man f = do
-  tracer <- httpTracerProvider
-  inSpan'' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
-    ctxt <- getContext
-    -- TODO would like to capture the req/resp time specifically
-    -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
-    req' <- instrumentRequest httpConf ctxt req
-    runInIO <- askRunInIO
-    liftIO $ Client.withResponse req' man $ \resp -> do
-      _ <- instrumentResponse httpConf ctxt resp
-      runInIO $ f resp
+type ThreadLocalStorage = TLS.TLS (IORef (Maybe Otel.Span))
 
 
-{- | A convenience wrapper around 'withResponse' which reads in the entire
- response body and immediately closes the connection. Note that this function
- performs fully strict I\/O, and only uses a lazy ByteString in its response
- for memory efficiency. If you are anticipating a large response body, you
- are encouraged to use 'withResponse' and 'brRead' instead.
--}
-httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
-httpLbs httpConf req man = do
-  tracer <- httpTracerProvider
-  inSpan'' tracer "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.httpLbs req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+requestModifier :: HasCallStack => Otel.Tracer -> ThreadLocalStorage -> Orig.Request -> IO Orig.Request
+requestModifier tracer tls request = do
+  spanRef <- TLS.getTLS tls
+  maybeSpan <- readIORef spanRef
+  case maybeSpan of
+    Nothing -> do
+      context <- Otel.getContext
+      let attributes = makeRequestAttributes request `H.union` Otel.callerAttributes
+      span_ <- Otel.createSpan tracer context "request" Otel.defaultSpanArguments {Otel.kind = Otel.Client, Otel.attributes}
+      writeIORef spanRef $ Just span_
+      let propagator = Otel.getTracerProviderPropagators $ Otel.getTracerTracerProvider tracer
+      headers <- Otel.injector propagator context $ Orig.requestHeaders request
+      pure request {Orig.requestHeaders = headers}
+    Just _ -> pure request
 
 
-{- | A convenient wrapper around 'withResponse' which ignores the response
- body. This is useful, for example, when performing a HEAD request.
--}
-httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
-httpNoBody httpConf req man = do
-  tracer <- httpTracerProvider
-  inSpan'' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.httpNoBody req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+responseModifier :: HasCallStack => ThreadLocalStorage -> Orig.Response Orig.BodyReader -> IO (Orig.Response Orig.BodyReader)
+responseModifier tls response = do
+  spanRef <- TLS.getTLS tls
+  maybeSpan <- readIORef spanRef
+  case maybeSpan of
+    Just span_ -> do
+      Otel.addAttributes span_ $ makeResponseAttributes response
+      Otel.endSpan span_ Nothing
+      writeIORef spanRef Nothing
+    Nothing -> assert False $ pure () -- something went wrong
+  pure response
 
 
-{- | The most low-level function for initiating an HTTP request.
+makeThreadLocalStorage :: IO ThreadLocalStorage
+makeThreadLocalStorage = TLS.mkTLS $ newIORef Nothing
 
- The first argument to this function gives a full specification
- on the request: the host to connect to, whether to use SSL,
- headers, etc. Please see 'Request' for full details.  The
- second argument specifies which 'Manager' should be used.
 
- This function then returns a 'Response' with a
- 'BodyReader'.  The 'Response' contains the status code
- and headers that were sent back to us, and the
- 'BodyReader' contains the body of the request.  Note
- that this 'BodyReader' allows you to have fully
- interleaved IO actions during your HTTP download, making it
- possible to download very large responses in constant memory.
+makeRequestAttributes :: Orig.Request -> Otel.AttributeMap
+makeRequestAttributes request =
+  let
+    requestHeaders =
+      bimap
+        (Text.decodeLatin1 . CI.foldedCase)
+        ((Text.dropAround (== ' ') <$>) . Text.split (== ',') . Text.decodeLatin1)
+        <$> Orig.requestHeaders request
+    methodOriginal = Text.decodeLatin1 $ Orig.method request
+    method :: Text
+    method =
+      case CI.foldCase methodOriginal of
+        "get" -> "GET"
+        "head" -> "HEAD"
+        "post" -> "POST"
+        "put" -> "PUT"
+        "delete" -> "DELETE"
+        "connect" -> "CONNECT"
+        "options" -> "OPTIONS"
+        "trace" -> "TRACE"
+        "patch" -> "PATCH"
+        _ -> "_OTHER"
+    resendCount :: Int64
+    resendCount = fromIntegral $ Orig.redirectCount request
+    address = Text.decodeLatin1 $ Orig.host request
+    port :: Int64
+    port = fromIntegral $ Orig.port request
+    url = Text.pack $ show $ Orig.getUri request
+  in
+    mempty
+      -- HTTP attributes
+      -- attributes to dismiss: error.type, http.request.body.size, http.response.body.size, network.protocol.version
+      & appEndo (fold $ Endo . (\(k, v) -> Otel.insertByKey (Otel.http_request_header k) v) <$> requestHeaders)
+      & Otel.insertByKey Otel.http_request_method method
+      & Otel.insertByKey Otel.http_request_methodOriginal methodOriginal
+      & Otel.insertByKey Otel.http_request_resendCount resendCount
+      & Otel.insertByKey Otel.network_peer_address address
+      & Otel.insertByKey Otel.network_peer_port port
+      & Otel.insertByKey Otel.network_protocol_name "http"
+      & Otel.insertByKey Otel.network_transport "tcp"
+      & Otel.insertByKey Otel.server_address address
+      & Otel.insertByKey Otel.server_port port
+      & Otel.insertByKey Otel.url_full url
 
- An important note: the response body returned by this function represents a
- live HTTP connection. As such, if you do not use the response body, an open
- socket will be retained indefinitely. You must be certain to call
- 'responseClose' on this response to free up resources.
 
- This function automatically performs any necessary redirects, as specified
- by the 'redirectCount' setting.
-
- When implementing a (reverse) proxy using this function or relating
- functions, it's wise to remove Transfer-Encoding:, Content-Length:,
- Content-Encoding: and Accept-Encoding: from request and response
- headers to be relayed.
--}
-responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
-responseOpen httpConf req man = do
-  tracer <- httpTracerProvider
-  inSpan'' tracer "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
-    ctxt <- getContext
-    req' <- instrumentRequest httpConf ctxt req
-    resp <- liftIO $ Client.responseOpen req' man
-    _ <- instrumentResponse httpConf ctxt resp
-    pure resp
+makeResponseAttributes :: Orig.Response a -> Otel.AttributeMap
+makeResponseAttributes response =
+  let
+    responseHeaders =
+      bimap
+        (Text.decodeLatin1 . CI.foldedCase)
+        ((Text.dropAround (== ' ') <$>) . Text.split (== ',') . Text.decodeLatin1)
+        <$> Orig.responseHeaders response
+    statusCode :: Int64
+    statusCode = fromIntegral $ HT.statusCode $ Orig.responseStatus response
+  in
+    mempty
+      & appEndo (fold $ Endo . (\(k, v) -> Otel.insertByKey (Otel.http_response_header k) v) <$> responseHeaders)
+      & Otel.insertByKey Otel.http_response_statusCode statusCode
