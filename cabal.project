@@ -4,6 +4,7 @@ packages:
   , otlp
   , semantic-conventions
   , examples/hspec
+  , examples/hw-kafka-client-example
   , examples/yesod-minimal
   , exporters/handle
   , exporters/in-memory
@@ -15,6 +16,7 @@ packages:
   , instrumentation/cloudflare
   , instrumentation/hspec
   , instrumentation/http-client
+  , instrumentation/hw-kafka-client
   , instrumentation/persistent
   , instrumentation/persistent-mysql
   , instrumentation/postgresql-simple
