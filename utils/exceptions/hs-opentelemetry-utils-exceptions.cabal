@@ -33,7 +33,7 @@ library
   build-depends:
       base >=4.7 && <5
     , exceptions
-    , hs-opentelemetry-api ==0.2.*
+    , hs-opentelemetry-api ==0.3.*
     , hs-opentelemetry-sdk ==0.1.*
     , text
   default-language: Haskell2010

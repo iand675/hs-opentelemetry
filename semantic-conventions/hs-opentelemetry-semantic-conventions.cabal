@@ -1,7 +1,7 @@
 cabal-version: 2.4
 
 name: hs-opentelemetry-semantic-conventions
-version: 0.0.1.0
+version: 0.1.0.0
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 synopsis: OpenTelemetry Semantic Conventions for Haskell

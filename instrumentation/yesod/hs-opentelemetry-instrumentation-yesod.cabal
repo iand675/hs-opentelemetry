@@ -35,7 +35,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.2.*
+    , hs-opentelemetry-api ==0.3.*
     , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
     , microlens
     , template-haskell
