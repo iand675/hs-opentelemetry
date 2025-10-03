@@ -100,7 +100,7 @@ traceIdRatioBased fraction =
     traceIdUpperBound = floor (fraction * fromIntegral ((1 :: Word64) `shiftL` 63)) :: Word64
     sampler =
       Sampler
-        { getDescription = "TraceIdRatioBased{" <> T.pack (show fraction) <> "}"
+        { getDescription = "TraceIdRatioBased{" <> T.pack (Prelude.show fraction) <> "}"
         , shouldSample = \ctxt tid _ _ -> do
             mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
             let x = runGet getWord64be (L.fromStrict $ B.take 8 $ traceIdBytes tid) `shiftR` 1
