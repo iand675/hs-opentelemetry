@@ -54,6 +54,8 @@ packages:
 - instrumentation/tasty
 - instrumentation/yesod
 - instrumentation/wai
+- utils/exceptions
+- utils/sqlcommenter
 - examples/hspec
 - examples/yesod-minimal
 - examples/hw-kafka-client-example

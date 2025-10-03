@@ -24,6 +24,7 @@ packages:
   , instrumentation/yesod
   , instrumentation/wai
   , utils/exceptions
+  , utils/sqlcommenter
   , vendors/honeycomb
 
 allow-newer:
