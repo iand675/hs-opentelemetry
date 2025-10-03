@@ -29,9 +29,9 @@ library:
   - hs-opentelemetry-api ^>= 0.2
   - http-types
   - attoparsec
+  - text
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-propagator-w3c-test:
     main:                Spec.hs
     source-dirs:         test
@@ -41,3 +41,10 @@ _tests:
     - -with-rtsopts=-N
     dependencies:
     - hs-opentelemetry-propagator-w3c
+    - hspec
+    - hspec-discover
+    - QuickCheck
+    - bytestring
+    - text
+    - hs-opentelemetry-api
+    - attoparsec
