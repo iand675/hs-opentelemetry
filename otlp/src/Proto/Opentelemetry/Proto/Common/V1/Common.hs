@@ -8,7 +8,8 @@ module Proto.Opentelemetry.Proto.Common.V1.Common (
         AnyValue(), AnyValue'Value(..), _AnyValue'StringValue,
         _AnyValue'BoolValue, _AnyValue'IntValue, _AnyValue'DoubleValue,
         _AnyValue'ArrayValue, _AnyValue'KvlistValue, _AnyValue'BytesValue,
-        ArrayValue(), InstrumentationScope(), KeyValue(), KeyValueList()
+        ArrayValue(), EntityRef(), InstrumentationScope(), KeyValue(),
+        KeyValueList()
     ) where
 import qualified Data.ProtoLens.Runtime.Control.DeepSeq as Control.DeepSeq
 import qualified Data.ProtoLens.Runtime.Data.ProtoLens.Prism as Data.ProtoLens.Prism
@@ -699,6 +700,299 @@ instance Control.DeepSeq.NFData ArrayValue where
              (Control.DeepSeq.deepseq (_ArrayValue'values x__) ())
 {- | Fields :
      
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.schemaUrl' @:: Lens' EntityRef Data.Text.Text@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.type'' @:: Lens' EntityRef Data.Text.Text@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.idKeys' @:: Lens' EntityRef [Data.Text.Text]@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.vec'idKeys' @:: Lens' EntityRef (Data.Vector.Vector Data.Text.Text)@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.descriptionKeys' @:: Lens' EntityRef [Data.Text.Text]@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.vec'descriptionKeys' @:: Lens' EntityRef (Data.Vector.Vector Data.Text.Text)@ -}
+data EntityRef
+  = EntityRef'_constructor {_EntityRef'schemaUrl :: !Data.Text.Text,
+                            _EntityRef'type' :: !Data.Text.Text,
+                            _EntityRef'idKeys :: !(Data.Vector.Vector Data.Text.Text),
+                            _EntityRef'descriptionKeys :: !(Data.Vector.Vector Data.Text.Text),
+                            _EntityRef'_unknownFields :: !Data.ProtoLens.FieldSet}
+  deriving stock (Prelude.Eq, Prelude.Ord)
+instance Prelude.Show EntityRef where
+  showsPrec _ __x __s
+    = Prelude.showChar
+        '{'
+        (Prelude.showString
+           (Data.ProtoLens.showMessageShort __x) (Prelude.showChar '}' __s))
+instance Data.ProtoLens.Field.HasField EntityRef "schemaUrl" Data.Text.Text where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _EntityRef'schemaUrl
+           (\ x__ y__ -> x__ {_EntityRef'schemaUrl = y__}))
+        Prelude.id
+instance Data.ProtoLens.Field.HasField EntityRef "type'" Data.Text.Text where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _EntityRef'type' (\ x__ y__ -> x__ {_EntityRef'type' = y__}))
+        Prelude.id
+instance Data.ProtoLens.Field.HasField EntityRef "idKeys" [Data.Text.Text] where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _EntityRef'idKeys (\ x__ y__ -> x__ {_EntityRef'idKeys = y__}))
+        (Lens.Family2.Unchecked.lens
+           Data.Vector.Generic.toList
+           (\ _ y__ -> Data.Vector.Generic.fromList y__))
+instance Data.ProtoLens.Field.HasField EntityRef "vec'idKeys" (Data.Vector.Vector Data.Text.Text) where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _EntityRef'idKeys (\ x__ y__ -> x__ {_EntityRef'idKeys = y__}))
+        Prelude.id
+instance Data.ProtoLens.Field.HasField EntityRef "descriptionKeys" [Data.Text.Text] where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _EntityRef'descriptionKeys
+           (\ x__ y__ -> x__ {_EntityRef'descriptionKeys = y__}))
+        (Lens.Family2.Unchecked.lens
+           Data.Vector.Generic.toList
+           (\ _ y__ -> Data.Vector.Generic.fromList y__))
+instance Data.ProtoLens.Field.HasField EntityRef "vec'descriptionKeys" (Data.Vector.Vector Data.Text.Text) where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _EntityRef'descriptionKeys
+           (\ x__ y__ -> x__ {_EntityRef'descriptionKeys = y__}))
+        Prelude.id
+instance Data.ProtoLens.Message EntityRef where
+  messageName _
+    = Data.Text.pack "opentelemetry.proto.common.v1.EntityRef"
+  packedMessageDescriptor _
+    = "\n\
+      \\tEntityRef\DC2\GS\n\
+      \\n\
+      \schema_url\CAN\SOH \SOH(\tR\tschemaUrl\DC2\DC2\n\
+      \\EOTtype\CAN\STX \SOH(\tR\EOTtype\DC2\ETB\n\
+      \\aid_keys\CAN\ETX \ETX(\tR\ACKidKeys\DC2)\n\
+      \\DLEdescription_keys\CAN\EOT \ETX(\tR\SIdescriptionKeys"
+  packedFileDescriptor _ = packedFileDescriptor
+  fieldsByTag
+    = let
+        schemaUrl__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "schema_url"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Text.Text)
+              (Data.ProtoLens.PlainField
+                 Data.ProtoLens.Optional
+                 (Data.ProtoLens.Field.field @"schemaUrl")) ::
+              Data.ProtoLens.FieldDescriptor EntityRef
+        type'__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "type"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Text.Text)
+              (Data.ProtoLens.PlainField
+                 Data.ProtoLens.Optional (Data.ProtoLens.Field.field @"type'")) ::
+              Data.ProtoLens.FieldDescriptor EntityRef
+        idKeys__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "id_keys"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Text.Text)
+              (Data.ProtoLens.RepeatedField
+                 Data.ProtoLens.Unpacked (Data.ProtoLens.Field.field @"idKeys")) ::
+              Data.ProtoLens.FieldDescriptor EntityRef
+        descriptionKeys__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "description_keys"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.StringField ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Text.Text)
+              (Data.ProtoLens.RepeatedField
+                 Data.ProtoLens.Unpacked
+                 (Data.ProtoLens.Field.field @"descriptionKeys")) ::
+              Data.ProtoLens.FieldDescriptor EntityRef
+      in
+        Data.Map.fromList
+          [(Data.ProtoLens.Tag 1, schemaUrl__field_descriptor),
+           (Data.ProtoLens.Tag 2, type'__field_descriptor),
+           (Data.ProtoLens.Tag 3, idKeys__field_descriptor),
+           (Data.ProtoLens.Tag 4, descriptionKeys__field_descriptor)]
+  unknownFields
+    = Lens.Family2.Unchecked.lens
+        _EntityRef'_unknownFields
+        (\ x__ y__ -> x__ {_EntityRef'_unknownFields = y__})
+  defMessage
+    = EntityRef'_constructor
+        {_EntityRef'schemaUrl = Data.ProtoLens.fieldDefault,
+         _EntityRef'type' = Data.ProtoLens.fieldDefault,
+         _EntityRef'idKeys = Data.Vector.Generic.empty,
+         _EntityRef'descriptionKeys = Data.Vector.Generic.empty,
+         _EntityRef'_unknownFields = []}
+  parseMessage
+    = let
+        loop ::
+          EntityRef
+          -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Text.Text
+             -> Data.ProtoLens.Encoding.Growing.Growing Data.Vector.Vector Data.ProtoLens.Encoding.Growing.RealWorld Data.Text.Text
+                -> Data.ProtoLens.Encoding.Bytes.Parser EntityRef
+        loop x mutable'descriptionKeys mutable'idKeys
+          = do end <- Data.ProtoLens.Encoding.Bytes.atEnd
+               if end then
+                   do frozen'descriptionKeys <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                                  (Data.ProtoLens.Encoding.Growing.unsafeFreeze
+                                                     mutable'descriptionKeys)
+                      frozen'idKeys <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                         (Data.ProtoLens.Encoding.Growing.unsafeFreeze
+                                            mutable'idKeys)
+                      (let missing = []
+                       in
+                         if Prelude.null missing then
+                             Prelude.return ()
+                         else
+                             Prelude.fail
+                               ((Prelude.++)
+                                  "Missing required fields: "
+                                  (Prelude.show (missing :: [Prelude.String]))))
+                      Prelude.return
+                        (Lens.Family2.over
+                           Data.ProtoLens.unknownFields (\ !t -> Prelude.reverse t)
+                           (Lens.Family2.set
+                              (Data.ProtoLens.Field.field @"vec'descriptionKeys")
+                              frozen'descriptionKeys
+                              (Lens.Family2.set
+                                 (Data.ProtoLens.Field.field @"vec'idKeys") frozen'idKeys x)))
+               else
+                   do tag <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                      case tag of
+                        10
+                          -> do y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                       (do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                                           Data.ProtoLens.Encoding.Bytes.getText
+                                             (Prelude.fromIntegral len))
+                                       "schema_url"
+                                loop
+                                  (Lens.Family2.set (Data.ProtoLens.Field.field @"schemaUrl") y x)
+                                  mutable'descriptionKeys mutable'idKeys
+                        18
+                          -> do y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                       (do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                                           Data.ProtoLens.Encoding.Bytes.getText
+                                             (Prelude.fromIntegral len))
+                                       "type"
+                                loop
+                                  (Lens.Family2.set (Data.ProtoLens.Field.field @"type'") y x)
+                                  mutable'descriptionKeys mutable'idKeys
+                        26
+                          -> do !y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                        (do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                                            Data.ProtoLens.Encoding.Bytes.getText
+                                              (Prelude.fromIntegral len))
+                                        "id_keys"
+                                v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                       (Data.ProtoLens.Encoding.Growing.append mutable'idKeys y)
+                                loop x mutable'descriptionKeys v
+                        34
+                          -> do !y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                        (do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                                            Data.ProtoLens.Encoding.Bytes.getText
+                                              (Prelude.fromIntegral len))
+                                        "description_keys"
+                                v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                       (Data.ProtoLens.Encoding.Growing.append
+                                          mutable'descriptionKeys y)
+                                loop x v mutable'idKeys
+                        wire
+                          -> do !y <- Data.ProtoLens.Encoding.Wire.parseTaggedValueFromWire
+                                        wire
+                                loop
+                                  (Lens.Family2.over
+                                     Data.ProtoLens.unknownFields (\ !t -> (:) y t) x)
+                                  mutable'descriptionKeys mutable'idKeys
+      in
+        (Data.ProtoLens.Encoding.Bytes.<?>)
+          (do mutable'descriptionKeys <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                           Data.ProtoLens.Encoding.Growing.new
+              mutable'idKeys <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                  Data.ProtoLens.Encoding.Growing.new
+              loop
+                Data.ProtoLens.defMessage mutable'descriptionKeys mutable'idKeys)
+          "EntityRef"
+  buildMessage
+    = \ _x
+        -> (Data.Monoid.<>)
+             (let
+                _v = Lens.Family2.view (Data.ProtoLens.Field.field @"schemaUrl") _x
+              in
+                if (Prelude.==) _v Data.ProtoLens.fieldDefault then
+                    Data.Monoid.mempty
+                else
+                    (Data.Monoid.<>)
+                      (Data.ProtoLens.Encoding.Bytes.putVarInt 10)
+                      ((Prelude..)
+                         (\ bs
+                            -> (Data.Monoid.<>)
+                                 (Data.ProtoLens.Encoding.Bytes.putVarInt
+                                    (Prelude.fromIntegral (Data.ByteString.length bs)))
+                                 (Data.ProtoLens.Encoding.Bytes.putBytes bs))
+                         Data.Text.Encoding.encodeUtf8 _v))
+             ((Data.Monoid.<>)
+                (let
+                   _v = Lens.Family2.view (Data.ProtoLens.Field.field @"type'") _x
+                 in
+                   if (Prelude.==) _v Data.ProtoLens.fieldDefault then
+                       Data.Monoid.mempty
+                   else
+                       (Data.Monoid.<>)
+                         (Data.ProtoLens.Encoding.Bytes.putVarInt 18)
+                         ((Prelude..)
+                            (\ bs
+                               -> (Data.Monoid.<>)
+                                    (Data.ProtoLens.Encoding.Bytes.putVarInt
+                                       (Prelude.fromIntegral (Data.ByteString.length bs)))
+                                    (Data.ProtoLens.Encoding.Bytes.putBytes bs))
+                            Data.Text.Encoding.encodeUtf8 _v))
+                ((Data.Monoid.<>)
+                   (Data.ProtoLens.Encoding.Bytes.foldMapBuilder
+                      (\ _v
+                         -> (Data.Monoid.<>)
+                              (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
+                              ((Prelude..)
+                                 (\ bs
+                                    -> (Data.Monoid.<>)
+                                         (Data.ProtoLens.Encoding.Bytes.putVarInt
+                                            (Prelude.fromIntegral (Data.ByteString.length bs)))
+                                         (Data.ProtoLens.Encoding.Bytes.putBytes bs))
+                                 Data.Text.Encoding.encodeUtf8 _v))
+                      (Lens.Family2.view (Data.ProtoLens.Field.field @"vec'idKeys") _x))
+                   ((Data.Monoid.<>)
+                      (Data.ProtoLens.Encoding.Bytes.foldMapBuilder
+                         (\ _v
+                            -> (Data.Monoid.<>)
+                                 (Data.ProtoLens.Encoding.Bytes.putVarInt 34)
+                                 ((Prelude..)
+                                    (\ bs
+                                       -> (Data.Monoid.<>)
+                                            (Data.ProtoLens.Encoding.Bytes.putVarInt
+                                               (Prelude.fromIntegral (Data.ByteString.length bs)))
+                                            (Data.ProtoLens.Encoding.Bytes.putBytes bs))
+                                    Data.Text.Encoding.encodeUtf8 _v))
+                         (Lens.Family2.view
+                            (Data.ProtoLens.Field.field @"vec'descriptionKeys") _x))
+                      (Data.ProtoLens.Encoding.Wire.buildFieldSet
+                         (Lens.Family2.view Data.ProtoLens.unknownFields _x)))))
+instance Control.DeepSeq.NFData EntityRef where
+  rnf
+    = \ x__
+        -> Control.DeepSeq.deepseq
+             (_EntityRef'_unknownFields x__)
+             (Control.DeepSeq.deepseq
+                (_EntityRef'schemaUrl x__)
+                (Control.DeepSeq.deepseq
+                   (_EntityRef'type' x__)
+                   (Control.DeepSeq.deepseq
+                      (_EntityRef'idKeys x__)
+                      (Control.DeepSeq.deepseq (_EntityRef'descriptionKeys x__) ()))))
+{- | Fields :
+     
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.name' @:: Lens' InstrumentationScope Data.Text.Text@
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.version' @:: Lens' InstrumentationScope Data.Text.Text@
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.attributes' @:: Lens' InstrumentationScope [KeyValue]@
@@ -1301,9 +1595,15 @@ packedFileDescriptor
     \\n\
     \attributes\CAN\ETX \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\n\
     \attributes\DC28\n\
-    \\CANdropped_attributes_count\CAN\EOT \SOH(\rR\SYNdroppedAttributesCountB{\n\
-    \ io.opentelemetry.proto.common.v1B\vCommonProtoP\SOHZ(go.opentelemetry.io/proto/otlp/common/v1\170\STX\GSOpenTelemetry.Proto.Common.V1J\137\SUB\n\
-    \\ACK\DC2\EOT\SO\NULP\SOH\n\
+    \\CANdropped_attributes_count\CAN\EOT \SOH(\rR\SYNdroppedAttributesCount\"\130\SOH\n\
+    \\tEntityRef\DC2\GS\n\
+    \\n\
+    \schema_url\CAN\SOH \SOH(\tR\tschemaUrl\DC2\DC2\n\
+    \\EOTtype\CAN\STX \SOH(\tR\EOTtype\DC2\ETB\n\
+    \\aid_keys\CAN\ETX \ETX(\tR\ACKidKeys\DC2)\n\
+    \\DLEdescription_keys\CAN\EOT \ETX(\tR\SIdescriptionKeysB{\n\
+    \ io.opentelemetry.proto.common.v1B\vCommonProtoP\SOHZ(go.opentelemetry.io/proto/otlp/common/v1\170\STX\GSOpenTelemetry.Proto.Common.V1J\215&\n\
+    \\ACK\DC2\EOT\SO\NULr\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
     \\n\
@@ -1529,4 +1829,71 @@ packedFileDescriptor
     \\f\n\
     \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\ETXO\t!\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\ETXO$%b\ACKproto3"
+    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\ETXO$%\n\
+    \\180\SOH\n\
+    \\STX\EOT\ENQ\DC2\EOTV\NULr\SOH\SUB\167\SOH A reference to an Entity.\n\
+    \ Entity represents an object of interest associated with produced telemetry: e.g spans, metrics, profiles, or logs.\n\
+    \\n\
+    \ Status: [Development]\n\
+    \\n\
+    \\n\
+    \\n\
+    \\ETX\EOT\ENQ\SOH\DC2\ETXV\b\DC1\n\
+    \\159\EOT\n\
+    \\EOT\EOT\ENQ\STX\NUL\DC2\ETXa\STX\CAN\SUB\145\EOT The Schema URL, if known. This is the identifier of the Schema that the entity data\n\
+    \ is recorded in. To learn more about Schema URL see\n\
+    \ https://opentelemetry.io/docs/specs/otel/schemas/#schema-url\n\
+    \\n\
+    \ This schema_url applies to the data in this message and to the Resource attributes\n\
+    \ referenced by id_keys and description_keys.\n\
+    \ TODO: discuss if we are happy with this somewhat complicated definition of what\n\
+    \ the schema_url applies to.\n\
+    \\n\
+    \ This field obsoletes the schema_url field in ResourceMetrics/ResourceSpans/ResourceLogs.\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\ETXa\STX\b\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\ETXa\t\DC3\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\ETXa\SYN\ETB\n\
+    \\199\SOH\n\
+    \\EOT\EOT\ENQ\STX\SOH\DC2\ETXf\STX\DC2\SUB\185\SOH Defines the type of the entity. MUST not change during the lifetime of the entity.\n\
+    \ For example: \"service\" or \"host\". This field is required and MUST not be empty\n\
+    \ for valid entities.\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\ETXf\STX\b\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\ETXf\t\r\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\ETXf\DLE\DC1\n\
+    \\215\SOH\n\
+    \\EOT\EOT\ENQ\STX\STX\DC2\ETXk\STX\RS\SUB\201\SOH Attribute Keys that identify the entity.\n\
+    \ MUST not change during the lifetime of the entity. The Id must contain at least one attribute.\n\
+    \ These keys MUST exist in the containing {message}.attributes.\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\STX\EOT\DC2\ETXk\STX\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\STX\ENQ\DC2\ETXk\v\DC1\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\STX\SOH\DC2\ETXk\DC2\EM\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\STX\ETX\DC2\ETXk\FS\GS\n\
+    \\254\SOH\n\
+    \\EOT\EOT\ENQ\STX\ETX\DC2\ETXq\STX'\SUB\240\SOH Descriptive (non-identifying) attribute keys of the entity.\n\
+    \ MAY change over the lifetime of the entity. MAY be empty.\n\
+    \ These attribute keys are not part of entity's identity.\n\
+    \ These keys MUST exist in the containing {message}.attributes.\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\ETX\EOT\DC2\ETXq\STX\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\ETX\ENQ\DC2\ETXq\v\DC1\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\ETX\SOH\DC2\ETXq\DC2\"\n\
+    \\f\n\
+    \\ENQ\EOT\ENQ\STX\ETX\ETX\DC2\ETXq%&b\ACKproto3"

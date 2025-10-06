@@ -40,11 +40,11 @@ build.all.cabal-9.0:
 # format requires fourmolu 0.13.1.0 or later
 .PHONY: format
 format:
-	fourmolu --mode inplace $$(git ls-files | grep -E "\.hs$$")
+	fourmolu --mode inplace $$(git ls-files '*.hs' ':!:otlp/' ':!:semantic-conventions/src/OpenTelemetry/SemanticConventions.hs')
 
 .PHONY: format.check
 format.check:
-	fourmolu --mode check $$(git ls-files | grep -E "\.hs$$")
+	fourmolu --mode check $$(git ls-files '*.hs' ':!:otlp/' ':!:semantic-conventions/src/OpenTelemetry/SemanticConventions.hs')
 
 
 # Hack https://www.gnu.org/software/make/manual/html_node/Force-Targets.html

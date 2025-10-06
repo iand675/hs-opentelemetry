@@ -13,11 +13,6 @@
     #   url = "file+file:///dev/null";
     #   flake = false;
     # };
-
-    otlp-protobufs = {
-      url = "github:open-telemetry/opentelemetry-proto/v1.0.0";
-      flake = false;
-    };
   };
 
   outputs = inputs @ {
@@ -114,7 +109,6 @@
 
               pre-commit.hooks = pre-commit-hooks;
             })
-            (import ./nix/devenv/otlp-protobuf-setup.nix)
           ];
         };
     in {
@@ -125,14 +119,14 @@
         // haskellPackageUtils.localPackageMatrix;
 
       devShells = rec {
-        default = ghc96;
+        default = ghc98;
         # ghc810 = mkShellForGHC "ghc810";
         # ghc90 = mkShellForGHC "ghc90";
         ghc92 = mkShellForGHC "ghc92";
         ghc94 = mkShellForGHC "ghc94";
         ghc96 = mkShellForGHC "ghc96";
         ghc98 = mkShellForGHC "ghc98";
-        ghc910 = mkShellForGHC "ghc98";
+        ghc910 = mkShellForGHC "ghc910";
       };
 
       checks = {

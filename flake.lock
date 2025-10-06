@@ -157,11 +157,11 @@
         "systems": "systems_3"
       },
       "locked": {
-        "lastModified": 1710146030,
-        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
         "type": "github"
       },
       "original": {
@@ -351,34 +351,17 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1716914467,
-        "narHash": "sha256-KkT6YM/yNQqirtYj/frn6RRakliB8RDvGqVGGaNhdcU=",
+        "lastModified": 1759417375,
+        "narHash": "sha256-O7eHcgkQXJNygY6AypkF9tFhsoDQjpNEojw3eFs73Ow=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "4a3fc4cf736b7d2d288d7a8bf775ac8d4c0920b4",
+        "rev": "dc704e6102e76aad573f63b74c742cd96f8f1e6c",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "otlp-protobufs": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1688070153,
-        "narHash": "sha256-1IylAZs8gElpruSX52A+ZopU8jXH/MjRE+FQV3gQ+Gk=",
-        "owner": "open-telemetry",
-        "repo": "opentelemetry-proto",
-        "rev": "c4dfbc51f3cd4089778555a2ac5d9bc093ed2956",
-        "type": "github"
-      },
-      "original": {
-        "owner": "open-telemetry",
-        "ref": "v1.0.0",
-        "repo": "opentelemetry-proto",
         "type": "github"
       }
     },
@@ -439,8 +422,7 @@
       "inputs": {
         "devenv": "devenv",
         "flake-utils": "flake-utils_3",
-        "nixpkgs": "nixpkgs_3",
-        "otlp-protobufs": "otlp-protobufs"
+        "nixpkgs": "nixpkgs_3"
       }
     },
     "systems": {

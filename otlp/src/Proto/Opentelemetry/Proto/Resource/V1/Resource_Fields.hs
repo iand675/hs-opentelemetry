@@ -42,9 +42,21 @@ droppedAttributesCount ::
   Lens.Family2.LensLike' f s a
 droppedAttributesCount
   = Data.ProtoLens.Field.field @"droppedAttributesCount"
+entityRefs ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "entityRefs" a) =>
+  Lens.Family2.LensLike' f s a
+entityRefs = Data.ProtoLens.Field.field @"entityRefs"
 vec'attributes ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "vec'attributes" a) =>
   Lens.Family2.LensLike' f s a
 vec'attributes = Data.ProtoLens.Field.field @"vec'attributes"
+vec'entityRefs ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "vec'entityRefs" a) =>
+  Lens.Family2.LensLike' f s a
+vec'entityRefs = Data.ProtoLens.Field.field @"vec'entityRefs"

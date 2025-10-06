@@ -28,6 +28,7 @@ in rec {
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
+    hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
     hs-opentelemetry-instrumentation-persistent = ../instrumentation/persistent;
     hs-opentelemetry-instrumentation-persistent-mysql = ../instrumentation/persistent-mysql;
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
@@ -57,7 +58,8 @@ in rec {
   extendedPackageSetByGHCVersions = listToAttrs (
     map (ghcVersion: {
       name = ghcVersion;
-      value = pkgs.haskell.packages.${ghcVersion}.extend (final: _prev: localPackageCabalDerivations final);
+      value = pkgs.haskell.packages.${ghcVersion}.extend (final: prev: localPackageCabalDerivations final // nixpkgsHaskellTweaks final prev);
+      #value = pkgs.haskell.packages.${ghcVersion}.override {overrides = nixpkgsHaskellTweaks;};
     })
     supportedGHCVersions
   );
@@ -95,4 +97,10 @@ in rec {
   localDevPackageDepsAsAttrSet = hsPackageSet:
     lib.filterAttrs (k: _: !builtins.hasAttr k (pluckLocalPackages hsPackageSet))
     (localDevPackageDeps hsPackageSet);
+
+  nixpkgsHaskellTweaks = _final: prev: {
+    # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just
+    # relax the bounds of 0.7.1.5 ourselves
+    proto-lens = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens;
+  };
 }
