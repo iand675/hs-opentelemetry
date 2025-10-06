@@ -30,3 +30,9 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
+
+source-repository-package
+  type:     git
+  location: https://github.com/wenkokke/fork4pr-grapesy.git
+  subdir:   grapesy
+  tag:      31056b11570b18b1b34c65c18f4ffec185834e70
