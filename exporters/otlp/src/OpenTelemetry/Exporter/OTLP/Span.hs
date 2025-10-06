@@ -54,6 +54,7 @@ import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.CaseInsensitive as CI
+import Data.Char (toLower)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe
@@ -85,6 +86,7 @@ import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fie
 import Proto.Opentelemetry.Proto.Trace.V1.Trace
 import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Trace_Fields
 import System.Environment
+import qualified System.IO as IO
 import Text.Read (readMaybe)
 
 
@@ -168,15 +170,9 @@ loadExporterEnvironmentVariables = liftIO $ do
     <*>
     -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_TIMEOUT" <*>
     pure Nothing
-    <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_PROTOCOL" <*>
-    pure Nothing
-    <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL" <*>
-    pure Nothing
-    <*>
-    -- TODO lookupEnv "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"
-    pure Nothing
+    <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_PROTOCOL")
+    <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL")
+    <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")
   where
     decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
       Left _ -> mempty
@@ -200,6 +196,20 @@ data Protocol {- GRpc | HttpJson | -}
 
 
 {- |
+Internal helper.
+Read a `Protocol` from a `String`.
+Defaults to `HttpProtobuf` for unsupported values.
+-}
+readProtocol :: (MonadIO m) => String -> m Protocol
+readProtocol protocol =
+  protocol & fmap toLower & \case
+    "http/protobuf" -> pure HttpProtobuf
+    _ -> do
+      putWarningLn $ "Warning: unsupported protocol '" <> protocol <> "'"
+      pure HttpProtobuf
+
+
+{- |
 The default OTLP HTTP endpoint.
 -}
 otlpExporterHttpEndpoint :: C.ByteString
@@ -211,6 +221,14 @@ The default OTLP gRPC endpoint.
 -}
 otlpExporterGRpcEndpoint :: C.ByteString
 otlpExporterGRpcEndpoint = "http://localhost:4317"
+
+
+{- |
+Internal helper.
+Print a warning to stderr
+-}
+putWarningLn :: (MonadIO m) => String -> m ()
+putWarningLn = liftIO . IO.hPutStrLn IO.stderr
 
 
 --------------------------------------------------------------------------------
