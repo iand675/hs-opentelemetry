@@ -31,15 +31,23 @@ module OpenTelemetry.Propagator.W3CTraceContext where
 
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
+  char,
+  endOfInput,
   hexadecimal,
   parseOnly,
+  sepBy,
+  skipSpace,
   string,
   takeWhile,
+  takeWhile1,
  )
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Builder as B
+import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy as L
 import Data.Char (isHexDigit)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
 import Network.HTTP.Types (RequestHeaders)
 import qualified OpenTelemetry.Context as Ctxt
@@ -54,7 +62,7 @@ import OpenTelemetry.Trace.Core (
   wrapSpanContext,
  )
 import OpenTelemetry.Trace.Id (Base (..), SpanId, TraceId, baseEncodedToSpanId, baseEncodedToTraceId, spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder)
-import OpenTelemetry.Trace.TraceState (TraceState, empty)
+import OpenTelemetry.Trace.TraceState (Key (..), TraceState, Value (..), empty, fromList, toList)
 import Prelude hiding (takeWhile)
 
 
@@ -102,7 +110,9 @@ decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
       Right ok -> Just ok
 
     decodeTracestateHeader :: ByteString -> TraceState
-    decodeTracestateHeader _ = empty
+    decodeTracestateHeader ts = case parseOnly tracestateParser ts of
+      Left _ -> empty
+      Right ok -> ok
 
 
 traceparentParser :: Parser TraceParent
@@ -124,6 +134,178 @@ traceparentParser = do
   pure $ TraceParent {..}
 
 
+{- | Parser for W3C tracestate header format
+Format: OWS list-member *( OWS "," OWS list-member ) OWS
+See: https://www.w3.org/TR/trace-context/#tracestate-header
+-}
+tracestateParser :: Parser TraceState
+tracestateParser = do
+  skipSpace
+  pairs <- tracestateEntry `sepBy` (skipSpace >> char ',' >> skipSpace)
+  skipSpace
+  endOfInput
+  -- Limit to 32 entries as per spec, take first 32 if more
+  let limitedPairs = take 32 pairs
+  pure $ fromList [(Key k, Value v) | (k, v) <- limitedPairs]
+  where
+    -- Parse a single key=value entry (list-member)
+    tracestateEntry = do
+      key <- tracestateKey
+      _ <- char '='
+      value <- tracestateValue
+      pure (key, value)
+
+    -- Parse tracestate key according to W3C spec
+    -- key = simple-key / multi-tenant-key
+    -- simple-key = lcalpha 0*255( lcalpha / DIGIT / "_" / "-"/ "*" / "/" )
+    -- multi-tenant-key = tenant-id "@" system-id
+    tracestateKey = do
+      keyBytes <- takeWhile1 isTracestateKeyChar
+      let keyText = TE.decodeUtf8 keyBytes
+      -- Validate key format and length (max 256 chars)
+      if T.length keyText <= 256 && isValidTracestateKey keyText
+        then pure keyText
+        else fail "Invalid tracestate key"
+
+    -- Parse tracestate value according to W3C spec
+    -- value = 0*255(chr) nblk-chr
+    -- chr = %x20 / %x21-2B / %x2D-3C / %x3E-7E
+    -- nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
+    tracestateValue = do
+      valueBytes <- takeWhile1 isTracestateValueChar
+      let valueText = T.stripEnd $ TE.decodeUtf8 valueBytes -- Strip trailing whitespace
+      -- Validate value length (max 256 chars)
+      if T.length valueText <= 256 && not (T.null valueText)
+        then pure valueText
+        else fail "Invalid tracestate value"
+
+    -- Valid characters for tracestate keys
+    isTracestateKeyChar c =
+      (c >= 'a' && c <= 'z')
+        || (c >= '0' && c <= '9')
+        || c == '_'
+        || c == '-'
+        || c == '*'
+        || c == '/'
+        || c == '@'
+
+    -- Valid characters for tracestate values (chr)
+    -- %x20 / %x21-2B / %x2D-3C / %x3E-7E (excludes comma and equals)
+    isTracestateValueChar c =
+      c == ' ' || (c >= '!' && c <= '+') || (c >= '-' && c <= '<') || (c >= '>' && c <= '~')
+
+    -- Validate tracestate key format
+    isValidTracestateKey key =
+      case T.uncons key of
+        Nothing -> False
+        Just (firstChar, rest) ->
+          -- Must start with lowercase letter or digit
+          (firstChar >= 'a' && firstChar <= 'z' || firstChar >= '0' && firstChar <= '9')
+            &&
+            -- Rest must be valid key characters
+            T.all
+              ( \c ->
+                  (c >= 'a' && c <= 'z')
+                    || (c >= '0' && c <= '9')
+                    || c == '_'
+                    || c == '-'
+                    || c == '*'
+                    || c == '/'
+                    || c == '@'
+              )
+              rest
+
+
+-- | Encode TraceState to W3C tracestate header format
+encodeTraceState :: TraceState -> ByteString
+encodeTraceState ts =
+  let pairs = toList ts
+      -- Limit to 32 entries as per spec
+      limitedPairs = take 32 pairs
+      encodedPairs = map (\(Key k, Value v) -> TE.encodeUtf8 k <> "=" <> TE.encodeUtf8 v) limitedPairs
+  in C8.intercalate "," encodedPairs
+
+
+{- | Encode TraceState for non-HTTP contexts (like OTLP binary format).
+
+ This function preserves all tracestate entries without applying HTTP header
+ constraints like the 32-entry limit. Use this for binary protocols where
+ the full tracestate should be preserved.
+
+ @since 0.0.1.5
+-}
+encodeTraceStateFull :: TraceState -> ByteString
+encodeTraceStateFull ts =
+  let pairs = toList ts
+      encodedPairs = map (\(Key k, Value v) -> TE.encodeUtf8 k <> "=" <> TE.encodeUtf8 v) pairs
+  in C8.intercalate "," encodedPairs
+
+
+{- | Split a TraceState into multiple tracestate header values based on size constraints.
+
+ This function respects the W3C recommendation that vendors should propagate at least
+ 512 characters, while following RFC7230 rules for splitting header fields.
+
+ When splitting is needed:
+ - Entries larger than 128 characters are removed first (as per W3C spec)
+ - Remaining entries are split to keep each header under the size limit
+ - Entry order is preserved within each header
+
+ @since 0.0.1.5
+-}
+encodeTraceStateMultiple
+  :: Int
+  -- ^ Maximum size per header (e.g., 512 for minimum recommended size)
+  -> TraceState
+  -> [ByteString]
+  -- ^ List of tracestate header values
+encodeTraceStateMultiple maxSize ts =
+  let pairs = toList ts
+      -- Limit to 32 entries as per spec, then filter out oversized entries
+      limitedPairs = take 32 pairs
+      filteredPairs = filter (\(Key k, Value v) -> T.length k + T.length v + 1 <= 128) limitedPairs
+      encodedPairs = map (\(Key k, Value v) -> TE.encodeUtf8 k <> "=" <> TE.encodeUtf8 v) filteredPairs
+  in splitIntoHeaders maxSize encodedPairs
+  where
+    splitIntoHeaders :: Int -> [ByteString] -> [ByteString]
+    splitIntoHeaders _ [] = []
+    splitIntoHeaders limit entries =
+      let (currentHeader, remaining) = buildHeader limit entries []
+      in if C8.null currentHeader
+          then []
+          else currentHeader : splitIntoHeaders limit remaining
+
+    buildHeader :: Int -> [ByteString] -> [ByteString] -> (ByteString, [ByteString])
+    buildHeader _ [] acc = (C8.intercalate "," (reverse acc), [])
+    buildHeader limit (entry : rest) acc =
+      let currentSize = if null acc then 0 else sum (map C8.length acc) + length acc - 1 -- account for commas
+          newSize = currentSize + C8.length entry + if null acc then 0 else 1
+      in if newSize <= limit || null acc -- Always include at least one entry
+          then buildHeader limit rest (entry : acc)
+          else (C8.intercalate "," (reverse acc), entry : rest)
+
+
+{- | Combine multiple tracestate header values into a single TraceState.
+
+ This function implements RFC7230 Section 3.2.2 rules for combining multiple
+ header fields with the same name. Header values are combined with commas
+ in the order provided.
+
+ Invalid entries are skipped with a fallback to empty TraceState on complete failure.
+
+ @since 0.0.1.5
+-}
+decodeTraceStateMultiple :: [ByteString] -> TraceState
+decodeTraceStateMultiple headers =
+  let nonEmptyHeaders = filter (not . C8.all (\c -> c == ' ' || c == '\t')) headers
+      combinedHeader = C8.intercalate "," nonEmptyHeaders
+  in if C8.null combinedHeader
+      then empty
+      else case parseOnly tracestateParser combinedHeader of
+        Right ts -> ts
+        Left _ -> empty -- Fallback to empty on parse failure
+
+
 {- | Encoded the given 'Span' into a @traceparent@, @tracestate@ tuple.
 
  @since 0.0.1.0
@@ -131,8 +313,7 @@ traceparentParser = do
 encodeSpanContext :: Span -> IO (ByteString, ByteString)
 encodeSpanContext s = do
   ctxt <- getSpanContext s
-  -- TODO tracestate
-  pure (L.toStrict $ B.toLazyByteString $ traceparentHeader ctxt, "")
+  pure (L.toStrict $ B.toLazyByteString $ traceparentHeader ctxt, encodeTraceState (traceState ctxt))
   where
     traceparentHeader SpanContext {..} =
       -- version

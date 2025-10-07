@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-sdk
-version:             0.1.0.0
+version:             0.1.0.1
 
 <<: *preface
 
@@ -46,8 +46,8 @@ library:
   - vector
   - vector-builder
   # These are "distribution" packages
-  - hs-opentelemetry-api ^>= 0.2
-  - hs-opentelemetry-propagator-w3c ^>= 0.0.1
+  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-propagator-w3c ^>= 0.1.0
   - hs-opentelemetry-exporter-otlp ^>= 0.1
   - hs-opentelemetry-propagator-b3 ^>=0.0.1
   - hs-opentelemetry-propagator-datadog ^>=0.0.0

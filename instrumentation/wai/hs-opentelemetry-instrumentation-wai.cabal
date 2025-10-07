@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -35,7 +35,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.2.*
+    , hs-opentelemetry-api ==0.3.*
     , http-types
     , iproute
     , network

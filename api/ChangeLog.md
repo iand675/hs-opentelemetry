@@ -1,5 +1,11 @@
 # Changelog for hs-opentelemetry-api
 
+## Unreleased
+
+## 0.3.0.0
+
+- Export `fromList` from `OpenTelemetry.Trace.TraceState` for creating TraceState from key-value pairs
+
 ## 0.2.1.0
 
 - defined and exported `toImmutableSpan` and `FrozenOrDropped` from `OpenTelemetry.Trace.Core`

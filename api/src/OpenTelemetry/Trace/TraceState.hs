@@ -23,6 +23,7 @@ module OpenTelemetry.Trace.TraceState (
   Key (..),
   Value (..),
   empty,
+  fromList,
   insert,
   update,
   delete,
@@ -50,6 +51,14 @@ newtype TraceState = TraceState [(Key, Value)]
 -- | An empty 'TraceState' key-value pair dictionary
 empty :: TraceState
 empty = TraceState []
+
+
+{- | Create a 'TraceState' from a list of key-value pairs
+
+ O(1)
+-}
+fromList :: [(Key, Value)] -> TraceState
+fromList = TraceState
 
 
 {- | Add a key-value pair to a 'TraceState'

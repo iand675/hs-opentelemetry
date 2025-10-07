@@ -39,9 +39,16 @@ packages:
       size: 168
   original:
     hackage: proto-lens-runtime-0.7.0.7
+- completed:
+    hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
+    pantry-tree:
+      sha256: 55cabcd98ff0f5c671a93fb138b8b8cb1cf223497b0fbf9207e6c519fd54a9e9
+      size: 1944
+  original:
+    hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
 snapshots:
 - completed:
-    sha256: d49e388e3afe59fe7a7be6d658e4ba4beec586e6237adab1e4a15b57c1d8a10f
-    size: 726104
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/14.yaml
-  original: lts-24.14
+    sha256: 238fa745b64f91184f9aa518fe04bdde6552533d169b0da5256670df83a0f1a9
+    size: 721141
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/44.yaml
+  original: lts-22.44

@@ -1,7 +1,7 @@
 cabal-version: 2.4
 
 name: hs-opentelemetry-propagator-datadog
-version: 0.0.1.0
+version: 0.0.1.1
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 license: BSD-3-Clause
@@ -25,7 +25,7 @@ library
   exposed-modules: OpenTelemetry.Propagator.Datadog
                    OpenTelemetry.Propagator.Datadog.Internal
   build-depends: bytestring,
-                 hs-opentelemetry-api ^>= 0.2,
+                 hs-opentelemetry-api ^>= 0.3,
                  http-types,
                  primitive,
                  text

@@ -74,6 +74,7 @@ import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Environment
 import OpenTelemetry.Exporter.Span
+import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
 import qualified OpenTelemetry.Trace.Core as OT
@@ -406,7 +407,7 @@ makeSpan completedSpan = do
       & Trace_Fields.spanId
         .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
       & Trace_Fields.traceState
-        .~ "" -- TODO (_ $ OT.traceState $ OT.spanContext completedSpan)
+        .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
       & Trace_Fields.name
         .~ OT.spanName completedSpan
       & Trace_Fields.kind
@@ -473,6 +474,8 @@ makeLink l =
       .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
     & Trace_Fields.spanId
       .~ spanIdBytes (OT.spanId $ OT.frozenLinkContext l)
+    & Trace_Fields.traceState
+      .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.frozenLinkContext l)
     & Trace_Fields.vec'attributes
       .~ attributesToProto (OT.frozenLinkAttributes l)
     & Trace_Fields.droppedAttributesCount
