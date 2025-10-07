@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0.1
+
 ### Added
 - TraceState support in OTLP span export
 - Proper encoding of traceState field in OTLP spans and span links

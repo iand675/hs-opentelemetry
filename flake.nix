@@ -64,7 +64,10 @@
       };
     }
     // flake-utils.lib.eachSystem supportedSystems (system: let
-      pkgs = import nixpkgs {inherit system;};
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
       haskellPackageUtils = import ./nix/haskell-packages.nix {
         inherit
           lib
@@ -93,8 +96,10 @@
                 pcre
                 postgresql
                 protobuf
+                shellcheck
                 zlib
                 zstd
+                claude-code
               ];
 
               dotenv.enable = true;
@@ -119,10 +124,7 @@
         // haskellPackageUtils.localPackageMatrix;
 
       devShells = rec {
-        default = ghc98;
-        # ghc810 = mkShellForGHC "ghc810";
-        # ghc90 = mkShellForGHC "ghc90";
-        ghc92 = mkShellForGHC "ghc92";
+        default = ghc910;
         ghc94 = mkShellForGHC "ghc94";
         ghc96 = mkShellForGHC "ghc96";
         ghc98 = mkShellForGHC "ghc98";

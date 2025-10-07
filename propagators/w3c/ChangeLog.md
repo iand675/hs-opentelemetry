@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0.0
+
 ### Added
 - Complete W3C tracestate header parsing and encoding support
 - `tracestateParser` for parsing W3C tracestate headers according to specification
