@@ -18,8 +18,11 @@
 module OpenTelemetry.Exporter.Span (
   SpanExporter (..),
   ExportResult (..),
+  MaterializedResourceSpans (..),
+  MaterializedScopeSpans (..),
+  MaterializedSpan (..),
 ) where
 
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Trace.Types
+import OpenTelemetry.Internal.Trace.Exporter
 
