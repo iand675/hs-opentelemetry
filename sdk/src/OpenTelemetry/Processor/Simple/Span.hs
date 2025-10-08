@@ -13,6 +13,7 @@ import Control.Monad
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
+import OpenTelemetry.Internal.Trace.Exporter (materializeResourceSpans)
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core (ImmutableSpan, spanTracer, tracerName)
 
@@ -36,7 +37,10 @@ simpleProcessor SimpleProcessorConfig {..} = do
     -- TODO, masking vs bracket here, not sure what's the right choice
     spanRef <- readChanOnException outChan (>>= writeChan inChan)
     span_ <- readIORef spanRef
-    mask_ (spanExporter `SpanExporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_))
+    mask_ $ do
+      let batchToProcess = HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
+      resourceSpans <- materializeResourceSpans batchToProcess
+      SpanExporter.spanExporterExport spanExporter resourceSpans
 
   pure $
     SpanProcessor
@@ -60,5 +64,7 @@ simpleProcessor SimpleProcessorConfig {..} = do
         Nothing -> pure ()
         Just spanRef -> do
           span_ <- readIORef spanRef
-          _ <- spanExporter `SpanExporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
+          let batchToProcess = HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
+          resourceSpans <- materializeResourceSpans batchToProcess
+          _ <- SpanExporter.spanExporterExport spanExporter resourceSpans
           shutdownProcessor outChan

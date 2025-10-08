@@ -34,6 +34,7 @@ import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Vector (Vector)
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
+import OpenTelemetry.Internal.Trace.Exporter (materializeResourceSpans)
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
 import VectorBuilder.Builder as Builder
@@ -237,7 +238,8 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   batch <- newIORef $ boundedMap maxQueueSize maxExportBatchSize
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
-  let publish batchToProcess = mask_ $ do
+  let publish :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO SpanExporter.ExportResult
+      publish batchToProcess = mask_ $ do
         -- we mask async exceptions in this, so that a buggy exporter that
         -- catches async exceptions won't swallow them. since we use
         -- an interruptible mask, blocking calls can still be killed, like
@@ -245,7 +247,7 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
         --
         -- if we've received a shutdown, then we should be expecting
         -- a `cancel` anytime now.
-        SpanExporter.spanExporterExport exporter batchToProcess
+        SpanExporter.spanExporterExport exporter =<< materializeResourceSpans batchToProcess
 
   let flushQueueImmediately ret = do
         batchToProcess <- atomicModifyIORef' batch buildExport
