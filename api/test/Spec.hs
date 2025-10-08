@@ -21,6 +21,7 @@ import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
 import OpenTelemetry.Trace.Core
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
+import qualified OpenTelemetry.Trace.TracerSpec as Tracer
 import OpenTelemetry.Util
 import Test.Hspec
 import qualified VectorBuilder.Vector as Builder
@@ -62,5 +63,6 @@ main = hspec $ do
   InstrumentationLibrary.spec
   Sampler.spec
   TraceFlags.spec
+  Tracer.spec
   SemanticsConfigSpec.spec
   CoreSpec.spec

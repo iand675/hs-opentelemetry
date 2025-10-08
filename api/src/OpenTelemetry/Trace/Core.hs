@@ -60,6 +60,7 @@ module OpenTelemetry.Trace.Core (
   -- * @Tracer@ operations
   Tracer,
   tracerName,
+  tracerIsEnabled,
   HasTracer (..),
   makeTracer,
   getTracer,
@@ -878,6 +879,21 @@ getImmutableSpanTracer = spanTracer
 
 getTracerTracerProvider :: Tracer -> TracerProvider
 getTracerTracerProvider = tracerProvider
+
+
+{- | Check if the 'Tracer' is enabled.
+
+ This function helps users avoid performing computationally expensive operations
+ when creating 'Span's if the tracer is not enabled.
+
+ A 'Tracer' is considered enabled if it has at least one configured processor.
+ If the 'TracerProvider' has no processors, all spans will be dropped, so the
+ tracer is disabled.
+
+ @since 0.3.1.0
+-}
+tracerIsEnabled :: Tracer -> Bool
+tracerIsEnabled t = not $ V.null $ tracerProviderProcessors $ tracerProvider t
 
 
 {- | Smart constructor for 'SpanArguments' providing reasonable values for most 'Span's created
