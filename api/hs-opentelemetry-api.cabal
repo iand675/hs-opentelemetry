@@ -120,6 +120,7 @@ test-suite hs-opentelemetry-api-test
       OpenTelemetry.SemanticsConfigSpec
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
+      OpenTelemetry.Trace.TracerSpec
       Paths_hs_opentelemetry_api
   hs-source-dirs:
       test

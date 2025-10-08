@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `tracerIsEnabled` function to check if a Tracer is enabled (helps avoid expensive operations when tracing is disabled)
+
 ## 0.3.0.0
 
 - Export `fromList` from `OpenTelemetry.Trace.TraceState` for creating TraceState from key-value pairs
