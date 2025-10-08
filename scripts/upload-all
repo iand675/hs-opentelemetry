@@ -14,6 +14,7 @@ stack upload \
   instrumentation/conduit \
   instrumentation/hspec \
   instrumentation/http-client \
+  instrumentation/hw-kafka-client \
   instrumentation/persistent \
   instrumentation/postgresql-simple \
   instrumentation/tasty \
