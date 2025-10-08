@@ -5,7 +5,6 @@
 }: let
   inherit
     (builtins)
-    attrNames
     listToAttrs
     map
     ;
