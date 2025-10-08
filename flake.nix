@@ -55,7 +55,9 @@
       fourmolu = ignoreGeneratedFiles {
         enable = true;
       };
-      hpack.enable = true;
+      hpack = {
+        enable = false;
+      };
     };
   in
     {
@@ -112,6 +114,7 @@
                 );
               };
 
+              # Use a consistent hpack version across shells.
               pre-commit.hooks = pre-commit-hooks;
             })
           ];
