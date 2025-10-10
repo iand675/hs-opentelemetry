@@ -1,6 +1,6 @@
 cabal-version: 2.0
 name:          hs-opentelemetry-instrumentation-tasty
-version:       0.1
+version:       0.1.0.1
 
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/tasty#readme>
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
