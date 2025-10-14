@@ -1,9 +1,13 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -----------------------------------------------------------------------------
 
@@ -40,6 +44,9 @@ module OpenTelemetry.Exporter.OTLP.Span (
   Protocol (..),
   loadExporterEnvironmentVariables,
 
+  -- * Errors
+  ExportTraceError (..), -- only when using gRPC
+
   -- * Default local endpoints
   otlpExporterHttpEndpoint,
   otlpExporterGRpcEndpoint,
@@ -48,7 +55,8 @@ module OpenTelemetry.Exporter.OTLP.Span (
 import Codec.Compression.GZip
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
-import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Exception (Exception (..), SomeAsyncException (..), SomeException (..), catch, fromException, throwIO, try)
+import Control.Monad ((<=<))
 import Control.Monad.IO.Class
 import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
@@ -57,31 +65,40 @@ import qualified Data.CaseInsensitive as CI
 import Data.Char (toLower)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
+import Data.Int (Int64)
 import Data.Maybe
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector as Vector
 import Lens.Micro
+import qualified Network.GRPC.Client as G
+import qualified Network.GRPC.Client.StreamType.IO as G
+import qualified Network.GRPC.Common as G
+import qualified Network.GRPC.Common.Compression as G
+import qualified Network.GRPC.Common.Protobuf as G
 import Network.HTTP.Client
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
+import Network.URI (URI (uriAuthority), URIAuth (..), parseURI)
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Environment
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
 import OpenTelemetry.Resource
-import OpenTelemetry.Trace.Core (timestampNanoseconds)
+import OpenTelemetry.Trace.Core (ImmutableSpan, InstrumentationLibrary, timestampNanoseconds)
 import qualified OpenTelemetry.Trace.Core as OT
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.Util
-import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
+import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest, TraceService)
+import qualified Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService_Fields as TraceService_Fields
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
 import Proto.Opentelemetry.Proto.Trace.V1.Trace
@@ -93,7 +110,10 @@ import Text.Read (readMaybe)
 
 -- | Initial the OTLP 'Exporter'
 otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
-otlpExporter conf = httpOtlpExporter conf
+otlpExporter conf =
+  case otlpProtocol conf <|> otlpTracesProtocol conf of
+    Just GRpc -> grpcOtlpExporter conf
+    _otherwise -> httpOtlpExporter conf
 
 
 --------------------------------------------------------------------------------
@@ -185,10 +205,11 @@ readCompressionFormat compressionFormat =
 {- |
 The OpenTelemetry Protocol. Either HTTP/Protobuf or gRPC.
 
-Note: gRPC and HTTP/JSON will likely be supported eventually, but not yet.
+Note: HTTP/JSON will likely be supported eventually, but not yet.
 -}
-data Protocol {- GRpc | HttpJson | -}
+data Protocol {- HttpJson | -}
   = HttpProtobuf
+  | GRpc
 
 
 {- |
@@ -199,6 +220,7 @@ Defaults to `HttpProtobuf` for unsupported values.
 readProtocol :: (MonadIO m) => String -> m Protocol
 readProtocol protocol =
   protocol & fmap toLower & \case
+    "grpc" -> pure GRpc
     "http/protobuf" -> pure HttpProtobuf
     _ -> do
       putWarningLn $ "Warning: unsupported protocol '" <> protocol <> "'"
@@ -249,6 +271,176 @@ putWarningLn = liftIO . IO.hPutStrLn IO.stderr
 
 
 --------------------------------------------------------------------------------
+-- OTLP Exporter using gRPC.
+--------------------------------------------------------------------------------
+
+{- |
+Internal helper.
+Construct a `SpanExporter` that uses gRPC.
+-}
+grpcOtlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
+grpcOtlpExporter conf = do
+  let connParams = grpcConnParams conf
+  server <- grpcServer conf
+  conn <- liftIO $ G.openConnection connParams server
+  let export :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
+      export = grpcSendExportTraceServiceRequest conn <=< immutableSpansToProtobuf
+  let shutdown :: IO ()
+      shutdown = G.closeConnection conn
+  pure $ SpanExporter export shutdown
+
+
+{- |
+Internal helper.
+Send an 'ExportTraceServiceRequest' over an open gRPC connection.
+-}
+grpcSendExportTraceServiceRequest :: G.Connection -> ExportTraceServiceRequest -> IO ExportResult
+grpcSendExportTraceServiceRequest conn exportTraceServiceRequest =
+  doGrpc `catch` handleGrpcError
+  where
+    doGrpc :: IO ExportResult
+    doGrpc = do
+      G.nonStreaming conn (G.rpc @(G.Protobuf TraceService "export")) (G.Proto exportTraceServiceRequest) >>= \case
+        G.Proto resp
+          | rejectedSpans == 0 -> pure Success
+          | otherwise -> pure . Failure . Just . SomeException $ ExportTraceError rejectedSpans errorMessage
+          where
+            rejectedSpans = resp ^. TraceService_Fields.partialSuccess . TraceService_Fields.rejectedSpans
+            errorMessage = resp ^. TraceService_Fields.partialSuccess . TraceService_Fields.errorMessage
+    handleGrpcError :: G.GrpcError -> IO ExportResult
+    handleGrpcError = pure . Failure . Just . SomeException
+
+
+-- NOTE: This instance should probably be generated as part of 'hs-opentelemetry-otlp'
+type instance G.RequestMetadata (G.Protobuf TraceService meth) = G.NoMetadata
+
+
+-- NOTE: This instance should probably be generated as part of 'hs-opentelemetry-otlp'
+type instance G.ResponseInitialMetadata (G.Protobuf TraceService meth) = G.NoMetadata
+
+
+-- NOTE: This instance should probably be generated as part of 'hs-opentelemetry-otlp'
+type instance G.ResponseTrailingMetadata (G.Protobuf TraceService meth) = G.NoMetadata
+
+
+{- |
+This error signifies that some data points in an 'ExportTraceServiceRequest' were rejected.
+-}
+data ExportTraceError = ExportTraceError
+  { rejectedSpans :: Int64
+  , errorMessage :: Text
+  }
+  deriving (Show)
+
+
+instance Exception ExportTraceError where
+  displayException ExportTraceError {..} =
+    "Error: OpenTelemetry Collector rejected " <> show rejectedSpans <> " data points with message: " <> T.unpack errorMessage
+
+
+{- |
+Internal helper.
+Get the connection configuration from the 'OTLPExporterConfig'.
+-}
+grpcConnParams :: OTLPExporterConfig -> G.ConnParams
+grpcConnParams conf =
+  G.def
+    { G.connCompression = grcpCompression conf
+    , G.connDefaultTimeout = grpcTimeout conf
+    }
+
+
+{- |
+Internal helper.
+Get a negotiation strategy for the compression format from the 'OTLPExporterConfig'.
+-}
+grcpCompression :: OTLPExporterConfig -> G.Negotation
+grcpCompression conf =
+  case fromMaybe None (otlpCompression conf <|> otlpTracesCompression conf) of
+    None -> G.none
+    GZip -> G.only G.gzip
+
+
+{- |
+Internal helper.
+Get a timeout from the 'OTLPExporterConfig'.
+-}
+grpcTimeout :: OTLPExporterConfig -> Maybe G.Timeout
+grpcTimeout conf =
+  case otlpTimeout conf <|> otlpTracesTimeout conf of
+    Just timeoutMilli
+      | timeoutMilli >= 1 -> toTimeout timeoutMilli
+      | timeoutMilli == 0 -> Nothing
+    _otherwise -> toTimeout defaultExporterTimeout
+  where
+    toTimeout :: Int -> Maybe G.Timeout
+    toTimeout = Just . G.Timeout G.Millisecond . G.TimeoutValue . fromIntegral
+
+
+{- |
+Internal helper.
+Get a server configuration  from the 'OTLPExporterConfig'.
+-}
+grpcServer :: (MonadIO m) => OTLPExporterConfig -> m G.Server
+grpcServer conf = do
+  grpcAddress conf <&> \case
+    serverAddress
+      | otlpInsecure conf || otlpSpanInsecure conf ->
+          G.ServerInsecure serverAddress
+      | otherwise ->
+          G.ServerSecure (grpcServerValidation conf) G.SslKeyLogNone serverAddress
+
+
+{- |
+Internal helper.
+Get a server validation configuration  from the 'OTLPExporterConfig'.
+-}
+grpcServerValidation :: OTLPExporterConfig -> G.ServerValidation
+grpcServerValidation conf =
+  case otlpCertificate conf <|> otlpTracesCertificate conf of
+    Nothing -> G.NoServerValidation
+    Just certificatePath -> G.ValidateServer (G.certStoreFromPath certificatePath)
+
+
+{- |
+Internal helper.
+Get an address  from the 'OTLPExporterConfig'.
+-}
+grpcAddress :: (MonadIO m) => OTLPExporterConfig -> m G.Address
+grpcAddress conf =
+  case otlpEndpoint conf <|> otlpTracesEndpoint conf of
+    Just endpoint
+      | Just uri <- parseURI endpoint
+      , Just uriAuthority <- uriAuthority uri
+      , Just addressPort <- readMaybe (uriPort uriAuthority) ->
+          pure $
+            G.Address
+              { G.addressHost = "localhost"
+              , G.addressPort = addressPort
+              , G.addressAuthority = Nothing
+              }
+      | otherwise -> do
+          putWarningLn $ "Warning: could not parse endpoint '" <> endpoint <> "'"
+          pure grpcDefaultAddress
+    Nothing ->
+      pure grpcDefaultAddress
+
+
+{- |
+Internal helper.
+The default OTLP gRPC endpoint.
+Should be kept in-sync with 'otlpExporterGRpcEndpoint'.
+-}
+grpcDefaultAddress :: G.Address
+grpcDefaultAddress =
+  G.Address
+    { G.addressHost = "localhost"
+    , G.addressPort = 4317
+    , G.addressAuthority = Nothing
+    }
+
+
+--------------------------------------------------------------------------------
 -- OTLP Exporter using HTTP/Protobuf.
 --------------------------------------------------------------------------------
 
@@ -271,8 +463,7 @@ httpOtlpExporter conf = do
   pure $
     SpanExporter
       { spanExporterExport = \spans_ -> do
-          let anySpansToExport = H.size spans_ /= 0 && not (all V.null $ H.elems spans_)
-          if anySpansToExport
+          if anySpansToExport spans_
             then do
               result <- try $ exporterExportCall encoder baseReq spans_
               case result of
@@ -375,7 +566,6 @@ Get the HTTP host from the `OTLPExporterConfig`.
 httpHost :: OTLPExporterConfig -> String
 httpHost conf = fromMaybe defaultHost $ otlpEndpoint conf
   where
-    -- TODO shouldn't this be http://localhost:4317 ?
     defaultHost = "http://localhost:4318"
 
 
@@ -423,6 +613,14 @@ httpBaseHeaders conf req =
 --------------------------------------------------------------------------------
 -- Convert from `hs-opentelemetry-api` data model into OTLP Protobuf.
 --------------------------------------------------------------------------------
+
+{- |
+Internal helper.
+Determine whether there are any spans to export.
+-}
+anySpansToExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> Bool
+anySpansToExport spans = H.size spans /= 0 && not (all V.null $ H.elems spans)
+
 
 {- |
 Translate a collection of `OT.ImmutableSpan` spans to an OTLP `ExportTraceServiceRequest`.
