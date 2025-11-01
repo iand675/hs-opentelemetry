@@ -40,6 +40,7 @@ library
       OpenTelemetry.Environment
       OpenTelemetry.Exporter
       OpenTelemetry.Exporter.LogRecord
+      OpenTelemetry.Exporter.Metric
       OpenTelemetry.Exporter.Span
       OpenTelemetry.Internal.Common.Types
       OpenTelemetry.Internal.Logs.Core
@@ -47,6 +48,7 @@ library
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
       OpenTelemetry.Logs.Core
+      OpenTelemetry.Metrics.Core
       OpenTelemetry.Processor
       OpenTelemetry.Processor.LogRecord
       OpenTelemetry.Processor.Span
@@ -75,6 +77,7 @@ library
       OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Context.Types
+      OpenTelemetry.Internal.Metrics.Types
       OpenTelemetry.Internal.Trace.Types
       Paths_hs_opentelemetry_api
   hs-source-dirs:
