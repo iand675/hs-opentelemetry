@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.w3.org)",
+      "Bash(cabal build:*)",
+      "Bash(hpack:*)",
+      "Bash(cabal test:*)",
+      "Bash(git log:*)",
+      "Bash(tac:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:opentelemetry.io)",
+      "Bash(echo:*)",
+      "Bash(shellcheck:*)",
+      "Bash(stack:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -153,7 +153,7 @@ bytesToTraceId :: ByteString -> Either String TraceId
 bytesToTraceId bs =
   if BS.length bs == 16
     then Right $ TraceId $ toShort bs
-    else Left "bytesToTraceId: TraceId must be 8 bytes long"
+    else Left "bytesToTraceId: TraceId must be 16 bytes long"
 
 
 {- | Convert a 'ByteString' of a specified base-encoding into a 'TraceId'.

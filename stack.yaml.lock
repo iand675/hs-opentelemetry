@@ -41,7 +41,7 @@ packages:
     hackage: proto-lens-runtime-0.7.0.7
 snapshots:
 - completed:
-    sha256: 400dfb2174640dd2f9f2ba7cbf9148699f2380ab64faa46f4be298a5d6205316
-    size: 684057
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/24.yaml
-  original: lts-23.24
+    sha256: d49e388e3afe59fe7a7be6d658e4ba4beec586e6237adab1e4a15b57c1d8a10f
+    size: 726104
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/14.yaml
+  original: lts-24.14
