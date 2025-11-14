@@ -51,8 +51,8 @@ import Data.Text (Text)
 import qualified Data.Vault.Strict as V
 import OpenTelemetry.Baggage (Baggage)
 import OpenTelemetry.Context.Types
-import OpenTelemetry.Internal.Trace.Types
 import OpenTelemetry.Internal.Trace.Id (TraceId)
+import OpenTelemetry.Internal.Trace.Types
 import System.IO.Unsafe
 import Prelude hiding (lookup)
 
@@ -132,15 +132,19 @@ insertBaggage b c = case lookup baggageKey c of
 removeBaggage :: Context -> Context
 removeBaggage = delete baggageKey
 
+
 externalTraceIdKey :: Key TraceId
 externalTraceIdKey = unsafePerformIO $ newKey "traceId"
 {-# NOINLINE externalTraceIdKey #-}
 
+
 lookupExternalTraceId :: Context -> Maybe TraceId
 lookupExternalTraceId = lookup externalTraceIdKey
 
+
 insertExternalTraceId :: TraceId -> Context -> Context
 insertExternalTraceId = insert externalTraceIdKey
+
 
 removeExternalTraceId :: Context -> Context
 removeExternalTraceId = delete externalTraceIdKey
