@@ -35,56 +35,23 @@ address ::
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "address" a) =>
   Lens.Family2.LensLike' f s a
 address = Data.ProtoLens.Field.field @"address"
-aggregationTemporality ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "aggregationTemporality" a) =>
-  Lens.Family2.LensLike' f s a
-aggregationTemporality
-  = Data.ProtoLens.Field.field @"aggregationTemporality"
 attributeIndices ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "attributeIndices" a) =>
   Lens.Family2.LensLike' f s a
 attributeIndices = Data.ProtoLens.Field.field @"attributeIndices"
-attributeKeyStrindex ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "attributeKeyStrindex" a) =>
-  Lens.Family2.LensLike' f s a
-attributeKeyStrindex
-  = Data.ProtoLens.Field.field @"attributeKeyStrindex"
 attributeTable ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "attributeTable" a) =>
   Lens.Family2.LensLike' f s a
 attributeTable = Data.ProtoLens.Field.field @"attributeTable"
-attributeUnits ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "attributeUnits" a) =>
-  Lens.Family2.LensLike' f s a
-attributeUnits = Data.ProtoLens.Field.field @"attributeUnits"
 column ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "column" a) =>
   Lens.Family2.LensLike' f s a
 column = Data.ProtoLens.Field.field @"column"
-commentStrindices ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "commentStrindices" a) =>
-  Lens.Family2.LensLike' f s a
-commentStrindices = Data.ProtoLens.Field.field @"commentStrindices"
-defaultSampleTypeIndex ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "defaultSampleTypeIndex" a) =>
-  Lens.Family2.LensLike' f s a
-defaultSampleTypeIndex
-  = Data.ProtoLens.Field.field @"defaultSampleTypeIndex"
 dictionary ::
   forall f s a.
   (Prelude.Functor f,
@@ -98,12 +65,12 @@ droppedAttributesCount ::
   Lens.Family2.LensLike' f s a
 droppedAttributesCount
   = Data.ProtoLens.Field.field @"droppedAttributesCount"
-durationNanos ::
+durationNano ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "durationNanos" a) =>
+   Data.ProtoLens.Field.HasField s "durationNano" a) =>
   Lens.Family2.LensLike' f s a
-durationNanos = Data.ProtoLens.Field.field @"durationNanos"
+durationNano = Data.ProtoLens.Field.field @"durationNano"
 fileOffset ::
   forall f s a.
   (Prelude.Functor f,
@@ -128,41 +95,22 @@ functionTable ::
    Data.ProtoLens.Field.HasField s "functionTable" a) =>
   Lens.Family2.LensLike' f s a
 functionTable = Data.ProtoLens.Field.field @"functionTable"
-hasFilenames ::
+keyStrindex ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "hasFilenames" a) =>
+   Data.ProtoLens.Field.HasField s "keyStrindex" a) =>
   Lens.Family2.LensLike' f s a
-hasFilenames = Data.ProtoLens.Field.field @"hasFilenames"
-hasFunctions ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "hasFunctions" a) =>
-  Lens.Family2.LensLike' f s a
-hasFunctions = Data.ProtoLens.Field.field @"hasFunctions"
-hasInlineFrames ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "hasInlineFrames" a) =>
-  Lens.Family2.LensLike' f s a
-hasInlineFrames = Data.ProtoLens.Field.field @"hasInlineFrames"
-hasLineNumbers ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "hasLineNumbers" a) =>
-  Lens.Family2.LensLike' f s a
-hasLineNumbers = Data.ProtoLens.Field.field @"hasLineNumbers"
-isFolded ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "isFolded" a) =>
-  Lens.Family2.LensLike' f s a
-isFolded = Data.ProtoLens.Field.field @"isFolded"
+keyStrindex = Data.ProtoLens.Field.field @"keyStrindex"
 line ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "line" a) =>
   Lens.Family2.LensLike' f s a
 line = Data.ProtoLens.Field.field @"line"
+lines ::
+  forall f s a.
+  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "lines" a) =>
+  Lens.Family2.LensLike' f s a
+lines = Data.ProtoLens.Field.field @"lines"
 linkIndex ::
   forall f s a.
   (Prelude.Functor f,
@@ -187,19 +135,6 @@ locationTable ::
    Data.ProtoLens.Field.HasField s "locationTable" a) =>
   Lens.Family2.LensLike' f s a
 locationTable = Data.ProtoLens.Field.field @"locationTable"
-locationsLength ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "locationsLength" a) =>
-  Lens.Family2.LensLike' f s a
-locationsLength = Data.ProtoLens.Field.field @"locationsLength"
-locationsStartIndex ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "locationsStartIndex" a) =>
-  Lens.Family2.LensLike' f s a
-locationsStartIndex
-  = Data.ProtoLens.Field.field @"locationsStartIndex"
 mappingIndex ::
   forall f s a.
   (Prelude.Functor f,
@@ -218,19 +153,6 @@ maybe'dictionary ::
    Data.ProtoLens.Field.HasField s "maybe'dictionary" a) =>
   Lens.Family2.LensLike' f s a
 maybe'dictionary = Data.ProtoLens.Field.field @"maybe'dictionary"
-maybe'linkIndex ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "maybe'linkIndex" a) =>
-  Lens.Family2.LensLike' f s a
-maybe'linkIndex = Data.ProtoLens.Field.field @"maybe'linkIndex"
-maybe'mappingIndex ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "maybe'mappingIndex" a) =>
-  Lens.Family2.LensLike' f s a
-maybe'mappingIndex
-  = Data.ProtoLens.Field.field @"maybe'mappingIndex"
 maybe'periodType ::
   forall f s a.
   (Prelude.Functor f,
@@ -243,12 +165,24 @@ maybe'resource ::
    Data.ProtoLens.Field.HasField s "maybe'resource" a) =>
   Lens.Family2.LensLike' f s a
 maybe'resource = Data.ProtoLens.Field.field @"maybe'resource"
+maybe'sampleType ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "maybe'sampleType" a) =>
+  Lens.Family2.LensLike' f s a
+maybe'sampleType = Data.ProtoLens.Field.field @"maybe'sampleType"
 maybe'scope ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "maybe'scope" a) =>
   Lens.Family2.LensLike' f s a
 maybe'scope = Data.ProtoLens.Field.field @"maybe'scope"
+maybe'value ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "maybe'value" a) =>
+  Lens.Family2.LensLike' f s a
+maybe'value = Data.ProtoLens.Field.field @"maybe'value"
 memoryLimit ::
   forall f s a.
   (Prelude.Functor f,
@@ -315,17 +249,17 @@ resourceProfiles ::
    Data.ProtoLens.Field.HasField s "resourceProfiles" a) =>
   Lens.Family2.LensLike' f s a
 resourceProfiles = Data.ProtoLens.Field.field @"resourceProfiles"
-sample ::
-  forall f s a.
-  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "sample" a) =>
-  Lens.Family2.LensLike' f s a
-sample = Data.ProtoLens.Field.field @"sample"
 sampleType ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "sampleType" a) =>
   Lens.Family2.LensLike' f s a
 sampleType = Data.ProtoLens.Field.field @"sampleType"
+samples ::
+  forall f s a.
+  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "samples" a) =>
+  Lens.Family2.LensLike' f s a
+samples = Data.ProtoLens.Field.field @"samples"
 schemaUrl ::
   forall f s a.
   (Prelude.Functor f,
@@ -348,6 +282,18 @@ spanId ::
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "spanId" a) =>
   Lens.Family2.LensLike' f s a
 spanId = Data.ProtoLens.Field.field @"spanId"
+stackIndex ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "stackIndex" a) =>
+  Lens.Family2.LensLike' f s a
+stackIndex = Data.ProtoLens.Field.field @"stackIndex"
+stackTable ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "stackTable" a) =>
+  Lens.Family2.LensLike' f s a
+stackTable = Data.ProtoLens.Field.field @"stackTable"
 startLine ::
   forall f s a.
   (Prelude.Functor f,
@@ -367,12 +313,12 @@ systemNameStrindex ::
   Lens.Family2.LensLike' f s a
 systemNameStrindex
   = Data.ProtoLens.Field.field @"systemNameStrindex"
-timeNanos ::
+timeUnixNano ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "timeNanos" a) =>
+   Data.ProtoLens.Field.HasField s "timeUnixNano" a) =>
   Lens.Family2.LensLike' f s a
-timeNanos = Data.ProtoLens.Field.field @"timeNanos"
+timeUnixNano = Data.ProtoLens.Field.field @"timeUnixNano"
 timestampsUnixNano ::
   forall f s a.
   (Prelude.Functor f,
@@ -402,6 +348,11 @@ value ::
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "value" a) =>
   Lens.Family2.LensLike' f s a
 value = Data.ProtoLens.Field.field @"value"
+values ::
+  forall f s a.
+  (Prelude.Functor f, Data.ProtoLens.Field.HasField s "values" a) =>
+  Lens.Family2.LensLike' f s a
+values = Data.ProtoLens.Field.field @"values"
 vec'attributeIndices ::
   forall f s a.
   (Prelude.Functor f,
@@ -416,32 +367,18 @@ vec'attributeTable ::
   Lens.Family2.LensLike' f s a
 vec'attributeTable
   = Data.ProtoLens.Field.field @"vec'attributeTable"
-vec'attributeUnits ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'attributeUnits" a) =>
-  Lens.Family2.LensLike' f s a
-vec'attributeUnits
-  = Data.ProtoLens.Field.field @"vec'attributeUnits"
-vec'commentStrindices ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'commentStrindices" a) =>
-  Lens.Family2.LensLike' f s a
-vec'commentStrindices
-  = Data.ProtoLens.Field.field @"vec'commentStrindices"
 vec'functionTable ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "vec'functionTable" a) =>
   Lens.Family2.LensLike' f s a
 vec'functionTable = Data.ProtoLens.Field.field @"vec'functionTable"
-vec'line ::
+vec'lines ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'line" a) =>
+   Data.ProtoLens.Field.HasField s "vec'lines" a) =>
   Lens.Family2.LensLike' f s a
-vec'line = Data.ProtoLens.Field.field @"vec'line"
+vec'lines = Data.ProtoLens.Field.field @"vec'lines"
 vec'linkTable ::
   forall f s a.
   (Prelude.Functor f,
@@ -480,24 +417,24 @@ vec'resourceProfiles ::
   Lens.Family2.LensLike' f s a
 vec'resourceProfiles
   = Data.ProtoLens.Field.field @"vec'resourceProfiles"
-vec'sample ::
+vec'samples ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'sample" a) =>
+   Data.ProtoLens.Field.HasField s "vec'samples" a) =>
   Lens.Family2.LensLike' f s a
-vec'sample = Data.ProtoLens.Field.field @"vec'sample"
-vec'sampleType ::
-  forall f s a.
-  (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'sampleType" a) =>
-  Lens.Family2.LensLike' f s a
-vec'sampleType = Data.ProtoLens.Field.field @"vec'sampleType"
+vec'samples = Data.ProtoLens.Field.field @"vec'samples"
 vec'scopeProfiles ::
   forall f s a.
   (Prelude.Functor f,
    Data.ProtoLens.Field.HasField s "vec'scopeProfiles" a) =>
   Lens.Family2.LensLike' f s a
 vec'scopeProfiles = Data.ProtoLens.Field.field @"vec'scopeProfiles"
+vec'stackTable ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "vec'stackTable" a) =>
+  Lens.Family2.LensLike' f s a
+vec'stackTable = Data.ProtoLens.Field.field @"vec'stackTable"
 vec'stringTable ::
   forall f s a.
   (Prelude.Functor f,
@@ -511,9 +448,9 @@ vec'timestampsUnixNano ::
   Lens.Family2.LensLike' f s a
 vec'timestampsUnixNano
   = Data.ProtoLens.Field.field @"vec'timestampsUnixNano"
-vec'value ::
+vec'values ::
   forall f s a.
   (Prelude.Functor f,
-   Data.ProtoLens.Field.HasField s "vec'value" a) =>
+   Data.ProtoLens.Field.HasField s "vec'values" a) =>
   Lens.Family2.LensLike' f s a
-vec'value = Data.ProtoLens.Field.field @"vec'value"
+vec'values = Data.ProtoLens.Field.field @"vec'values"
