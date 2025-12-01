@@ -1602,8 +1602,8 @@ packedFileDescriptor
     \\EOTtype\CAN\STX \SOH(\tR\EOTtype\DC2\ETB\n\
     \\aid_keys\CAN\ETX \ETX(\tR\ACKidKeys\DC2)\n\
     \\DLEdescription_keys\CAN\EOT \ETX(\tR\SIdescriptionKeysB{\n\
-    \ io.opentelemetry.proto.common.v1B\vCommonProtoP\SOHZ(go.opentelemetry.io/proto/otlp/common/v1\170\STX\GSOpenTelemetry.Proto.Common.V1J\215&\n\
-    \\ACK\DC2\EOT\SO\NULr\SOH\n\
+    \ io.opentelemetry.proto.common.v1B\vCommonProtoP\SOHZ(go.opentelemetry.io/proto/otlp/common/v1\170\STX\GSOpenTelemetry.Proto.Common.V1J\145+\n\
+    \\a\DC2\ENQ\SO\NUL\128\SOH\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
     \\n\
@@ -1642,8 +1642,8 @@ packedFileDescriptor
     \\SOH\b\DC2\ETX\SYN\NUL?\n\
     \\t\n\
     \\STX\b\v\DC2\ETX\SYN\NUL?\n\
-    \\238\SOH\n\
-    \\STX\EOT\NUL\DC2\EOT\ESC\NUL'\SOH\SUB\225\SOH AnyValue is used to represent any type of attribute value. AnyValue may contain a\n\
+    \\219\SOH\n\
+    \\STX\EOT\NUL\DC2\EOT\ESC\NUL'\SOH\SUB\206\SOH Represents any type of attribute value. AnyValue may contain a\n\
     \ primitive value such as a string or integer or it may contain an arbitrary nested\n\
     \ object containing arrays, key-value lists and primitives.\n\
     \\n\
@@ -1736,7 +1736,7 @@ packedFileDescriptor
     \\f\n\
     \\ENQ\EOT\SOH\STX\NUL\ETX\DC2\ETX-\GS\RS\n\
     \\251\STX\n\
-    \\STX\EOT\STX\DC2\EOT5\NUL;\SOH\SUB\238\STX KeyValueList is a list of KeyValue messages. We need KeyValueList as a message\n\
+    \\STX\EOT\STX\DC2\EOT5\NUL=\SOH\SUB\238\STX KeyValueList is a list of KeyValue messages. We need KeyValueList as a message\n\
     \ since `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need\n\
     \ a list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to\n\
     \ avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches\n\
@@ -1745,102 +1745,113 @@ packedFileDescriptor
     \\n\
     \\n\
     \\ETX\EOT\STX\SOH\DC2\ETX5\b\DC4\n\
-    \\209\SOH\n\
-    \\EOT\EOT\STX\STX\NUL\DC2\ETX:\STX\US\SUB\195\SOH A collection of key/value pairs of key-value pairs. The list may be empty (may\n\
+    \\160\STX\n\
+    \\EOT\EOT\STX\STX\NUL\DC2\ETX<\STX\US\SUB\146\STX A collection of key/value pairs of key-value pairs. The list may be empty (may\n\
     \ contain 0 elements).\n\
+    \\n\
     \ The keys MUST be unique (it is not allowed to have more than one\n\
     \ value with the same key).\n\
+    \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\EOT\DC2\ETX:\STX\n\
+    \\ENQ\EOT\STX\STX\NUL\EOT\DC2\ETX<\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\ACK\DC2\ETX:\v\DC3\n\
+    \\ENQ\EOT\STX\STX\NUL\ACK\DC2\ETX<\v\DC3\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\SOH\DC2\ETX:\DC4\SUB\n\
+    \\ENQ\EOT\STX\STX\NUL\SOH\DC2\ETX<\DC4\SUB\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\ETX\DC2\ETX:\GS\RS\n\
-    \h\n\
-    \\STX\EOT\ETX\DC2\EOT?\NULB\SOH\SUB\\ KeyValue is a key-value pair that is used to store Span attributes, Link\n\
+    \\ENQ\EOT\STX\STX\NUL\ETX\DC2\ETX<\GS\RS\n\
+    \g\n\
+    \\STX\EOT\ETX\DC2\EOTA\NULG\SOH\SUB[ Represents a key-value pair that is used to store Span attributes, Link\n\
     \ attributes, etc.\n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\ETX\SOH\DC2\ETX?\b\DLE\n\
-    \\v\n\
-    \\EOT\EOT\ETX\STX\NUL\DC2\ETX@\STX\DC1\n\
-    \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\ENQ\DC2\ETX@\STX\b\n\
-    \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\SOH\DC2\ETX@\t\f\n\
-    \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\ETX\DC2\ETX@\SI\DLE\n\
-    \\v\n\
-    \\EOT\EOT\ETX\STX\SOH\DC2\ETXA\STX\NAK\n\
-    \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\ACK\DC2\ETXA\STX\n\
+    \\ETX\EOT\ETX\SOH\DC2\ETXA\b\DLE\n\
+    \(\n\
+    \\EOT\EOT\ETX\STX\NUL\DC2\ETXC\STX\DC1\SUB\ESC The key name of the pair.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\SOH\DC2\ETXA\v\DLE\n\
+    \\ENQ\EOT\ETX\STX\NUL\ENQ\DC2\ETXC\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\ETX\DC2\ETXA\DC3\DC4\n\
+    \\ENQ\EOT\ETX\STX\NUL\SOH\DC2\ETXC\t\f\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\NUL\ETX\DC2\ETXC\SI\DLE\n\
+    \%\n\
+    \\EOT\EOT\ETX\STX\SOH\DC2\ETXF\STX\NAK\SUB\CAN The value of the pair.\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\SOH\ACK\DC2\ETXF\STX\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\SOH\SOH\DC2\ETXF\v\DLE\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\SOH\ETX\DC2\ETXF\DC3\DC4\n\
     \\147\SOH\n\
-    \\STX\EOT\EOT\DC2\EOTF\NULP\SOH\SUB\134\SOH InstrumentationScope is a message representing the instrumentation scope information\n\
+    \\STX\EOT\EOT\DC2\EOTK\NUL^\SOH\SUB\134\SOH InstrumentationScope is a message representing the instrumentation scope information\n\
     \ such as the fully qualified name and version. \n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\EOT\SOH\DC2\ETXF\b\FS\n\
-    \M\n\
-    \\EOT\EOT\EOT\STX\NUL\DC2\ETXH\STX\DC2\SUB@ An empty instrumentation scope name means the name is unknown.\n\
+    \\ETX\EOT\EOT\SOH\DC2\ETXK\b\FS\n\
+    \y\n\
+    \\EOT\EOT\EOT\STX\NUL\DC2\ETXN\STX\DC2\SUBl A name denoting the Instrumentation scope.\n\
+    \ An empty instrumentation scope name means the name is unknown.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\NUL\ENQ\DC2\ETXH\STX\b\n\
+    \\ENQ\EOT\EOT\STX\NUL\ENQ\DC2\ETXN\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\NUL\SOH\DC2\ETXH\t\r\n\
+    \\ENQ\EOT\EOT\STX\NUL\SOH\DC2\ETXN\t\r\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\NUL\ETX\DC2\ETXH\DLE\DC1\n\
-    \\v\n\
-    \\EOT\EOT\EOT\STX\SOH\DC2\ETXI\STX\NAK\n\
+    \\ENQ\EOT\EOT\STX\NUL\ETX\DC2\ETXN\DLE\DC1\n\
+    \\134\SOH\n\
+    \\EOT\EOT\EOT\STX\SOH\DC2\ETXR\STX\NAK\SUBy Defines the version of the instrumentation scope.\n\
+    \ An empty instrumentation scope version means the version is unknown.\n\
+    \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\SOH\ENQ\DC2\ETXI\STX\b\n\
+    \\ENQ\EOT\EOT\STX\SOH\ENQ\DC2\ETXR\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\ETXI\t\DLE\n\
+    \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\ETXR\t\DLE\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\ETXI\DC3\DC4\n\
-    \\177\SOH\n\
-    \\EOT\EOT\EOT\STX\STX\DC2\ETXN\STX#\SUB\163\SOH Additional attributes that describe the scope. [Optional].\n\
+    \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\ETXR\DC3\DC4\n\
+    \\255\SOH\n\
+    \\EOT\EOT\EOT\STX\STX\DC2\ETXX\STX#\SUB\241\SOH Additional attributes that describe the scope. [Optional].\n\
     \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
     \ attribute with the same key).\n\
+    \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\EOT\DC2\ETXN\STX\n\
+    \\ENQ\EOT\EOT\STX\STX\EOT\DC2\ETXX\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\ACK\DC2\ETXN\v\DC3\n\
+    \\ENQ\EOT\EOT\STX\STX\ACK\DC2\ETXX\v\DC3\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\SOH\DC2\ETXN\DC4\RS\n\
+    \\ENQ\EOT\EOT\STX\STX\SOH\DC2\ETXX\DC4\RS\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\ETX\DC2\ETXN!\"\n\
-    \\v\n\
-    \\EOT\EOT\EOT\STX\ETX\DC2\ETXO\STX&\n\
+    \\ENQ\EOT\EOT\STX\STX\ETX\DC2\ETXX!\"\n\
+    \\218\SOH\n\
+    \\EOT\EOT\EOT\STX\ETX\DC2\ETX]\STX&\SUB\204\SOH The number of attributes that were discarded. Attributes\n\
+    \ can be discarded because their keys are too long or because there are too many\n\
+    \ attributes. If this value is 0, then no attributes were dropped.\n\
+    \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\ENQ\DC2\ETXO\STX\b\n\
+    \\ENQ\EOT\EOT\STX\ETX\ENQ\DC2\ETX]\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\ETXO\t!\n\
+    \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\ETX]\t!\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\ETXO$%\n\
-    \\180\SOH\n\
-    \\STX\EOT\ENQ\DC2\EOTV\NULr\SOH\SUB\167\SOH A reference to an Entity.\n\
+    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\ETX]$%\n\
+    \\181\SOH\n\
+    \\STX\EOT\ENQ\DC2\ENQd\NUL\128\SOH\SOH\SUB\167\SOH A reference to an Entity.\n\
     \ Entity represents an object of interest associated with produced telemetry: e.g spans, metrics, profiles, or logs.\n\
     \\n\
     \ Status: [Development]\n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\ENQ\SOH\DC2\ETXV\b\DC1\n\
+    \\ETX\EOT\ENQ\SOH\DC2\ETXd\b\DC1\n\
     \\159\EOT\n\
-    \\EOT\EOT\ENQ\STX\NUL\DC2\ETXa\STX\CAN\SUB\145\EOT The Schema URL, if known. This is the identifier of the Schema that the entity data\n\
+    \\EOT\EOT\ENQ\STX\NUL\DC2\ETXo\STX\CAN\SUB\145\EOT The Schema URL, if known. This is the identifier of the Schema that the entity data\n\
     \ is recorded in. To learn more about Schema URL see\n\
     \ https://opentelemetry.io/docs/specs/otel/schemas/#schema-url\n\
     \\n\
@@ -1852,48 +1863,48 @@ packedFileDescriptor
     \ This field obsoletes the schema_url field in ResourceMetrics/ResourceSpans/ResourceLogs.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\ETXa\STX\b\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\ETXo\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\ETXa\t\DC3\n\
+    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\ETXo\t\DC3\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\ETXa\SYN\ETB\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\ETXo\SYN\ETB\n\
     \\199\SOH\n\
-    \\EOT\EOT\ENQ\STX\SOH\DC2\ETXf\STX\DC2\SUB\185\SOH Defines the type of the entity. MUST not change during the lifetime of the entity.\n\
+    \\EOT\EOT\ENQ\STX\SOH\DC2\ETXt\STX\DC2\SUB\185\SOH Defines the type of the entity. MUST not change during the lifetime of the entity.\n\
     \ For example: \"service\" or \"host\". This field is required and MUST not be empty\n\
     \ for valid entities.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\ETXf\STX\b\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\ETXt\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\ETXf\t\r\n\
+    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\ETXt\t\r\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\ETXf\DLE\DC1\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\ETXt\DLE\DC1\n\
     \\215\SOH\n\
-    \\EOT\EOT\ENQ\STX\STX\DC2\ETXk\STX\RS\SUB\201\SOH Attribute Keys that identify the entity.\n\
+    \\EOT\EOT\ENQ\STX\STX\DC2\ETXy\STX\RS\SUB\201\SOH Attribute Keys that identify the entity.\n\
     \ MUST not change during the lifetime of the entity. The Id must contain at least one attribute.\n\
     \ These keys MUST exist in the containing {message}.attributes.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\EOT\DC2\ETXk\STX\n\
+    \\ENQ\EOT\ENQ\STX\STX\EOT\DC2\ETXy\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\ENQ\DC2\ETXk\v\DC1\n\
+    \\ENQ\EOT\ENQ\STX\STX\ENQ\DC2\ETXy\v\DC1\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\SOH\DC2\ETXk\DC2\EM\n\
+    \\ENQ\EOT\ENQ\STX\STX\SOH\DC2\ETXy\DC2\EM\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\ETX\DC2\ETXk\FS\GS\n\
+    \\ENQ\EOT\ENQ\STX\STX\ETX\DC2\ETXy\FS\GS\n\
     \\254\SOH\n\
-    \\EOT\EOT\ENQ\STX\ETX\DC2\ETXq\STX'\SUB\240\SOH Descriptive (non-identifying) attribute keys of the entity.\n\
+    \\EOT\EOT\ENQ\STX\ETX\DC2\ETX\DEL\STX'\SUB\240\SOH Descriptive (non-identifying) attribute keys of the entity.\n\
     \ MAY change over the lifetime of the entity. MAY be empty.\n\
     \ These attribute keys are not part of entity's identity.\n\
     \ These keys MUST exist in the containing {message}.attributes.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\EOT\DC2\ETXq\STX\n\
+    \\ENQ\EOT\ENQ\STX\ETX\EOT\DC2\ETX\DEL\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\ENQ\DC2\ETXq\v\DC1\n\
+    \\ENQ\EOT\ENQ\STX\ETX\ENQ\DC2\ETX\DEL\v\DC1\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\SOH\DC2\ETXq\DC2\"\n\
+    \\ENQ\EOT\ENQ\STX\ETX\SOH\DC2\ETX\DEL\DC2\"\n\
     \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\ETX\DC2\ETXq%&b\ACKproto3"
+    \\ENQ\EOT\ENQ\STX\ETX\ETX\DC2\ETX\DEL%&b\ACKproto3"

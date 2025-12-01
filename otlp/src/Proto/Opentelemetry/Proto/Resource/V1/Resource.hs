@@ -296,9 +296,8 @@ packedFileDescriptor
     \\CANdropped_attributes_count\CAN\STX \SOH(\rR\SYNdroppedAttributesCount\DC2I\n\
     \\ventity_refs\CAN\ETX \ETX(\v2(.opentelemetry.proto.common.v1.EntityRefR\n\
     \entityRefsB\131\SOH\n\
-    \\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\SOHZ*go.opentelemetry.io/proto/otlp/resource/v1\170\STX\USOpenTelemetry.Proto.Resource.V1J\237\n\
-    \\n\
-    \\ACK\DC2\EOT\SO\NUL+\SOH\n\
+    \\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\SOHZ*go.opentelemetry.io/proto/otlp/resource/v1\170\STX\USOpenTelemetry.Proto.Resource.V1J\158\v\n\
+    \\ACK\DC2\EOT\SO\NUL,\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
     \\n\
@@ -340,48 +339,49 @@ packedFileDescriptor
     \\t\n\
     \\STX\b\v\DC2\ETX\CAN\NULA\n\
     \#\n\
-    \\STX\EOT\NUL\DC2\EOT\ESC\NUL+\SOH\SUB\ETB Resource information.\n\
+    \\STX\EOT\NUL\DC2\EOT\ESC\NUL,\SOH\SUB\ETB Resource information.\n\
     \\n\
     \\n\
     \\n\
     \\ETX\EOT\NUL\SOH\DC2\ETX\ESC\b\DLE\n\
-    \\164\SOH\n\
-    \\EOT\EOT\NUL\STX\NUL\DC2\ETX\US\STXA\SUB\150\SOH Set of attributes that describe the resource.\n\
+    \\242\SOH\n\
+    \\EOT\EOT\NUL\STX\NUL\DC2\ETX \STXA\SUB\228\SOH Set of attributes that describe the resource.\n\
     \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
     \ attribute with the same key).\n\
+    \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\EOT\DC2\ETX\US\STX\n\
+    \\ENQ\EOT\NUL\STX\NUL\EOT\DC2\ETX \STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\ACK\DC2\ETX\US\v1\n\
+    \\ENQ\EOT\NUL\STX\NUL\ACK\DC2\ETX \v1\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\SOH\DC2\ETX\US2<\n\
+    \\ENQ\EOT\NUL\STX\NUL\SOH\DC2\ETX 2<\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\NUL\ETX\DC2\ETX\US?@\n\
-    \\129\SOH\n\
-    \\EOT\EOT\NUL\STX\SOH\DC2\ETX#\STX&\SUBt dropped_attributes_count is the number of dropped attributes. If the value is 0, then\n\
+    \\ENQ\EOT\NUL\STX\NUL\ETX\DC2\ETX ?@\n\
+    \e\n\
+    \\EOT\EOT\NUL\STX\SOH\DC2\ETX$\STX&\SUBX The number of dropped attributes. If the value is 0, then\n\
     \ no attributes were dropped.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\SOH\ENQ\DC2\ETX#\STX\b\n\
+    \\ENQ\EOT\NUL\STX\SOH\ENQ\DC2\ETX$\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\SOH\SOH\DC2\ETX#\t!\n\
+    \\ENQ\EOT\NUL\STX\SOH\SOH\DC2\ETX$\t!\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\SOH\ETX\DC2\ETX#$%\n\
+    \\ENQ\EOT\NUL\STX\SOH\ETX\DC2\ETX$$%\n\
     \\163\SOH\n\
-    \\EOT\EOT\NUL\STX\STX\DC2\ETX*\STXC\SUB\149\SOH Set of entities that participate in this Resource.\n\
+    \\EOT\EOT\NUL\STX\STX\DC2\ETX+\STXC\SUB\149\SOH Set of entities that participate in this Resource.\n\
     \\n\
     \ Note: keys in the references MUST exist in attributes of this message.\n\
     \\n\
     \ Status: [Development]\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\STX\EOT\DC2\ETX*\STX\n\
+    \\ENQ\EOT\NUL\STX\STX\EOT\DC2\ETX+\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\STX\ACK\DC2\ETX*\v2\n\
+    \\ENQ\EOT\NUL\STX\STX\ACK\DC2\ETX+\v2\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\STX\SOH\DC2\ETX*3>\n\
+    \\ENQ\EOT\NUL\STX\STX\SOH\DC2\ETX+3>\n\
     \\f\n\
-    \\ENQ\EOT\NUL\STX\STX\ETX\DC2\ETX*ABb\ACKproto3"
+    \\ENQ\EOT\NUL\STX\STX\ETX\DC2\ETX+ABb\ACKproto3"

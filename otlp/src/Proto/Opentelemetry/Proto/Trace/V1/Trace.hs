@@ -2684,8 +2684,8 @@ packedFileDescriptor
     \%SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK\DLE\128\STX\DC2&\n\
     \!SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK\DLE\128\EOTBw\n\
     \\USio.opentelemetry.proto.trace.v1B\n\
-    \TraceProtoP\SOHZ'go.opentelemetry.io/proto/otlp/trace/v1\170\STX\FSOpenTelemetry.Proto.Trace.V1J\202~\n\
-    \\a\DC2\ENQ\SO\NUL\228\STX\SOH\n\
+    \TraceProtoP\SOHZ'go.opentelemetry.io/proto/otlp/trace/v1\170\STX\FSOpenTelemetry.Proto.Trace.V1J\150}\n\
+    \\a\DC2\ENQ\SO\NUL\230\STX\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
     \\n\
@@ -2811,7 +2811,7 @@ packedFileDescriptor
     \\f\n\
     \\ENQ\EOT\SOH\STX\STX\ETX\DC2\ETX?\SYN\ETB\n\
     \H\n\
-    \\STX\EOT\STX\DC2\EOTC\NULR\SOH\SUB< A collection of Spans produced by an InstrumentationScope.\n\
+    \\STX\EOT\STX\DC2\EOTC\NULS\SOH\SUB< A collection of Spans produced by an InstrumentationScope.\n\
     \\n\
     \\n\
     \\n\
@@ -2839,29 +2839,30 @@ packedFileDescriptor
     \\ENQ\EOT\STX\STX\SOH\SOH\DC2\ETXJ\DLE\NAK\n\
     \\f\n\
     \\ENQ\EOT\STX\STX\SOH\ETX\DC2\ETXJ\CAN\EM\n\
-    \\148\ETX\n\
-    \\EOT\EOT\STX\STX\STX\DC2\ETXQ\STX\CAN\SUB\134\ETX The Schema URL, if known. This is the identifier of the Schema that the span data\n\
+    \\183\ETX\n\
+    \\EOT\EOT\STX\STX\STX\DC2\ETXR\STX\CAN\SUB\169\ETX The Schema URL, if known. This is the identifier of the Schema that the span data\n\
     \ is recorded in. Notably, the last part of the URL path is the version number of the\n\
     \ schema: http[s]://server[:port]/path/<version>. To learn more about Schema URL see\n\
     \ https://opentelemetry.io/docs/specs/otel/schemas/#schema-url\n\
-    \ This schema_url applies to all spans and span events in the \"spans\" field.\n\
+    \ This schema_url applies to the data in the \"scope\" field and all spans and span\n\
+    \ events in the \"spans\" field.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\STX\ENQ\DC2\ETXQ\STX\b\n\
+    \\ENQ\EOT\STX\STX\STX\ENQ\DC2\ETXR\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\STX\SOH\DC2\ETXQ\t\DC3\n\
+    \\ENQ\EOT\STX\STX\STX\SOH\DC2\ETXR\t\DC3\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\STX\ETX\DC2\ETXQ\SYN\ETB\n\
+    \\ENQ\EOT\STX\STX\STX\ETX\DC2\ETXR\SYN\ETB\n\
     \\135\SOH\n\
-    \\STX\EOT\ETX\DC2\ENQW\NUL\173\STX\SOH\SUBz A Span represents a single operation performed by a single component of the system.\n\
+    \\STX\EOT\ETX\DC2\ENQX\NUL\175\STX\SOH\SUBz A Span represents a single operation performed by a single component of the system.\n\
     \\n\
     \ The next available field id is 17.\n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\ETX\SOH\DC2\ETXW\b\f\n\
+    \\ETX\EOT\ETX\SOH\DC2\ETXX\b\f\n\
     \\179\STX\n\
-    \\EOT\EOT\ETX\STX\NUL\DC2\ETX^\STX\NAK\SUB\165\STX A unique identifier for a trace. All spans from the same trace share\n\
+    \\EOT\EOT\ETX\STX\NUL\DC2\ETX_\STX\NAK\SUB\165\STX A unique identifier for a trace. All spans from the same trace share\n\
     \ the same `trace_id`. The ID is a 16-byte array. An ID with all zeroes OR\n\
     \ of length other than 16 bytes is considered invalid (empty string in OTLP/JSON\n\
     \ is zero-length and thus is also invalid).\n\
@@ -2869,13 +2870,13 @@ packedFileDescriptor
     \ This field is required.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\ENQ\DC2\ETX^\STX\a\n\
+    \\ENQ\EOT\ETX\STX\NUL\ENQ\DC2\ETX_\STX\a\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\SOH\DC2\ETX^\b\DLE\n\
+    \\ENQ\EOT\ETX\STX\NUL\SOH\DC2\ETX_\b\DLE\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\ETX\DC2\ETX^\DC3\DC4\n\
+    \\ENQ\EOT\ETX\STX\NUL\ETX\DC2\ETX_\DC3\DC4\n\
     \\170\STX\n\
-    \\EOT\EOT\ETX\STX\SOH\DC2\ETXf\STX\DC4\SUB\156\STX A unique identifier for a span within a trace, assigned when the span\n\
+    \\EOT\EOT\ETX\STX\SOH\DC2\ETXg\STX\DC4\SUB\156\STX A unique identifier for a span within a trace, assigned when the span\n\
     \ is created. The ID is an 8-byte array. An ID with all zeroes OR of length\n\
     \ other than 8 bytes is considered invalid (empty string in OTLP/JSON\n\
     \ is zero-length and thus is also invalid).\n\
@@ -2883,34 +2884,34 @@ packedFileDescriptor
     \ This field is required.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\ENQ\DC2\ETXf\STX\a\n\
+    \\ENQ\EOT\ETX\STX\SOH\ENQ\DC2\ETXg\STX\a\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\SOH\DC2\ETXf\b\SI\n\
+    \\ENQ\EOT\ETX\STX\SOH\SOH\DC2\ETXg\b\SI\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\ETX\DC2\ETXf\DC2\DC3\n\
+    \\ENQ\EOT\ETX\STX\SOH\ETX\DC2\ETXg\DC2\DC3\n\
     \\175\STX\n\
-    \\EOT\EOT\ETX\STX\STX\DC2\ETXk\STX\EM\SUB\161\STX trace_state conveys information about request position in multiple distributed tracing graphs.\n\
+    \\EOT\EOT\ETX\STX\STX\DC2\ETXl\STX\EM\SUB\161\STX trace_state conveys information about request position in multiple distributed tracing graphs.\n\
     \ It is a trace_state in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header\n\
     \ See also https://github.com/w3c/distributed-tracing for more details about this field.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\STX\ENQ\DC2\ETXk\STX\b\n\
+    \\ENQ\EOT\ETX\STX\STX\ENQ\DC2\ETXl\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\STX\SOH\DC2\ETXk\t\DC4\n\
+    \\ENQ\EOT\ETX\STX\STX\SOH\DC2\ETXl\t\DC4\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\STX\ETX\DC2\ETXk\ETB\CAN\n\
+    \\ENQ\EOT\ETX\STX\STX\ETX\DC2\ETXl\ETB\CAN\n\
     \\139\SOH\n\
-    \\EOT\EOT\ETX\STX\ETX\DC2\ETXo\STX\ESC\SUB~ The `span_id` of this span's parent span. If this is a root span, then this\n\
+    \\EOT\EOT\ETX\STX\ETX\DC2\ETXp\STX\ESC\SUB~ The `span_id` of this span's parent span. If this is a root span, then this\n\
     \ field must be empty. The ID is an 8-byte array.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\ETX\ENQ\DC2\ETXo\STX\a\n\
+    \\ENQ\EOT\ETX\STX\ETX\ENQ\DC2\ETXp\STX\a\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\ETX\SOH\DC2\ETXo\b\SYN\n\
+    \\ENQ\EOT\ETX\STX\ETX\SOH\DC2\ETXp\b\SYN\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\ETX\ETX\DC2\ETXo\EM\SUB\n\
+    \\ENQ\EOT\ETX\STX\ETX\ETX\DC2\ETXp\EM\SUB\n\
     \\194\b\n\
-    \\EOT\EOT\ETX\STX\EOT\DC2\EOT\134\SOH\STX\NAK\SUB\179\b Flags, a bit field.\n\
+    \\EOT\EOT\ETX\STX\EOT\DC2\EOT\135\SOH\STX\NAK\SUB\179\b Flags, a bit field.\n\
     \\n\
     \ Bits 0-7 (8 least significant bits) are the trace flags as defined in W3C Trace\n\
     \ Context specification. To read the 8-bit W3C trace flag, use\n\
@@ -2933,14 +2934,14 @@ packedFileDescriptor
     \ [Optional].\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\EOT\ENQ\DC2\EOT\134\SOH\STX\t\n\
+    \\ENQ\EOT\ETX\STX\EOT\ENQ\DC2\EOT\135\SOH\STX\t\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\EOT\SOH\DC2\EOT\134\SOH\n\
+    \\ENQ\EOT\ETX\STX\EOT\SOH\DC2\EOT\135\SOH\n\
     \\SI\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\EOT\ETX\DC2\EOT\134\SOH\DC2\DC4\n\
+    \\ENQ\EOT\ETX\STX\EOT\ETX\DC2\EOT\135\SOH\DC2\DC4\n\
     \\219\ETX\n\
-    \\EOT\EOT\ETX\STX\ENQ\DC2\EOT\147\SOH\STX\DC2\SUB\204\ETX A description of the span's operation.\n\
+    \\EOT\EOT\ETX\STX\ENQ\DC2\EOT\148\SOH\STX\DC2\SUB\204\ETX A description of the span's operation.\n\
     \\n\
     \ For example, the name can be a qualified method name or a file name\n\
     \ and a line number where the operation is called. A best practice is to use\n\
@@ -2953,81 +2954,81 @@ packedFileDescriptor
     \ This field is required.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\ENQ\ENQ\DC2\EOT\147\SOH\STX\b\n\
+    \\ENQ\EOT\ETX\STX\ENQ\ENQ\DC2\EOT\148\SOH\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\ENQ\SOH\DC2\EOT\147\SOH\t\r\n\
+    \\ENQ\EOT\ETX\STX\ENQ\SOH\DC2\EOT\148\SOH\t\r\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\ENQ\ETX\DC2\EOT\147\SOH\DLE\DC1\n\
+    \\ENQ\EOT\ETX\STX\ENQ\ETX\DC2\EOT\148\SOH\DLE\DC1\n\
     \\155\SOH\n\
-    \\EOT\EOT\ETX\EOT\NUL\DC2\ACK\151\SOH\STX\177\SOH\ETX\SUB\138\SOH SpanKind is the type of span. Can be used to specify additional relationships between spans\n\
+    \\EOT\EOT\ETX\EOT\NUL\DC2\ACK\152\SOH\STX\178\SOH\ETX\SUB\138\SOH SpanKind is the type of span. Can be used to specify additional relationships between spans\n\
     \ in addition to a parent/child relationship.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\EOT\NUL\SOH\DC2\EOT\151\SOH\a\SI\n\
+    \\ENQ\EOT\ETX\EOT\NUL\SOH\DC2\EOT\152\SOH\a\SI\n\
     \\133\SOH\n\
-    \\ACK\EOT\ETX\EOT\NUL\STX\NUL\DC2\EOT\154\SOH\EOT\RS\SUBu Unspecified. Do NOT use as default.\n\
+    \\ACK\EOT\ETX\EOT\NUL\STX\NUL\DC2\EOT\155\SOH\EOT\RS\SUBu Unspecified. Do NOT use as default.\n\
     \ Implementations MAY assume SpanKind to be INTERNAL when receiving UNSPECIFIED.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\NUL\SOH\DC2\EOT\154\SOH\EOT\EM\n\
+    \\a\EOT\ETX\EOT\NUL\STX\NUL\SOH\DC2\EOT\155\SOH\EOT\EM\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\NUL\STX\DC2\EOT\154\SOH\FS\GS\n\
+    \\a\EOT\ETX\EOT\NUL\STX\NUL\STX\DC2\EOT\155\SOH\FS\GS\n\
     \\170\SOH\n\
-    \\ACK\EOT\ETX\EOT\NUL\STX\SOH\DC2\EOT\158\SOH\EOT\ESC\SUB\153\SOH Indicates that the span represents an internal operation within an application,\n\
+    \\ACK\EOT\ETX\EOT\NUL\STX\SOH\DC2\EOT\159\SOH\EOT\ESC\SUB\153\SOH Indicates that the span represents an internal operation within an application,\n\
     \ as opposed to an operation happening at the boundaries. Default value.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\SOH\SOH\DC2\EOT\158\SOH\EOT\SYN\n\
+    \\a\EOT\ETX\EOT\NUL\STX\SOH\SOH\DC2\EOT\159\SOH\EOT\SYN\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\SOH\STX\DC2\EOT\158\SOH\EM\SUB\n\
+    \\a\EOT\ETX\EOT\NUL\STX\SOH\STX\DC2\EOT\159\SOH\EM\SUB\n\
     \q\n\
-    \\ACK\EOT\ETX\EOT\NUL\STX\STX\DC2\EOT\162\SOH\EOT\EM\SUBa Indicates that the span covers server-side handling of an RPC or other\n\
+    \\ACK\EOT\ETX\EOT\NUL\STX\STX\DC2\EOT\163\SOH\EOT\EM\SUBa Indicates that the span covers server-side handling of an RPC or other\n\
     \ remote network request.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\STX\SOH\DC2\EOT\162\SOH\EOT\DC4\n\
+    \\a\EOT\ETX\EOT\NUL\STX\STX\SOH\DC2\EOT\163\SOH\EOT\DC4\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\STX\STX\DC2\EOT\162\SOH\ETB\CAN\n\
+    \\a\EOT\ETX\EOT\NUL\STX\STX\STX\DC2\EOT\163\SOH\ETB\CAN\n\
     \U\n\
-    \\ACK\EOT\ETX\EOT\NUL\STX\ETX\DC2\EOT\165\SOH\EOT\EM\SUBE Indicates that the span describes a request to some remote service.\n\
+    \\ACK\EOT\ETX\EOT\NUL\STX\ETX\DC2\EOT\166\SOH\EOT\EM\SUBE Indicates that the span describes a request to some remote service.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\ETX\SOH\DC2\EOT\165\SOH\EOT\DC4\n\
+    \\a\EOT\ETX\EOT\NUL\STX\ETX\SOH\DC2\EOT\166\SOH\EOT\DC4\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\ETX\STX\DC2\EOT\165\SOH\ETB\CAN\n\
+    \\a\EOT\ETX\EOT\NUL\STX\ETX\STX\DC2\EOT\166\SOH\ETB\CAN\n\
     \\232\STX\n\
-    \\ACK\EOT\ETX\EOT\NUL\STX\EOT\DC2\EOT\171\SOH\EOT\ESC\SUB\215\STX Indicates that the span describes a producer sending a message to a broker.\n\
+    \\ACK\EOT\ETX\EOT\NUL\STX\EOT\DC2\EOT\172\SOH\EOT\ESC\SUB\215\STX Indicates that the span describes a producer sending a message to a broker.\n\
     \ Unlike CLIENT and SERVER, there is often no direct critical path latency relationship\n\
     \ between producer and consumer spans. A PRODUCER span ends when the message was accepted\n\
     \ by the broker while the logical processing of the message might span a much longer time.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\EOT\SOH\DC2\EOT\171\SOH\EOT\SYN\n\
+    \\a\EOT\ETX\EOT\NUL\STX\EOT\SOH\DC2\EOT\172\SOH\EOT\SYN\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\EOT\STX\DC2\EOT\171\SOH\EM\SUB\n\
+    \\a\EOT\ETX\EOT\NUL\STX\EOT\STX\DC2\EOT\172\SOH\EM\SUB\n\
     \\219\SOH\n\
-    \\ACK\EOT\ETX\EOT\NUL\STX\ENQ\DC2\EOT\176\SOH\EOT\ESC\SUB\202\SOH Indicates that the span describes consumer receiving a message from a broker.\n\
+    \\ACK\EOT\ETX\EOT\NUL\STX\ENQ\DC2\EOT\177\SOH\EOT\ESC\SUB\202\SOH Indicates that the span describes consumer receiving a message from a broker.\n\
     \ Like the PRODUCER kind, there is often no direct critical path latency relationship\n\
     \ between producer and consumer spans.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\ENQ\SOH\DC2\EOT\176\SOH\EOT\SYN\n\
+    \\a\EOT\ETX\EOT\NUL\STX\ENQ\SOH\DC2\EOT\177\SOH\EOT\SYN\n\
     \\SI\n\
-    \\a\EOT\ETX\EOT\NUL\STX\ENQ\STX\DC2\EOT\176\SOH\EM\SUB\n\
+    \\a\EOT\ETX\EOT\NUL\STX\ENQ\STX\DC2\EOT\177\SOH\EM\SUB\n\
     \\245\SOH\n\
-    \\EOT\EOT\ETX\STX\ACK\DC2\EOT\182\SOH\STX\DC4\SUB\230\SOH Distinguishes between spans generated in a particular context. For example,\n\
+    \\EOT\EOT\ETX\STX\ACK\DC2\EOT\183\SOH\STX\DC4\SUB\230\SOH Distinguishes between spans generated in a particular context. For example,\n\
     \ two spans with the same name may be distinguished using `CLIENT` (caller)\n\
     \ and `SERVER` (callee) to identify queueing latency associated with the span.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\ACK\ACK\DC2\EOT\182\SOH\STX\n\
+    \\ENQ\EOT\ETX\STX\ACK\ACK\DC2\EOT\183\SOH\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\ACK\SOH\DC2\EOT\182\SOH\v\SI\n\
+    \\ENQ\EOT\ETX\STX\ACK\SOH\DC2\EOT\183\SOH\v\SI\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\ACK\ETX\DC2\EOT\182\SOH\DC2\DC3\n\
-    \\166\ETX\n\
-    \\EOT\EOT\ETX\STX\a\DC2\EOT\190\SOH\STX#\SUB\151\ETX start_time_unix_nano is the start time of the span. On the client side, this is the time\n\
+    \\ENQ\EOT\ETX\STX\ACK\ETX\DC2\EOT\183\SOH\DC2\DC3\n\
+    \\142\ETX\n\
+    \\EOT\EOT\ETX\STX\a\DC2\EOT\191\SOH\STX#\SUB\255\STX The start time of the span. On the client side, this is the time\n\
     \ kept by the local machine where the span execution starts. On the server side, this\n\
     \ is the time when the server's application handler starts running.\n\
     \ Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.\n\
@@ -3035,14 +3036,14 @@ packedFileDescriptor
     \ This field is semantically required and it is expected that end_time >= start_time.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\a\ENQ\DC2\EOT\190\SOH\STX\t\n\
+    \\ENQ\EOT\ETX\STX\a\ENQ\DC2\EOT\191\SOH\STX\t\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\a\SOH\DC2\EOT\190\SOH\n\
+    \\ENQ\EOT\ETX\STX\a\SOH\DC2\EOT\191\SOH\n\
     \\RS\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\a\ETX\DC2\EOT\190\SOH!\"\n\
-    \\157\ETX\n\
-    \\EOT\EOT\ETX\STX\b\DC2\EOT\198\SOH\STX!\SUB\142\ETX end_time_unix_nano is the end time of the span. On the client side, this is the time\n\
+    \\ENQ\EOT\ETX\STX\a\ETX\DC2\EOT\191\SOH!\"\n\
+    \\135\ETX\n\
+    \\EOT\EOT\ETX\STX\b\DC2\EOT\199\SOH\STX!\SUB\248\STX The end time of the span. On the client side, this is the time\n\
     \ kept by the local machine where the span execution ends. On the server side, this\n\
     \ is the time when the server application handler stops running.\n\
     \ Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.\n\
@@ -3050,14 +3051,14 @@ packedFileDescriptor
     \ This field is semantically required and it is expected that end_time >= start_time.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\b\ENQ\DC2\EOT\198\SOH\STX\t\n\
+    \\ENQ\EOT\ETX\STX\b\ENQ\DC2\EOT\199\SOH\STX\t\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\b\SOH\DC2\EOT\198\SOH\n\
+    \\ENQ\EOT\ETX\STX\b\SOH\DC2\EOT\199\SOH\n\
     \\FS\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\b\ETX\DC2\EOT\198\SOH\US \n\
-    \\202\ENQ\n\
-    \\EOT\EOT\ETX\STX\t\DC2\EOT\212\SOH\STXA\SUB\187\ENQ attributes is a collection of key/value pairs. Note, global attributes\n\
+    \\ENQ\EOT\ETX\STX\b\ETX\DC2\EOT\199\SOH\US \n\
+    \\200\EOT\n\
+    \\EOT\EOT\ETX\STX\t\DC2\EOT\212\SOH\STXA\SUB\185\EOT A collection of key/value pairs. Note, global attributes\n\
     \ like server name can be set using the resource API. Examples of attributes:\n\
     \\n\
     \     \"/http/user_agent\": \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36\"\n\
@@ -3065,10 +3066,9 @@ packedFileDescriptor
     \     \"example.com/myattribute\": true\n\
     \     \"example.com/score\": 10.239\n\
     \\n\
-    \ The OpenTelemetry API specification further restricts the allowed value types:\n\
-    \ https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/README.md#attribute\n\
     \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
     \ attribute with the same key).\n\
+    \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\ETX\STX\t\EOT\DC2\EOT\212\SOH\STX\n\
@@ -3079,9 +3079,9 @@ packedFileDescriptor
     \\ENQ\EOT\ETX\STX\t\SOH\DC2\EOT\212\SOH2<\n\
     \\r\n\
     \\ENQ\EOT\ETX\STX\t\ETX\DC2\EOT\212\SOH?@\n\
-    \\247\SOH\n\
+    \\219\SOH\n\
     \\EOT\EOT\ETX\STX\n\
-    \\DC2\EOT\217\SOH\STX'\SUB\232\SOH dropped_attributes_count is the number of attributes that were discarded. Attributes\n\
+    \\DC2\EOT\217\SOH\STX'\SUB\204\SOH The number of attributes that were discarded. Attributes\n\
     \ can be discarded because their keys are too long or because there are too many\n\
     \ attributes. If this value is 0, then no attributes were dropped.\n\
     \\n\
@@ -3095,14 +3095,14 @@ packedFileDescriptor
     \\ENQ\EOT\ETX\STX\n\
     \\ETX\DC2\EOT\217\SOH$&\n\
     \\132\SOH\n\
-    \\EOT\EOT\ETX\ETX\NUL\DC2\ACK\221\SOH\STX\237\SOH\ETX\SUBt Event is a time-stamped annotation of the span, consisting of user-supplied\n\
+    \\EOT\EOT\ETX\ETX\NUL\DC2\ACK\221\SOH\STX\238\SOH\ETX\SUBt Event is a time-stamped annotation of the span, consisting of user-supplied\n\
     \ text description and key-value pairs.\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\ETX\ETX\NUL\SOH\DC2\EOT\221\SOH\n\
     \\SI\n\
-    \@\n\
-    \\ACK\EOT\ETX\ETX\NUL\STX\NUL\DC2\EOT\223\SOH\EOT\US\SUB0 time_unix_nano is the time the event occurred.\n\
+    \.\n\
+    \\ACK\EOT\ETX\ETX\NUL\STX\NUL\DC2\EOT\223\SOH\EOT\US\SUB\RS The time the event occurred.\n\
     \\n\
     \\SI\n\
     \\a\EOT\ETX\ETX\NUL\STX\NUL\ENQ\DC2\EOT\223\SOH\EOT\v\n\
@@ -3110,8 +3110,8 @@ packedFileDescriptor
     \\a\EOT\ETX\ETX\NUL\STX\NUL\SOH\DC2\EOT\223\SOH\f\SUB\n\
     \\SI\n\
     \\a\EOT\ETX\ETX\NUL\STX\NUL\ETX\DC2\EOT\223\SOH\GS\RS\n\
-    \h\n\
-    \\ACK\EOT\ETX\ETX\NUL\STX\SOH\DC2\EOT\227\SOH\EOT\DC4\SUBX name of the event.\n\
+    \l\n\
+    \\ACK\EOT\ETX\ETX\NUL\STX\SOH\DC2\EOT\227\SOH\EOT\DC4\SUB\\ The name of the event.\n\
     \ This field is semantically required to be set to non-empty string.\n\
     \\n\
     \\SI\n\
@@ -3121,118 +3121,120 @@ packedFileDescriptor
     \\a\EOT\ETX\ETX\NUL\STX\SOH\SOH\DC2\EOT\227\SOH\v\SI\n\
     \\SI\n\
     \\a\EOT\ETX\ETX\NUL\STX\SOH\ETX\DC2\EOT\227\SOH\DC2\DC3\n\
-    \\191\SOH\n\
-    \\ACK\EOT\ETX\ETX\NUL\STX\STX\DC2\EOT\232\SOH\EOTC\SUB\174\SOH attributes is a collection of attribute key/value pairs on the event.\n\
+    \\255\SOH\n\
+    \\ACK\EOT\ETX\ETX\NUL\STX\STX\DC2\EOT\233\SOH\EOTC\SUB\238\SOH A collection of attribute key/value pairs on the event.\n\
     \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
     \ attribute with the same key).\n\
+    \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\STX\EOT\DC2\EOT\232\SOH\EOT\f\n\
+    \\a\EOT\ETX\ETX\NUL\STX\STX\EOT\DC2\EOT\233\SOH\EOT\f\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\STX\ACK\DC2\EOT\232\SOH\r3\n\
+    \\a\EOT\ETX\ETX\NUL\STX\STX\ACK\DC2\EOT\233\SOH\r3\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\STX\SOH\DC2\EOT\232\SOH4>\n\
+    \\a\EOT\ETX\ETX\NUL\STX\STX\SOH\DC2\EOT\233\SOH4>\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\STX\ETX\DC2\EOT\232\SOHAB\n\
-    \\132\SOH\n\
-    \\ACK\EOT\ETX\ETX\NUL\STX\ETX\DC2\EOT\236\SOH\EOT(\SUBt dropped_attributes_count is the number of dropped attributes. If the value is 0,\n\
+    \\a\EOT\ETX\ETX\NUL\STX\STX\ETX\DC2\EOT\233\SOHAB\n\
+    \h\n\
+    \\ACK\EOT\ETX\ETX\NUL\STX\ETX\DC2\EOT\237\SOH\EOT(\SUBX The number of dropped attributes. If the value is 0,\n\
     \ then no attributes were dropped.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\ETX\ENQ\DC2\EOT\236\SOH\EOT\n\
+    \\a\EOT\ETX\ETX\NUL\STX\ETX\ENQ\DC2\EOT\237\SOH\EOT\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\ETX\SOH\DC2\EOT\236\SOH\v#\n\
+    \\a\EOT\ETX\ETX\NUL\STX\ETX\SOH\DC2\EOT\237\SOH\v#\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\NUL\STX\ETX\ETX\DC2\EOT\236\SOH&'\n\
-    \6\n\
-    \\EOT\EOT\ETX\STX\v\DC2\EOT\240\SOH\STX\GS\SUB( events is a collection of Event items.\n\
+    \\a\EOT\ETX\ETX\NUL\STX\ETX\ETX\DC2\EOT\237\SOH&'\n\
+    \,\n\
+    \\EOT\EOT\ETX\STX\v\DC2\EOT\241\SOH\STX\GS\SUB\RS A collection of Event items.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\v\EOT\DC2\EOT\240\SOH\STX\n\
+    \\ENQ\EOT\ETX\STX\v\EOT\DC2\EOT\241\SOH\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\v\ACK\DC2\EOT\240\SOH\v\DLE\n\
+    \\ENQ\EOT\ETX\STX\v\ACK\DC2\EOT\241\SOH\v\DLE\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\v\SOH\DC2\EOT\240\SOH\DC1\ETB\n\
+    \\ENQ\EOT\ETX\STX\v\SOH\DC2\EOT\241\SOH\DC1\ETB\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\v\ETX\DC2\EOT\240\SOH\SUB\FS\n\
-    \v\n\
-    \\EOT\EOT\ETX\STX\f\DC2\EOT\244\SOH\STX#\SUBh dropped_events_count is the number of dropped events. If the value is 0, then no\n\
+    \\ENQ\EOT\ETX\STX\v\ETX\DC2\EOT\241\SOH\SUB\FS\n\
+    \^\n\
+    \\EOT\EOT\ETX\STX\f\DC2\EOT\245\SOH\STX#\SUBP The number of dropped events. If the value is 0, then no\n\
     \ events were dropped.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\f\ENQ\DC2\EOT\244\SOH\STX\b\n\
+    \\ENQ\EOT\ETX\STX\f\ENQ\DC2\EOT\245\SOH\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\f\SOH\DC2\EOT\244\SOH\t\GS\n\
+    \\ENQ\EOT\ETX\STX\f\SOH\DC2\EOT\245\SOH\t\GS\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\f\ETX\DC2\EOT\244\SOH \"\n\
+    \\ENQ\EOT\ETX\STX\f\ETX\DC2\EOT\245\SOH \"\n\
     \\182\STX\n\
-    \\EOT\EOT\ETX\ETX\SOH\DC2\ACK\250\SOH\STX\160\STX\ETX\SUB\165\STX A pointer from the current span to another span in the same trace or in a\n\
+    \\EOT\EOT\ETX\ETX\SOH\DC2\ACK\251\SOH\STX\162\STX\ETX\SUB\165\STX A pointer from the current span to another span in the same trace or in a\n\
     \ different trace. For example, this can be used in batching operations,\n\
     \ where a single batch handler processes multiple requests from different\n\
     \ traces or when the handler receives a request from a different project.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\ETX\SOH\SOH\DC2\EOT\250\SOH\n\
+    \\ENQ\EOT\ETX\ETX\SOH\SOH\DC2\EOT\251\SOH\n\
     \\SO\n\
     \n\n\
-    \\ACK\EOT\ETX\ETX\SOH\STX\NUL\DC2\EOT\253\SOH\EOT\ETB\SUB^ A unique identifier of a trace that this linked span is part of. The ID is a\n\
+    \\ACK\EOT\ETX\ETX\SOH\STX\NUL\DC2\EOT\254\SOH\EOT\ETB\SUB^ A unique identifier of a trace that this linked span is part of. The ID is a\n\
     \ 16-byte array.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\NUL\ENQ\DC2\EOT\253\SOH\EOT\t\n\
+    \\a\EOT\ETX\ETX\SOH\STX\NUL\ENQ\DC2\EOT\254\SOH\EOT\t\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\NUL\SOH\DC2\EOT\253\SOH\n\
+    \\a\EOT\ETX\ETX\SOH\STX\NUL\SOH\DC2\EOT\254\SOH\n\
     \\DC2\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\NUL\ETX\DC2\EOT\253\SOH\NAK\SYN\n\
+    \\a\EOT\ETX\ETX\SOH\STX\NUL\ETX\DC2\EOT\254\SOH\NAK\SYN\n\
     \U\n\
-    \\ACK\EOT\ETX\ETX\SOH\STX\SOH\DC2\EOT\128\STX\EOT\SYN\SUBE A unique identifier for the linked span. The ID is an 8-byte array.\n\
+    \\ACK\EOT\ETX\ETX\SOH\STX\SOH\DC2\EOT\129\STX\EOT\SYN\SUBE A unique identifier for the linked span. The ID is an 8-byte array.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\SOH\ENQ\DC2\EOT\128\STX\EOT\t\n\
+    \\a\EOT\ETX\ETX\SOH\STX\SOH\ENQ\DC2\EOT\129\STX\EOT\t\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\SOH\SOH\DC2\EOT\128\STX\n\
+    \\a\EOT\ETX\ETX\SOH\STX\SOH\SOH\DC2\EOT\129\STX\n\
     \\DC1\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\SOH\ETX\DC2\EOT\128\STX\DC4\NAK\n\
+    \\a\EOT\ETX\ETX\SOH\STX\SOH\ETX\DC2\EOT\129\STX\DC4\NAK\n\
     \;\n\
-    \\ACK\EOT\ETX\ETX\SOH\STX\STX\DC2\EOT\131\STX\EOT\ESC\SUB+ The trace_state associated with the link.\n\
+    \\ACK\EOT\ETX\ETX\SOH\STX\STX\DC2\EOT\132\STX\EOT\ESC\SUB+ The trace_state associated with the link.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\STX\ENQ\DC2\EOT\131\STX\EOT\n\
+    \\a\EOT\ETX\ETX\SOH\STX\STX\ENQ\DC2\EOT\132\STX\EOT\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\STX\SOH\DC2\EOT\131\STX\v\SYN\n\
+    \\a\EOT\ETX\ETX\SOH\STX\STX\SOH\DC2\EOT\132\STX\v\SYN\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\STX\ETX\DC2\EOT\131\STX\EM\SUB\n\
-    \\190\SOH\n\
-    \\ACK\EOT\ETX\ETX\SOH\STX\ETX\DC2\EOT\136\STX\EOTC\SUB\173\SOH attributes is a collection of attribute key/value pairs on the link.\n\
+    \\a\EOT\ETX\ETX\SOH\STX\STX\ETX\DC2\EOT\132\STX\EM\SUB\n\
+    \\254\SOH\n\
+    \\ACK\EOT\ETX\ETX\SOH\STX\ETX\DC2\EOT\138\STX\EOTC\SUB\237\SOH A collection of attribute key/value pairs on the link.\n\
     \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
     \ attribute with the same key).\n\
+    \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ETX\EOT\DC2\EOT\136\STX\EOT\f\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ETX\EOT\DC2\EOT\138\STX\EOT\f\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ETX\ACK\DC2\EOT\136\STX\r3\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ETX\ACK\DC2\EOT\138\STX\r3\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ETX\SOH\DC2\EOT\136\STX4>\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ETX\SOH\DC2\EOT\138\STX4>\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ETX\ETX\DC2\EOT\136\STXAB\n\
-    \\132\SOH\n\
-    \\ACK\EOT\ETX\ETX\SOH\STX\EOT\DC2\EOT\140\STX\EOT(\SUBt dropped_attributes_count is the number of dropped attributes. If the value is 0,\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ETX\ETX\DC2\EOT\138\STXAB\n\
+    \h\n\
+    \\ACK\EOT\ETX\ETX\SOH\STX\EOT\DC2\EOT\142\STX\EOT(\SUBX The number of dropped attributes. If the value is 0,\n\
     \ then no attributes were dropped.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\EOT\ENQ\DC2\EOT\140\STX\EOT\n\
+    \\a\EOT\ETX\ETX\SOH\STX\EOT\ENQ\DC2\EOT\142\STX\EOT\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\EOT\SOH\DC2\EOT\140\STX\v#\n\
+    \\a\EOT\ETX\ETX\SOH\STX\EOT\SOH\DC2\EOT\142\STX\v#\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\EOT\ETX\DC2\EOT\140\STX&'\n\
+    \\a\EOT\ETX\ETX\SOH\STX\EOT\ETX\DC2\EOT\142\STX&'\n\
     \\152\ACK\n\
-    \\ACK\EOT\ETX\ETX\SOH\STX\ENQ\DC2\EOT\159\STX\EOT\SYN\SUB\135\ACK Flags, a bit field.\n\
+    \\ACK\EOT\ETX\ETX\SOH\STX\ENQ\DC2\EOT\161\STX\EOT\SYN\SUB\135\ACK Flags, a bit field.\n\
     \\n\
     \ Bits 0-7 (8 least significant bits) are the trace flags as defined in W3C Trace\n\
     \ Context specification. To read the 8-bit W3C trace flag, use\n\
@@ -3251,106 +3253,106 @@ packedFileDescriptor
     \ [Optional].\n\
     \\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ENQ\ENQ\DC2\EOT\159\STX\EOT\v\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ENQ\ENQ\DC2\EOT\161\STX\EOT\v\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ENQ\SOH\DC2\EOT\159\STX\f\DC1\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ENQ\SOH\DC2\EOT\161\STX\f\DC1\n\
     \\SI\n\
-    \\a\EOT\ETX\ETX\SOH\STX\ENQ\ETX\DC2\EOT\159\STX\DC4\NAK\n\
-    \~\n\
-    \\EOT\EOT\ETX\STX\r\DC2\EOT\164\STX\STX\ESC\SUBp links is a collection of Links, which are references from this span to a span\n\
+    \\a\EOT\ETX\ETX\SOH\STX\ENQ\ETX\DC2\EOT\161\STX\DC4\NAK\n\
+    \u\n\
+    \\EOT\EOT\ETX\STX\r\DC2\EOT\166\STX\STX\ESC\SUBg A collection of Links, which are references from this span to a span\n\
     \ in the same or different trace.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\r\EOT\DC2\EOT\164\STX\STX\n\
+    \\ENQ\EOT\ETX\STX\r\EOT\DC2\EOT\166\STX\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\r\ACK\DC2\EOT\164\STX\v\SI\n\
+    \\ENQ\EOT\ETX\STX\r\ACK\DC2\EOT\166\STX\v\SI\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\r\SOH\DC2\EOT\164\STX\DLE\NAK\n\
+    \\ENQ\EOT\ETX\STX\r\SOH\DC2\EOT\166\STX\DLE\NAK\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\r\ETX\DC2\EOT\164\STX\CAN\SUB\n\
-    \\153\SOH\n\
-    \\EOT\EOT\ETX\STX\SO\DC2\EOT\168\STX\STX\"\SUB\138\SOH dropped_links_count is the number of dropped links after the maximum size was\n\
+    \\ENQ\EOT\ETX\STX\r\ETX\DC2\EOT\166\STX\CAN\SUB\n\
+    \\129\SOH\n\
+    \\EOT\EOT\ETX\STX\SO\DC2\EOT\170\STX\STX\"\SUBs The number of dropped links after the maximum size was\n\
     \ enforced. If this value is 0, then no links were dropped.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\SO\ENQ\DC2\EOT\168\STX\STX\b\n\
+    \\ENQ\EOT\ETX\STX\SO\ENQ\DC2\EOT\170\STX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\SO\SOH\DC2\EOT\168\STX\t\FS\n\
+    \\ENQ\EOT\ETX\STX\SO\SOH\DC2\EOT\170\STX\t\FS\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\SO\ETX\DC2\EOT\168\STX\US!\n\
+    \\ENQ\EOT\ETX\STX\SO\ETX\DC2\EOT\170\STX\US!\n\
     \\173\SOH\n\
-    \\EOT\EOT\ETX\STX\SI\DC2\EOT\172\STX\STX\NAK\SUB\158\SOH An optional final status for this span. Semantically when Status isn't set, it means\n\
+    \\EOT\EOT\ETX\STX\SI\DC2\EOT\174\STX\STX\NAK\SUB\158\SOH An optional final status for this span. Semantically when Status isn't set, it means\n\
     \ span's status code is unset, i.e. assume STATUS_CODE_UNSET (code = 0).\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\SI\ACK\DC2\EOT\172\STX\STX\b\n\
+    \\ENQ\EOT\ETX\STX\SI\ACK\DC2\EOT\174\STX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\SI\SOH\DC2\EOT\172\STX\t\SI\n\
+    \\ENQ\EOT\ETX\STX\SI\SOH\DC2\EOT\174\STX\t\SI\n\
     \\r\n\
-    \\ENQ\EOT\ETX\STX\SI\ETX\DC2\EOT\172\STX\DC2\DC4\n\
+    \\ENQ\EOT\ETX\STX\SI\ETX\DC2\EOT\174\STX\DC2\DC4\n\
     \\154\SOH\n\
-    \\STX\EOT\EOT\DC2\ACK\177\STX\NUL\197\STX\SOH\SUB\139\SOH The Status type defines a logical error model that is suitable for different\n\
+    \\STX\EOT\EOT\DC2\ACK\179\STX\NUL\199\STX\SOH\SUB\139\SOH The Status type defines a logical error model that is suitable for different\n\
     \ programming environments, including REST APIs and RPC APIs.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\EOT\SOH\DC2\EOT\177\STX\b\SO\n\
+    \\ETX\EOT\EOT\SOH\DC2\EOT\179\STX\b\SO\n\
     \\v\n\
-    \\ETX\EOT\EOT\t\DC2\EOT\178\STX\STX\r\n\
+    \\ETX\EOT\EOT\t\DC2\EOT\180\STX\STX\r\n\
     \\f\n\
-    \\EOT\EOT\EOT\t\NUL\DC2\EOT\178\STX\v\f\n\
+    \\EOT\EOT\EOT\t\NUL\DC2\EOT\180\STX\v\f\n\
     \\r\n\
-    \\ENQ\EOT\EOT\t\NUL\SOH\DC2\EOT\178\STX\v\f\n\
+    \\ENQ\EOT\EOT\t\NUL\SOH\DC2\EOT\180\STX\v\f\n\
     \\r\n\
-    \\ENQ\EOT\EOT\t\NUL\STX\DC2\EOT\178\STX\v\f\n\
+    \\ENQ\EOT\EOT\t\NUL\STX\DC2\EOT\180\STX\v\f\n\
     \@\n\
-    \\EOT\EOT\EOT\STX\NUL\DC2\EOT\181\STX\STX\NAK\SUB2 A developer-facing human readable error message.\n\
+    \\EOT\EOT\EOT\STX\NUL\DC2\EOT\183\STX\STX\NAK\SUB2 A developer-facing human readable error message.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\NUL\ENQ\DC2\EOT\181\STX\STX\b\n\
+    \\ENQ\EOT\EOT\STX\NUL\ENQ\DC2\EOT\183\STX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\NUL\SOH\DC2\EOT\181\STX\t\DLE\n\
+    \\ENQ\EOT\EOT\STX\NUL\SOH\DC2\EOT\183\STX\t\DLE\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\NUL\ETX\DC2\EOT\181\STX\DC3\DC4\n\
+    \\ENQ\EOT\EOT\STX\NUL\ETX\DC2\EOT\183\STX\DC3\DC4\n\
     \\167\SOH\n\
-    \\EOT\EOT\EOT\EOT\NUL\DC2\ACK\185\STX\STX\193\STX\ETX\SUB\150\SOH For the semantics of status codes see\n\
+    \\EOT\EOT\EOT\EOT\NUL\DC2\ACK\187\STX\STX\195\STX\ETX\SUB\150\SOH For the semantics of status codes see\n\
     \ https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\EOT\NUL\SOH\DC2\EOT\185\STX\a\DC1\n\
+    \\ENQ\EOT\EOT\EOT\NUL\SOH\DC2\EOT\187\STX\a\DC1\n\
     \%\n\
-    \\ACK\EOT\EOT\EOT\NUL\STX\NUL\DC2\EOT\187\STX\EOT(\SUB\NAK The default status.\n\
+    \\ACK\EOT\EOT\EOT\NUL\STX\NUL\DC2\EOT\189\STX\EOT(\SUB\NAK The default status.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\EOT\EOT\NUL\STX\NUL\SOH\DC2\EOT\187\STX\EOT\NAK\n\
+    \\a\EOT\EOT\EOT\NUL\STX\NUL\SOH\DC2\EOT\189\STX\EOT\NAK\n\
     \\SI\n\
-    \\a\EOT\EOT\EOT\NUL\STX\NUL\STX\DC2\EOT\187\STX&'\n\
+    \\a\EOT\EOT\EOT\NUL\STX\NUL\STX\DC2\EOT\189\STX&'\n\
     \w\n\
-    \\ACK\EOT\EOT\EOT\NUL\STX\SOH\DC2\EOT\190\STX\EOT(\SUBg The Span has been validated by an Application developer or Operator to \n\
+    \\ACK\EOT\EOT\EOT\NUL\STX\SOH\DC2\EOT\192\STX\EOT(\SUBg The Span has been validated by an Application developer or Operator to \n\
     \ have completed successfully.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\EOT\EOT\NUL\STX\SOH\SOH\DC2\EOT\190\STX\EOT\DC2\n\
+    \\a\EOT\EOT\EOT\NUL\STX\SOH\SOH\DC2\EOT\192\STX\EOT\DC2\n\
     \\SI\n\
-    \\a\EOT\EOT\EOT\NUL\STX\SOH\STX\DC2\EOT\190\STX&'\n\
+    \\a\EOT\EOT\EOT\NUL\STX\SOH\STX\DC2\EOT\192\STX&'\n\
     \-\n\
-    \\ACK\EOT\EOT\EOT\NUL\STX\STX\DC2\EOT\192\STX\EOT(\SUB\GS The Span contains an error.\n\
+    \\ACK\EOT\EOT\EOT\NUL\STX\STX\DC2\EOT\194\STX\EOT(\SUB\GS The Span contains an error.\n\
     \\n\
     \\SI\n\
-    \\a\EOT\EOT\EOT\NUL\STX\STX\SOH\DC2\EOT\192\STX\EOT\NAK\n\
+    \\a\EOT\EOT\EOT\NUL\STX\STX\SOH\DC2\EOT\194\STX\EOT\NAK\n\
     \\SI\n\
-    \\a\EOT\EOT\EOT\NUL\STX\STX\STX\DC2\EOT\192\STX&'\n\
+    \\a\EOT\EOT\EOT\NUL\STX\STX\STX\DC2\EOT\194\STX&'\n\
     \ \n\
-    \\EOT\EOT\EOT\STX\SOH\DC2\EOT\196\STX\STX\SYN\SUB\DC2 The status code.\n\
+    \\EOT\EOT\EOT\STX\SOH\DC2\EOT\198\STX\STX\SYN\SUB\DC2 The status code.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\SOH\ACK\DC2\EOT\196\STX\STX\f\n\
+    \\ENQ\EOT\EOT\STX\SOH\ACK\DC2\EOT\198\STX\STX\f\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\EOT\196\STX\r\DC1\n\
+    \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\EOT\198\STX\r\DC1\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\EOT\196\STX\DC4\NAK\n\
+    \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\EOT\198\STX\DC4\NAK\n\
     \\157\ENQ\n\
-    \\STX\ENQ\NUL\DC2\ACK\213\STX\NUL\228\STX\SOH\SUB\142\ENQ SpanFlags represents constants used to interpret the\n\
+    \\STX\ENQ\NUL\DC2\ACK\215\STX\NUL\230\STX\SOH\SUB\142\ENQ SpanFlags represents constants used to interpret the\n\
     \ Span.flags field, which is protobuf 'fixed32' type and is to\n\
     \ be used as bit-fields. Each non-zero value defined in this enum is\n\
     \ a bit-mask.  To extract the bit-field, for example, use an\n\
@@ -3366,34 +3368,34 @@ packedFileDescriptor
     \ particular flag bit to indicate the presence of a particular feature.\n\
     \\n\
     \\v\n\
-    \\ETX\ENQ\NUL\SOH\DC2\EOT\213\STX\ENQ\SO\n\
+    \\ETX\ENQ\NUL\SOH\DC2\EOT\215\STX\ENQ\SO\n\
     \\150\SOH\n\
-    \\EOT\ENQ\NUL\STX\NUL\DC2\EOT\216\STX\STX\FS\SUB\135\SOH The zero value for the enum. Should not be used for comparisons.\n\
+    \\EOT\ENQ\NUL\STX\NUL\DC2\EOT\218\STX\STX\FS\SUB\135\SOH The zero value for the enum. Should not be used for comparisons.\n\
     \ Instead use bitwise \"and\" with the appropriate mask as shown above.\n\
     \\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\NUL\SOH\DC2\EOT\216\STX\STX\ETB\n\
+    \\ENQ\ENQ\NUL\STX\NUL\SOH\DC2\EOT\218\STX\STX\ETB\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\NUL\STX\DC2\EOT\216\STX\SUB\ESC\n\
+    \\ENQ\ENQ\NUL\STX\NUL\STX\DC2\EOT\218\STX\SUB\ESC\n\
     \2\n\
-    \\EOT\ENQ\NUL\STX\SOH\DC2\EOT\219\STX\STX+\SUB$ Bits 0-7 are used for trace flags.\n\
+    \\EOT\ENQ\NUL\STX\SOH\DC2\EOT\221\STX\STX+\SUB$ Bits 0-7 are used for trace flags.\n\
     \\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\SOH\SOH\DC2\EOT\219\STX\STX\GS\n\
+    \\ENQ\ENQ\NUL\STX\SOH\SOH\DC2\EOT\221\STX\STX\GS\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\SOH\STX\DC2\EOT\219\STX *\n\
+    \\ENQ\ENQ\NUL\STX\SOH\STX\DC2\EOT\221\STX *\n\
     \\225\SOH\n\
-    \\EOT\ENQ\NUL\STX\STX\DC2\EOT\224\STX\STX5\SUB\210\SOH Bits 8 and 9 are used to indicate that the parent span or link span is remote.\n\
+    \\EOT\ENQ\NUL\STX\STX\DC2\EOT\226\STX\STX5\SUB\210\SOH Bits 8 and 9 are used to indicate that the parent span or link span is remote.\n\
     \ Bit 8 (`HAS_IS_REMOTE`) indicates whether the value is known.\n\
     \ Bit 9 (`IS_REMOTE`) indicates whether the span or link is remote.\n\
     \\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\STX\SOH\DC2\EOT\224\STX\STX'\n\
+    \\ENQ\ENQ\NUL\STX\STX\SOH\DC2\EOT\226\STX\STX'\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\STX\STX\DC2\EOT\224\STX*4\n\
+    \\ENQ\ENQ\NUL\STX\STX\STX\DC2\EOT\226\STX*4\n\
     \\f\n\
-    \\EOT\ENQ\NUL\STX\ETX\DC2\EOT\225\STX\STX1\n\
+    \\EOT\ENQ\NUL\STX\ETX\DC2\EOT\227\STX\STX1\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\ETX\SOH\DC2\EOT\225\STX\STX#\n\
+    \\ENQ\ENQ\NUL\STX\ETX\SOH\DC2\EOT\227\STX\STX#\n\
     \\r\n\
-    \\ENQ\ENQ\NUL\STX\ETX\STX\DC2\EOT\225\STX&0b\ACKproto3"
+    \\ENQ\ENQ\NUL\STX\ETX\STX\DC2\EOT\227\STX&0b\ACKproto3"
