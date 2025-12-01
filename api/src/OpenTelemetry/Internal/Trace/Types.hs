@@ -10,8 +10,6 @@ module OpenTelemetry.Internal.Trace.Types where
 import Control.Concurrent.Async (Async)
 import Control.Monad.IO.Class
 import Data.Bits
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as H
 import Data.IORef (IORef, readIORef)
 import Data.Text (Text)
 import Data.Vector (Vector)
@@ -21,18 +19,12 @@ import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Internal.Common.Types
+import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Resource
-import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Id.Generator
 import OpenTelemetry.Trace.TraceState
 import OpenTelemetry.Util
-
-
-data SpanExporter = SpanExporter
-  { spanExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
-  , spanExporterShutdown :: IO ()
-  }
 
 
 data SpanProcessor = SpanProcessor
@@ -247,9 +239,10 @@ instance Ord SpanStatus where
   compare Ok Ok = EQ
 
 
-{- | The frozen representation of a 'Span' that originates from the currently running process.
+{- |
+A read-only representation of a 'Span'.
 
- Only 'Processor's and 'Exporter's should use rely on this interface.
+This type is only for internal use in this library and should not be relied upon.
 -}
 data ImmutableSpan = ImmutableSpan
   { spanName :: Text
