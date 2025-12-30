@@ -33,6 +33,13 @@ in rec {
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
     hs-opentelemetry-instrumentation-yesod = ../instrumentation/yesod;
     hs-opentelemetry-instrumentation-wai = ../instrumentation/wai;
+    hs-opentelemetry-instrumentation-tasty = ../instrumentation/tasty;
+    hs-opentelemetry-utils-exceptions = ../utils/exceptions;
+    hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb;
+
+    hspec-example = ../examples/hspec;
+    hw-kafka-client-example = ../examples/hw-kafka-client-example;
+    yesod-minimal = ../examples/yesod-minimal;
   };
 
   localPackageCabalDerivations = hfinal: let
