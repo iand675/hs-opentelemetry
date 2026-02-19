@@ -48,6 +48,10 @@ module OpenTelemetry.Baggage (
   encodeBaggageHeader,
   encodeBaggageHeaderB,
   decodeBaggageHeader,
+  decodeBaggageHeaderP,
+
+  -- * Baggage parser internals
+  Parser (..),
 ) where
 
 import qualified Data.ByteString as BS
@@ -241,6 +245,12 @@ decodeBaggageHeader input = case runParser parseBaggage input of
     | BS.null remaining -> Right result
     | otherwise -> Left $ "Unexpected trailing content in baggage header"
   Nothing -> Left "Failed to parse baggage header"
+
+
+-- | The baggage header parser, suitable for composition with other parsers via
+-- the 'Monad' instance on 'Parser'.
+decodeBaggageHeaderP :: Parser Baggage
+decodeBaggageHeaderP = parseBaggage
 
 
 -- Simple non-backtracking parser
