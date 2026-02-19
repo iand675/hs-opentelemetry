@@ -168,9 +168,17 @@ data SpanArguments = SpanArguments
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
   --
-  -- Lazy so that callerAttributes computation (HashMap construction from
-  -- source locations) is deferred until the span is actually recorded.
-  -- When sampling drops the span, these are never forced.
+  -- This field is intentionally lazy (@~@) so that 'callerAttributes'
+  -- (which allocates a HashMap from source locations) is deferred past the
+  -- sampling decision. The lifecycle is:
+  --
+  -- * __No processors (inert):__ @inSpan@ short-circuits before constructing
+  --   any 'SpanArguments' — zero overhead.
+  -- * __Sampler drops:__ the thunk is stored but never forced; it is GC'd
+  --   when the 'SpanArguments' goes out of scope.
+  -- * __Recording:__ @mkRecordingSpan@ forces the field with a bang and pipes
+  --   it through @Data.HashMap.Strict@ operations into the strict
+  --   'ImmutableSpan', so no thunks leak into the 'IORef'.
   , links :: [NewLink]
   -- ^ A collection of `Link`s that point to causally related 'Span's.
   , startTime :: Maybe Timestamp

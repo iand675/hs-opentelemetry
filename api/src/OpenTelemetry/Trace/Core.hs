@@ -270,8 +270,12 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..}
           mkRecordingSpan = do
             st <- maybe getTimestamp pure startTime
             tid <- myThreadId
+            -- Force the merged attributes here. SpanArguments.attributes is
+            -- lazy (~) so that callerAttributes can be deferred past the
+            -- sampling decision.  Once we reach this recording path we want
+            -- everything strict so no thunks leak into the IORef.
             let !threadAttr = toAttribute $ getThreadId tid
-                mergedAttrs = H.insert "thread.id" threadAttr $ H.union attrs attributes
+                !mergedAttrs = H.insert "thread.id" threadAttr $ H.union attrs attributes
                 is =
                   ImmutableSpan
                     { spanName = n
