@@ -32,6 +32,7 @@ import OpenTelemetry.Internal.Trace.Encoding (
   Base (Base16),
   convertFromBase,
   convertToBase,
+  encodeBase16Short,
  )
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -172,7 +173,7 @@ baseEncodedToTraceId b bs = do
  @since 0.1.0.0
 -}
 traceIdBaseEncodedBuilder :: Base -> TraceId -> Builder
-traceIdBaseEncodedBuilder b = B.byteString . convertToBase b . traceIdBytes
+traceIdBaseEncodedBuilder Base16 (TraceId sbs) = B.byteString (encodeBase16Short sbs)
 
 
 {- | Output a 'TraceId' into a base-encoded 'ByteString'.
@@ -180,7 +181,7 @@ traceIdBaseEncodedBuilder b = B.byteString . convertToBase b . traceIdBytes
  @since 0.1.0.0
 -}
 traceIdBaseEncodedByteString :: Base -> TraceId -> ByteString
-traceIdBaseEncodedByteString b = convertToBase b . traceIdBytes
+traceIdBaseEncodedByteString Base16 (TraceId sbs) = encodeBase16Short sbs
 
 
 {- | Output a 'TraceId' into a base-encoded 'Text'.
@@ -256,7 +257,7 @@ baseEncodedToSpanId b bs = do
  @since 0.1.0.0
 -}
 spanIdBaseEncodedBuilder :: Base -> SpanId -> Builder
-spanIdBaseEncodedBuilder b = B.byteString . convertToBase b . spanIdBytes
+spanIdBaseEncodedBuilder Base16 (SpanId sbs) = B.byteString (encodeBase16Short sbs)
 
 
 {- | Output a 'SpanId' into a base-encoded 'ByteString'.
@@ -264,7 +265,7 @@ spanIdBaseEncodedBuilder b = B.byteString . convertToBase b . spanIdBytes
  @since 0.1.0.0
 -}
 spanIdBaseEncodedByteString :: Base -> SpanId -> ByteString
-spanIdBaseEncodedByteString b = convertToBase b . spanIdBytes
+spanIdBaseEncodedByteString Base16 (SpanId sbs) = encodeBase16Short sbs
 
 
 {- | Output a 'SpanId' into a base-encoded 'Text'.
