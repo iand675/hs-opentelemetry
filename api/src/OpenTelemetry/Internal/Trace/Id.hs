@@ -28,7 +28,7 @@ module OpenTelemetry.Internal.Trace.Id (
 ) where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Data.ByteArray.Encoding (
+import OpenTelemetry.Internal.Trace.Encoding (
   Base (Base16),
   convertFromBase,
   convertToBase,

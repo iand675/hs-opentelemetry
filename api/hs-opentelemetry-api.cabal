@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -75,6 +75,7 @@ library
       OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Context.Types
+      OpenTelemetry.Internal.Trace.Encoding
       OpenTelemetry.Internal.Trace.Types
       Paths_hs_opentelemetry_api
   hs-source-dirs:
@@ -85,18 +86,13 @@ library
   ghc-options: -Wall
   build-depends:
       async
-    , attoparsec
     , base >=4.7 && <5
     , binary
     , bytestring
-    , charset
     , clock
     , hashable
     , http-types
-    , memory
     , mtl
-    , regex-tdfa
-    , safe-exceptions
     , template-haskell
     , text
     , thread-utils-context ==0.3.*

@@ -32,7 +32,7 @@ import GHC.Generics (Generic)
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as TH
 import OpenTelemetry.Attributes (Attributes, emptyAttributes)
-import Text.Regex.TDFA ((=~~))
+import Data.Char (isAlphaNum, isDigit)
 
 
 {- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
@@ -172,21 +172,35 @@ data ExportResult
   | Failure (Maybe SomeException)
 
 
--- | Parses a package-version string into an InstrumentationLibrary'.
+{- | Parses a package-version string like "my-package-1.2.3" into an InstrumentationLibrary.
+Trailing non-version content after the version is discarded (e.g. "my-package-1.2.3-inplace").
+-}
 parseInstrumentationLibrary :: (MonadFail m) => String -> m InstrumentationLibrary
 parseInstrumentationLibrary packageString = do
-  let packageNameRegex :: String = "([a-zA-Z0-9-]+[a-zA-Z0-9]+)"
-  let versionRegex :: String = "([0-9\\.]+)"
-  -- First try and parse with a mandatory version string on the end. If that fails, try
-  -- to parse just a package name
-  let fullRegex :: String = "(" <> packageNameRegex <> "-" <> versionRegex <> ")|" <> packageNameRegex
-  (_ :: String, _ :: String, _ :: String, groups :: [String]) <- packageString =~~ fullRegex
-  -- We end up with 5 groups overall
-  (name, version) <- case groups of
-    [_, name, version, ""] -> pure (name, version)
-    [_, _, _, name] -> pure (name, "")
-    _ -> fail $ "could not parse package string: " <> packageString
-  pure $ InstrumentationLibrary {libraryName = T.pack name, libraryVersion = T.pack version, librarySchemaUrl = "", libraryAttributes = emptyAttributes}
+  let isPackageNameChar c = isAlphaNum c || c == '-'
+      isVersionChar c = isDigit c || c == '.'
+      isValidPackageName s = not (null s) && all isPackageNameChar s && isAlphaNum (last s)
+
+      -- Try each '-' from right to left as a name/version separator.
+      -- The version starts with digits/dots; trailing non-version content is discarded.
+      trySplits [] = Nothing
+      trySplits (pos : rest) =
+        let name = take pos packageString
+            afterDash = drop (pos + 1) packageString
+            ver = takeWhile isVersionChar afterDash
+        in if not (null ver) && isDigit (head ver) && isValidPackageName name
+            then Just (name, ver)
+            else trySplits rest
+
+      hyphenPositions = reverse [i | (i, c) <- zip [0..] packageString, c == '-']
+
+  case trySplits hyphenPositions of
+    Just (name, version) ->
+      pure $ InstrumentationLibrary {libraryName = T.pack name, libraryVersion = T.pack version, librarySchemaUrl = "", libraryAttributes = emptyAttributes}
+    Nothing
+      | isValidPackageName packageString ->
+          pure $ InstrumentationLibrary {libraryName = T.pack packageString, libraryVersion = "", librarySchemaUrl = "", libraryAttributes = emptyAttributes}
+      | otherwise -> fail $ "could not parse package string: " <> packageString
 
 
 -- | Works out the instrumentation library for your package.

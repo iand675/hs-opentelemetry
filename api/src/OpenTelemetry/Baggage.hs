@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -47,30 +48,26 @@ module OpenTelemetry.Baggage (
   encodeBaggageHeader,
   encodeBaggageHeaderB,
   decodeBaggageHeader,
-  decodeBaggageHeaderP,
 ) where
 
-import Control.Applicative hiding (empty)
-import qualified Data.Attoparsec.ByteString.Char8 as P
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Builder.Extra as BS
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Internal as BS
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Unsafe (unsafePackAddressLen)
-import Data.CharSet (CharSet)
-import qualified Data.CharSet as C
 import qualified Data.HashMap.Strict as H
 import Data.Hashable
 import Data.List (intersperse)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Word (Word8)
 import Language.Haskell.TH.Lib
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
-import Network.HTTP.Types.URI
 import System.IO.Unsafe
 
 
@@ -129,8 +126,31 @@ newtype Baggage = Baggage (H.HashMap Token Element)
   deriving newtype (Semigroup)
 
 
-tokenCharacters :: CharSet
-tokenCharacters = C.fromList "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+isTokenChar :: Char -> Bool
+isTokenChar c = c `BS8.elem` tokenCharsBS
+
+
+{-# NOINLINE tokenCharsBS #-}
+tokenCharsBS :: ByteString
+tokenCharsBS = "!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+isTokenCharW8 :: Word8 -> Bool
+isTokenCharW8 w = BS.elemIndex w tokenCharsBS /= Nothing
+
+
+-- RFC 2616 baggage-octet character set
+isValueChar :: Word8 -> Bool
+isValueChar w =
+  w == 0x21
+    || (w >= 0x23 && w <= 0x2B)
+    || (w >= 0x2D && w <= 0x3A)
+    || (w >= 0x3C && w <= 0x5B)
+    || (w >= 0x5D && w <= 0x7E)
+
+
+isOWS :: Word8 -> Bool
+isOWS w = w == 0x20 || w == 0x09
 
 
 -- Ripped from file-embed-0.0.13
@@ -161,7 +181,7 @@ bsToExp bs = do
 mkToken :: Text -> Maybe Token
 mkToken txt
   | txt `T.compareLength` 4096 == GT = Nothing
-  | T.all (`C.member` tokenCharacters) txt = Just $ Token $ encodeUtf8 txt
+  | T.all isTokenChar txt = Just $ Token $ encodeUtf8 txt
   | otherwise = Nothing
 
 
@@ -205,60 +225,177 @@ encodeBaggageHeaderB (Baggage bmap) =
     go (Token k, Element v props) =
       B.byteString k
         <> B.char7 '='
-        <> urlEncodeBuilder False (encodeUtf8 v)
+        <> percentEncode (encodeUtf8 v)
         <> (mconcat $ intersperse (B.char7 ';') $ map propEncoder props)
     propEncoder (Property (Token k) mv) =
       B.byteString k
         <> maybe
           mempty
-          (\v -> B.char7 '=' <> urlEncodeBuilder False (encodeUtf8 v))
+          (\v -> B.char7 '=' <> percentEncode (encodeUtf8 v))
           mv
 
 
 decodeBaggageHeader :: ByteString -> Either String Baggage
-decodeBaggageHeader = P.parseOnly decodeBaggageHeaderP
+decodeBaggageHeader input = case runParser parseBaggage input of
+  Just (result, remaining)
+    | BS.null remaining -> Right result
+    | otherwise -> Left $ "Unexpected trailing content in baggage header"
+  Nothing -> Left "Failed to parse baggage header"
 
 
-decodeBaggageHeaderP :: P.Parser Baggage
-decodeBaggageHeaderP = do
-  owsP
-  firstMember <- memberP
-  otherMembers <- many (owsP >> P.char8 ',' >> owsP >> memberP)
-  owsP
-  pure $ Baggage $ H.fromList (firstMember : otherMembers)
+-- Simple non-backtracking parser
+newtype Parser a = Parser {runParser :: ByteString -> Maybe (a, ByteString)}
+
+
+instance Functor Parser where
+  fmap f (Parser p) = Parser $ \s -> case p s of
+    Just (a, s') -> Just (f a, s')
+    Nothing -> Nothing
+
+
+instance Applicative Parser where
+  pure a = Parser $ \s -> Just (a, s)
+  Parser pf <*> Parser pa = Parser $ \s -> do
+    (f, s') <- pf s
+    (a, s'') <- pa s'
+    Just (f a, s'')
+
+
+instance Monad Parser where
+  Parser pa >>= f = Parser $ \s -> do
+    (a, s') <- pa s
+    runParser (f a) s'
+
+
+pChar8 :: Char -> Parser ()
+pChar8 c = Parser $ \s ->
+  case BS8.uncons s of
+    Just (h, t) | h == c -> Just ((), t)
+    _ -> Nothing
+
+
+pTakeWhile :: (Word8 -> Bool) -> Parser ByteString
+pTakeWhile predicate = Parser $ \s ->
+  let (taken, rest) = BS.span predicate s
+  in Just (taken, rest)
+
+
+pTakeWhile1 :: (Word8 -> Bool) -> Parser ByteString
+pTakeWhile1 predicate = Parser $ \s ->
+  let (taken, rest) = BS.span predicate s
+  in if BS.null taken
+      then Nothing
+      else Just (taken, rest)
+
+
+pMany :: Parser a -> Parser [a]
+pMany p = Parser $ \s -> Just (go s [])
   where
-    owsSet = C.fromList " \t"
-    owsP = P.skipWhile (`C.member` owsSet)
-    memberP :: P.Parser (Token, Element)
-    memberP = do
-      tok <- tokenP
-      owsP
-      _ <- P.char8 '='
-      owsP
-      val <- valP
-      props <- many (owsP >> P.char8 ';' >> owsP >> propertyP)
-      pure (tok, Element val props)
-    valueSet =
-      C.fromList $
-        concat
-          [ ['\x21']
-          , ['\x23' .. '\x2B']
-          , ['\x2D' .. '\x3A']
-          , ['\x3C' .. '\x5B']
-          , ['\x5D' .. '\x7E']
-          ]
-    tokenP :: P.Parser Token
-    tokenP = Token <$> P.takeWhile1 (`C.member` tokenCharacters)
-    valP = decodeUtf8 . urlDecode False <$> P.takeWhile (`C.member` valueSet)
-    propertyP :: P.Parser Property
-    propertyP = do
-      key <- tokenP
-      owsP
-      val <- P.option Nothing $ do
-        _ <- P.char8 '='
-        owsP
-        Just <$> valP
-      pure $ Property key val
+    go s acc = case runParser p s of
+      Just (a, s') -> go s' (a : acc)
+      Nothing -> (reverse acc, s)
+
+
+pOption :: a -> Parser a -> Parser a
+pOption def p = Parser $ \s -> case runParser p s of
+  Just result -> Just result
+  Nothing -> Just (def, s)
+
+
+skipOWS :: Parser ()
+skipOWS = pTakeWhile isOWS >> pure ()
+
+
+parseToken :: Parser Token
+parseToken = Token <$> pTakeWhile1 isTokenCharW8
+
+
+parseValue :: Parser ByteString
+parseValue = pTakeWhile isValueChar
+
+
+parseProperty :: Parser Property
+parseProperty = do
+  key <- parseToken
+  skipOWS
+  val <- pOption Nothing $ do
+    pChar8 '='
+    skipOWS
+    Just . decodeUtf8 . percentDecode <$> parseValue
+  pure $ Property key val
+
+
+parseMember :: Parser (Token, Element)
+parseMember = do
+  tok <- parseToken
+  skipOWS
+  pChar8 '='
+  skipOWS
+  val <- decodeUtf8 . percentDecode <$> parseValue
+  props <- pMany $ do
+    skipOWS
+    pChar8 ';'
+    skipOWS
+    parseProperty
+  pure (tok, Element val props)
+
+
+parseBaggage :: Parser Baggage
+parseBaggage = do
+  skipOWS
+  firstMember <- parseMember
+  otherMembers <- pMany $ do
+    skipOWS
+    pChar8 ','
+    skipOWS
+    parseMember
+  skipOWS
+  pure $ Baggage $ H.fromList (firstMember : otherMembers)
+
+
+-- Percent-encoding (RFC 3986 style, used for baggage values)
+-- When formEncoding is False: encode everything except unreserved characters
+percentEncode :: ByteString -> B.Builder
+percentEncode = BS.foldl' step mempty
+  where
+    step acc w
+      | isUnreserved w = acc <> B.word8 w
+      | otherwise = acc <> B.char7 '%' <> hexByte w
+    hexByte w =
+      let hi = w `div` 16
+          lo = w `mod` 16
+      in B.word8 (toHexDigit hi) <> B.word8 (toHexDigit lo)
+    toHexDigit x
+      | x < 10 = x + 0x30
+      | otherwise = x + 0x37
+    isUnreserved w =
+      (w >= 0x41 && w <= 0x5A) -- A-Z
+        || (w >= 0x61 && w <= 0x7A) -- a-z
+        || (w >= 0x30 && w <= 0x39) -- 0-9
+        || w == 0x2D -- -
+        || w == 0x2E -- .
+        || w == 0x5F -- _
+        || w == 0x7E -- ~
+
+
+percentDecode :: ByteString -> ByteString
+percentDecode bs = BS.pack $ go 0
+  where
+    len = BS.length bs
+    go !i
+      | i >= len = []
+      | BS.index bs i == 0x25 -- '%'
+      , i + 2 < len
+      , Just hi <- fromHexDigitW8 (BS.index bs (i + 1))
+      , Just lo <- fromHexDigitW8 (BS.index bs (i + 2)) =
+          (hi * 16 + lo) : go (i + 3)
+      | BS.index bs i == 0x2B = 0x20 : go (i + 1) -- '+' -> space
+      | otherwise = BS.index bs i : go (i + 1)
+    fromHexDigitW8 w
+      | w >= 0x30 && w <= 0x39 = Just (w - 0x30)
+      | w >= 0x41 && w <= 0x46 = Just (w - 0x37)
+      | w >= 0x61 && w <= 0x66 = Just (w - 0x57)
+      | otherwise = Nothing
 
 
 -- | An empty initial baggage value

@@ -29,17 +29,12 @@ library:
   ghc-options: -Wall
   dependencies:
   - async
-  - attoparsec
   - binary
   - bytestring
-  - charset
   - clock
   - hashable
   - http-types
-  - memory
   - mtl
-  - regex-tdfa
-  - safe-exceptions
   - template-haskell
   - text
   - thread-utils-context == 0.3.*
@@ -51,6 +46,7 @@ library:
   - vector-builder
   other-modules:
   - OpenTelemetry.Context.Types
+  - OpenTelemetry.Internal.Trace.Encoding
   - OpenTelemetry.Internal.Trace.Types
   - Paths_hs_opentelemetry_api
 

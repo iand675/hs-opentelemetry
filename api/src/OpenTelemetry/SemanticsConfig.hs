@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module OpenTelemetry.SemanticsConfig (
   SemanticsOptions (httpOption),
@@ -7,7 +8,7 @@ module OpenTelemetry.SemanticsConfig (
   getSemanticsOptions',
 ) where
 
-import Control.Exception.Safe (throwIO, tryAny)
+import Control.Exception (SomeException, throwIO, try)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Text as T
 import System.Environment (lookupEnv)
@@ -63,7 +64,7 @@ the action may be run in multiple threads simultaneously, so this may not be
 thread safe (depending on the underlying action). For the sake of reading an environment
 variable and parsing some stuff, we don't have to be concerned about thread-safety.
 -}
-memoize :: IO a -> IO (IO a)
+memoize :: forall a. IO a -> IO (IO a)
 memoize action = do
   ref <- newIORef Nothing
   pure $ do
@@ -71,7 +72,7 @@ memoize action = do
     res <- case mres of
       Just res -> pure res
       Nothing -> do
-        res <- tryAny action
+        res <- try action :: IO (Either SomeException a)
         writeIORef ref $ Just res
         pure res
     either throwIO pure res
