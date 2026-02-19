@@ -48,8 +48,10 @@ import OpenTelemetry.Trace.Core (
   Tracer,
   addAttributesToSpanArguments,
   callerAttributes,
-  inSpan'',
+  noopSpan,
+  tracerIsEnabled,
  )
+import qualified OpenTelemetry.Trace.Core as Core
 
 
 -- | This is generally scoped by Monad stack to do different things
@@ -63,7 +65,11 @@ inSpan
   -> SpanArguments
   -> m a
   -> m a
-inSpan n args m = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) (const m)
+inSpan n args m = do
+  t <- getTracer
+  if not (tracerIsEnabled t)
+    then m
+    else Core.inSpan'' t n (addAttributesToSpanArguments callerAttributes args) (const m)
 
 
 inSpan'
@@ -72,7 +78,11 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan' n args f = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) f
+inSpan' n args f = do
+  t <- getTracer
+  if not (tracerIsEnabled t)
+    then f noopSpan
+    else Core.inSpan'' t n (addAttributesToSpanArguments callerAttributes args) f
 
 
 inSpan''
@@ -83,7 +93,7 @@ inSpan''
   -> m a
 inSpan'' n args f = do
   t <- getTracer
-  OpenTelemetry.Trace.Core.inSpan'' t n args f
+  Core.inSpan'' t n args f
 
 
 instance (MonadTracer m) => MonadTracer (IdentityT m) where

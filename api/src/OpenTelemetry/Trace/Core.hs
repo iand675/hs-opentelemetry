@@ -132,6 +132,7 @@ module OpenTelemetry.Trace.Core (
   spanIsRemote,
 
   -- * Utilities
+  noopSpan,
   Timestamp,
   getTimestamp,
   timestampNanoseconds,
@@ -212,9 +213,9 @@ createSpan
   -- ^ Additional span information
   -> m Span
   -- ^ The created span.
-  -- Try and infer source code information unless the user has set any of the attributes already, which
-  -- we take as an indication that our automatic strategy won't work well.
-createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
+createSpan t ctxt n args
+  | not (tracerIsEnabled t) = pure noopSpan
+  | otherwise = createSpanWithoutCallStack t ctxt n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
 
 
 -- | The same thing as 'createSpan', except that it does not have a 'HasCallStack' constraint.
@@ -232,21 +233,19 @@ createSpanWithoutCallStack
   -- ^ Additional span information
   -> m Span
   -- ^ The created span.
-createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
-  sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
-  let parent = lookupSpan ctxt
-  tId <- case parent of
-    Nothing -> newTraceId $ tracerProviderIdGenerator $ tracerProvider t
-    Just (Span s) ->
-      traceId . Types.spanContext <$> readIORef s
-    Just (FrozenSpan s) -> pure $ traceId s
-    Just (Dropped s) -> pure $ traceId s
+createSpanWithoutCallStack t ctxt n args@SpanArguments {..}
+  | not (tracerIsEnabled t) = pure noopSpan
+  | otherwise = liftIO $ do
+      sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
+      let parent = lookupSpan ctxt
+      tId <- case parent of
+        Nothing -> newTraceId $ tracerProviderIdGenerator $ tracerProvider t
+        Just (Span s) ->
+          traceId . Types.spanContext <$> readIORef s
+        Just (FrozenSpan s) -> pure $ traceId s
+        Just (Dropped s) -> pure $ traceId s
 
-  if null $ tracerProviderProcessors $ tracerProvider t
-    then pure $ Dropped $ SpanContext defaultTraceFlags False tId sId TraceState.empty
-    else do
       (samplingOutcome, attrs, samplingTraceState) <- case parent of
-        -- TODO, this seems logically like what we'd do here
         Just (Dropped _) -> pure (Drop, [], TraceState.empty)
         _ ->
           shouldSample
@@ -256,7 +255,6 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
             n
             args
 
-      -- TODO properly populate
       let ctxtForSpan =
             SpanContext
               { traceFlags = case samplingOutcome of
@@ -406,9 +404,9 @@ inSpan
   -- action without forcing strict evaluation of the result. Any uncaught
   -- exceptions will be recorded and rethrown.
   -> m a
--- Try and infer source code information unless the user has set any of the attributes already, which
--- we take as an indication that our automatic strategy won't work well.
-inSpan t n args m = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args) (const m)
+inSpan t n args m
+  | not (tracerIsEnabled t) = m
+  | otherwise = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args) (const m)
 
 
 inSpan'
@@ -419,9 +417,9 @@ inSpan'
   -> SpanArguments
   -> (Span -> m a)
   -> m a
--- Try and infer source code information unless the user has set any of the attributes already, which
--- we take as an indication that our automatic strategy won't work well.
-inSpan' t n args = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
+inSpan' t n args f
+  | not (tracerIsEnabled t) = f noopSpan
+  | otherwise = inSpan'' t n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args) f
 
 
 inSpan''
@@ -432,23 +430,25 @@ inSpan''
   -> SpanArguments
   -> (Span -> m a)
   -> m a
-inSpan'' t n args f = do
-  bracketError
-    ( liftIO $ do
-        ctx <- getContext
-        s <- createSpanWithoutCallStack t ctx n args
-        adjustContext (insertSpan s)
-        pure (lookupSpan ctx, s)
-    )
-    ( \e (parent, s) -> liftIO $ do
-        forM_ e $ \(SomeException inner) -> do
-          setStatus s $ Error $ T.pack $ displayException inner
-          recordException s [("exception.escaped", toAttribute True)] Nothing inner
-        endSpan s Nothing
-        adjustContext $ \ctx ->
-          maybe (removeSpan ctx) (`insertSpan` ctx) parent
-    )
-    (\(_, s) -> f s)
+inSpan'' t n args f
+  | not (tracerIsEnabled t) = f noopSpan
+  | otherwise =
+      bracketError
+        ( liftIO $ do
+            ctx <- getContext
+            s <- createSpanWithoutCallStack t ctx n args
+            adjustContext (insertSpan s)
+            pure (lookupSpan ctx, s)
+        )
+        ( \e (parent, s) -> liftIO $ do
+            forM_ e $ \(SomeException inner) -> do
+              setStatus s $ Error $ T.pack $ displayException inner
+              recordException s [("exception.escaped", toAttribute True)] Nothing inner
+            endSpan s Nothing
+            adjustContext $ \ctx ->
+              maybe (removeSpan ctx) (`insertSpan` ctx) parent
+        )
+        (\(_, s) -> f s)
 
 
 {- | Returns whether the the @Span@ is currently recording. If a span
@@ -894,6 +894,29 @@ getTracerTracerProvider = tracerProvider
 -}
 tracerIsEnabled :: Tracer -> Bool
 tracerIsEnabled t = not $ V.null $ tracerProviderProcessors $ tracerProvider t
+
+
+{- | A no-op 'Span' that is always dropped. Used as the span value when the
+ 'TracerProvider' has no processors, avoiding all allocation and context
+ manipulation overhead.
+
+ @since 0.3.1.0
+-}
+noopSpan :: Span
+noopSpan = Dropped noopSpanContext
+{-# NOINLINE noopSpan #-}
+
+
+noopSpanContext :: SpanContext
+noopSpanContext = SpanContext defaultTraceFlags False emptyTid emptySid TraceState.empty
+  where
+    emptyTid = case bytesToTraceId "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL" of
+      Right t -> t
+      Left _ -> error "noopSpanContext: impossible"
+    emptySid = case bytesToSpanId "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL" of
+      Right s -> s
+      Left _ -> error "noopSpanContext: impossible"
+{-# NOINLINE noopSpanContext #-}
 
 
 {- | Smart constructor for 'SpanArguments' providing reasonable values for most 'Span's created

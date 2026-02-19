@@ -5,6 +5,23 @@
 ## 0.3.1.0
 
 - Add `tracerIsEnabled` function to check if a Tracer is enabled (helps avoid expensive operations when tracing is disabled)
+- Add `noopSpan` as an exported sentinel for use in disabled paths
+
+### Zero-overhead inert path
+
+When no processors are configured (i.e. the SDK is not initialized), `inSpan`,
+`inSpan'`, `inSpan''`, `createSpan`, and `createSpanWithoutCallStack` now
+short-circuit immediately — skipping all of:
+
+- `callerAttributes` computation (HashMap allocation from source locations)
+- `bracketError` / `mask` / `try` (RTS exception state transitions)
+- Thread-local context lookup and update (`getContext`, `adjustContext` ×2)
+- Span/Trace ID generation
+- `SpanContext` allocation
+- Vault lookups
+
+The inert code path is now a single branch on `V.null processors` returning a
+top-level CAF `noopSpan`, giving effectively zero overhead.
 
 ### Dependency reductions
 
