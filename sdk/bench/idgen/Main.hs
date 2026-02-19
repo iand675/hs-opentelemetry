@@ -21,6 +21,9 @@ import Foreign.Ptr (Ptr)
 import GHC.Conc (ThreadId (ThreadId))
 import GHC.Exts (unsafeCoerce#)
 import GHC.Base (Addr#)
+import qualified Data.ByteString.Short as SBS
+import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
+import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 import Prelude hiding (lookup)
 import System.Random.Stateful
 
@@ -161,6 +164,10 @@ main = do
   (tlSpan, tlTrace) <- mkThreadLocalGen
   (pcSpan, pcTrace) <- mkPerCapGen
 
+  -- Direct SBS path from the default generator
+  let Just directSpan = generateSpanIdSBS defaultIdGenerator
+      Just directTrace = generateTraceIdSBS defaultIdGenerator
+
   -- Sanity check all generators
   void atomicSpan >> void atomicTrace
   void tlSpan >> void tlTrace
@@ -169,6 +176,7 @@ main = do
   void cXoshiroSpan >> void cXoshiroTrace
   void cRdrandSpan >> void cRdrandTrace
   void cGetrandomSpan >> void cGetrandomTrace
+  void directSpan >> void directTrace
   putStrLn "All generators OK"
 
   let nThreads = max caps 4
@@ -181,6 +189,7 @@ main = do
         , bench "hs-thread-local" $ whnfIO tlSpan
         , bench "hs-per-cap" $ whnfIO pcSpan
         , bench "c-splitmix-tls" $ whnfIO cSplitmixSpan
+        , bench "c-splitmix-direct-sbs" $ whnfIO directSpan
         , bench "c-xoshiro-tls" $ whnfIO cXoshiroSpan
         , bench "c-rdrand" $ whnfIO cRdrandSpan
         , bench "c-getrandom" $ whnfIO cGetrandomSpan
@@ -190,6 +199,7 @@ main = do
         , bench "hs-thread-local" $ whnfIO tlTrace
         , bench "hs-per-cap" $ whnfIO pcTrace
         , bench "c-splitmix-tls" $ whnfIO cSplitmixTrace
+        , bench "c-splitmix-direct-sbs" $ whnfIO directTrace
         , bench "c-xoshiro-tls" $ whnfIO cXoshiroTrace
         , bench "c-rdrand" $ whnfIO cRdrandTrace
         , bench "c-getrandom" $ whnfIO cGetrandomTrace

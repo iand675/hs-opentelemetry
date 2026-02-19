@@ -105,6 +105,7 @@ benchmarks:
     - thread-utils-context == 0.3.*
     - vector
     - hs-opentelemetry-api ^>= 0.3
+    - hs-opentelemetry-sdk
 
 tests:
   hs-opentelemetry-sdk-test:

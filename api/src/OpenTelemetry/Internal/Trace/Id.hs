@@ -61,7 +61,7 @@ import GHC.Exts (word64ToWord#)
 
 import GHC.Generics (Generic)
 import OpenTelemetry.Trace.Id.Generator (
-  IdGenerator (generateSpanIdBytes, generateTraceIdBytes),
+  IdGenerator (generateSpanIdBytes, generateSpanIdSBS, generateTraceIdBytes, generateTraceIdSBS),
  )
 import Prelude hiding (length)
 
@@ -109,7 +109,9 @@ instance IsString SpanId where
  @since 0.1.0.0
 -}
 newTraceId :: (MonadIO m) => IdGenerator -> m TraceId
-newTraceId gen = liftIO (TraceId . toShort <$> generateTraceIdBytes gen)
+newTraceId gen = liftIO $ case generateTraceIdSBS gen of
+  Just direct -> TraceId <$> direct
+  Nothing -> TraceId . toShort <$> generateTraceIdBytes gen
 
 
 {- | Check whether all bytes in the 'TraceId' are zero.
@@ -199,7 +201,9 @@ traceIdBaseEncodedText b = decodeUtf8 . traceIdBaseEncodedByteString b
  @since 0.1.0.0
 -}
 newSpanId :: (MonadIO m) => IdGenerator -> m SpanId
-newSpanId gen = liftIO (SpanId . toShort <$> generateSpanIdBytes gen)
+newSpanId gen = liftIO $ case generateSpanIdSBS gen of
+  Just direct -> SpanId <$> direct
+  Nothing -> SpanId . toShort <$> generateSpanIdBytes gen
 
 
 {- | Check whether all bytes in the 'SpanId' are zero.

@@ -9,4 +9,6 @@ dummyIdGenerator =
   IdGenerator
     { generateSpanIdBytes = pure "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
     , generateTraceIdBytes = pure "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
+    , generateSpanIdSBS = Nothing
+    , generateTraceIdSBS = Nothing
     }

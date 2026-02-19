@@ -22,6 +22,7 @@ module OpenTelemetry.Trace.Id.Generator (
 ) where
 
 import Data.ByteString (ByteString)
+import Data.ByteString.Short (ShortByteString)
 
 
 {- | An interface for generating the underlying bytes for
@@ -32,4 +33,9 @@ data IdGenerator = IdGenerator
   -- ^ MUST generate exactly 8 bytes
   , generateTraceIdBytes :: IO ByteString
   -- ^ MUST generate exactly 16 bytes
+  , generateSpanIdSBS :: !(Maybe (IO ShortByteString))
+  -- ^ Optional: generate directly as ShortByteString, avoiding the
+  -- ByteString -> toShort copy. When set, 'newSpanId' prefers this.
+  , generateTraceIdSBS :: !(Maybe (IO ShortByteString))
+  -- ^ Optional: generate directly as ShortByteString.
   }

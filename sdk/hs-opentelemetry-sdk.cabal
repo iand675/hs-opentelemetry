@@ -150,6 +150,7 @@ benchmark idgen-bench
     , bytestring
     , criterion
     , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-sdk
     , random >=1.2.0
     , thread-utils-context ==0.3.*
     , vector
