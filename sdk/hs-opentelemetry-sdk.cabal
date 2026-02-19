@@ -130,3 +130,25 @@ test-suite hs-opentelemetry-sdk-test
     , text
     , unordered-containers
   default-language: Haskell2010
+
+benchmark idgen-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_hs_opentelemetry_sdk
+  hs-source-dirs:
+      bench/idgen
+  ghc-options: -O2 -threaded -rtsopts -with-rtsopts=-N
+  cc-options: -O3 -mrdrnd -march=native
+  c-sources:
+      cbits/rng.c
+  build-depends:
+      async
+    , base >=4.7 && <5
+    , bytestring
+    , criterion
+    , hs-opentelemetry-api ==0.3.*
+    , random >=1.2.0
+    , thread-utils-context ==0.3.*
+    , vector
+  default-language: Haskell2010

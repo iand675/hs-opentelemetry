@@ -85,6 +85,26 @@ library:
   other-modules:
   - Paths_hs_opentelemetry_sdk
 
+benchmarks:
+  idgen-bench:
+    main: Main.hs
+    source-dirs: bench/idgen
+    c-sources: cbits/rng.c
+    cc-options: -O3 -mrdrnd -march=native
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - async
+    - bytestring
+    - criterion
+    - random >= 1.2.0
+    - thread-utils-context == 0.3.*
+    - vector
+    - hs-opentelemetry-api ^>= 0.3
+
 tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs
