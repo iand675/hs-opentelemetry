@@ -24,7 +24,6 @@ import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import qualified OpenTelemetry.Trace.TracerSpec as Tracer
 import OpenTelemetry.Util
 import Test.Hspec
-import qualified VectorBuilder.Vector as Builder
 
 
 newtype TestException = TestException String

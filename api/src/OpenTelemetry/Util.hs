@@ -48,9 +48,8 @@ import GHC.Base (Addr#)
 import GHC.Conc (ThreadId (ThreadId))
 import GHC.Exts (unsafeCoerce#)
 import GHC.Generics
-import VectorBuilder.Builder (Builder)
-import qualified VectorBuilder.Builder as Builder
-import qualified VectorBuilder.Vector as Builder
+import OpenTelemetry.Internal.VectorBuilder (Builder)
+import qualified OpenTelemetry.Internal.VectorBuilder as Builder
 
 
 {- | Useful for annotating which constructor in an ADT was chosen
@@ -146,11 +145,6 @@ bracketError before after thing = withRunInIO $ \run -> EUnsafe.mask $ \restore 
   res1 <- EUnsafe.try $ restore $ run $ thing x
   case res1 of
     Left (e1 :: SomeException) -> do
-      -- explicitly ignore exceptions from after. We know that
-      -- no async exceptions were thrown there, so therefore
-      -- the stronger exception must come from thing
-      --
-      -- https://github.com/fpco/safe-exceptions/issues/2
       _ :: Either SomeException b <-
         EUnsafe.try $ EUnsafe.uninterruptibleMask_ $ run $ after (Just e1) x
       EUnsafe.throwIO e1

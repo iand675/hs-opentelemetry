@@ -44,7 +44,6 @@ library:
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
   - vector
-  - vector-builder
   # These are "distribution" packages
   - hs-opentelemetry-api ^>= 0.3
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0

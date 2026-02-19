@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -95,7 +95,6 @@ library
     , unix-compat >=0.7.1
     , unordered-containers
     , vector
-    , vector-builder
   default-language: Haskell2010
   if os(windows)
     other-modules:

@@ -36,8 +36,7 @@ import OpenTelemetry.Exporter.Span (SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
-import VectorBuilder.Builder as Builder
-import VectorBuilder.Vector as Builder
+import OpenTelemetry.Internal.VectorBuilder as Builder
 
 
 -- | Configurable options for batch exporting frequence and size

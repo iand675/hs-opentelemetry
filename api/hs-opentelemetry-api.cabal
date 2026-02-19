@@ -45,6 +45,7 @@ library
       OpenTelemetry.Internal.Logs.Core
       OpenTelemetry.Internal.Logs.Types
       OpenTelemetry.Internal.Trace.Id
+      OpenTelemetry.Internal.VectorBuilder
       OpenTelemetry.LogAttributes
       OpenTelemetry.Logs.Core
       OpenTelemetry.Processor
@@ -101,7 +102,6 @@ library
     , unordered-containers
     , vault
     , vector
-    , vector-builder
   default-language: Haskell2010
 
 test-suite hs-opentelemetry-api-test
@@ -133,5 +133,4 @@ test-suite hs-opentelemetry-api-test
     , unliftio-core
     , unordered-containers
     , vector
-    , vector-builder
   default-language: Haskell2010

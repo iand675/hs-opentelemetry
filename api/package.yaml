@@ -43,7 +43,6 @@ library:
   - unordered-containers
   - vault
   - vector
-  - vector-builder
   other-modules:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Trace.Encoding
@@ -66,4 +65,3 @@ tests:
     - unliftio-core
     - unordered-containers
     - vector
-    - vector-builder
