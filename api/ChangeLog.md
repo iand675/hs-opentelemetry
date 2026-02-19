@@ -23,6 +23,17 @@ short-circuit immediately — skipping all of:
 The inert code path is now a single branch on `V.null processors` returning a
 top-level CAF `noopSpan`, giving effectively zero overhead.
 
+### Active tracing path optimizations
+
+- `addAttribute` count tracking reduced from O(n) (`H.size`) to O(log n)
+  (`H.member`) per insertion.
+- Span creation avoids an intermediate HashMap allocation: `H.unions` of three
+  maps replaced with `H.insert` + `H.union`.
+- `SpanArguments.attributes` is now a lazy field. `callerAttributes` (which
+  builds a 5-entry HashMap from source locations via `T.pack`) is deferred
+  past the sampling decision — when the sampler drops a span, the HashMap is
+  never constructed.
+
 ### Dependency reductions
 
 Removed 6 non-boot dependencies from the API package:
