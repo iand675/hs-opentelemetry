@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
@@ -165,7 +166,7 @@ data BoundedMap a = BoundedMap
   { itemBounds :: !Int
   , itemMaxExportBounds :: !Int
   , itemCount :: !Int
-  , itemMap :: HashMap InstrumentationLibrary (Builder.Builder a)
+  , itemMap :: !(HashMap InstrumentationLibrary (Builder.Builder a))
   }
 
 
@@ -192,9 +193,10 @@ push s m =
 
 buildExport :: BoundedMap a -> (BoundedMap a, HashMap InstrumentationLibrary (Vector a))
 buildExport m =
-  ( m {itemCount = 0, itemMap = mempty}
-  , Builder.build <$> itemMap m
-  )
+  let !exportData = Builder.build <$> itemMap m
+  in ( m {itemCount = 0, itemMap = mempty}
+     , exportData
+     )
 
 
 data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
