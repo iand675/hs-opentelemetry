@@ -77,6 +77,9 @@ library
   hs-source-dirs:
       src
   ghc-options: -Wall
+  cc-options: -O3 -mrdrnd
+  c-sources:
+      cbits/rng.c
   build-depends:
       async
     , base >=4.7 && <5
@@ -88,7 +91,6 @@ library
     , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
     , http-types
     , network-bsd
-    , random >=1.2.0
     , stm
     , text
     , unagi-chan

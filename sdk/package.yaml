@@ -32,12 +32,13 @@ library:
       else:
         source-dirs: src/platform/unix
         dependencies: unix # for getEffectiveUserID
+  c-sources: cbits/rng.c
+  cc-options: -O3 -mrdrnd
   dependencies:
   - async
   - bytestring
   - http-types
   - network-bsd
-  - random >= 1.2.0
   - stm
   - text
   - unagi-chan
