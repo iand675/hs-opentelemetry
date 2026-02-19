@@ -2,7 +2,35 @@
 
 ## Unreleased
 
+## 0.3.1.0
+
 - Add `tracerIsEnabled` function to check if a Tracer is enabled (helps avoid expensive operations when tracing is disabled)
+
+### Dependency reductions
+
+Removed 6 non-boot dependencies from the API package:
+
+- `memory`: replaced with vendored Base16 hex encoding via C FFI
+- `attoparsec`: replaced with hand-written ByteString parser for baggage headers
+- `charset`: replaced with simple byte-level predicates
+- `regex-tdfa`: replaced with hand-written parser for `parseInstrumentationLibrary`
+- `safe-exceptions`: replaced with `Control.Exception` equivalents
+- `vector-builder`: vendored as `OpenTelemetry.Internal.VectorBuilder`
+
+### Performance
+
+- Base16 encoding of TraceId/SpanId now uses C FFI with a 256-entry lookup table
+  and fully-unrolled loops for the fixed 16-byte and 8-byte sizes. ShortByteString
+  encoding uses `keepAlive#`/`byteArrayContents#` to avoid intermediate copies.
+  ~34% faster for TraceId, ~23% faster for SpanId vs the previous Haskell implementation.
+
+### API changes
+
+- `decodeBaggageHeaderP` now returns `Parser Baggage` (the internal parser type)
+  instead of `Data.Attoparsec.ByteString.Char8.Parser Baggage`. The `Parser` type
+  and its `runParser` field are exported from `OpenTelemetry.Baggage` for composition.
+- `Base` type is now defined in `OpenTelemetry.Internal.Trace.Encoding` instead of
+  re-exported from `memory`. Only `Base16` is supported.
 
 ## 0.3.0.0
 
