@@ -27,6 +27,8 @@ dependencies:
 library:
   source-dirs: src
   ghc-options: -Wall
+  c-sources: cbits/hex.c
+  cc-options: -O3
   dependencies:
   - async
   - binary
@@ -48,6 +50,20 @@ library:
   - OpenTelemetry.Internal.Trace.Encoding
   - OpenTelemetry.Internal.Trace.Types
   - Paths_hs_opentelemetry_api
+
+benchmarks:
+  hex-bench:
+    main: HexBench.hs
+    source-dirs: bench
+    c-sources: cbits/hex.c
+    cc-options: -O3 -march=native
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    dependencies:
+    - bytestring
+    - criterion
 
 tests:
   hs-opentelemetry-api-test:

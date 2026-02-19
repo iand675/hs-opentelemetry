@@ -85,6 +85,9 @@ library
       OverloadedStrings
       RecordWildCards
   ghc-options: -Wall
+  cc-options: -O3
+  c-sources:
+      cbits/hex.c
   build-depends:
       async
     , base >=4.7 && <5
@@ -133,4 +136,24 @@ test-suite hs-opentelemetry-api-test
     , unliftio-core
     , unordered-containers
     , vector
+  default-language: Haskell2010
+
+benchmark hex-bench
+  type: exitcode-stdio-1.0
+  main-is: HexBench.hs
+  other-modules:
+      Paths_hs_opentelemetry_api
+  hs-source-dirs:
+      bench
+  default-extensions:
+      OverloadedStrings
+      RecordWildCards
+  ghc-options: -O2 -threaded -rtsopts
+  cc-options: -O3 -march=native
+  c-sources:
+      cbits/hex.c
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , criterion
   default-language: Haskell2010

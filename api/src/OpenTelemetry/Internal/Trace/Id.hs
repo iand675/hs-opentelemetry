@@ -31,7 +31,6 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import OpenTelemetry.Internal.Trace.Encoding (
   Base (Base16),
   convertFromBase,
-  convertToBase,
   encodeBase16Short,
  )
 import Data.ByteString (ByteString)
