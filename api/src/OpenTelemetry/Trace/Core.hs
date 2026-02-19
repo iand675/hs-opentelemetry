@@ -236,18 +236,29 @@ createSpanWithoutCallStack
 createSpanWithoutCallStack t ctxt n args@SpanArguments {..}
   | not (tracerIsEnabled t) = pure noopSpan
   | otherwise = liftIO $ do
-      sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
       let parent = lookupSpan ctxt
+
+      -- If the parent was dropped, the child is always dropped too.
+      -- Skip ID generation, sampling, and timestamp entirely.
+      case parent of
+        Just (Dropped s) -> pure $ Dropped s
+        _ -> createSpanFromParent t ctxt n args parent
+
+
+-- Separated out so the Dropped fast-path above doesn't allocate a
+-- continuation closure over all the span-creation machinery.
+createSpanFromParent
+  :: Tracer -> Context -> Text -> SpanArguments -> Maybe Span -> IO Span
+createSpanFromParent t ctxt n args@SpanArguments {..} parent = do
+      sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
       tId <- case parent of
         Nothing -> newTraceId $ tracerProviderIdGenerator $ tracerProvider t
         Just (Span s) ->
           traceId . Types.spanContext <$> readIORef s
         Just (FrozenSpan s) -> pure $ traceId s
-        Just (Dropped s) -> pure $ traceId s
+        Just (Dropped _) -> error "unreachable: Dropped handled in caller"
 
-      (samplingOutcome, attrs, samplingTraceState) <- case parent of
-        Just (Dropped _) -> pure (Drop, [], TraceState.empty)
-        _ ->
+      (samplingOutcome, attrs, samplingTraceState) <-
           shouldSample
             (tracerProviderSampler $ tracerProvider t)
             ctxt
@@ -284,7 +295,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..}
                     , spanKind = kind
                     , spanAttributes =
                         A.addAttributes
-                          (limitBy t spanAttributeCountLimit)
+                          (tracerSpanAttributeLimits t)
                           emptyAttributes
                           mergedAttrs
                     , spanLinks =
@@ -501,7 +512,7 @@ addAttribute (Span s) k v = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
         OpenTelemetry.Attributes.addAttribute
-          (limitBy (spanTracer i) spanAttributeCountLimit)
+          (tracerSpanAttributeLimits $ spanTracer i)
           (spanAttributes i)
           k
           v
@@ -521,7 +532,7 @@ addAttributes (Span s) attrs = liftIO $ modifyIORef' s $ \(!i) ->
   i
     { spanAttributes =
         OpenTelemetry.Attributes.addAttributes
-          (limitBy (spanTracer i) spanAttributeCountLimit)
+          (tracerSpanAttributeLimits $ spanTracer i)
           (spanAttributes i)
           attrs
     }
@@ -544,7 +555,7 @@ addEvent (Span s) NewEvent {..} = liftIO $ do
               { eventName = newEventName
               , eventAttributes =
                   A.addAttributes
-                    (limitBy (spanTracer i) eventAttributeCountLimit)
+                    (tracerEventAttributeLimits $ spanTracer i)
                     emptyAttributes
                     newEventAttributes
               , eventTimestamp = t
@@ -566,7 +577,7 @@ freezeLink :: Tracer -> NewLink -> Link
 freezeLink t NewLink {..} =
   Link
     { frozenLinkContext = linkContext
-    , frozenLinkAttributes = A.addAttributes (limitBy t linkAttributeCountLimit) A.emptyAttributes linkAttributes
+    , frozenLinkAttributes = A.addAttributes (tracerLinkAttributeLimits t) A.emptyAttributes linkAttributes
     }
 
 
@@ -734,25 +745,18 @@ getTimestamp :: (MonadIO m) => m Timestamp
 getTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime Realtime
 
 
-limitBy
-  :: Tracer
-  -> (SpanLimits -> Maybe Int)
-  -- ^ Attribute count
-  -> AttributeLimits
-limitBy t countF =
+-- | Resolve attribute limits at Tracer construction time. Called once per
+-- Tracer; result is cached in 'tracerSpanAttributeLimits' etc.
+resolveLimits :: TracerProvider -> (SpanLimits -> Maybe Int) -> AttributeLimits
+resolveLimits tp countF =
   AttributeLimits
-    { attributeCountLimit = countLimit
-    , attributeLengthLimit = lengthLimit
+    { attributeCountLimit =
+        countF (tracerProviderSpanLimits tp)
+          <|> attributeCountLimit (tracerProviderAttributeLimits tp)
+    , attributeLengthLimit =
+        spanAttributeValueLengthLimit (tracerProviderSpanLimits tp)
+          <|> attributeLengthLimit (tracerProviderAttributeLimits tp)
     }
-  where
-    countLimit =
-      countF (tracerProviderSpanLimits $ tracerProvider t)
-        <|> attributeCountLimit
-          (tracerProviderAttributeLimits $ tracerProvider t)
-    lengthLimit =
-      spanAttributeValueLengthLimit (tracerProviderSpanLimits $ tracerProvider t)
-        <|> attributeLengthLimit
-          (tracerProviderAttributeLimits $ tracerProvider t)
 
 
 globalTracer :: IORef TracerProvider
@@ -869,12 +873,15 @@ class HasTracer s where
 
 
 makeTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Tracer
-makeTracer tp n TracerOptions {} = Tracer n tp
+makeTracer tp n TracerOptions {} =
+  Tracer n tp
+    (resolveLimits tp spanAttributeCountLimit)
+    (resolveLimits tp eventAttributeCountLimit)
+    (resolveLimits tp linkAttributeCountLimit)
 
 
 getTracer :: (MonadIO m) => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
-getTracer tp n TracerOptions {} = liftIO $ do
-  pure $ Tracer n tp
+getTracer tp n opts = pure $ makeTracer tp n opts
 {-# DEPRECATED getTracer "use makeTracer" #-}
 
 

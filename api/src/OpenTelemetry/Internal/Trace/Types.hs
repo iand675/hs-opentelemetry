@@ -91,6 +91,13 @@ data Tracer = Tracer
   -- ^ Get the TracerProvider from which the 'Tracer' was created
   --
   -- @since 0.0.10
+  , tracerSpanAttributeLimits :: !AttributeLimits
+  -- ^ Precomputed attribute limits for span attributes, resolved from
+  -- SpanLimits + global AttributeLimits at Tracer creation time.
+  , tracerEventAttributeLimits :: !AttributeLimits
+  -- ^ Precomputed attribute limits for event attributes.
+  , tracerLinkAttributeLimits :: !AttributeLimits
+  -- ^ Precomputed attribute limits for link attributes.
   }
 
 
