@@ -270,7 +270,8 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..}
           mkRecordingSpan = do
             st <- maybe getTimestamp pure startTime
             tid <- myThreadId
-            let additionalInfo = [("thread.id", toAttribute $ getThreadId tid)]
+            let !threadAttr = toAttribute $ getThreadId tid
+                mergedAttrs = H.insert "thread.id" threadAttr $ H.union attrs attributes
                 is =
                   ImmutableSpan
                     { spanName = n
@@ -281,7 +282,7 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..}
                         A.addAttributes
                           (limitBy t spanAttributeCountLimit)
                           emptyAttributes
-                          (H.unions [additionalInfo, attrs, attributes])
+                          mergedAttrs
                     , spanLinks =
                         let emptyLinks = emptyAppendOnlyBoundedCollection $ fromMaybe 128 (linkCountLimit $ tracerProviderSpanLimits $ tracerProvider t)
                         in foldl (\c l -> appendToBoundedCollection c l) emptyLinks (fmap (freezeLink t) links)

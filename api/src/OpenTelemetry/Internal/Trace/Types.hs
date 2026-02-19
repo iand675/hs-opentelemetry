@@ -163,10 +163,14 @@ data SpanArguments = SpanArguments
   { kind :: SpanKind
   -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
   -- of the various values that may be specified.
-  , attributes :: AttributeMap
+  , attributes :: ~AttributeMap
   -- ^ An initial set of attributes that may be set on initial 'Span' creation.
   -- These attributes are provided to 'Processor's, so they may be useful in some
   -- scenarios where calling `addAttribute` or `addAttributes` is too late.
+  --
+  -- Lazy so that callerAttributes computation (HashMap construction from
+  -- source locations) is deferred until the span is actually recorded.
+  -- When sampling drops the span, these are never forced.
   , links :: [NewLink]
   -- ^ A collection of `Link`s that point to causally related 'Span's.
   , startTime :: Maybe Timestamp

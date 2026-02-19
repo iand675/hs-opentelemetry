@@ -105,7 +105,9 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v = case attributeCountLim
       else Attributes newAttrs newCount attributesDropped
   where
     newAttrs = H.insert k (maybe id limitLengths attributeLengthLimit $ toAttribute v) attributeMap
-    newCount = H.size newAttrs
+    -- Track count incrementally: if the key already exists, size doesn't change.
+    -- This avoids the O(n) H.size call on every insertion.
+    newCount = if H.member k attributeMap then attributesCount else attributesCount + 1
 {-# INLINE addAttribute #-}
 
 
@@ -122,7 +124,10 @@ addAttributes AttributeLimits {..} Attributes {..} attrs = case attributeCountLi
       else Attributes newAttrs newCount attributesDropped
   where
     newAttrs = H.union attributeMap $ H.map (maybe id limitLengths attributeLengthLimit . toAttribute) attrs
-    newCount = H.size newAttrs
+    -- H.size is O(n) so we compute the new count from the union. The number of
+    -- genuinely new keys is (size of union - old size). We need the old size
+    -- which we already track in attributesCount.
+    newCount = attributesCount + (H.size newAttrs - H.size attributeMap)
 {-# INLINE addAttributes #-}
 
 
