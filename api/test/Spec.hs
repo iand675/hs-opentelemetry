@@ -19,6 +19,7 @@ import qualified OpenTelemetry.Logs.CoreSpec as CoreSpec
 import qualified OpenTelemetry.ResourceSpec as Resource
 import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
 import OpenTelemetry.Trace.Core
+import qualified OpenTelemetry.Trace.EncodingSpec as Encoding
 import qualified OpenTelemetry.Trace.SamplerSpec as Sampler
 import qualified OpenTelemetry.Trace.TraceFlagsSpec as TraceFlags
 import qualified OpenTelemetry.Trace.TracerSpec as Tracer
@@ -58,6 +59,7 @@ main = hspec $ do
   --     exceptionTest
   Attributes.spec
   Baggage.spec
+  Encoding.spec
   Resource.spec
   InstrumentationLibrary.spec
   Sampler.spec

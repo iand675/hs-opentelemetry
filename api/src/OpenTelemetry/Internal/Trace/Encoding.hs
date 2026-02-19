@@ -20,7 +20,7 @@ import Data.Word (Word8)
 import Foreign.C.Types (CSize (..), CInt (..))
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Ptr (Ptr)
-import GHC.Exts (ByteArray#, Ptr (..), byteArrayContents#, keepAlive#, State#, RealWorld)
+import GHC.Exts (ByteArray#, Ptr (..), byteArrayContents#, keepAlive#)
 import GHC.IO (unsafeDupablePerformIO, IO (..))
 
 
@@ -67,12 +67,10 @@ encodeBase16 (BSI.BS sfp slen) = unsafeDupablePerformIO $
 -- Uses keepAlive# to pin the ByteArray# during the C call, and fully-unrolled
 -- C loops for the fixed 16-byte (TraceId) and 8-byte (SpanId) sizes.
 encodeBase16Short :: ShortByteString -> ByteString
-encodeBase16Short sbs@(SBS ba#) = case slen of
+encodeBase16Short sbs@(SBS ba#) = case SBS.length sbs of
   16 -> encodeShortDirect ba# 32 c_hex_encode_16
   8  -> encodeShortDirect ba# 16 c_hex_encode_8
   _  -> encodeBase16 (fromShort sbs)
-  where
-    slen = sbsLength sbs
 
 
 {-# INLINE encodeShortDirect #-}
@@ -80,7 +78,8 @@ encodeShortDirect :: ByteArray# -> Int -> (Ptr Word8 -> Ptr Word8 -> IO ()) -> B
 encodeShortDirect ba# outLen encoder = unsafeDupablePerformIO $
   BSI.create outLen $ \dptr -> IO $ \s ->
     keepAlive# ba# s $ \s' ->
-      unIO (encoder (Ptr (byteArrayContents# ba#)) dptr) s'
+      case encoder (Ptr (byteArrayContents# ba#)) dptr of
+        IO f -> f s'
 
 
 -- ── Decode ──
@@ -101,11 +100,3 @@ decodeBase16 (BSI.BS sfp slen)
           else pure $ Left "Invalid hex digit in Base16-encoded data"
 
 
--- ── Helpers ──
-
-unIO :: IO a -> State# RealWorld -> (# State# RealWorld, a #)
-unIO (IO f) = f
-
-
-sbsLength :: ShortByteString -> Int
-sbsLength s = let !n = SBS.length s in n

@@ -44,6 +44,7 @@ library
       OpenTelemetry.Internal.Common.Types
       OpenTelemetry.Internal.Logs.Core
       OpenTelemetry.Internal.Logs.Types
+      OpenTelemetry.Internal.Trace.Encoding
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.Internal.VectorBuilder
       OpenTelemetry.LogAttributes
@@ -76,7 +77,6 @@ library
       OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Context.Types
-      OpenTelemetry.Internal.Trace.Encoding
       OpenTelemetry.Internal.Trace.Types
       Paths_hs_opentelemetry_api
   hs-source-dirs:
@@ -117,6 +117,7 @@ test-suite hs-opentelemetry-api-test
       OpenTelemetry.Logs.CoreSpec
       OpenTelemetry.ResourceSpec
       OpenTelemetry.SemanticsConfigSpec
+      OpenTelemetry.Trace.EncodingSpec
       OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
       OpenTelemetry.Trace.TracerSpec
@@ -129,6 +130,7 @@ test-suite hs-opentelemetry-api-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , hs-opentelemetry-api
     , hspec
     , mtl
@@ -140,11 +142,11 @@ test-suite hs-opentelemetry-api-test
 
 benchmark hex-bench
   type: exitcode-stdio-1.0
-  main-is: HexBench.hs
+  main-is: Main.hs
   other-modules:
       Paths_hs_opentelemetry_api
   hs-source-dirs:
-      bench
+      bench/hex
   default-extensions:
       OverloadedStrings
       RecordWildCards
@@ -156,4 +158,21 @@ benchmark hex-bench
       base >=4.7 && <5
     , bytestring
     , criterion
+  default-language: Haskell2010
+
+benchmark inert-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_hs_opentelemetry_api
+  hs-source-dirs:
+      bench/inert
+  default-extensions:
+      OverloadedStrings
+      RecordWildCards
+  ghc-options: -O2 -threaded -rtsopts
+  build-depends:
+      base >=4.7 && <5
+    , criterion
+    , hs-opentelemetry-api
   default-language: Haskell2010

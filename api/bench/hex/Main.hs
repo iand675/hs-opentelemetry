@@ -17,7 +17,7 @@ import Foreign.C.Types (CSize (..), CInt (..))
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Ptr (Ptr)
 import Foreign.Storable (peekByteOff, pokeByteOff)
-import GHC.Exts (ByteArray#, byteArrayContents#, Ptr (..), keepAlive#, State#, RealWorld)
+import GHC.Exts (ByteArray#, byteArrayContents#, Ptr (..), keepAlive#)
 import GHC.IO (unsafeDupablePerformIO, IO (..))
 
 
@@ -152,18 +152,15 @@ encodeCFixed16ShortDirect :: ShortByteString -> ByteString
 encodeCFixed16ShortDirect (SBS ba#) = unsafeDupablePerformIO $
   BSI.create 32 $ \dptr -> IO $ \s ->
     keepAlive# ba# s $ \s' ->
-      case unIO (c_hex_encode_16_raw (Ptr (byteArrayContents# ba#)) dptr) s' of
-        (# s'', () #) -> (# s'', () #)
+      case c_hex_encode_16_raw (Ptr (byteArrayContents# ba#)) dptr of
+        IO f -> f s'
 
 encodeCFixed8ShortDirect :: ShortByteString -> ByteString
 encodeCFixed8ShortDirect (SBS ba#) = unsafeDupablePerformIO $
   BSI.create 16 $ \dptr -> IO $ \s ->
     keepAlive# ba# s $ \s' ->
-      case unIO (c_hex_encode_8_raw (Ptr (byteArrayContents# ba#)) dptr) s' of
-        (# s'', () #) -> (# s'', () #)
-
-unIO :: IO a -> State# RealWorld -> (# State# RealWorld, a #)
-unIO (IO f) = f
+      case c_hex_encode_8_raw (Ptr (byteArrayContents# ba#)) dptr of
+        IO f -> f s'
 
 
 -- ── Haskell with 256-entry Word16 LUT ──
