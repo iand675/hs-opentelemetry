@@ -214,7 +214,7 @@ Note: Support for environment variables is optional.
 |--------------------------------------------------------------------------------|----------|----|
 | [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          | +  |
 | [Exporter interface has `ForceFlush`](specification/trace/sdk.md#forceflush-2) |          | +  |
-| Standard output (logging)                                                      |          | + (metrics only) |
+| Standard output (logging)                                                      |          | + (spans, metrics, logs) |
 | In-memory (mock exporter)                                                      |          | +  |
 | [OTLP](specification/protocol/otlp.md)                                         |          | +  |
 | OTLP/gRPC Exporter                                                             | *        |    |
