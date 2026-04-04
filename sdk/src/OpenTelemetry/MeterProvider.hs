@@ -50,6 +50,7 @@ import OpenTelemetry.Exporter.Metric (
   HistogramDataPoint (..),
   MetricExemplar (..),
   MetricExport (..),
+  MetricExporter (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
@@ -101,6 +102,7 @@ data SdkMeterProviderOptions = SdkMeterProviderOptions
   , aggregationTemporality :: !AggregationTemporality
   , views :: ![View]
   , exemplarOptions :: !SdkMeterExemplarOptions
+  , metricExporter :: !(Maybe MetricExporter)
   }
 
 
@@ -111,6 +113,7 @@ defaultSdkMeterProviderOptions =
     , aggregationTemporality = AggregationCumulative
     , views = []
     , exemplarOptions = defaultSdkMeterExemplarOptions
+    , metricExporter = Nothing
     }
 
 
@@ -1235,6 +1238,7 @@ createMeterProvider res opts = do
           , sdkMeterExemplarOptions = exOpts
           , sdkMeterStartTimeNanos = startT
           }
+      mExporter = metricExporter opts
       provider =
         MeterProvider
           { meterProviderGetMeter = \scope -> do
@@ -1242,11 +1246,25 @@ createMeterProvider res opts = do
               if shut then pure (noopMeter scope) else pure (mkMeter env scope)
           , meterProviderShutdown = do
               writeIORef sd True
+              -- Final collect + export before teardown
+              batches <- collectResourceMetrics env
+              case mExporter of
+                Just ex -> do
+                  _ <- metricExporterExport ex batches
+                  _ <- metricExporterShutdown ex
+                  pure ()
+                Nothing -> pure ()
               writeIORef st emptyStorageState
               writeIORef cbs Seq.empty
               pure ShutdownSuccess
           , meterProviderForceFlush = do
-              _ <- collectResourceMetrics env
+              batches <- collectResourceMetrics env
+              case mExporter of
+                Just ex -> do
+                  _ <- metricExporterExport ex batches
+                  _ <- metricExporterForceFlush ex
+                  pure ()
+                Nothing -> pure ()
               pure FlushSuccess
           }
   pure (provider, env)

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `OpenTelemetry.Exporter.InMemory` barrel now re-exports all three signals (Span, Metric, LogRecord); deprecated annotation removed
 - New `OpenTelemetry.Exporter.InMemory.LogRecord` module (in-memory log exporter for testing)
 - New `OpenTelemetry.Exporter.InMemory.Metric` module (in-memory metric exporter for tests)
 

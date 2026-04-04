@@ -143,6 +143,8 @@ batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
                         check shouldStop
                     ]
               cancel worker
+              logRecordExporterShutdown batchLogExporter
+
               pure $ case shutdownResult of
                 Nothing -> ShutdownTimeout
                 Just (Left _) -> ShutdownFailure

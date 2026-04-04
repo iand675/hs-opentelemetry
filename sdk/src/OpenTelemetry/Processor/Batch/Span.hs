@@ -338,7 +338,7 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
 
               -- make sure the worker comes down if we timed out.
               cancel worker
-              -- TODO, not convinced we should shut down processor here
+              SpanExporter.spanExporterShutdown exporter
 
               pure $ case shutdownResult of
                 Nothing ->
