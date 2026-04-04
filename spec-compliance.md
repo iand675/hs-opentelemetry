@@ -140,12 +140,12 @@ See `OpenTelemetry.Metrics`, `OpenTelemetry.MeterProvider`, `OpenTelemetry.Metri
 | LogRecord: trace context fields (TraceId, SpanId, TraceFlags)                   |          | +       |
 | Shutdown / ForceFlush (LoggerProvider)                                           |          | +       |
 | [LogRecordProcessor](specification/logs/sdk.md#logrecordprocessor) interface     |          | +       |
-| Built-in Simple processor                                                       |          | - (stub) |
-| Built-in Batch processor                                                        |          | - (stub) |
+| Built-in Simple processor                                                       |          | +       |
+| Built-in Batch processor                                                        |          | +       |
 | [LogRecordExporter](specification/logs/sdk.md#logrecordexporter) interface       |          | +       |
-| Concrete OTLP log exporter                                                      |          | - (stub) |
-| Concrete handle/console log exporter                                            |          | - (stub) |
-| Concrete in-memory log exporter (testing)                                       |          | - (stub) |
+| Concrete OTLP log exporter                                                      |          | +       |
+| Concrete handle/console log exporter                                            |          | +       |
+| Concrete in-memory log exporter (testing)                                       |          | +       |
 
 ## Resource
 
