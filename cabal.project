@@ -9,6 +9,7 @@ packages:
   , exporters/handle
   , exporters/in-memory
   , exporters/otlp
+  , exporters/prometheus
   , propagators/datadog
   , propagators/w3c
   , propagators/b3
