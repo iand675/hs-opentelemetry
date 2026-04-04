@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- New `OpenTelemetry.Exporter.Handle.LogRecord` module (console log exporter with default formatter)
 - New `OpenTelemetry.Exporter.Handle.Metric` module (console metric exporter)
 
 ## 0.0.1.2

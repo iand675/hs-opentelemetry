@@ -3,9 +3,9 @@
 import Data.Int (Int64)
 import Data.ProtoLens (decodeMessage, encodeMessage)
 import Data.Text (Text)
-import Data.Word (Word64)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
+import Data.Word (Word64)
 import Lens.Micro ((^.))
 import OpenTelemetry.Attributes (emptyAttributes)
 import OpenTelemetry.Exporter.Metric (

@@ -26,11 +26,13 @@ library:
   source-dirs: src
   exposed-modules:
   - OpenTelemetry.Exporter.Handle
+  - OpenTelemetry.Exporter.Handle.LogRecord
   - OpenTelemetry.Exporter.Handle.Metric
   - OpenTelemetry.Exporter.Handle.Span
   dependencies:
   - hs-opentelemetry-api ^>= 0.3
   - text
+  - vector
 
 # Test suite not yet implemented
 _tests:
