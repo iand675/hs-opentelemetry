@@ -93,7 +93,36 @@ formats is required. Implementing more than one format is optional.
 
 |Feature                                       |Optional| Haskell |
 |----------------------------------------------|--------|--|
-|TBD|
+| [MeterProvider](specification/metrics/api.md#meterprovider) — Get a Meter | | + |
+| [Meter](specification/metrics/api.md#meter) — create instruments | | + |
+| [Counter / UpDownCounter / Histogram / Gauge](specification/metrics/api.md#instrument) (sync) | | + |
+| [Observable instruments](specification/metrics/api.md#asynchronous-instrument-api) | | + (callbacks at creation + register) |
+| [Enabled](specification/metrics/api.md#enabled) (sync) | | + |
+| [Enabled](specification/metrics/api.md#enabled) (async) | | + |
+| Global default MeterProvider | | + |
+| [Metrics SDK](specification/metrics/sdk.md) — aggregations (sum, explicit + exponential histogram, gauge) | | + |
+| Histogram min/max tracking | | + |
+| Default histogram bounds per spec (includes 750, 7500) | | + |
+| Views (drop, aggregation, attribute keys, name, description) | | + |
+| View selector: name (wildcard), kind, unit, meter_name, meter_version, meter_schema_url | | + |
+| Advisory Attributes parameter fallback for attribute_keys | | + |
+| Exemplars (trace context + OTLP + Prometheus text) | | + |
+| ExemplarFilter: TraceBased (default), AlwaysOn, AlwaysOff | | + |
+| OTEL_METRICS_EXEMPLAR_FILTER wired into SDK | | + |
+| Cardinality limits (per instrument) | | + |
+| Cardinality overflow attribute (otel.metric.overflow=true) | | + |
+| Periodic metric reader (SDK helper) | | + |
+| Delta / cumulative temporality (export) | | + |
+| startTimeUnixNano on data points | | + |
+| ForceFlush (triggers metric collect) | | + |
+| View name/description override | | + |
+| In-memory metric exporter (testing) | | + |
+| Console metric exporter | | + |
+| Exporter selection (OTEL_METRICS_EXPORTER wiring) | | + |
+| Instrument name case-insensitive matching | | + |
+| NaN/Inf measurement handling (silently dropped) | | + |
+
+See `OpenTelemetry.Metrics`, `OpenTelemetry.MeterProvider`, `OpenTelemetry.Metrics.View`, `OpenTelemetry.MetricReader` (SDK), `OpenTelemetry.Exporter.Metric`, `OpenTelemetry.Exporter.OTLP.Metric`, `OpenTelemetry.Exporter.Prometheus`.
 
 ## Resource
 
@@ -142,7 +171,9 @@ Note: Support for environment variables is optional.
 |OTEL_EXPORTER_JAEGER_*                        |   |
 |OTEL_EXPORTER_ZIPKIN_*                        |   |
 |OTEL_TRACES_EXPORTER                          | (partial support) |
-|OTEL_METRICS_EXPORTER                         |   |
+|OTEL_METRICS_EXPORTER                         | + |
+|OTEL_METRIC_EXPORT_INTERVAL                   | + |
+|OTEL_METRICS_EXEMPLAR_FILTER                  | + |
 |OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT               | + |
 |OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT        | + |
 |OTEL_SPAN_EVENT_COUNT_LIMIT                   | + |
@@ -160,7 +191,7 @@ Note: Support for environment variables is optional.
 |--------------------------------------------------------------------------------|----------|----|
 | [Exporter interface](specification/trace/sdk.md#span-exporter)                 |          | +  |
 | [Exporter interface has `ForceFlush`](specification/trace/sdk.md#forceflush-2) |          | +  |
-| Standard output (logging)                                                      |          |    |
+| Standard output (logging)                                                      |          | + (metrics only) |
 | In-memory (mock exporter)                                                      |          | +  |
 | [OTLP](specification/protocol/otlp.md)                                         |          | +  |
 | OTLP/gRPC Exporter                                                             | *        |    |

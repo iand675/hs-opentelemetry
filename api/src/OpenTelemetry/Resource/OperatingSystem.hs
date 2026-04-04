@@ -25,35 +25,36 @@ import OpenTelemetry.Resource
 -- | The operating system (OS) on which the process represented by this resource is running.
 data OperatingSystem = OperatingSystem
   { osType :: Text
-  -- ^ The operating system type.
-  --
-  -- MUST be one of the following or, if none of the listed values apply, a custom value:
-  --
-  -- +-----------------+---------------------------------------+
-  -- | Value           | Description                           |
-  -- +=================+=======================================+
-  -- | @windows@       | Microsoft Windows                     |
-  -- +-----------------+---------------------------------------+
-  -- | @linux@         | Linux                                 |
-  -- +-----------------+---------------------------------------+
-  -- | @darwin@        | Apple Darwin                          |
-  -- +-----------------+---------------------------------------+
-  -- | @freebsd@       | FreeBSD                               |
-  -- +-----------------+---------------------------------------+
-  -- | @netbsd@        | NetBSD                                |
-  -- +-----------------+---------------------------------------+
-  -- | @openbsd@       | OpenBSD                               |
-  -- +-----------------+---------------------------------------+
-  -- | @dragonflybsd@  | DragonFly BSD                         |
-  -- +-----------------+---------------------------------------+
-  -- | @hpux@          | HP-UX (Hewlett Packard Unix)          |
-  -- +-----------------+---------------------------------------+
-  -- | @aix@           | AIX (Advanced Interactive eXecutive)  |
-  -- +-----------------+---------------------------------------+
-  -- | @solaris@       | Oracle Solaris                        |
-  -- +-----------------+---------------------------------------+
-  -- | @z_os@          | IBM z/OS                              |
-  -- +-----------------+---------------------------------------+
+  {- ^ The operating system type.
+
+  MUST be one of the following or, if none of the listed values apply, a custom value:
+
+  +-----------------+---------------------------------------+
+  | Value           | Description                           |
+  +=================+=======================================+
+  | @windows@       | Microsoft Windows                     |
+  +-----------------+---------------------------------------+
+  | @linux@         | Linux                                 |
+  +-----------------+---------------------------------------+
+  | @darwin@        | Apple Darwin                          |
+  +-----------------+---------------------------------------+
+  | @freebsd@       | FreeBSD                               |
+  +-----------------+---------------------------------------+
+  | @netbsd@        | NetBSD                                |
+  +-----------------+---------------------------------------+
+  | @openbsd@       | OpenBSD                               |
+  +-----------------+---------------------------------------+
+  | @dragonflybsd@  | DragonFly BSD                         |
+  +-----------------+---------------------------------------+
+  | @hpux@          | HP-UX (Hewlett Packard Unix)          |
+  +-----------------+---------------------------------------+
+  | @aix@           | AIX (Advanced Interactive eXecutive)  |
+  +-----------------+---------------------------------------+
+  | @solaris@       | Oracle Solaris                        |
+  +-----------------+---------------------------------------+
+  | @z_os@          | IBM z/OS                              |
+  +-----------------+---------------------------------------+
+  -}
   , osDescription :: Maybe Text
   -- ^ Human readable (not intended to be parsed) OS version information, like e.g. reported by @ver@ or @lsb_release -a@ commands.
   , osName :: Maybe Text

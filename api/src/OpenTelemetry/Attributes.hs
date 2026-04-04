@@ -164,8 +164,9 @@ data AttributeLimits = AttributeLimits
   { attributeCountLimit :: Maybe Int
   -- ^ The number of unique attributes that may be added to an 'Attributes' structure before they are dropped.
   , attributeLengthLimit :: Maybe Int
-  -- ^ The maximum length of string attributes that may be set. Longer-length string values will be truncated to the
-  -- specified amount.
+  {- ^ The maximum length of string attributes that may be set. Longer-length string values will be truncated to the
+  specified amount.
+  -}
   }
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)

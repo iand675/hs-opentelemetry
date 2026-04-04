@@ -551,18 +551,18 @@ generate targetFile = do
                       let href = convertId ref
                       in ( []
                          , comment
-                            <$> fold
-                              [ ["- '" <> href <> "'"]
-                              , fieldLine brief $ indent 1 . convertMarkupFromMarkdownToHaddock
-                              , fieldLine stability $ indent 1 . ("Stability: " <>) . convertStability
-                              , fieldLine deprecated $ indent 1 . ("Deprecated: " <>)
-                              , fieldLine requirementLevel $ indent 1 . ("Requirement level: " <>) . convertRequirementLevel
-                              , fieldLines note $ \n ->
-                                  [ indent 1 $ "==== Note"
-                                  , indent 1 $ convertMarkupFromMarkdownToHaddock n
-                                  ]
-                              , [""]
-                              ]
+                             <$> fold
+                               [ ["- '" <> href <> "'"]
+                               , fieldLine brief $ indent 1 . convertMarkupFromMarkdownToHaddock
+                               , fieldLine stability $ indent 1 . ("Stability: " <>) . convertStability
+                               , fieldLine deprecated $ indent 1 . ("Deprecated: " <>)
+                               , fieldLine requirementLevel $ indent 1 . ("Requirement level: " <>) . convertRequirementLevel
+                               , fieldLines note $ \n ->
+                                   [ indent 1 $ "==== Note"
+                                   , indent 1 $ convertMarkupFromMarkdownToHaddock n
+                                   ]
+                               , [""]
+                               ]
                          , []
                          )
           Vector.cons

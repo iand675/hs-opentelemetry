@@ -272,8 +272,8 @@ encodeTraceStateMultiple maxSize ts =
     splitIntoHeaders limit entries =
       let (currentHeader, remaining) = buildHeader limit entries []
       in if C8.null currentHeader
-          then []
-          else currentHeader : splitIntoHeaders limit remaining
+           then []
+           else currentHeader : splitIntoHeaders limit remaining
 
     buildHeader :: Int -> [ByteString] -> [ByteString] -> (ByteString, [ByteString])
     buildHeader _ [] acc = (C8.intercalate "," (reverse acc), [])
@@ -281,8 +281,8 @@ encodeTraceStateMultiple maxSize ts =
       let currentSize = if null acc then 0 else sum (map C8.length acc) + length acc - 1 -- account for commas
           newSize = currentSize + C8.length entry + if null acc then 0 else 1
       in if newSize <= limit || null acc -- Always include at least one entry
-          then buildHeader limit rest (entry : acc)
-          else (C8.intercalate "," (reverse acc), entry : rest)
+           then buildHeader limit rest (entry : acc)
+           else (C8.intercalate "," (reverse acc), entry : rest)
 
 
 {- | Combine multiple tracestate header values into a single TraceState.
@@ -300,10 +300,10 @@ decodeTraceStateMultiple headers =
   let nonEmptyHeaders = filter (not . C8.all (\c -> c == ' ' || c == '\t')) headers
       combinedHeader = C8.intercalate "," nonEmptyHeaders
   in if C8.null combinedHeader
-      then empty
-      else case parseOnly tracestateParser combinedHeader of
-        Right ts -> ts
-        Left _ -> empty -- Fallback to empty on parse failure
+       then empty
+       else case parseOnly tracestateParser combinedHeader of
+         Right ts -> ts
+         Left _ -> empty -- Fallback to empty on parse failure
 
 
 {- | Encoded the given 'Span' into a @traceparent@, @tracestate@ tuple.

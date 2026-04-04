@@ -25,6 +25,10 @@ dependencies:
 library:
   ghc-options: -Wall
   source-dirs: src
+  exposed-modules:
+  - OpenTelemetry.Exporter.InMemory
+  - OpenTelemetry.Exporter.InMemory.Metric
+  - OpenTelemetry.Exporter.InMemory.Span
   dependencies:
   - hs-opentelemetry-api ^>= 0.3
   - async

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.0.0
+
+- Support OTLP specification v1.9.0
+
 ## 0.1.1.0
 
 - Support OTLP specification v1.7
