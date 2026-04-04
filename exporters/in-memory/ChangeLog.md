@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- New `OpenTelemetry.Exporter.InMemory.LogRecord` module (in-memory log exporter for testing)
 - New `OpenTelemetry.Exporter.InMemory.Metric` module (in-memory metric exporter for tests)
 
 ## 0.0.1.2 
