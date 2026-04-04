@@ -351,6 +351,8 @@ data ImmutableLogRecord = ImmutableLogRecord
   Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
   emitted by the applications. This field is optional.
   -}
+  , logRecordEventName :: Maybe Text
+  -- ^ Optional event name. When set, this identifies the log record as an event following the event semantic conventions.
   }
 
 
@@ -366,6 +368,7 @@ data LogRecordArguments = LogRecordArguments
   , severityNumber :: Maybe SeverityNumber
   , body :: AnyValue
   , attributes :: HashMap Text AnyValue
+  , eventName :: Maybe Text
   }
 
 
@@ -379,6 +382,7 @@ emptyLogRecordArguments =
     , severityNumber = Nothing
     , body = NullValue
     , attributes = H.empty
+    , eventName = Nothing
     }
 
 
