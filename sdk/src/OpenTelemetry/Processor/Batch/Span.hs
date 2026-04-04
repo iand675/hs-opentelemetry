@@ -32,11 +32,13 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
 import Data.Vector (Vector)
+import qualified Data.Vector as V
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
 import System.IO (hPutStrLn, stderr)
+import System.Timeout (timeout)
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder
 
@@ -178,7 +180,7 @@ boundedMap bounds exportBounds = BoundedMap bounds exportBounds 0 mempty
 
 push :: ImmutableSpan -> BoundedMap ImmutableSpan -> Maybe (BoundedMap ImmutableSpan)
 push s m =
-  if itemCount m + 1 >= itemBounds m
+  if itemCount m >= itemBounds m
     then Nothing
     else
       Just $!
@@ -200,7 +202,7 @@ buildExport m =
   )
 
 
-data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
+data ProcessorMessage = ScheduledFlush | MaxExportFlush | FlushRequested | Shutdown
 
 
 -- note: [Unmasking Asyncs]
@@ -241,46 +243,76 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   warnedRef <- newIORef False
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
-  let publish batchToProcess = mask_ $ do
-        -- we mask async exceptions in this, so that a buggy exporter that
-        -- catches async exceptions won't swallow them. since we use
-        -- an interruptible mask, blocking calls can still be killed, like
-        -- `threadDelay` or `putMVar` or most file I/O operations.
-        --
-        -- if we've received a shutdown, then we should be expecting
-        -- a `cancel` anytime now.
-        SpanExporter.spanExporterExport exporter batchToProcess
+  flushRequestSignal <- newEmptyTMVarIO
+  flushDoneSignal <- newEmptyTMVarIO
+  let timeoutMicros = millisToMicros exportTimeoutMillis
+
+  let publish batchToProcess = do
+        mResult <-
+          timeout timeoutMicros $
+            mask_ $
+              SpanExporter.spanExporterExport exporter batchToProcess
+        pure $ case mResult of
+          Nothing -> Failure Nothing
+          Just r -> r
+
+  -- Split a batch map into a chunk of at most n items and a remainder.
+  let splitBatch n m = go n (HashMap.toList m) [] []
+        where
+          go _ [] chunkAcc restAcc = (HashMap.fromList chunkAcc, HashMap.fromList restAcc)
+          go 0 remaining chunkAcc restAcc = (HashMap.fromList chunkAcc, HashMap.fromList (restAcc ++ remaining))
+          go remaining ((lib, vec) : rest) chunkAcc restAcc
+            | V.length vec <= remaining =
+                go (remaining - V.length vec) rest ((lib, vec) : chunkAcc) restAcc
+            | otherwise =
+                let (front, back) = V.splitAt remaining vec
+                in go 0 rest ((lib, front) : chunkAcc) ((lib, back) : restAcc)
+
+  let publishBounded batchMap
+        | HashMap.null batchMap = pure Success
+        | sum (V.length <$> HashMap.elems batchMap) <= maxExportBatchSize =
+            publish batchMap
+        | otherwise = do
+            let (chunk, rest) = splitBatch maxExportBatchSize batchMap
+            res <- publish chunk
+            case res of
+              Failure _ -> pure res
+              Success -> publishBounded rest
 
   let flushQueueImmediately ret = do
         batchToProcess <- atomicModifyIORef' batch buildExport
         if null batchToProcess
-          then do
-            pure ret
+          then pure ret
           else do
-            ret' <- publish batchToProcess
+            ret' <- publishBounded batchToProcess
             flushQueueImmediately ret'
 
+  -- Shutdown and FlushRequested are tried before work signals so they
+  -- cannot be starved under sustained high throughput.
   let waiting = do
         delay <- registerDelay (millisToMicros scheduledDelayMillis)
-        atomically $ do
+        atomically $
           msum
-            -- Flush every scheduled delay time, when we've reached the max export size, or when the shutdown signal is received.
-            [ ScheduledFlush <$ do
+            [ Shutdown <$ takeTMVar shutdownSignal
+            , FlushRequested <$ takeTMVar flushRequestSignal
+            , MaxExportFlush <$ takeTMVar workSignal
+            , ScheduledFlush <$ do
                 continue <- readTVar delay
                 check continue
-            , MaxExportFlush <$ takeTMVar workSignal
-            , Shutdown <$ takeTMVar shutdownSignal
             ]
 
   let workerAction = do
         req <- waiting
         batchToProcess <- atomicModifyIORef' batch buildExport
-        res <- publish batchToProcess
+        res <- publishBounded batchToProcess
 
-        -- if we were asked to shutdown, stop waiting and flush it all out
         case req of
           Shutdown ->
             flushQueueImmediately res
+          FlushRequested -> do
+            _ <- flushQueueImmediately res
+            atomically $ putTMVar flushDoneSignal ()
+            workerAction
           _ ->
             workerAction
   -- see note [Unmasking Asyncs]
@@ -301,7 +333,8 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
           when dropped $ warnOnDrop droppedRef warnedRef maxQueueSize "BatchSpanProcessor"
           when exportNeeded $ void $ atomically $ tryPutTMVar workSignal ()
       , spanProcessorForceFlush = do
-          void $ atomically $ tryPutTMVar workSignal ()
+          atomically $ putTMVar flushRequestSignal ()
+          atomically $ takeTMVar flushDoneSignal
           SpanExporter.spanExporterForceFlush exporter
       , -- TODO where to call restore, if anywhere?
         spanProcessorShutdown =
@@ -342,7 +375,8 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
 
               -- make sure the worker comes down if we timed out.
               cancel worker
-              -- TODO, not convinced we should shut down processor here
+              -- OTel spec: Processor.Shutdown MUST shut down the exporter
+              SpanExporter.spanExporterShutdown exporter
 
               pure $ case shutdownResult of
                 Nothing ->

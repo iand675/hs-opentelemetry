@@ -2,8 +2,14 @@
 
 ## Unreleased
 
-- Batch/simple span processors now call `spanExporterForceFlush` during processor `ForceFlush`
-- IsValid test coverage expanded for TraceId-only and SpanId-only zero cases
+- **Shutdown/ForceFlush propagation audit:**
+  - Batch span processor now calls `spanExporterShutdown` during processor shutdown (was missing)
+  - Batch log processor now calls `logRecordExporterShutdown` during processor shutdown
+  - `MeterProvider` shutdown now does a final collect + export + `metricExporterShutdown` when an exporter is configured
+  - `MeterProvider` forceFlush now does collect + export + `metricExporterForceFlush` when an exporter is configured
+  - `SdkMeterProviderOptions` gains `metricExporter :: Maybe MetricExporter` field
+  - Periodic metric reader stop now calls `metricExporterShutdown` after final export
+  - `forceFlushTracerProvider` exported from `OpenTelemetry.Trace` (SDK)
 - Track `startTimeUnixNano` across all data points (was hardcoded to 0)
 - `ForceFlush` on `MeterProvider` now triggers a metric collect
 - `View` supports name and description overrides

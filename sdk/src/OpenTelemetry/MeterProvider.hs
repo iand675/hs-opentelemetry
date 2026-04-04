@@ -51,6 +51,7 @@ import OpenTelemetry.Exporter.Metric (
   HistogramDataPoint (..),
   MetricExemplar (..),
   MetricExport (..),
+  MetricExporter (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
@@ -102,6 +103,7 @@ data SdkMeterProviderOptions = SdkMeterProviderOptions
   , aggregationTemporality :: !AggregationTemporality
   , views :: ![View]
   , exemplarOptions :: !SdkMeterExemplarOptions
+  , metricExporter :: !(Maybe MetricExporter)
   }
 
 
@@ -112,6 +114,7 @@ defaultSdkMeterProviderOptions =
     , aggregationTemporality = AggregationCumulative
     , views = []
     , exemplarOptions = defaultSdkMeterExemplarOptions
+    , metricExporter = Nothing
     }
 
 
@@ -1217,6 +1220,7 @@ createMeterProvider res opts = do
           , sdkMeterExemplarOptions = exOpts
           , sdkMeterStartTimeNanos = startT
           }
+      mExporter = metricExporter opts
       provider =
         MeterProvider
           { meterProviderGetMeter = \scope -> do
@@ -1224,11 +1228,21 @@ createMeterProvider res opts = do
               if shut then pure (noopMeter scope) else pure (mkMeter env scope)
           , meterProviderShutdown = do
               writeIORef sd True
+              batches <- collectResourceMetrics env
+              result <- case mExporter of
+                Just ex -> do
+                  _ <- metricExporterExport ex batches
+                  metricExporterShutdown ex
+                Nothing -> pure ShutdownSuccess
               writeIORef st emptyStorageState
               writeIORef cbs Seq.empty
-              pure ShutdownSuccess
+              pure result
           , meterProviderForceFlush = do
-              _ <- collectResourceMetrics env
-              pure FlushSuccess
+              batches <- collectResourceMetrics env
+              case mExporter of
+                Just ex -> do
+                  _ <- metricExporterExport ex batches
+                  metricExporterForceFlush ex
+                Nothing -> pure FlushSuccess
           }
   pure (provider, env)

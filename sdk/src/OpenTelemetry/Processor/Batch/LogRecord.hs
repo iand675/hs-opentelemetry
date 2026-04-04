@@ -15,9 +15,10 @@ import Control.Monad.IO.Class
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), ShutdownResult (..))
 import OpenTelemetry.Internal.Logs.Types
 import System.IO (hPutStrLn, stderr)
+import System.Timeout (timeout)
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder
 
@@ -56,7 +57,7 @@ emptyBuffer bounds exportBounds = BoundedBuffer bounds exportBounds 0 mempty
 
 pushBuffer :: ReadableLogRecord -> BoundedBuffer -> Maybe BoundedBuffer
 pushBuffer lr buf
-  | bufCount buf + 1 >= bufBounds buf = Nothing
+  | bufCount buf >= bufBounds buf = Nothing
   | otherwise =
       Just $!
         buf
@@ -87,16 +88,34 @@ batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
   flushRequestSignal <- newEmptyTMVarIO
   flushDoneSignal <- newEmptyTMVarIO
 
-  let publish batchToExport =
-        mask_ $
-          logRecordExporterExport batchLogExporter batchToExport
+  let timeoutMicros = millisToMicros batchLogExportTimeoutMillis
+
+  let publish batchToExport = do
+        mResult <-
+          timeout timeoutMicros $
+            mask_ $
+              logRecordExporterExport batchLogExporter batchToExport
+        pure $ case mResult of
+          Nothing -> Failure Nothing
+          Just r -> r
+
+  let publishBounded batchToExport
+        | V.null batchToExport = pure Success
+        | V.length batchToExport <= batchLogMaxExportBatchSize =
+            publish batchToExport
+        | otherwise = do
+            let (chunk, rest) = V.splitAt batchLogMaxExportBatchSize batchToExport
+            res <- publish chunk
+            case res of
+              Failure _ -> pure res
+              Success -> publishBounded rest
 
   let flushQueueImmediately ret = do
         batchToExport <- atomicModifyIORef' batch buildExportBatch
         if V.null batchToExport
           then pure ret
           else do
-            ret' <- publish batchToExport
+            ret' <- publishBounded batchToExport
             flushQueueImmediately ret'
 
   -- Shutdown and FlushRequested are tried before work signals so they
@@ -116,7 +135,7 @@ batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
   let workerAction = do
         req <- waiting
         batchToExport <- atomicModifyIORef' batch buildExportBatch
-        res <- publish batchToExport
+        res <- publishBounded batchToExport
         case req of
           Shutdown -> flushQueueImmediately res
           FlushRequested -> do
@@ -168,9 +187,6 @@ batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
     millisToMicros = (* 1000)
 
 
--- TODO: otel-12 introduces OpenTelemetry.Internal.Logging (otelLogWarning)
--- which respects OTEL_LOG_LEVEL and the global error handler.
--- Replace hPutStrLn stderr with otelLogWarning once available.
 warnOnDrop :: IORef Int -> IORef Bool -> Int -> String -> IO ()
 warnOnDrop droppedRef warnedRef capacity processorName = do
   n <- atomicModifyIORef' droppedRef (\c -> let c' = c + 1 in (c', c'))

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `OpenTelemetry.Exporter.Handle` barrel now re-exports all three signals (Span, Metric, LogRecord); deprecated annotation removed
 - New `OpenTelemetry.Exporter.Handle.LogRecord` module (console log exporter with default formatter)
 - New `OpenTelemetry.Exporter.Handle.Metric` module (console metric exporter)
 
