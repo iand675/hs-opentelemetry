@@ -11,6 +11,7 @@ module OpenTelemetry.Internal.Logs.Core (
   shutdownLoggerProvider,
   forceFlushLoggerProvider,
   makeLogger,
+  loggerIsEnabled,
   emitLogRecord,
   addAttribute,
   addAttributes,
@@ -157,6 +158,15 @@ makeLogger
 makeLogger loggerLoggerProvider loggerInstrumentationScope = Logger {..}
 
 
+{- | Returns @True@ if the @Logger@ has any registered processors,
+meaning log records will actually be processed. Spec SHOULD: helps
+users avoid expensive LogRecord construction when logging is disabled.
+-}
+loggerIsEnabled :: Logger -> Bool
+loggerIsEnabled Logger {loggerLoggerProvider = LoggerProvider {loggerProviderProcessors}} =
+  not (V.null loggerProviderProcessors)
+
+
 createImmutableLogRecord
   :: (MonadIO m)
   => LA.AttributeLimits
@@ -189,6 +199,7 @@ createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
       , logRecordSeverityText = severityText <|> (toShortName =<< severityNumber)
       , logRecordBody = body
       , logRecordAttributes
+      , logRecordEventName = eventName
       }
 
 
