@@ -81,6 +81,7 @@ forkPeriodicMetricReader env ex opts = do
         cancel a
         _ <- waitCatch a
         _ <- exportMetricsOnce env ex
+        _ <- metricExporterShutdown ex
         pure ()
   pure $
     PeriodicMetricReaderHandle

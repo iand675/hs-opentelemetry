@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `OpenTelemetry.Exporter.OTLP` barrel module now re-exports all three signals (Span, Metric, LogRecord)
 - Implement `OpenTelemetry.Exporter.OTLP.LogRecord` — full OTLP HTTP/Protobuf log exporter with retry, compression, and severity/AnyValue/tracing-context serialization
 - Use `startTimeUnixNano` from data points instead of hardcoded 0
 - Comprehensive protobuf round-trip tests for all metric types
