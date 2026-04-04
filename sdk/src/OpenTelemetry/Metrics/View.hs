@@ -16,15 +16,16 @@ module OpenTelemetry.Metrics.View (
 ) where
 
 import Data.Int (Int32)
-import Data.List (find, filter)
+import Data.List (filter, find)
 import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Metrics (InstrumentKind (..))
 
 
--- | Select instruments by name pattern, kind, unit, and meter scope.
---
--- All provided criteria are ANDed (spec: "criteria SHOULD be treated as additive").
+{- | Select instruments by name pattern, kind, unit, and meter scope.
+
+All provided criteria are ANDed (spec: "criteria SHOULD be treated as additive").
+-}
 data ViewSelector = ViewSelector
   { viewInstrumentNamePattern :: !Text
   -- ^ Exact name, @*@ for all, or @prefix*@ suffix-wildcard.

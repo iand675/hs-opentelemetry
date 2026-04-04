@@ -43,7 +43,18 @@ renderMetric :: MetricExport -> Text
 renderMetric = \case
   MetricExportSum n d u _ m i _ pts ->
     T.concat
-      [ "Sum ", n, " ", d, " ", u, " monotonic=", T.pack (show m), " isInt=", T.pack (show i), " nPts=", T.pack (show (V.length pts))
+      [ "Sum "
+      , n
+      , " "
+      , d
+      , " "
+      , u
+      , " monotonic="
+      , T.pack (show m)
+      , " isInt="
+      , T.pack (show i)
+      , " nPts="
+      , T.pack (show (V.length pts))
       ]
   MetricExportHistogram n d u _ _ pts ->
     T.concat ["Histogram ", n, " ", d, " ", u, " nPts=", T.pack (show (V.length pts))]

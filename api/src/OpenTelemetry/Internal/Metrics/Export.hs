@@ -2,8 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE StrictData #-}
 
-{- | Haskell view of metric data for 'MetricExporter' (see specification/metrics/sdk.md).
--}
+-- | Haskell view of metric data for 'MetricExporter' (see specification/metrics/sdk.md).
 module OpenTelemetry.Internal.Metrics.Export (
   AggregationTemporality (..),
   MetricExemplar (..),
@@ -19,13 +18,13 @@ module OpenTelemetry.Internal.Metrics.Export (
 ) where
 
 import Data.ByteString (ByteString)
+import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word64)
 import GHC.Generics (Generic)
-import qualified Data.HashMap.Strict as H
-import qualified Data.HashSet as HS
 import OpenTelemetry.Attributes (Attributes, getAttributeMap, unsafeAttributesFromListIgnoringLimits)
 import OpenTelemetry.Internal.Common.Types (ExportResult, FlushResult, InstrumentationLibrary, ShutdownResult)
 import OpenTelemetry.Resource (MaterializedResources)
@@ -175,4 +174,4 @@ filterAttributesByKeys (Just ks) attrs =
   let keep = HS.fromList ks
       m = getAttributeMap attrs
       m' = H.filterWithKey (\k _ -> k `HS.member` keep) m
-   in unsafeAttributesFromListIgnoringLimits (H.toList m')
+  in unsafeAttributesFromListIgnoringLimits (H.toList m')

@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{- | Instrument name and unit validation (SDK applies this; API does not validate — see specification/metrics/api.md).
--}
+-- | Instrument name and unit validation (SDK applies this; API does not validate — see specification/metrics/api.md).
 module OpenTelemetry.Metrics.InstrumentName (
   validateInstrumentName,
   validateInstrumentUnit,
@@ -12,26 +11,27 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
--- | @Nothing@ if valid; @Just err@ with a short English reason if invalid.
--- Implements the stable rules from specification/metrics/api.md (instrument name ABNF; ASCII only).
+{- | @Nothing@ if valid; @Just err@ with a short English reason if invalid.
+Implements the stable rules from specification/metrics/api.md (instrument name ABNF; ASCII only).
+-}
 validateInstrumentName :: Text -> Maybe Text
 validateInstrumentName t
   | T.null t = Just "instrument name must not be empty"
   | T.length t > 255 = Just "instrument name exceeds 255 characters"
   | otherwise =
       let c0 = T.index t 0
-       in if not (isAsciiAlpha c0)
-            then Just "instrument name must start with an ASCII letter"
-            else go 1
+      in if not (isAsciiAlpha c0)
+          then Just "instrument name must start with an ASCII letter"
+          else go 1
   where
     go :: Int -> Maybe Text
     go i
       | i >= T.length t = Nothing
       | otherwise =
           let c = T.index t i
-           in if isValidChar c
-                then go (i + 1)
-                else Just "instrument name contains invalid characters"
+          in if isValidChar c
+              then go (i + 1)
+              else Just "instrument name contains invalid characters"
     isAsciiAlpha c =
       isAscii c
         && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
@@ -57,5 +57,5 @@ validateInstrumentUnit u
             | i >= T.length u = Nothing
             | otherwise =
                 let c = T.index u i
-                 in if isAscii c then step (i + 1) else Just "instrument unit must be ASCII"
-       in step 0
+                in if isAscii c then step (i + 1) else Just "instrument unit must be ASCII"
+      in step 0

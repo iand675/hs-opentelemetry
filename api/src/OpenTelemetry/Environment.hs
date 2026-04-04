@@ -24,8 +24,9 @@ lookupBooleanEnv :: String -> IO Bool
 lookupBooleanEnv = fmap (maybe False isTrue) . lookupEnv
 
 
--- | Parsed value of @OTEL_METRICS_EXPORTER@ (first entry if comma-separated).
--- See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#exporter-selection>.
+{- | Parsed value of @OTEL_METRICS_EXPORTER@ (first entry if comma-separated).
+See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#exporter-selection>.
+-}
 data MetricsExporterSelection
   = MetricsExporterNone
   | MetricsExporterOtlp
@@ -48,17 +49,18 @@ lookupMetricsExporterSelection = do
       let firstSeg = trimSpaces $ case break (== ',') raw of
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
-       in pure $ case key of
-            "" -> Nothing
-            "none" -> Just MetricsExporterNone
-            "otlp" -> Just MetricsExporterOtlp
-            "prometheus" -> Just MetricsExporterPrometheus
-            "console" -> Just MetricsExporterConsole
-            _ -> Nothing
+      in pure $ case key of
+          "" -> Nothing
+          "none" -> Just MetricsExporterNone
+          "otlp" -> Just MetricsExporterOtlp
+          "prometheus" -> Just MetricsExporterPrometheus
+          "console" -> Just MetricsExporterConsole
+          _ -> Nothing
 
 
--- | Read @OTEL_METRIC_EXPORT_INTERVAL@ (milliseconds between periodic export cycles).
--- See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/>.
+{- | Read @OTEL_METRIC_EXPORT_INTERVAL@ (milliseconds between periodic export cycles).
+See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/>.
+-}
 lookupMetricExportIntervalMillis :: IO (Maybe Int)
 lookupMetricExportIntervalMillis = do
   me <- lookupEnv "OTEL_METRIC_EXPORT_INTERVAL"
@@ -85,9 +87,9 @@ lookupMetricsExemplarFilter = do
       let firstSeg = trimSpaces $ case break (== ',') raw of
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
-       in pure $ case key of
-            "" -> Nothing
-            "trace_based" -> Just MetricsExemplarFilterTraceBased
-            "always_on" -> Just MetricsExemplarFilterAlwaysOn
-            "always_off" -> Just MetricsExemplarFilterAlwaysOff
-            _ -> Nothing
+      in pure $ case key of
+          "" -> Nothing
+          "trace_based" -> Just MetricsExemplarFilterTraceBased
+          "always_on" -> Just MetricsExemplarFilterAlwaysOn
+          "always_off" -> Just MetricsExemplarFilterAlwaysOff
+          _ -> Nothing

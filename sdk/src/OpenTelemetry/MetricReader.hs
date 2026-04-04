@@ -66,11 +66,11 @@ exportMetricsOnce env ex = do
 
 
 -- | Spawn an async loop: export on each interval until stopped.
-forkPeriodicMetricReader ::
-  SdkMeterEnv ->
-  MetricExporter ->
-  PeriodicMetricReaderOptions ->
-  IO PeriodicMetricReaderHandle
+forkPeriodicMetricReader
+  :: SdkMeterEnv
+  -> MetricExporter
+  -> PeriodicMetricReaderOptions
+  -> IO PeriodicMetricReaderHandle
 forkPeriodicMetricReader env ex opts = do
   a <-
     async $
@@ -87,4 +87,3 @@ forkPeriodicMetricReader env ex opts = do
       { periodicMetricReaderAsync = a
       , stopPeriodicMetricReader = stop
       }
-
