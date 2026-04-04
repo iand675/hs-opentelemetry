@@ -24,13 +24,16 @@ module OpenTelemetry.Trace.TraceState (
   Value (..),
   empty,
   fromList,
+  lookup,
   insert,
   update,
   delete,
   toList,
 ) where
 
+import Data.List (find)
 import Data.Text (Text)
+import Prelude hiding (lookup)
 
 
 newtype Key = Key Text
@@ -59,6 +62,14 @@ empty = TraceState []
 -}
 fromList :: [(Key, Value)] -> TraceState
 fromList = TraceState
+
+
+{- | Get the value associated with a given key.
+
+ O(n)
+-}
+lookup :: Key -> TraceState -> Maybe Value
+lookup k (TraceState ts) = snd <$> find (\(k', _) -> k' == k) ts
 
 
 {- | Add a key-value pair to a 'TraceState'
