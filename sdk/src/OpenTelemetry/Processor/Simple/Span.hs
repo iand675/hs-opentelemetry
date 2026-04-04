@@ -49,7 +49,7 @@ simpleProcessor SimpleProcessorConfig {..} = do
             -- TODO, not convinced we should shut down processor here
             shutdownProcessor outChan `finally` SpanExporter.spanExporterShutdown spanExporter
           pure ShutdownSuccess
-      , spanProcessorForceFlush = pure ()
+      , spanProcessorForceFlush = SpanExporter.spanExporterForceFlush spanExporter
       }
   where
     shutdownProcessor :: OutChan (IORef ImmutableSpan) -> IO ()

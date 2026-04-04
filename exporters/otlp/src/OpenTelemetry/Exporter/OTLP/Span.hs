@@ -289,6 +289,7 @@ httpOtlpExporter conf = do
                 Right ok -> pure ok
             else pure Success
       , spanExporterShutdown = pure ()
+      , spanExporterForceFlush = pure ()
       }
   where
     retryDelay = 100_000 -- 100ms
