@@ -19,15 +19,14 @@ module OpenTelemetry.Exporter.Prometheus (
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (isAlphaNum)
-import Data.Int (Int32, Int64)
 import qualified Data.HashMap.Strict as H
+import Data.Int (Int32, Int64)
 import Data.List (sort)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Text.Printf (printf)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Exporter.Metric (
   ExponentialHistogramDataPoint (..),
@@ -41,6 +40,7 @@ import OpenTelemetry.Exporter.Metric (
  )
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..))
 import OpenTelemetry.Resource (getMaterializedResourcesAttributes)
+import Text.Printf (printf)
 
 
 -- | Render Prometheus text (lines separated by @\\n@, trailing newline).
@@ -52,7 +52,7 @@ renderPrometheusText batches =
 renderResource :: ResourceMetricsExport -> Text
 renderResource ResourceMetricsExport {..} =
   let resMap = attributesToLabelMap (getMaterializedResourcesAttributes resourceMetricsResource)
-   in T.intercalate "\n" $ fmap (renderScope resMap) $ V.toList resourceMetricsScopes
+  in T.intercalate "\n" $ fmap (renderScope resMap) $ V.toList resourceMetricsScopes
 
 
 renderScope :: Map.Map Text Text -> ScopeMetricsExport -> Text
@@ -61,7 +61,7 @@ renderScope resMap ScopeMetricsExport {..} =
         if T.null (libraryName scopeMetricsScope)
           then resMap
           else Map.insert "job" (libraryName scopeMetricsScope) resMap
-   in T.intercalate "\n" $ fmap (renderMetric jobMap) $ V.toList scopeMetricsExports
+  in T.intercalate "\n" $ fmap (renderMetric jobMap) $ V.toList scopeMetricsExports
 
 
 renderMetric :: Map.Map Text Text -> MetricExport -> Text
@@ -83,7 +83,7 @@ renderMetric baseLabels = \case
                   ]
             )
             (V.toList pts)
-     in T.unlines $ helpLine : typeLine : lines_
+    in T.unlines $ helpLine : typeLine : lines_
   MetricExportGauge name desc _unit _lib _isInt pts ->
     let nm = sanitizeName name
         helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
@@ -100,19 +100,19 @@ renderMetric baseLabels = \case
                   ]
             )
             (V.toList pts)
-     in T.unlines $ helpLine : typeLine : lines_
+    in T.unlines $ helpLine : typeLine : lines_
   MetricExportHistogram name desc _unit _lib _temp pts ->
     let nm = sanitizeName name
         helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
         typeLine = mconcat ["# TYPE ", nm, " histogram"]
         lines_ = concatMap (renderHistogramPoint baseLabels nm) (V.toList pts)
-     in T.unlines $ helpLine : typeLine : lines_
+    in T.unlines $ helpLine : typeLine : lines_
   MetricExportExponentialHistogram name desc _unit _lib _temp pts ->
     let nm = sanitizeName name
         helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
         typeLine = mconcat ["# TYPE ", nm, " histogram"]
         lines_ = concatMap (renderExponentialHistogramPoint baseLabels nm) (V.toList pts)
-     in T.unlines $ helpLine : typeLine : lines_
+    in T.unlines $ helpLine : typeLine : lines_
 
 
 byteStringHex :: ByteString -> Text
@@ -143,7 +143,7 @@ sumPointExemplarSuffix p =
     then ""
     else
       let e = V.head (sumDataPointExemplars p)
-       in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
+      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
 
 
 gaugePointExemplarSuffix :: GaugeDataPoint -> Text
@@ -152,7 +152,7 @@ gaugePointExemplarSuffix p =
     then ""
     else
       let e = V.head (gaugeDataPointExemplars p)
-       in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
+      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
 
 
 renderHistogramPoint :: Map.Map Text Text -> Text -> HistogramDataPoint -> [Text]
@@ -198,7 +198,7 @@ renderHistogramPoint baseLabels hname p =
           , " "
           , T.pack (show (histogramDataPointCount p))
           ]
-   in finiteLines ++ [infLine, sumLine, countLine]
+  in finiteLines ++ [infLine, sumLine, countLine]
 
 
 histExemplarSuffix :: HistogramDataPoint -> Text
@@ -207,7 +207,7 @@ histExemplarSuffix p =
     then ""
     else
       let e = V.head (histogramDataPointExemplars p)
-       in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
+      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
 
 
 -- | Approximate @le@ upper bound for exponential bucket index (positive side).
@@ -231,13 +231,13 @@ renderExponentialHistogramPoint baseLabels hname p =
           ( \(i, c) ->
               let idx = posOff + fromIntegral (i :: Int)
                   le = leUpperBoundExp sc idx
-               in T.concat
-                    [ hname
-                    , "_bucket"
-                    , formatLabels (Map.insert "le" (T.pack (show le)) lbls)
-                    , " "
-                    , T.pack (show c)
-                    ]
+              in T.concat
+                  [ hname
+                  , "_bucket"
+                  , formatLabels (Map.insert "le" (T.pack (show le)) lbls)
+                  , " "
+                  , T.pack (show c)
+                  ]
           )
           (zip [0 :: Int ..] (V.toList posCum))
       negPairs =
@@ -245,13 +245,13 @@ renderExponentialHistogramPoint baseLabels hname p =
           ( \(i, c) ->
               let idx = negOff + fromIntegral (i :: Int)
                   le = negate (leUpperBoundExp sc idx)
-               in T.concat
-                    [ hname
-                    , "_bucket"
-                    , formatLabels (Map.insert "le" (T.pack (show le)) lbls)
-                    , " "
-                    , T.pack (show c)
-                    ]
+              in T.concat
+                  [ hname
+                  , "_bucket"
+                  , formatLabels (Map.insert "le" (T.pack (show le)) lbls)
+                  , " "
+                  , T.pack (show c)
+                  ]
           )
           (zip [0 :: Int ..] (V.toList negCum))
       zeroLine =
@@ -291,7 +291,7 @@ renderExponentialHistogramPoint baseLabels hname p =
           , " "
           , T.pack (show (exponentialHistogramDataPointCount p))
           ]
-   in zeroLine ++ negPairs ++ posPairs ++ [infLine, sumLine, countLine]
+  in zeroLine ++ negPairs ++ posPairs ++ [infLine, sumLine, countLine]
 
 
 expHistExemplarSuffix :: ExponentialHistogramDataPoint -> Text
@@ -300,7 +300,7 @@ expHistExemplarSuffix p =
     then ""
     else
       let e = V.head (exponentialHistogramDataPointExemplars p)
-       in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
+      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
 
 
 mergeLabels :: Map.Map Text Text -> Map.Map Text Text -> Map.Map Text Text
@@ -373,7 +373,7 @@ formatLabels m =
                 )
                 (Map.toList m)
           inner = T.intercalate "," $ fmap (\(k, v) -> T.concat [k, "=\"", v, "\""]) pairs
-       in T.concat ["{", inner, "}"]
+      in T.concat ["{", inner, "}"]
 
 
 sanitizeLabelName :: Text -> Text
@@ -387,4 +387,4 @@ sanitizeLabelName t =
             if isAlphaNum c0 || c0 == '_'
               then T.singleton c0
               else "_"
-       in fixFirst <> T.map (\c -> if isAlphaNum c || c == '_' then c else '_') rest
+      in fixFirst <> T.map (\c -> if isAlphaNum c || c == '_' then c else '_') rest

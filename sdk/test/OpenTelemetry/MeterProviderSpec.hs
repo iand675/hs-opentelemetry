@@ -4,6 +4,7 @@ module OpenTelemetry.MeterProviderSpec (spec) where
 
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Vector as V
 import Data.Word (Word64)
 import OpenTelemetry.Attributes (addAttribute, defaultAttributeLimits, emptyAttributes, lookupAttribute)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
@@ -17,7 +18,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
-import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..), ShutdownResult (..), FlushResult (..))
+import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.MeterProvider
 import OpenTelemetry.Metrics (
   AdvisoryParameters (..),
@@ -30,13 +31,12 @@ import OpenTelemetry.Metrics (
   ObservableResult (..),
   UpDownCounter (..),
   defaultAdvisoryParameters,
+  forceFlushMeterProvider,
   getMeter,
   shutdownMeterProvider,
-  forceFlushMeterProvider,
  )
 import OpenTelemetry.Metrics.View (View (..), ViewAggregation (..), ViewSelector (..))
 import OpenTelemetry.Resource (emptyMaterializedResources)
-import qualified Data.Vector as V
 import Test.Hspec
 
 
@@ -340,9 +340,12 @@ spec = do
       (provider, env) <- createMeterProvider emptyMaterializedResources opts
       m <- getMeter provider scope
       c <- meterCreateCounterInt64 m "filtered" Nothing Nothing defaultAdvisoryParameters
-      let attrs = addAttribute defaultAttributeLimits
-                    (addAttribute defaultAttributeLimits emptyAttributes "keep" ("v1" :: Text))
-                    "drop" ("v2" :: Text)
+      let attrs =
+            addAttribute
+              defaultAttributeLimits
+              (addAttribute defaultAttributeLimits emptyAttributes "keep" ("v1" :: Text))
+              "drop"
+              ("v2" :: Text)
       counterAdd c 1 attrs
       batches <- collectResourceMetrics env
       case firstMetric batches of

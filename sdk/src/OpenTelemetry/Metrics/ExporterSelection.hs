@@ -17,13 +17,14 @@ import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables)
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..))
 
 
--- | Select a 'MetricExporter' based on @OTEL_METRICS_EXPORTER@.
---
--- * @otlp@ (default) — OTLP HTTP\/Protobuf
--- * @console@ — human-readable text to stdout
--- * @prometheus@ — returns a no-op push exporter; Prometheus is pull-based,
---   so the caller should expose an HTTP endpoint using 'OpenTelemetry.Exporter.Prometheus.renderPrometheusText'.
--- * @none@ — disabled (export calls succeed but discard data)
+{- | Select a 'MetricExporter' based on @OTEL_METRICS_EXPORTER@.
+
+* @otlp@ (default) — OTLP HTTP\/Protobuf
+* @console@ — human-readable text to stdout
+* @prometheus@ — returns a no-op push exporter; Prometheus is pull-based,
+  so the caller should expose an HTTP endpoint using 'OpenTelemetry.Exporter.Prometheus.renderPrometheusText'.
+* @none@ — disabled (export calls succeed but discard data)
+-}
 resolveMetricExporter :: IO MetricExporter
 resolveMetricExporter = do
   sel <- lookupMetricsExporterSelection

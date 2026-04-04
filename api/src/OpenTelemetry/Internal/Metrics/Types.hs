@@ -3,8 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE StrictData #-}
 
-{- | Internal types for the OpenTelemetry Metrics API (see specification/metrics/api.md).
--}
+-- | Internal types for the OpenTelemetry Metrics API (see specification/metrics/api.md).
 module OpenTelemetry.Internal.Metrics.Types (
   InstrumentKind (..),
   HistogramAggregation (..),
@@ -49,8 +48,8 @@ data InstrumentKind
 -- | Histogram aggregation chosen for an instrument (explicit bounds vs exponential).
 data HistogramAggregation
   = HistogramAggregationExplicit !(Vector Double)
-  | HistogramAggregationExponential !Int32
-  -- ^ Exponential histogram scale (OTel mapping index uses @2^scale@).
+  | -- | Exponential histogram scale (OTel mapping index uses @2^scale@).
+    HistogramAggregationExponential !Int32
   deriving stock (Eq, Show, Generic)
 
 
@@ -124,7 +123,7 @@ newtype ObservableCallbackHandle = ObservableCallbackHandle
 
 -- | Asynchronous counter: monotonic cumulative values observed per collection.
 data ObservableCounter a = ObservableCounter
-  { observableCounterRegisterCallback :: !( (ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
+  { observableCounterRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
   , observableCounterInstrumentScope :: !InstrumentationLibrary
   , observableCounterInstrumentName :: !Text
   , observableCounterEnabled :: !(IO Bool)
@@ -133,7 +132,7 @@ data ObservableCounter a = ObservableCounter
 
 -- | Asynchronous up-down counter.
 data ObservableUpDownCounter a = ObservableUpDownCounter
-  { observableUpDownCounterRegisterCallback :: !( (ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
+  { observableUpDownCounterRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
   , observableUpDownCounterInstrumentScope :: !InstrumentationLibrary
   , observableUpDownCounterInstrumentName :: !Text
   , observableUpDownCounterEnabled :: !(IO Bool)
@@ -142,7 +141,7 @@ data ObservableUpDownCounter a = ObservableUpDownCounter
 
 -- | Asynchronous gauge.
 data ObservableGauge a = ObservableGauge
-  { observableGaugeRegisterCallback :: !( (ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
+  { observableGaugeRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
   , observableGaugeInstrumentScope :: !InstrumentationLibrary
   , observableGaugeInstrumentName :: !Text
   , observableGaugeEnabled :: !(IO Bool)

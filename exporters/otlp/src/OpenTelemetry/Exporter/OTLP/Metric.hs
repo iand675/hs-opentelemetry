@@ -20,6 +20,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
+import qualified Data.HashMap.Strict as H
 import Data.Int (Int64)
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
@@ -29,14 +30,13 @@ import qualified Data.Text as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
-import Lens.Micro ((.~), (&))
+import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
-import qualified Data.HashMap.Strict as H
 import OpenTelemetry.Exporter.Metric (
   AggregationTemporality (..),
   ExponentialHistogramDataPoint (..),
@@ -49,6 +49,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
+import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
 import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest)
@@ -60,8 +61,6 @@ import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Rf
 import Text.Read (readMaybe)
-
-import OpenTelemetry.Exporter.OTLP.Span (OTLPExporterConfig (..), CompressionFormat (..))
 
 
 -- | Default OTLP timeout (milliseconds), aligned with "OpenTelemetry.Exporter.OTLP.Span".
@@ -231,11 +230,11 @@ resourceMetricsExportToProto ResourceMetricsExport {..} =
 materializedResourceToProto :: MaterializedResources -> Res.Resource
 materializedResourceToProto r =
   let attrs = getMaterializedResourcesAttributes r
-   in defMessage
-        & Rf.vec'attributes
-          .~ attributesToProto attrs
-        & Rf.droppedAttributesCount
-          .~ fromIntegral (getCount attrs)
+  in defMessage
+      & Rf.vec'attributes
+        .~ attributesToProto attrs
+      & Rf.droppedAttributesCount
+        .~ fromIntegral (getCount attrs)
 
 
 scopeMetricsExportToProto :: ScopeMetricsExport -> PM.ScopeMetrics
@@ -334,8 +333,8 @@ metricExportToProto = \case
 
 sumPointToProto :: SumDataPoint -> PM.NumberDataPoint
 sumPointToProto SumDataPoint {..} =
-  numberDataPointFromEither sumDataPointValue
-    $ defMessage
+  numberDataPointFromEither sumDataPointValue $
+    defMessage
       & Mf.vec'attributes
         .~ attributesToProto sumDataPointAttributes
       & Mf.startTimeUnixNano
@@ -348,8 +347,8 @@ sumPointToProto SumDataPoint {..} =
 
 gaugePointToProto :: GaugeDataPoint -> PM.NumberDataPoint
 gaugePointToProto GaugeDataPoint {..} =
-  numberDataPointFromEither gaugeDataPointValue
-    $ defMessage
+  numberDataPointFromEither gaugeDataPointValue $
+    defMessage
       & Mf.vec'attributes
         .~ attributesToProto gaugeDataPointAttributes
       & Mf.startTimeUnixNano
