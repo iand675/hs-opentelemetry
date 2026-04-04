@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-api
-version:             0.3.0.0
+version:             0.3.1.0
 
 <<: *preface
 
@@ -51,12 +51,16 @@ library:
   - vector-builder
   other-modules:
   - OpenTelemetry.Context.Types
+  - OpenTelemetry.Internal.Metrics.Export
+  - OpenTelemetry.Internal.Metrics.Types
   - OpenTelemetry.Internal.Trace.Types
   - Paths_hs_opentelemetry_api
 
 tests:
   hs-opentelemetry-api-test:
     main:                Spec.hs
+    other-modules:
+    - OpenTelemetry.MetricsSpec
     source-dirs:         test
     ghc-options:
     - -threaded

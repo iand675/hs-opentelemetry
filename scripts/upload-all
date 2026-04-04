@@ -4,6 +4,7 @@ stack upload \
   otlp \
   api \
   sdk \
+  semantic-conventions \
   exporters/in-memory \
   exporters/otlp \
   exporters/handle \
@@ -16,6 +17,7 @@ stack upload \
   instrumentation/http-client \
   instrumentation/hw-kafka-client \
   instrumentation/persistent \
+  instrumentation/persistent-mysql \
   instrumentation/postgresql-simple \
   instrumentation/tasty \
   instrumentation/wai \

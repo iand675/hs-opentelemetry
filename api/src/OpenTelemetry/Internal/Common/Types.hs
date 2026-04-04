@@ -152,6 +152,7 @@ instance ToValue AnyValue where
 
 
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
+  deriving stock (Eq, Show)
 
 
 -- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logs.forceFlush@
@@ -164,7 +165,7 @@ data FlushResult
   | -- | One or more exporters failed to successfully export one or more
     -- unexported spans or @LogRecord@s.
     FlushError
-  deriving (Show)
+  deriving stock (Eq, Show)
 
 
 data ExportResult
