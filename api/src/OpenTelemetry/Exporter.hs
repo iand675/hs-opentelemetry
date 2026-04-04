@@ -22,8 +22,6 @@ type Exporter a = SpanExporter
 
 
 {-# DEPRECATED mkExporter "use SpanExporter constructor directly" #-}
-
-
 mkExporter :: (HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult) -> IO () -> Exporter ImmutableSpan
 mkExporter export shutdown =
   SpanExporter

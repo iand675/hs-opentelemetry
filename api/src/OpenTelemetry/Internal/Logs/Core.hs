@@ -158,9 +158,10 @@ makeLogger
 makeLogger loggerLoggerProvider loggerInstrumentationScope = Logger {..}
 
 
--- | Returns @True@ if the @Logger@ has any registered processors,
--- meaning log records will actually be processed. Spec SHOULD: helps
--- users avoid expensive LogRecord construction when logging is disabled.
+{- | Returns @True@ if the @Logger@ has any registered processors,
+meaning log records will actually be processed. Spec SHOULD: helps
+users avoid expensive LogRecord construction when logging is disabled.
+-}
 loggerIsEnabled :: Logger -> Bool
 loggerIsEnabled Logger {loggerLoggerProvider = LoggerProvider {loggerProviderProcessors}} =
   not (V.null loggerProviderProcessors)
