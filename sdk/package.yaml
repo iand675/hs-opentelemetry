@@ -61,7 +61,6 @@ library:
   - random >= 1.2.0
   - stm
   - text
-  - unagi-chan
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
   - vector
