@@ -76,6 +76,16 @@ to external systems.
 
 Add `hs-opentelemetry-sdk` to your `package.yaml` or Cabal file.
 
+## Metrics (SDK)
+
+1. Build a resource (e.g. `emptyMaterializedResources` or service detectors).
+2. `createMeterProvider resource defaultSdkMeterProviderOptions` (adjust `views`, `aggregationTemporality`, `exemplarOptions`, `cardinalityLimit` as needed).
+3. `getMeter provider yourInstrumentationLibrary` and create instruments (`meterCreateCounterInt64`, `meterCreateHistogram`, …).
+4. Export: build a `MetricExporter` (e.g. `otlpMetricExporter` from `loadExporterEnvironmentVariables`), then either `forkPeriodicMetricReader env exporter =<< periodicMetricReaderOptionsFromEnv`, or on each scrape call `exportMetricsOnce env exporter` (pull-style HTTP handler).
+5. Use `otlpMetricExporter` from `OpenTelemetry.Exporter.OTLP.Metric` with `loadExporterEnvironmentVariables` / `OTLPExporterConfig` for OTLP/HTTP, or `renderPrometheusText` from `OpenTelemetry.Exporter.Prometheus` for Prometheus text.
+
+Shutdown: stop the periodic reader (if any), then `meterProviderShutdown` on the provider.
+
 ## Trace Your Code
 
 ### Initialization

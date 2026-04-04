@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-exporter-in-memory
 
+## Unreleased
+
+- New `OpenTelemetry.Exporter.InMemory.Metric` module (in-memory metric exporter for tests)
+
 ## 0.0.1.2 
 
 - Support newer dependencies

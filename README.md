@@ -21,7 +21,7 @@ the breadth of the OpenTelemetry specification. The core aspects of the tracing
 system are implemented, but you may view the detailed conformance [checklist
 here](spec-compliance.md)
 
-Metrics and logs are not yet supported.
+Metrics are supported via `OpenTelemetry.Metrics` (API) and `OpenTelemetry.MeterProvider` (SDK); logs remain partial.
 
 ## Usage
 

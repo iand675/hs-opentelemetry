@@ -2,7 +2,18 @@
 
 ## Unreleased
 
+- Add `startTimeUnixNano` field to `SumDataPoint`, `HistogramDataPoint`, `ExponentialHistogramDataPoint`, `GaugeDataPoint`
+- View `name` and `description` override fields on `View`
+- Metrics: `AggregationTemporality`, `MetricExemplar`, `ExponentialHistogramDataPoint`, exemplar fields on data points, `MetricExportExponentialHistogram`, `filterAttributesByKeys`.
+- `AdvisoryParameters`: optional `advisoryHistogramAggregation`; `HistogramAggregation` (explicit vector or exponential scale).
+- Observable instruments: `observable*Enabled` fields.
+- `OpenTelemetry.Environment`: `lookupMetricExportIntervalMillis`, `MetricsExemplarFilter`, `lookupMetricsExemplarFilter`.
+- `OpenTelemetry.Debug.MetricExport` for debug rendering of metric batches.
+
+## 0.3.1.0
+
 - Add `tracerIsEnabled` function to check if a Tracer is enabled (helps avoid expensive operations when tracing is disabled)
+- Fix `spanIdBaseEncodedByteString` error message
 
 ## 0.3.0.0
 
