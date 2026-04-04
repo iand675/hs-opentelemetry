@@ -132,6 +132,9 @@ spec = describe "Trace" $ do
               }
       validSpan `shouldSatisfy` isValid
       (validSpan {spanId = badSpan, traceId = badTrace}) `shouldSatisfy` (not . isValid)
+      -- Spec: BOTH TraceId AND SpanId must be non-zero
+      (validSpan {spanId = badSpan}) `shouldSatisfy` (not . isValid)
+      (validSpan {traceId = badTrace}) `shouldSatisfy` (not . isValid)
     specify "IsRemote" pending
     specify "Conforms to the W3C TraceContext spec" pending
   describe "Span" $ do
