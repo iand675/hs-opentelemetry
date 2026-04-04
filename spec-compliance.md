@@ -147,6 +147,7 @@ See `OpenTelemetry.Metrics`, `OpenTelemetry.MeterProvider`, `OpenTelemetry.Metri
 | Concrete handle/console log exporter                                            |          | - (stub) |
 | Concrete in-memory log exporter (testing)                                       |          | - (stub) |
 
+
 ## Resource
 
 | Feature                                                                                                                                     | Optional | Haskell |
