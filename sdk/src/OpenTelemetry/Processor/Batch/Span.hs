@@ -30,12 +30,13 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.IORef (atomicModifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
 import Data.Vector (Vector)
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
+import System.IO (hPutStrLn, stderr)
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder
 
@@ -163,8 +164,6 @@ will be incremented.
 --   -- TODO slice and freeze appropriate section
 -- M.slice (gbSectionSize * (r .&. gbSectionMask)
 
--- TODO, counters for dropped spans, exported spans
-
 data BoundedMap a = BoundedMap
   { itemBounds :: !Int
   , itemMaxExportBounds :: !Int
@@ -238,6 +237,8 @@ batchProcessor :: (MonadIO m) => BatchTimeoutConfig -> SpanExporter -> m SpanPro
 batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch processor does not work without the -threaded GHC flag!"
   batch <- newIORef $ boundedMap maxQueueSize maxExportBatchSize
+  droppedRef <- newIORef (0 :: Int)
+  warnedRef <- newIORef False
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
   let publish batchToProcess = mask_ $ do
@@ -290,16 +291,18 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
       { spanProcessorOnStart = \_ _ -> pure ()
       , spanProcessorOnEnd = \s -> do
           span_ <- readIORef s
-          appendFailedOrExportNeeded <- atomicModifyIORef' batch $ \builder ->
+          (dropped, exportNeeded) <- atomicModifyIORef' batch $ \builder ->
             case push span_ builder of
-              Nothing -> (builder, True)
+              Nothing -> (builder, (True, True))
               Just b' ->
                 if itemCount b' >= itemMaxExportBounds b'
-                  then -- If the batch has grown to the maximum export size, prompt the worker to export it.
-                    (b', True)
-                  else (b', False)
-          when appendFailedOrExportNeeded $ void $ atomically $ tryPutTMVar workSignal ()
-      , spanProcessorForceFlush = void $ atomically $ tryPutTMVar workSignal ()
+                  then (b', (False, True))
+                  else (b', (False, False))
+          when dropped $ warnOnDrop droppedRef warnedRef maxQueueSize "BatchSpanProcessor"
+          when exportNeeded $ void $ atomically $ tryPutTMVar workSignal ()
+      , spanProcessorForceFlush = do
+          void $ atomically $ tryPutTMVar workSignal ()
+          SpanExporter.spanExporterForceFlush exporter
       , -- TODO where to call restore, if anywhere?
         spanProcessorShutdown =
           asyncWithUnmask $ \unmask -> unmask $ do
@@ -354,6 +357,7 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
   where
     millisToMicros = (* 1000)
 
+
 {-
 buffer <- newGreenBlueBuffer _ _
 batchProcessorAction <- async $ forever $ do
@@ -373,3 +377,19 @@ pure $ Processor
 where
   sendDelay = scheduledDelayMilis * 1_000
 -}
+
+-- TODO: otel-12 introduces OpenTelemetry.Internal.Logging (otelLogWarning)
+-- which respects OTEL_LOG_LEVEL and the global error handler.
+-- Replace hPutStrLn stderr with otelLogWarning once available.
+warnOnDrop :: IORef Int -> IORef Bool -> Int -> String -> IO ()
+warnOnDrop droppedRef warnedRef capacity processorName = do
+  n <- atomicModifyIORef' droppedRef (\c -> let c' = c + 1 in (c', c'))
+  alreadyWarned <- atomicModifyIORef' warnedRef (\w -> (True, w))
+  unless alreadyWarned $
+    hPutStrLn stderr $
+      "OpenTelemetry [WARN] "
+        <> processorName
+        <> ": queue full (capacity "
+        <> show capacity
+        <> "), dropping span. Total dropped so far: "
+        <> show n
