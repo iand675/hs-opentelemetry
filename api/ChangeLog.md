@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Fix `isValid` to require BOTH TraceId AND SpanId non-zero (was incorrectly valid if either was non-zero)
+- Add `TraceState.lookup` for getting a value by key (MUST per spec)
+- Add `spanExporterForceFlush` field to `SpanExporter` (MUST per spec); built-in simple/batch processors now call it
+- Add `logRecordEventName` field to `ImmutableLogRecord` and `eventName` to `LogRecordArguments`
+- Add `loggerIsEnabled` function to check if a Logger has registered processors (SHOULD per spec)
 - Add `startTimeUnixNano` field to `SumDataPoint`, `HistogramDataPoint`, `ExponentialHistogramDataPoint`, `GaugeDataPoint`
 - View `name` and `description` override fields on `View`
 - Metrics: `AggregationTemporality`, `MetricExemplar`, `ExponentialHistogramDataPoint`, exemplar fields on data points, `MetricExportExponentialHistogram`, `filterAttributesByKeys`.

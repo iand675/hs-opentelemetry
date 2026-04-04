@@ -13,6 +13,7 @@ module OpenTelemetry.Logs.Core (
   InstrumentationLibrary (..),
   Logger (..),
   makeLogger,
+  loggerIsEnabled,
 
   -- * @LogRecord@ operations
   ReadableLogRecord,
