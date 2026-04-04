@@ -26,9 +26,10 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Exporter.InMemory
-      OpenTelemetry.Exporter.InMemory.LogRecord
+      OpenTelemetry.Exporter.InMemory.Metric
       OpenTelemetry.Exporter.InMemory.Span
   other-modules:
+      OpenTelemetry.Exporter.InMemory.LogRecord
       Paths_hs_opentelemetry_exporter_in_memory
   hs-source-dirs:
       src
