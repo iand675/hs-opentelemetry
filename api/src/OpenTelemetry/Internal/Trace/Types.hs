@@ -32,6 +32,7 @@ import OpenTelemetry.Util
 data SpanExporter = SpanExporter
   { spanExporterExport :: HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult
   , spanExporterShutdown :: IO ()
+  , spanExporterForceFlush :: IO ()
   }
 
 

@@ -3,7 +3,8 @@
 module OpenTelemetry.Exporter
   {-# DEPRECATED "use OpenTelemetry.Exporter.Span instead" #-} (
   Exporter,
-  SpanExporter (Exporter, exporterExport, exporterShutdown),
+  mkExporter,
+  SpanExporter (..),
   ExportResult (..),
 ) where
 
@@ -20,9 +21,11 @@ import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 type Exporter a = SpanExporter
 
 
-pattern Exporter :: (HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult) -> IO () -> Exporter ImmutableSpan
-pattern Exporter {exporterExport, exporterShutdown} =
+{-# DEPRECATED mkExporter "use SpanExporter constructor directly" #-}
+mkExporter :: (HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult) -> IO () -> Exporter ImmutableSpan
+mkExporter export shutdown =
   SpanExporter
-    { spanExporterExport = exporterExport
-    , spanExporterShutdown = exporterShutdown
+    { spanExporterExport = export
+    , spanExporterShutdown = shutdown
+    , spanExporterForceFlush = pure ()
     }
