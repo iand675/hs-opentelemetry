@@ -1,10 +1,9 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 -----------------------------------------------------------------------------
 
@@ -85,15 +84,24 @@ module OpenTelemetry.Trace (
   --
   -- There are a number of other exporters <https://hackage.haskell.org/packages/search?terms=hs-opentelemetry-exporter available on hackage>, including
   -- an in-memory exporter for testing.
+  --
+  -- Third-party exporters can register themselves with the global
+  -- registry (see "OpenTelemetry.Registry") so that
+  -- @OTEL_TRACES_EXPORTER@ can reference them by name.  Likewise,
+  -- custom propagators can be registered for @OTEL_PROPAGATORS@
+  -- resolution.  Registrations made before 'initializeGlobalTracerProvider'
+  -- take precedence over built-in defaults.
 
   -- * 'TracerProvider' operations
   -- $tracerProvider
   TracerProvider,
+  withTracerProvider,
   initializeGlobalTracerProvider,
   initializeTracerProvider,
   getTracerProviderInitializationOptions,
   getTracerProviderInitializationOptions',
   shutdownTracerProvider,
+  shutdownGlobalProviders,
   forceFlushTracerProvider,
 
   -- ** Getting / setting the global 'TracerProvider'
@@ -109,6 +117,9 @@ module OpenTelemetry.Trace (
   tracerOptions,
   HasTracer (..),
   InstrumentationLibrary (..),
+  instrumentationLibrary,
+  withSchemaUrl,
+  withLibraryAttributes,
   detectInstrumentationLibrary,
 
   -- * 'Span' operations
@@ -130,6 +141,13 @@ module OpenTelemetry.Trace (
   addEvent,
   inSpan'',
 
+  -- ** Exception handling
+  ExceptionClassification (..),
+  ExceptionResponse (..),
+  ExceptionHandler,
+  defaultExceptionResponse,
+  resolveException,
+
   -- * Primitive span and tracing operations
 
   -- ** Alternative 'TracerProvider' initialization
@@ -137,7 +155,18 @@ module OpenTelemetry.Trace (
   TracerProviderOptions (..),
   emptyTracerProviderOptions,
   detectBuiltInResources,
+  registerBuiltinResourceDetectors,
   detectSampler,
+  detectSpanLimits,
+
+  -- ** Sampling
+  Sampler,
+  alwaysOn,
+  alwaysOff,
+  alwaysRecord,
+  parentBased,
+  parentBasedOptions,
+  traceIdRatioBased,
   createSpan,
   createSpanWithoutCallStack,
   endSpan,
@@ -149,42 +178,76 @@ module OpenTelemetry.Trace (
   Link,
   Event,
   SpanContext (..),
-  -- TODO, don't remember if this is okay with the spec or not
+  -- Exporters need field access to serialize span data per the spec
   ImmutableSpan (..),
 ) where
 
+import Control.Concurrent (ThreadId, myThreadId)
+import Control.Exception (Exception, SomeException, bracket, catch, throwTo)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (partitionEithers)
 import qualified Data.HashMap.Strict as H
+import Data.IORef (IORef, atomicModifyIORef', newIORef)
+import Data.List (foldl', nub)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
-import Network.HTTP.Types.Header
+import qualified Data.Text.Read as TR
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
-import OpenTelemetry.Context (Context)
+import OpenTelemetry.Configuration (OTelComponents (..), initializeFromConfigFile)
 import OpenTelemetry.Environment
+import OpenTelemetry.Exporter.Handle.LogRecord (stdoutLogRecordExporter)
+import OpenTelemetry.Exporter.OTLP.LogRecord (otlpLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpExporter)
 import OpenTelemetry.Exporter.Span (SpanExporter)
+import OpenTelemetry.Internal.Logging (otelLogDebug, otelLogError, otelLogWarning)
+import OpenTelemetry.Internal.Logs.Types (LogRecordExporter)
+import OpenTelemetry.Logs.Core (LoggerProvider, createLoggerProvider, emptyLoggerProviderOptions, setGlobalLoggerProvider, shutdownLoggerProvider)
+import OpenTelemetry.Metrics (MeterProvider (..), setGlobalMeterProvider)
+import OpenTelemetry.Processor.Batch.LogRecord (BatchLogRecordProcessorConfig (..), batchLogRecordProcessor)
 import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Processor.Span (SpanProcessor)
-import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Propagator (TextMapPropagator, setGlobalTextMapPropagator)
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
 import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
+import OpenTelemetry.Propagator.Jaeger (jaegerPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
+import OpenTelemetry.Propagator.XRay (xrayPropagator)
+import qualified OpenTelemetry.Registry as Registry
 import OpenTelemetry.Resource
+import OpenTelemetry.Resource.Cloud ()
+import OpenTelemetry.Resource.Cloud.Detector (detectCloud)
+import OpenTelemetry.Resource.Container ()
+import OpenTelemetry.Resource.Container.Detector (detectContainer)
+import OpenTelemetry.Resource.Detector.AWS.EC2 (detectEC2Self)
+import OpenTelemetry.Resource.Detector.AWS.ECS (detectECSSelf)
+import OpenTelemetry.Resource.Detector.AWS.EKS (detectEKSSelf)
+import OpenTelemetry.Resource.Detector.Azure (detectAzureVMSelf)
+import OpenTelemetry.Resource.Detector.GCP (detectGCPComputeSelf)
+import OpenTelemetry.Resource.Detector.Heroku (detectHeroku)
+import OpenTelemetry.Resource.FaaS (FaaS)
+import OpenTelemetry.Resource.FaaS.Detector (detectFaaS)
 import OpenTelemetry.Resource.Host.Detector (detectHost)
+import OpenTelemetry.Resource.Kubernetes (Cluster, Namespace, Node, Pod)
+import OpenTelemetry.Resource.Kubernetes.Detector (KubernetesResources (..), detectKubernetes)
 import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
 import OpenTelemetry.Resource.Process.Detector (detectProcess, detectProcessRuntime)
 import OpenTelemetry.Resource.Service.Detector (detectService)
 import OpenTelemetry.Resource.Telemetry.Detector (detectTelemetry)
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
-import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, parentBased, parentBasedOptions, traceIdRatioBased)
+import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, alwaysRecord, parentBased, parentBasedOptions, traceIdRatioBased)
 import System.Environment (lookupEnv)
+import System.IO.Unsafe (unsafePerformIO)
 import Text.Read (readMaybe)
+
+
+#if !defined(mingw32_HOST_OS)
+import System.Posix.Signals (installHandler, sigTERM, Handler(CatchOnce))
+#endif
 
 
 {- $use
@@ -292,26 +355,54 @@ import Text.Read (readMaybe)
 -}
 
 
-knownPropagators :: [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
-knownPropagators =
-  [ ("tracecontext", w3cTraceContextPropagator)
-  , ("baggage", w3cBaggagePropagator)
-  , ("b3", b3TraceContextPropagator)
-  , ("b3multi", b3MultiTraceContextPropagator)
-  , ("datadog", datadogTraceContextPropagator)
-  , ("jaeger", error "Jaeger not yet implemented")
-  ]
+registerBuiltinPropagators :: IO ()
+registerBuiltinPropagators = do
+  _ <- Registry.registerTextMapPropagatorIfAbsent "tracecontext" w3cTraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "baggage" w3cBaggagePropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "b3" b3TraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "b3multi" b3MultiTraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "datadog" datadogTraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "jaeger" jaegerPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "xray" xrayPropagator
+  pure ()
 
 
--- TODO, actually implement a registry systme
-readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
-readRegisteredPropagators = pure knownPropagators
+{- | Stores the composite shutdown action from YAML-based initialization so
+that 'withTracerProvider' and 'shutdownGlobalProviders' can shut down
+meter + logger providers that were co-created alongside the tracer.
+-}
+globalExtraShutdown :: IORef (IO ())
+globalExtraShutdown = unsafePerformIO $ newIORef (pure ())
+{-# NOINLINE globalExtraShutdown #-}
+
+
+{- | Shut down all providers that were registered via
+'initializeGlobalTracerProvider' (YAML config path).
+
+When the YAML config path is used, 'initializeGlobalTracerProvider' registers
+the 'MeterProvider' and 'LoggerProvider' globally and stores their composite
+shutdown. This function runs that shutdown after 'shutdownTracerProvider'.
+-}
+shutdownGlobalProviders :: TracerProvider -> IO ()
+shutdownGlobalProviders tp = do
+  _ <- shutdownTracerProvider tp
+  extra <- atomicModifyIORef' globalExtraShutdown $ \act -> (pure (), act)
+  extra
 
 
 {- | Create a new 'TracerProvider' and set it as the global
- tracer provider. This pulls all configuration from environment
- variables. The full list of environment variables supported is
- specified in the configuration section of this module's documentation.
+ tracer provider.
+
+ If @OTEL_CONFIG_FILE@ is set, the provider is configured from that
+ YAML file (see "OpenTelemetry.Configuration").  Otherwise, configuration
+ is pulled from individual @OTEL_*@ environment variables as documented
+ in this module.
+
+ When using YAML configuration, this also sets the global 'MeterProvider'
+ and 'LoggerProvider' so that 'getGlobalMeterProvider' and
+ 'getGlobalLoggerProvider' return the YAML-configured providers.
+ Shutdown of all three providers is coordinated automatically when using
+ 'withTracerProvider' or 'shutdownGlobalProviders'.
 
  Note however, that 3rd-party span processors, exporters, sampling strategies,
  etc. may have their own set of environment-based configuration values that they
@@ -319,9 +410,35 @@ readRegisteredPropagators = pure knownPropagators
 -}
 initializeGlobalTracerProvider :: IO TracerProvider
 initializeGlobalTracerProvider = do
-  t <- initializeTracerProvider
-  setGlobalTracerProvider t
-  pure t
+  mConfigComponents <- initializeFromConfigFile
+  case mConfigComponents of
+    Just components -> do
+      let tp = otelTracerProvider components
+      setGlobalTracerProvider tp
+      setGlobalMeterProvider (otelMeterProvider components)
+      setGlobalLoggerProvider (otelLoggerProvider components)
+      atomicModifyIORef' globalExtraShutdown $ \_ ->
+        ( do
+            _ <- meterProviderShutdown (otelMeterProvider components)
+            shutdownLoggerProvider (otelLoggerProvider components)
+        , ()
+        )
+      pure tp
+    Nothing -> do
+      disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
+      t <- initializeTracerProvider
+      setGlobalTracerProvider t
+      if disabled
+        then do
+          lp <- createLoggerProvider [] emptyLoggerProviderOptions
+          setGlobalLoggerProvider lp
+          pure t
+        else do
+          lp <- initializeLoggerProvider
+          setGlobalLoggerProvider lp
+          atomicModifyIORef' globalExtraShutdown $ \_ ->
+            (shutdownLoggerProvider lp, ())
+          pure t
 
 
 initializeTracerProvider :: IO TracerProvider
@@ -330,8 +447,108 @@ initializeTracerProvider = do
   createTracerProvider processors opts
 
 
+{- | Initialize the global 'TracerProvider', run an action, then shut down
+the provider — including on @SIGTERM@ and @SIGINT@.
+
+This is the recommended entry point for applications. It mirrors the
+bracket pattern used by Go (@defer tp.Shutdown(ctx)@) and Python
+(@atexit@) SDKs, and ensures in-flight spans are flushed on container
+kills and Ctrl-C.
+
+@
+main :: IO ()
+main = withTracerProvider $ \\tp -> do
+  tracer <- getTracer tp "my-service" tracerOptions
+  -- ... application code ...
+@
+
+=== How shutdown works
+
+Shutdown relies on GHC's async-exception mechanism:
+
+* __SIGINT__ (Ctrl-C): GHC's runtime already throws 'Control.Exception.UserInterrupt'
+  to the main thread. 'bracket' catches it, @shutdownTracerProvider@ runs.
+* __SIGTERM__ (container kill): By default the process terminates
+  immediately with no cleanup. 'withTracerProvider' installs a handler
+  that throws 'ShutdownBySignal' to the main thread, so 'bracket'
+  catches it and @shutdownTracerProvider@ runs.
+
+=== Signal handler caveats
+
+On Unix, signal handlers are process-global and last-writer-wins.
+
+* If you install your own @SIGTERM@ handler /after/ entering
+  'withTracerProvider', the OTel handler is replaced and graceful
+  shutdown on @SIGTERM@ will not happen automatically. You are then
+  responsible for ensuring @shutdownTracerProvider@ is called.
+* If another library installs a @SIGTERM@ handler (e.g. a web
+  framework's graceful-stop hook), the same applies. In that case,
+  use 'initializeGlobalTracerProvider' and 'shutdownTracerProvider'
+  directly inside your own shutdown logic rather than
+  'withTracerProvider'.
+* @SIGINT@ is not touched — GHC's default @UserInterrupt@ handler is
+  left in place.
+
+If you need full control over signal handling, use the lower-level API:
+
+@
+main :: IO ()
+main = bracket initializeGlobalTracerProvider shutdownTracerProvider $ \\tp -> do
+  -- install your own signal handlers here
+  ...
+@
+
+On Windows, signal handling is a no-op; shutdown runs only via the
+normal 'bracket' path (exception or return).
+
+@since 0.1.1.0
+-}
+withTracerProvider :: (TracerProvider -> IO a) -> IO a
+withTracerProvider body = do
+  mainTid <- myThreadId
+  bracket
+    ( do
+        tp <- initializeGlobalTracerProvider
+        oldHandler <- installSigtermHandler mainTid
+        pure (tp, oldHandler)
+    )
+    ( \(tp, oldHandler) -> do
+        restoreSigtermHandler oldHandler
+        shutdownGlobalProviders tp
+    )
+    (\(tp, _) -> body tp)
+
+
+{- | Thrown to the main thread when SIGTERM is received inside
+'withTracerProvider'. Caught by 'bracket' to trigger graceful shutdown.
+-}
+data ShutdownBySignal = ShutdownBySignal
+  deriving (Show)
+
+
+instance Exception ShutdownBySignal
+
+#if !defined(mingw32_HOST_OS)
+installSigtermHandler :: ThreadId -> IO Handler
+installSigtermHandler mainTid =
+  installHandler sigTERM (CatchOnce (throwTo mainTid ShutdownBySignal)) Nothing
+
+
+restoreSigtermHandler :: Handler -> IO ()
+restoreSigtermHandler old = do
+  _ <- installHandler sigTERM old Nothing
+  pure ()
+#else
+installSigtermHandler :: ThreadId -> IO ()
+installSigtermHandler _ = pure ()
+
+restoreSigtermHandler :: () -> IO ()
+restoreSigtermHandler _ = pure ()
+#endif
+
+
 getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
-getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
+getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' mempty
 
 
 {- | Detect options for initializing a tracer provider from the app environment, taking additional supported resources as well.
@@ -339,31 +556,31 @@ getTracerProviderInitializationOptions = getTracerProviderInitializationOptions'
  @since 0.0.3.1
 -}
 getTracerProviderInitializationOptions'
-  :: forall schema
-   . (MaterializeResource schema)
-  => Resource schema
+  :: Resource
   -> IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions' rs = do
   disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
+  -- Spec: propagators MUST still be configured even when the SDK is disabled
+  propagators <- detectPropagators
   if disabled
     then pure ([], emptyTracerProviderOptions)
     else do
       sampler <- detectSampler
       attrLimits <- detectAttributeLimits
       spanLimits <- detectSpanLimits
-      propagators <- detectPropagators
       processorConf <- detectBatchProcessorConfig
       exporters <- detectExporters
       builtInRs <- detectBuiltInResources
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
-      let
-        -- NB: Resource merge prioritizes the left value on attribute key conflict.
-        allRs = mergeResources rs (envVarRs <> builtInRs)
-      processors <- case exporters of
-        [] -> do
-          pure []
-        e : _ -> do
-          pure <$> batchProcessor processorConf e
+      -- Spec: OTEL_SERVICE_NAME takes precedence over ALL other sources for service.name
+      mSvcName <- lookupEnv "OTEL_SERVICE_NAME"
+      let svcOverride :: Resource
+          svcOverride = case mSvcName of
+            Nothing -> mempty
+            Just sn -> mkResource ["service.name" .= T.pack sn]
+          baseRs = mergeResources rs (envVarRs <> builtInRs)
+          allRs = mergeResources svcOverride baseRs
+      processors <- mapM (batchProcessor processorConf) exporters
       let providerOpts =
             emptyTracerProviderOptions
               { tracerProviderOptionsIdGenerator = defaultIdGenerator
@@ -376,18 +593,22 @@ getTracerProviderInitializationOptions' rs = do
       pure (processors, providerOpts)
 
 
-detectPropagators :: IO (Propagator Context RequestHeaders RequestHeaders)
+detectPropagators :: IO TextMapPropagator
 detectPropagators = do
-  registeredPropagators <- readRegisteredPropagators
-  propagatorsInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_PROPAGATORS"
-  if propagatorsInEnv == Just ["none"]
-    then pure mempty
-    else do
-      let envPropagators = fromMaybe ["tracecontext", "baggage"] propagatorsInEnv
-          propagatorsAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k registeredPropagators) envPropagators
-          (_notFound, propagators) = partitionEithers propagatorsAndRegistryEntry
-      -- TODO log warn notFound
-      pure $ mconcat propagators
+  registerBuiltinPropagators
+  allPropagators <- Registry.registeredTextMapPropagators
+  propagatorsInEnv <- fmap (map T.strip . T.splitOn "," . T.pack) <$> lookupEnv "OTEL_PROPAGATORS"
+  propagator <-
+    if propagatorsInEnv == Just ["none"]
+      then pure mempty
+      else do
+        let envPropagators = nub $ fromMaybe ["tracecontext", "baggage"] propagatorsInEnv
+            propagatorsAndRegistryEntry = map (\k -> maybe (Left k) Right $ H.lookup k allPropagators) envPropagators
+            (notFound, propagators) = partitionEithers propagatorsAndRegistryEntry
+        mapM_ (\k -> otelLogWarning $ "Unknown propagator '" <> T.unpack k <> "' in OTEL_PROPAGATORS, ignoring") notFound
+        pure $ mconcat propagators
+  setGlobalTextMapPropagator propagator
+  pure propagator
 
 
 knownSamplers :: [(T.Text, Maybe T.Text -> Maybe Sampler)]
@@ -398,9 +619,9 @@ knownSamplers =
     ( "traceidratio"
     , \case
         Nothing -> Nothing
-        Just val -> case readMaybe (T.unpack val) of
-          Nothing -> Nothing
-          Just ratioVal -> pure $ traceIdRatioBased ratioVal
+        Just val -> case TR.rational val of
+          Right (ratioVal, _) -> pure $ traceIdRatioBased ratioVal
+          Left _ -> Nothing
     )
   , ("parentbased_always_on", const $ pure $ parentBased $ parentBasedOptions alwaysOn)
   , ("parentbased_always_off", const $ pure $ parentBased $ parentBasedOptions alwaysOff)
@@ -408,14 +629,12 @@ knownSamplers =
     ( "parentbased_traceidratio"
     , \case
         Nothing -> Nothing
-        Just val -> case readMaybe (T.unpack val) of
-          Nothing -> Nothing
-          Just ratioVal -> pure $ parentBased $ parentBasedOptions $ traceIdRatioBased ratioVal
+        Just val -> case TR.rational val of
+          Right (ratioVal, _) -> pure $ parentBased $ parentBasedOptions $ traceIdRatioBased ratioVal
+          Left _ -> Nothing
     )
   ]
 
-
--- TODO MUST log invalid arg
 
 {- | Detect a sampler from the app environment. If no sampler is specified,
  the parentbased sampler is used.
@@ -426,11 +645,17 @@ detectSampler :: IO Sampler
 detectSampler = do
   envSampler <- lookupEnv "OTEL_TRACES_SAMPLER"
   envArg <- lookupEnv "OTEL_TRACES_SAMPLER_ARG"
-  let sampler = fromMaybe (parentBased $ parentBasedOptions alwaysOn) $ do
-        samplerName <- envSampler
-        samplerConstructor <- lookup (T.pack samplerName) knownSamplers
-        samplerConstructor (T.pack <$> envArg)
-  pure sampler
+  case envSampler of
+    Nothing -> pure (parentBased $ parentBasedOptions alwaysOn)
+    Just samplerName -> case lookup (T.pack samplerName) knownSamplers of
+      Nothing -> do
+        otelLogWarning $ "Unknown sampler '" <> samplerName <> "', falling back to parentbased_always_on"
+        pure (parentBased $ parentBasedOptions alwaysOn)
+      Just ctor -> case ctor (T.pack <$> envArg) of
+        Nothing -> do
+          otelLogWarning $ "Invalid OTEL_TRACES_SAMPLER_ARG for sampler '" <> samplerName <> "', falling back to parentbased_always_on"
+          pure (parentBased $ parentBasedOptions alwaysOn)
+        Just sampler -> pure sampler
 
 
 detectBatchProcessorConfig :: IO BatchTimeoutConfig
@@ -455,40 +680,84 @@ detectSpanLimits =
     <$> readEnv "OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT"
     <*> readEnv "OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT"
     <*> readEnv "OTEL_SPAN_EVENT_COUNT_LIMIT"
-    <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
     <*> readEnv "OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT"
+    <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
     <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
 
 
-knownExporters :: [(T.Text, IO SpanExporter)]
-knownExporters =
-  [
-    ( "otlp"
-    , do
-        otlpConfig <- loadExporterEnvironmentVariables
-        otlpExporter otlpConfig
-    )
-  , ("jaeger", error "Jaeger exporter not implemented")
-  , ("zipkin", error "Zipkin exporter not implemented")
-  ]
+registerBuiltinExporters :: IO ()
+registerBuiltinExporters = do
+  _ <-
+    Registry.registerSpanExporterFactoryIfAbsent "otlp" $ do
+      otlpConfig <- loadExporterEnvironmentVariables
+      otlpExporter otlpConfig
+  pure ()
 
 
--- TODO, support multiple exporters
 detectExporters :: IO [SpanExporter]
 detectExporters = do
-  exportersInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
+  registerBuiltinExporters
+  allExporters <- Registry.registeredSpanExporterFactories
+  exportersInEnv <- fmap (map T.strip . T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
   if exportersInEnv == Just ["none"]
     then pure []
     else do
       let envExporters = fromMaybe ["otlp"] exportersInEnv
-          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k knownExporters) envExporters
-          (_notFound, exporterIntializers) = partitionEithers exportersAndRegistryEntry
-      -- TODO, notFound logging
-      sequence exporterIntializers
+          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ H.lookup k allExporters) envExporters
+          (notFound, exporterInitializers) = partitionEithers exportersAndRegistryEntry
+      mapM_ (\k -> otelLogWarning $ "Unknown exporter '" <> T.unpack k <> "' in OTEL_TRACES_EXPORTER, ignoring") notFound
+      sequence exporterInitializers
 
 
--- -- detectMetricsExporterSelection :: _
--- -- TODO other metrics stuff
+-- Log provider initialization (env-var path) ---------------------------------
+
+initializeLoggerProvider :: IO LoggerProvider
+initializeLoggerProvider = do
+  sel <- lookupLogsExporterSelection
+  case sel of
+    Just LogsExporterNone -> createLoggerProvider [] emptyLoggerProviderOptions
+    _ -> do
+      exporter <- detectLogExporter sel
+      blrpConf <- detectBatchLogProcessorConfig exporter
+      processor <- batchLogRecordProcessor blrpConf
+      createLoggerProvider [processor] emptyLoggerProviderOptions
+
+
+detectLogExporter :: Maybe LogsExporterSelection -> IO LogRecordExporter
+detectLogExporter sel = do
+  registerBuiltinLogExporters
+  case sel of
+    Just LogsExporterConsole -> stdoutLogRecordExporter
+    _ -> do
+      allExporters <- Registry.registeredLogRecordExporterFactories
+      case H.lookup "otlp" allExporters of
+        Just factory -> factory
+        Nothing -> do
+          otelLogWarning "No OTLP log exporter registered, using console"
+          stdoutLogRecordExporter
+
+
+registerBuiltinLogExporters :: IO ()
+registerBuiltinLogExporters = do
+  _ <-
+    Registry.registerLogRecordExporterFactoryIfAbsent "otlp" $ do
+      otlpConfig <- loadExporterEnvironmentVariables
+      otlpLogRecordExporter otlpConfig
+  _ <-
+    Registry.registerLogRecordExporterFactoryIfAbsent
+      "console"
+      stdoutLogRecordExporter
+  pure ()
+
+
+detectBatchLogProcessorConfig :: LogRecordExporter -> IO BatchLogRecordProcessorConfig
+detectBatchLogProcessorConfig exporter =
+  BatchLogRecordProcessorConfig exporter
+    <$> readEnvDefault "OTEL_BLRP_MAX_QUEUE_SIZE" 2048
+    <*> readEnvDefault "OTEL_BLRP_SCHEDULE_DELAY" 1000
+    <*> readEnvDefault "OTEL_BLRP_EXPORT_TIMEOUT" 30000
+    <*> readEnvDefault "OTEL_BLRP_MAX_EXPORT_BATCH_SIZE" 512
+
 
 detectResourceAttributes :: IO [(T.Text, Attribute)]
 detectResourceAttributes = do
@@ -497,8 +766,7 @@ detectResourceAttributes = do
     Nothing -> pure []
     Just envVar -> case decodeBaggageHeader $ B.pack envVar of
       Left err -> do
-        -- TODO logError
-        putStrLn err
+        otelLogError $ "Failed to parse OTEL_RESOURCE_ATTRIBUTES: " <> err
         pure []
       Right ok ->
         pure $
@@ -516,32 +784,105 @@ readEnv :: forall a. (Read a) => String -> IO (Maybe a)
 readEnv k = (>>= readMaybe) <$> lookupEnv k
 
 
-{- | Use all built-in resource detectors to populate resource information.
+{- | Register all built-in resource detectors in the global registry.
 
- Currently used detectors include:
+Each detector is registered under a short name using 'IfAbsent' so that
+user registrations (made before SDK init) take precedence.
 
- - 'detectService'
- - 'detectProcess'
- - 'detectOperatingSystem'
- - 'detectHost'
- - 'detectTelemetry'
- - 'detectProcessRuntime'
+Detector names:
 
- This list will grow in the future as more detectors are implemented.
+* @service@ — service name, version, instance ID from env vars
+* @telemetry@ — SDK name\/language\/version from build info
+* @process@ — PID, executable, command args
+* @process_runtime@ — runtime name\/version
+* @os@ — operating system type
+* @host@ — hostname and CPU architecture
+* @container@ — container ID and runtime from \/proc
+* @cloud@ — cloud provider\/platform\/region from env vars
+* @faas@ — serverless function attributes from env vars
+* @kubernetes@ — k8s cluster\/namespace\/pod from env vars and SA token
+* @aws_ecs@ — ECS task metadata endpoint (HTTP)
+* @aws_ec2@ — EC2 IMDS (HTTP)
+* @aws_eks@ — EKS detection via Kubernetes API (HTTPS, in-cluster CA)
+* @gcp@ — GCP metadata server (HTTP); detects GKE via cluster-name attribute
+* @azure_vm@ — Azure IMDS (HTTP); detects AKS when in Kubernetes
+* @heroku@ — Heroku dyno metadata from env vars
 
- @since 0.0.1.0
+@since 0.1.0.2
 -}
-detectBuiltInResources :: IO (Resource 'Nothing)
+registerBuiltinResourceDetectors :: IO ()
+registerBuiltinResourceDetectors = do
+  _ <- Registry.registerResourceDetectorIfAbsent "service" (toResource <$> detectService)
+  _ <- Registry.registerResourceDetectorIfAbsent "telemetry" (pure $ toResource detectTelemetry)
+  _ <- Registry.registerResourceDetectorIfAbsent "process_runtime" (pure $ toResource detectProcessRuntime)
+  _ <- Registry.registerResourceDetectorIfAbsent "process" (toResource <$> detectProcess)
+  _ <- Registry.registerResourceDetectorIfAbsent "os" (toResource <$> detectOperatingSystem)
+  _ <- Registry.registerResourceDetectorIfAbsent "host" (toResource <$> detectHost)
+  _ <- Registry.registerResourceDetectorIfAbsent "container" (toResource <$> detectContainer)
+  _ <- Registry.registerResourceDetectorIfAbsent "cloud" (toResource <$> detectCloud)
+  _ <- Registry.registerResourceDetectorIfAbsent "faas" (mergeOptionalFaaS <$> detectFaaS)
+  _ <- Registry.registerResourceDetectorIfAbsent "kubernetes" (mergeOptionalK8s <$> detectKubernetes)
+  _ <- Registry.registerResourceDetectorIfAbsent "aws_ecs" detectECSSelf
+  _ <- Registry.registerResourceDetectorIfAbsent "aws_ec2" detectEC2Self
+  _ <- Registry.registerResourceDetectorIfAbsent "aws_eks" detectEKSSelf
+  _ <- Registry.registerResourceDetectorIfAbsent "gcp" detectGCPComputeSelf
+  _ <- Registry.registerResourceDetectorIfAbsent "azure_vm" detectAzureVMSelf
+  _ <- Registry.registerResourceDetectorIfAbsent "heroku" detectHeroku
+  pure ()
+
+
+{- | Use all registered resource detectors to populate resource information.
+
+Reads the @OTEL_RESOURCE_DETECTORS@ environment variable (comma-separated
+list of detector names) to control which detectors run.  The special value
+@all@ (the default) runs every registered detector.
+
+Resource detectors are registered via 'registerBuiltinResourceDetectors'
+(called automatically during SDK initialization) and can be extended with
+'Registry.registerResourceDetector' before calling
+'initializeGlobalTracerProvider'.
+
+@since 0.0.1.0
+-}
+detectBuiltInResources :: IO Resource
 detectBuiltInResources = do
-  svc <- detectService
-  processInfo <- detectProcess
-  osInfo <- detectOperatingSystem
-  host <- detectHost
-  let rs =
-        toResource svc
-          `mergeResources` toResource detectTelemetry
-          `mergeResources` toResource detectProcessRuntime
-          `mergeResources` toResource processInfo
-          `mergeResources` toResource osInfo
-          `mergeResources` toResource host
-  pure rs
+  registerBuiltinResourceDetectors
+  allDetectors <- Registry.registeredResourceDetectors
+  mFilter <- lookupEnv "OTEL_RESOURCE_DETECTORS"
+  let activeDetectors = case mFilter of
+        Nothing -> H.elems allDetectors
+        Just filterStr ->
+          let names = fmap T.strip $ T.splitOn "," $ T.pack filterStr
+          in if names == ["all"]
+              then H.elems allDetectors
+              else
+                let pick acc name = case H.lookup name allDetectors of
+                      Just d -> d : acc
+                      Nothing -> acc
+                in foldl' pick [] names
+  resources <- mapM runDetectorSafely activeDetectors
+  pure $ foldl' mergeResources (mkResource []) resources
+  where
+    runDetectorSafely :: IO Resource -> IO Resource
+    runDetectorSafely detector =
+      detector `catch` \(_ex :: SomeException) -> do
+        otelLogDebug "Resource detector failed, skipping"
+        pure (mkResource [])
+
+
+mergeOptionalFaaS :: Maybe FaaS -> Resource
+mergeOptionalFaaS Nothing = emptyResource
+mergeOptionalFaaS (Just faas) = toResource faas
+
+
+mergeOptionalK8s :: Maybe KubernetesResources -> Resource
+mergeOptionalK8s Nothing = emptyResource
+mergeOptionalK8s (Just KubernetesResources {..}) =
+  toResource (k8sCluster :: Cluster)
+    `mergeResources` toResource (k8sNamespace :: Namespace)
+    `mergeResources` toResource (k8sNode :: Node)
+    `mergeResources` toResource (k8sPod :: Pod)
+
+
+emptyResource :: Resource
+emptyResource = mkResource []

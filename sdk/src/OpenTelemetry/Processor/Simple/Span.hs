@@ -1,5 +1,6 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.Processor.Simple.Span (
   SimpleProcessorConfig (..),
@@ -7,14 +8,14 @@ module OpenTelemetry.Processor.Simple.Span (
 ) where
 
 import Control.Concurrent.Async
-import Control.Concurrent.Chan.Unagi
 import Control.Exception
-import Control.Monad
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef
+import Data.Maybe (fromMaybe)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.Processor.Span
-import OpenTelemetry.Trace.Core (ImmutableSpan, spanTracer, tracerName)
+import OpenTelemetry.Trace.Core (spanTracer, tracerName)
+import System.Timeout (timeout)
 
 
 newtype SimpleProcessorConfig = SimpleProcessorConfig
@@ -24,41 +25,42 @@ newtype SimpleProcessorConfig = SimpleProcessorConfig
 
 
 {- | This is an implementation of SpanProcessor which passes finished spans
- and passes the export-friendly span data representation to the configured SpanExporter,
- as soon as they are finished.
+ and passes the export-friendly span data representation to the configured
+ SpanExporter, as soon as they are finished.
+
+ Per the OTel specification, @OnEnd@ calls the exporter synchronously. This
+ means @span.end()@ blocks until the export completes. This matches the
+ behavior of every other OTel SDK (Go, Java, .NET, C++, Rust, Python).
+
+ Use 'OpenTelemetry.Processor.Batch.Span.batchProcessor' for non-blocking,
+ production-grade span processing.
 
  @since 0.0.1.0
 -}
 simpleProcessor :: SimpleProcessorConfig -> IO SpanProcessor
 simpleProcessor SimpleProcessorConfig {..} = do
-  (inChan :: InChan (IORef ImmutableSpan), outChan :: OutChan (IORef ImmutableSpan)) <- newChan
-  exportWorker <- async $ forever $ do
-    -- TODO, masking vs bracket here, not sure what's the right choice
-    spanRef <- readChanOnException outChan (>>= writeChan inChan)
-    span_ <- readIORef spanRef
-    mask_ (spanExporter `SpanExporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_))
-
+  shutdownRef <- newIORef False
   pure $
     SpanProcessor
       { spanProcessorOnStart = \_ _ -> pure ()
-      , spanProcessorOnEnd = writeChan inChan
-      , spanProcessorShutdown = async $ mask $ \restore -> do
-          cancel exportWorker
-          -- TODO handle timeouts
-          restore $ do
-            -- TODO, not convinced we should shut down processor here
-            shutdownProcessor outChan `finally` SpanExporter.spanExporterShutdown spanExporter
+      , spanProcessorOnEnd = \imm -> do
+          isShutdown <- readIORef shutdownRef
+          if isShutdown
+            then pure ()
+            else do
+              _ <-
+                try @SomeException $
+                  -- Spec: export MUST NOT block indefinitely (30s upper bound)
+                  fromMaybe (SpanExporter.Failure Nothing)
+                    <$> timeout
+                      30_000_000
+                      ( spanExporter
+                          `SpanExporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer imm) (pure imm)
+                      )
+              pure ()
+      , spanProcessorShutdown = async $ do
+          atomicWriteIORef shutdownRef True
+          SpanExporter.spanExporterShutdown spanExporter
           pure ShutdownSuccess
       , spanProcessorForceFlush = SpanExporter.spanExporterForceFlush spanExporter
       }
-  where
-    shutdownProcessor :: OutChan (IORef ImmutableSpan) -> IO ()
-    shutdownProcessor outChan = do
-      (Element m, _) <- tryReadChan outChan
-      mSpan <- m
-      case mSpan of
-        Nothing -> pure ()
-        Just spanRef -> do
-          span_ <- readIORef spanRef
-          _ <- spanExporter `SpanExporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_)
-          shutdownProcessor outChan

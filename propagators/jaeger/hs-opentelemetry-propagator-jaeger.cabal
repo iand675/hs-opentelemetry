@@ -1,0 +1,72 @@
+cabal-version: 2.4
+
+name:               hs-opentelemetry-propagator-jaeger
+version:            0.0.1.0
+synopsis:           Jaeger trace context propagation for OpenTelemetry.
+description:
+  Propagator implementing the Jaeger trace context format
+  (@uber-trace-id@ header) and Jaeger baggage (@uberctx-*@ headers).
+  .
+  The Jaeger format is deprecated in favour of W3C Trace Context but is
+  still widely deployed. This package lets Haskell services interoperate
+  with legacy Jaeger-instrumented systems.
+  .
+  See <https://www.jaegertracing.io/docs/1.21/client-libraries/#propagation-format>.
+category:           OpenTelemetry, Tracing, Web
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan
+maintainer:         ian@iankduncan.com
+copyright:          2024 Ian Duncan
+license:            BSD-3-Clause
+license-file:       LICENSE
+build-type:         Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Propagator.Jaeger
+      OpenTelemetry.Propagator.Jaeger.Internal
+  other-modules:
+      Paths_hs_opentelemetry_propagator_jaeger
+  autogen-modules:
+      Paths_hs_opentelemetry_propagator_jaeger
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      attoparsec
+    , base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api ^>=0.4
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite hs-opentelemetry-propagator-jaeger-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      OpenTelemetry.Propagator.JaegerSpec
+      Paths_hs_opentelemetry_propagator_jaeger
+  autogen-modules:
+      Paths_hs_opentelemetry_propagator_jaeger
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api ^>=0.4
+    , hs-opentelemetry-propagator-jaeger
+    , hspec
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+  build-tool-depends: hspec-discover:hspec-discover

@@ -29,6 +29,10 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Configuration
+      OpenTelemetry.Configuration.Create
+      OpenTelemetry.Configuration.Parse
+      OpenTelemetry.Configuration.Types
       OpenTelemetry.MetricReader
       OpenTelemetry.MeterProvider
       OpenTelemetry.Metrics.ExporterSelection
@@ -39,7 +43,18 @@ library
       OpenTelemetry.Processor.Simple
       OpenTelemetry.Processor.Simple.LogRecord
       OpenTelemetry.Processor.Simple.Span
+      OpenTelemetry.Resource.Cloud.Detector
+      OpenTelemetry.Resource.Container.Detector
+      OpenTelemetry.Resource.Detector.AWS.EC2
+      OpenTelemetry.Resource.Detector.AWS.ECS
+      OpenTelemetry.Resource.Detector.AWS.EKS
+      OpenTelemetry.Resource.Detector.Azure
+      OpenTelemetry.Resource.Detector.GCP
+      OpenTelemetry.Resource.Detector.Heroku
+      OpenTelemetry.Resource.Detector.Metadata
+      OpenTelemetry.Resource.FaaS.Detector
       OpenTelemetry.Resource.Host.Detector
+      OpenTelemetry.Resource.Kubernetes.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
       OpenTelemetry.Resource.Service.Detector
@@ -52,7 +67,9 @@ library
       OpenTelemetry.Attributes
     , OpenTelemetry.Baggage
     , OpenTelemetry.Context
+    , OpenTelemetry.Context.Environment
     , OpenTelemetry.Context.ThreadLocal
+    , OpenTelemetry.Context.ThreadLocal.Propagation
     , OpenTelemetry.Exporter.Span
     , OpenTelemetry.Exporter.LogRecord
     , OpenTelemetry.Exporter
@@ -82,28 +99,36 @@ library
       src
   ghc-options: -Wall
   build-depends:
-      async
+      aeson
+    , async
     , base >=4.7 && <5
     , bytestring
-    , clock
+    , case-insensitive
+    , connection
     , containers
     , hashable
-    , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-exporter-handle >=0.0.1 && <0.1
     , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-datadog >=0.0.0 && <0.1
+    , hs-opentelemetry-propagator-jaeger >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
+    , hs-opentelemetry-propagator-xray >=0.0.1 && <0.1
+    , http-client
+    , http-client-tls
     , http-types
     , network-bsd
-    , random >=1.2.0
+    , scientific
     , stm
     , text
-    , unagi-chan
+    , tls
+    , unagi-chan ==0.4.*
     , unix-compat >=0.7.1
     , unordered-containers
     , vector
-    , vector-builder
+    , x509-store
+    , yaml
   default-language: Haskell2010
   if os(windows)
     other-modules:
@@ -122,17 +147,34 @@ test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.BaggageSpec
+      OpenTelemetry.ConfigurationSpec
+      OpenTelemetry.ContextSpec
+      OpenTelemetry.ContextInSpanSpec
       OpenTelemetry.MeterProviderSpec
+      OpenTelemetry.Resource.DetectorSpec
+      OpenTelemetry.ResourceSpec
+      OpenTelemetry.TraceSpec
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , clock
-    , hs-opentelemetry-api
+      async
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , directory
+    , hs-opentelemetry-api ==0.4.*
+    , hs-opentelemetry-exporter-in-memory ==0.0.*
+    , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
+    , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
     , hs-opentelemetry-sdk
     , hspec
+    , process
     , text
     , unordered-containers
     , vector
   default-language: Haskell2010
+  if !os(windows)
+    build-depends:
+        unix

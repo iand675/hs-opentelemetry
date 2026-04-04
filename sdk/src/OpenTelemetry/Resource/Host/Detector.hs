@@ -39,19 +39,16 @@ detectHost = do
     go mhost@(Just _host) _ = pure mhost
 
 
-{- | A set of detectors for e.g. AWS, GCP, and other cloud providers.
+{- | Built-in host detectors.
 
- Currently only emits hostName and hostArch. Additional detectors are
- welcome via PR.
+Cloud-specific host attributes (host.id, host.type, host.image.id) are
+provided by the IMDS resource detectors (AWS EC2, GCP Compute, Azure VM)
+rather than this module. This fallback detector emits hostName and hostArch
+which are available on all platforms.
 -}
 builtInHostDetectors :: [HostDetector]
 builtInHostDetectors =
-  [ -- TODO
-    -- AWS support
-    -- GCP support
-    -- any other user contributed
-    fallbackHostDetector
-  ]
+  [fallbackHostDetector]
 
 
 type HostDetector = IO (Maybe Host)

@@ -24,7 +24,8 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - iproute
   - postgresql-simple
   - postgresql-libpq
@@ -34,8 +35,7 @@ library:
   - unliftio # todo, unliftio-core
   - unordered-containers
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-instrumentation-postgresql-simple-test:
     main:                Spec.hs
     source-dirs:         test
@@ -44,4 +44,6 @@ _tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-postgresql-simple
+    - hs-opentelemetry-instrumentation-postgresql-simple >= 0.2 && < 0.3
+    - hspec
+    - bytestring

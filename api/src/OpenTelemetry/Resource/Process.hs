@@ -1,6 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
 
 -----------------------------------------------------------------------------
 
@@ -18,7 +16,9 @@
 module OpenTelemetry.Resource.Process where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- |  An operating system process.
@@ -55,16 +55,15 @@ data Process = Process
 
 
 instance ToResource Process where
-  type ResourceSchema Process = 'Nothing
   toResource Process {..} =
     mkResource
-      [ "process.pid" .=? processPid
-      , "process.executable.name" .=? processExecutableName
-      , "process.executable.path" .=? processExecutablePath
-      , "process.command" .=? processCommand
-      , "process.command_line" .=? processCommandLine
-      , "process.command_args" .=? processCommandArgs
-      , "process.owner" .=? processOwner
+      [ unkey SC.process_pid .=? processPid
+      , unkey SC.process_executable_name .=? processExecutableName
+      , unkey SC.process_executable_path .=? processExecutablePath
+      , unkey SC.process_command .=? processCommand
+      , unkey SC.process_commandLine .=? processCommandLine
+      , unkey SC.process_commandArgs .=? processCommandArgs
+      , unkey SC.process_owner .=? processOwner
       ]
 
 
@@ -86,10 +85,9 @@ data ProcessRuntime = ProcessRuntime
 
 
 instance ToResource ProcessRuntime where
-  type ResourceSchema ProcessRuntime = 'Nothing
   toResource ProcessRuntime {..} =
     mkResource
-      [ "process.runtime.name" .=? processRuntimeName
-      , "process.runtime.version" .=? processRuntimeVersion
-      , "process.runtime.description" .=? processRuntimeDescription
+      [ unkey SC.process_runtime_name .=? processRuntimeName
+      , unkey SC.process_runtime_version .=? processRuntimeVersion
+      , unkey SC.process_runtime_description .=? processRuntimeDescription
       ]

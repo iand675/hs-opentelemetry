@@ -30,12 +30,14 @@ library:
   - OpenTelemetry.Exporter.OTLP.LogRecord
   - OpenTelemetry.Exporter.OTLP.Span
   - OpenTelemetry.Exporter.OTLP.Metric
+  other-modules:
+  - OpenTelemetry.Exporter.OTLP.Internal.Config
   dependencies:
   - bytestring
   - case-insensitive
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
   - hs-opentelemetry-otlp ^>= 0.2
-  - hs-opentelemetry-propagator-w3c
+  - hs-opentelemetry-propagator-w3c >= 0.1.0 && < 0.2
   - http-client
   - http-conduit
   - http-types
@@ -45,6 +47,18 @@ library:
   - unordered-containers
   - vector
   - zlib
+  when:
+  - condition: flag(grpc)
+    exposed-modules:
+    - OpenTelemetry.Exporter.OTLP.GRPC
+    dependencies:
+    - grapesy
+
+flags:
+  grpc:
+    description: Enable gRPC export support (requires grapesy)
+    manual: true
+    default: false
 
 tests:
   hs-opentelemetry-exporter-otlp-test:
@@ -55,11 +69,13 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-api ^>= 0.3
-    - hs-opentelemetry-exporter-otlp
+    - bytestring
+    - hs-opentelemetry-api ^>= 0.4
+    - hs-opentelemetry-exporter-otlp == 0.1.*
     - hs-opentelemetry-otlp ^>= 0.2
     - hspec
     - microlens
     - proto-lens
     - text
+    - unordered-containers
     - vector

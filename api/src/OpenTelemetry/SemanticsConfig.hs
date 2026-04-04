@@ -1,68 +1,105 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module OpenTelemetry.SemanticsConfig (
-  SemanticsOptions (httpOption),
-  HttpOption (..),
+  SemanticsOptions,
+  StabilityOpt (..),
+  HttpOption,
+  lookupStability,
+
+  -- * Well-known stability keys
+  httpOption,
+  databaseOption,
+
+  -- * Reading from the environment
   getSemanticsOptions,
   getSemanticsOptions',
 ) where
 
-import Control.Exception.Safe (throwIO, tryAny)
+import Control.Exception (SomeException, throwIO, try)
+import qualified Data.HashSet as Set
 import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Text as T
 import System.Environment (lookupEnv)
 import System.IO.Unsafe (unsafePerformIO)
 
 
-{- | This is a record that contains options for whether the new stable semantics conventions should be emitted.
-Semantics conventions that have been declared stable:
-- [http](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan)
+{- | Parsed representation of @OTEL_SEMCONV_STABILITY_OPT_IN@.
+
+This is opaque — use 'lookupStability' with any signal key (e.g. @"http"@,
+@"database"@, @"messaging"@) to query whether stable, old, or both conventions
+should be emitted. Well-known accessors 'httpOption' and 'databaseOption' are
+provided for convenience; third-party instrumentation libraries can query
+arbitrary keys without modifying this module.
 -}
-data SemanticsOptions = SemanticsOptions {httpOption :: HttpOption}
+newtype SemanticsOptions = SemanticsOptions (Set.HashSet T.Text)
 
 
--- | This option determines whether stable, old, or both kinds of http attributes are emitted.
-data HttpOption
+{- | Stability setting for a particular semantic convention area.
+
+* 'Stable' — emit only the new stable conventions.
+* 'StableAndOld' — emit both old and stable conventions (migration/dup mode).
+* 'Old' — emit only the legacy conventions (default when unset).
+-}
+data StabilityOpt
   = Stable
   | StableAndOld
   | Old
   deriving (Show, Eq)
 
 
--- | These are the default values emitted if OTEL_SEM_CONV_STABILITY_OPT_IN is unset or does not contain values for a specific category of option.
-defaultOptions :: SemanticsOptions
-defaultOptions = SemanticsOptions {httpOption = Old}
+-- | Backward-compatible alias.
+type HttpOption = StabilityOpt
 
 
--- | Detects the presence of "http/dup" or "http" in OTEL_SEMCONV_STABILITY_OPT_IN or uses the default option if they are not there.
-parseHttpOption :: (Foldable t) => t T.Text -> HttpOption
-parseHttpOption envs
-  | "http/dup" `elem` envs = StableAndOld
-  | "http" `elem` envs = Stable
-  | otherwise = httpOption defaultOptions
+{- | Look up the stability setting for an arbitrary signal key.
+
+Given a key like @"http"@, @"database"@, @"messaging"@, etc., returns:
+
+* 'StableAndOld' if @\<key\>\/dup@ is present in the env var
+* 'Stable' if @\<key\>@ is present
+* 'Old' otherwise
+
+@
+opts <- getSemanticsOptions
+case lookupStability "messaging" opts of
+  Stable      -> emitStableAttrs
+  StableAndOld -> emitStableAttrs >> emitOldAttrs
+  Old         -> emitOldAttrs
+@
+-}
+lookupStability :: T.Text -> SemanticsOptions -> StabilityOpt
+lookupStability key (SemanticsOptions vals)
+  | (key <> "/dup") `Set.member` vals = StableAndOld
+  | key `Set.member` vals = Stable
+  | otherwise = Old
 
 
--- | Detects the presence of semantics options in OTEL_SEMCONV_STABILITY_OPT_IN or uses the defaultOptions if they are not present.
+-- | Stability setting for HTTP semantic conventions (@"http"@ / @"http\/dup"@).
+httpOption :: SemanticsOptions -> StabilityOpt
+httpOption = lookupStability "http"
+
+
+-- | Stability setting for database semantic conventions (@"database"@ / @"database\/dup"@).
+databaseOption :: SemanticsOptions -> StabilityOpt
+databaseOption = lookupStability "database"
+
+
 parseSemanticsOptions :: Maybe String -> SemanticsOptions
-parseSemanticsOptions Nothing = defaultOptions
-parseSemanticsOptions (Just env) = SemanticsOptions {..}
-  where
-    envs = fmap T.strip $ T.splitOn "," $ T.pack env
-    httpOption = parseHttpOption envs
+parseSemanticsOptions Nothing = SemanticsOptions Set.empty
+parseSemanticsOptions (Just env) =
+  SemanticsOptions $ Set.fromList $ fmap T.strip $ T.splitOn "," $ T.pack env
 
 
-{- | Version of getSemanticsOptions that is not memoized. It is recommended to use getSemanticsOptions for efficiency purposes
-unless it is necessary to retrieve the value of OTEL_SEMCONV_STABILITY_OPT_IN every time getSemanticsOptions' is called.
+{- | Version of 'getSemanticsOptions' that is not memoized. It is recommended to
+use 'getSemanticsOptions' for efficiency purposes unless it is necessary to
+retrieve the value of @OTEL_SEMCONV_STABILITY_OPT_IN@ every time
+'getSemanticsOptions'' is called.
 -}
 getSemanticsOptions' :: IO SemanticsOptions
 getSemanticsOptions' = parseSemanticsOptions <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
 
 
-{- | Create a new memoized IO action using an 'IORef' under the surface. Note that
-the action may be run in multiple threads simultaneously, so this may not be
-thread safe (depending on the underlying action). For the sake of reading an environment
-variable and parsing some stuff, we don't have to be concerned about thread-safety.
--}
 memoize :: IO a -> IO (IO a)
 memoize action = do
   ref <- newIORef Nothing
@@ -71,19 +108,20 @@ memoize action = do
     res <- case mres of
       Just res -> pure res
       Nothing -> do
-        res <- tryAny action
+        res <- try @SomeException action
         writeIORef ref $ Just res
         pure res
     either throwIO pure res
 
 
-{-  | Retrieves OTEL_SEMCONV_STABILITY_OPT_IN and parses it into SemanticsOptions.
+{- | Retrieves @OTEL_SEMCONV_STABILITY_OPT_IN@ and parses it into 'SemanticsOptions'.
 
-This uses the [global IORef trick](https://www.parsonsmatt.org/2021/04/21/global_ioref_in_template_haskell.html)
-to memoize the settings for efficiency. Note that getSemanticsOptions stores and returns the
-value of the first time it was called and will not change when OTEL_SEMCONV_STABILITY_OPT_IN
-is updated. Use getSemanticsOptions' to read OTEL_SEMCONV_STABILITY_OPT_IN every time the
-function is called.
+This uses the
+[global IORef trick](https://www.parsonsmatt.org/2021/04/21/global_ioref_in_template_haskell.html)
+to memoize the settings for efficiency. Note that 'getSemanticsOptions' stores
+and returns the value of the first time it was called and will not change when
+@OTEL_SEMCONV_STABILITY_OPT_IN@ is updated. Use 'getSemanticsOptions'' to read
+the env var every time the function is called.
 -}
 getSemanticsOptions :: IO SemanticsOptions
 getSemanticsOptions = unsafePerformIO $ memoize getSemanticsOptions'

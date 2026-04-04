@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -17,7 +14,9 @@
 module OpenTelemetry.Resource.Container where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | A container instance.
@@ -38,12 +37,11 @@ data Container = Container
 
 
 instance ToResource Container where
-  type ResourceSchema Container = 'Nothing
   toResource Container {..} =
     mkResource
-      [ "container.name" .=? containerName
-      , "container.id" .=? containerId
-      , "container.runtime" .=? containerRuntime
-      , "container.image.name" .=? containerImageName
+      [ unkey SC.container_name .=? containerName
+      , unkey SC.container_id .=? containerId
+      , unkey SC.container_runtime .=? containerRuntime
+      , unkey SC.container_image_name .=? containerImageName
       , "container.image.tag" .=? containerImageTag
       ]

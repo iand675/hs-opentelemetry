@@ -10,6 +10,7 @@
 import Control.Applicative (Alternative ((<|>)))
 import Control.Monad (when)
 import qualified Data.Aeson as Json
+import qualified Data.Aeson.Types as Json (Parser)
 import qualified Data.Char as Char
 import Data.Foldable (Foldable (fold))
 import Data.Functor ((<&>))
@@ -94,7 +95,7 @@ data Semconv = Semconv
   , prefix :: Maybe Prefix
   , extends :: Maybe Extends
   , stability :: Maybe Stability
-  , deprecated :: Maybe Deprecated
+  , deprecated :: Maybe DeprecatedMsg
   , attributes :: Vector Attribute
   -- ^ The spec says non-empty, but maybe empty actually.
   , constraints :: Vector Constraint
@@ -121,8 +122,9 @@ instance Json.FromJSON Semconv where
         Just "metric_group" -> pure (MetricGroupType, Nothing)
         Just "scope" -> pure (ScopeType, Nothing)
         Just "attribute_group" -> pure (AttributeGroupType, Nothing)
+        Just "entity" -> pure (EntityType, Nothing)
         Nothing -> pure (SpanType, Nothing)
-        _ -> fail "expected a string with value of \"span\", \"resource\", \"event\", \"metric\", \"metric_group\", \"scope\", or \"attribute_group\""
+        _ -> fail "expected a string with value of \"span\", \"resource\", \"event\", \"metric\", \"metric_group\", \"scope\", \"attribute_group\", or \"entity\""
     Semconv
       <$> o Json..: "id"
       <*> pure typ
@@ -151,6 +153,7 @@ data Convtype
   | MetricGroupType
   | ScopeType
   | AttributeGroupType
+  | EntityType
   deriving stock (Show, Read, Eq, Ord, Prelude.Enum)
 
 
@@ -171,18 +174,36 @@ type Extends = Text
 
 
 type Stability :: Kind.Type
-data Stability = Deprecated | Experimental | Stable deriving stock (Show, Read, Eq, Ord, Prelude.Enum)
+data Stability = Deprecated | Development | Experimental | Beta | ReleaseCandidate | Stable
+  deriving stock (Show, Read, Eq, Ord, Prelude.Enum)
 
 
 instance Json.FromJSON Stability where
   parseJSON (Json.String "deprecated") = pure Deprecated
+  parseJSON (Json.String "development") = pure Development
   parseJSON (Json.String "experimental") = pure Experimental
+  parseJSON (Json.String "beta") = pure Beta
+  parseJSON (Json.String "release_candidate") = pure ReleaseCandidate
   parseJSON (Json.String "stable") = pure Stable
-  parseJSON _ = fail "expected a string with value of \"deprecated\", \"experimental\", or \"stable\""
+  parseJSON _ = fail "expected a stability string"
 
 
-type Deprecated :: Kind.Type
-type Deprecated = Text
+type DeprecatedMsg :: Kind.Type
+newtype DeprecatedMsg = DeprecatedMsg Text deriving stock (Show, Read, Eq, Ord)
+
+
+instance Json.FromJSON DeprecatedMsg where
+  parseJSON (Json.String s) = pure (DeprecatedMsg s)
+  parseJSON (Json.Object o) = do
+    reason <- o Json..:? "reason"
+    renamedTo <- o Json..:? "renamed_to"
+    let msg = case (reason :: Maybe Text, renamedTo :: Maybe Text) of
+          (Just r, Just t) -> r <> ": " <> t
+          (Just r, Nothing) -> r
+          (Nothing, Just t) -> "renamed to " <> t
+          (Nothing, Nothing) -> "deprecated"
+    pure (DeprecatedMsg msg)
+  parseJSON _ = fail "expected a string or object for deprecated"
 
 
 type Attribute :: Kind.Type
@@ -191,7 +212,7 @@ data Attribute
       { defFields :: AttributeDefFields
       , tag :: Maybe Tag
       , stability :: Maybe Stability
-      , deprecated :: Maybe Deprecated
+      , deprecated :: Maybe DeprecatedMsg
       , requirementLevel :: Maybe RequirementLevel
       , samplingRelevant :: Maybe SamplingRelevant
       , note :: Maybe Note
@@ -200,7 +221,7 @@ data Attribute
       { refFields :: AttributeRefFields
       , tag :: Maybe Tag
       , stability :: Maybe Stability
-      , deprecated :: Maybe Deprecated
+      , deprecated :: Maybe DeprecatedMsg
       , requirementLevel :: Maybe RequirementLevel
       , samplingRelevant :: Maybe SamplingRelevant
       , note :: Maybe Note
@@ -280,6 +301,7 @@ instance Json.FromJSON Type where
   parseJSON (Json.String "int[]") = pure $ TypeSimple IntArrayType
   parseJSON (Json.String "double[]") = pure $ TypeSimple DoubleArrayType
   parseJSON (Json.String "boolean[]") = pure $ TypeSimple BooleanArrayType
+  parseJSON (Json.String "any") = pure $ TypeSimple StringType
   parseJSON (Json.String "template[string]") = pure $ TypeTemplate StringType
   parseJSON (Json.String "template[int]") = pure $ TypeTemplate IntType
   parseJSON (Json.String "template[double]") = pure $ TypeTemplate DoubleType
@@ -389,7 +411,12 @@ instance Json.FromJSON Example where
   parseJSON (Json.Number n) = pure $ Example $ Text.pack $ show n
   parseJSON (Json.Bool True) = pure $ Example "true"
   parseJSON (Json.Bool False) = pure $ Example "false"
-  parseJSON _ = fail "expected a string, number, or boolean"
+  parseJSON (Json.Array arr) = do
+    elems <- traverse Json.parseJSON arr :: Json.Parser (Vector Example)
+    let strs = Vector.toList $ fmap (\(Example t) -> t) elems
+    pure $ Example $ "[" <> Text.intercalate ", " strs <> "]"
+  parseJSON Json.Null = pure $ Example ""
+  parseJSON _ = fail "expected a string, number, boolean, or array"
 
 
 type Tag :: Kind.Type
@@ -509,7 +536,7 @@ generate targetFile = do
                 <$> fold
                   [ if Text.null brief then [] else [convertMarkupFromMarkdownToHaddock brief]
                   , fieldLine stability $ ("Stability: " <>) . convertStability
-                  , fieldLine deprecated $ ("Deprecated: " <>)
+                  , fieldLine deprecated $ ("Deprecated: " <>) . unDeprecated
                   , fieldLines note $ \n ->
                       [ "==== Note"
                       , convertMarkupFromMarkdownToHaddock n
@@ -531,7 +558,7 @@ generate targetFile = do
                             <$> fold
                               [ ["- '" <> hid <> "'"]
                               , fieldLine stability $ indent 1 . ("Stability: " <>) . convertStability
-                              , fieldLine deprecated $ indent 1 . ("Deprecated: " <>)
+                              , fieldLine deprecated $ indent 1 . ("Deprecated: " <>) . unDeprecated
                               , fieldLine requirementLevel $ indent 1 . ("Requirement level: " <>) . convertRequirementLevel
                               , [""]
                               ]
@@ -555,7 +582,7 @@ generate targetFile = do
                               [ ["- '" <> href <> "'"]
                               , fieldLine brief $ indent 1 . convertMarkupFromMarkdownToHaddock
                               , fieldLine stability $ indent 1 . ("Stability: " <>) . convertStability
-                              , fieldLine deprecated $ indent 1 . ("Deprecated: " <>)
+                              , fieldLine deprecated $ indent 1 . ("Deprecated: " <>) . unDeprecated
                               , fieldLine requirementLevel $ indent 1 . ("Requirement level: " <>) . convertRequirementLevel
                               , fieldLines note $ \n ->
                                   [ indent 1 $ "==== Note"
@@ -596,7 +623,7 @@ generate targetFile = do
             , "{-# LANGUAGE OverloadedStrings #-}"
             , "-- | This module is OpenTelemetry Semantic Conventions for Haskell."
             , "-- This is automatically generated"
-            , "-- based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.24."
+            , "-- based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.40."
             , "module OpenTelemetry.SemanticConventions ("
             ]
           , fold exports
@@ -665,9 +692,16 @@ convertIdToKey (TypeTemplate _) id = "\\k -> AttributeKey $ \"" <> id <> ".\" <>
 convertIdToKey _ id = "AttributeKey \"" <> id <> "\""
 
 
+unDeprecated :: DeprecatedMsg -> Text
+unDeprecated (DeprecatedMsg t) = t
+
+
 convertStability :: Stability -> Text
 convertStability Deprecated = "deprecated"
+convertStability Development = "development"
 convertStability Experimental = "experimental"
+convertStability Beta = "beta"
+convertStability ReleaseCandidate = "release candidate"
 convertStability Stable = "stable"
 
 

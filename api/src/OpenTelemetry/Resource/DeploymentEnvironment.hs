@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -17,7 +14,9 @@
 module OpenTelemetry.Resource.DeploymentEnvironment where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 {- | The software deployment.
@@ -35,8 +34,7 @@ newtype DeploymentEnvironment = DeploymentEnvironment
 
 
 instance ToResource DeploymentEnvironment where
-  type ResourceSchema DeploymentEnvironment = 'Nothing
   toResource DeploymentEnvironment {..} =
     mkResource
-      [ "deployment.environment" .=? deploymentEnvironment
+      [ unkey SC.deployment_environment .=? deploymentEnvironment
       ]

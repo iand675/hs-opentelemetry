@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -21,7 +18,9 @@ module OpenTelemetry.Resource.Cloud (
 ) where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (ToResource (..), mkResource, (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | A cloud infrastructure (e.g. GCP, Azure, AWS).
@@ -108,12 +107,11 @@ data Cloud = Cloud
 
 
 instance ToResource Cloud where
-  type ResourceSchema Cloud = 'Nothing
   toResource Cloud {..} =
     mkResource
-      [ "cloud.provider" .=? cloudProvider
-      , "cloud.account.id" .=? cloudAccountId
-      , "cloud.region" .=? cloudRegion
-      , "cloud.availability_zone" .=? cloudAvailabilityZone
-      , "cloud.platform" .=? cloudPlatform
+      [ unkey SC.cloud_provider .=? cloudProvider
+      , unkey SC.cloud_account_id .=? cloudAccountId
+      , unkey SC.cloud_region .=? cloudRegion
+      , unkey SC.cloud_availabilityZone .=? cloudAvailabilityZone
+      , unkey SC.cloud_platform .=? cloudPlatform
       ]

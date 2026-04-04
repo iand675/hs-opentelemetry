@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE UnliftedFFITypes #-}
 
 -----------------------------------------------------------------------------
@@ -39,6 +40,11 @@ module OpenTelemetry.Context.ThreadLocal (
   attachContext,
   detachContext,
   adjustContext,
+  getAndAdjustContext,
+
+  -- * Fused context operations (single myThreadId + FFI call)
+  getContextAndModify,
+  getContextAndRestore,
 
   -- ** Generalized thread-local context functions
 
@@ -82,6 +88,7 @@ threadContextMap = unsafePerformIO newThreadStorageMap
 -}
 getContext :: (MonadIO m) => m Context
 getContext = fromMaybe empty <$> lookupContext
+{-# INLINE getContext #-}
 
 
 {- | Retrieve a stored 'Context' for the current thread, if it exists.
@@ -90,6 +97,7 @@ getContext = fromMaybe empty <$> lookupContext
 -}
 lookupContext :: (MonadIO m) => m (Maybe Context)
 lookupContext = lookup threadContextMap
+{-# INLINE lookupContext #-}
 
 
 {- | Retrieve a stored 'Context' for the provided 'ThreadId', if it exists.
@@ -98,6 +106,7 @@ lookupContext = lookup threadContextMap
 -}
 lookupContextOnThread :: (MonadIO m) => ThreadId -> m (Maybe Context)
 lookupContextOnThread = lookupOnThread threadContextMap
+{-# INLINE lookupContextOnThread #-}
 
 
 {- | Store a given 'Context' for the current thread, returning any context previously stored.
@@ -106,6 +115,7 @@ lookupContextOnThread = lookupOnThread threadContextMap
 -}
 attachContext :: (MonadIO m) => Context -> m (Maybe Context)
 attachContext = attach threadContextMap
+{-# INLINE attachContext #-}
 
 
 {- | Store a given 'Context' for the provided 'ThreadId', returning any context previously stored.
@@ -114,6 +124,7 @@ attachContext = attach threadContextMap
 -}
 attachContextOnThread :: (MonadIO m) => ThreadId -> Context -> m (Maybe Context)
 attachContextOnThread = attachOnThread threadContextMap
+{-# INLINE attachContextOnThread #-}
 
 
 {- | Remove a stored 'Context' for the current thread, returning any context previously stored.
@@ -127,6 +138,7 @@ registering additional finalizer functions to be called on thread exit.
 -}
 detachContext :: (MonadIO m) => m (Maybe Context)
 detachContext = detach threadContextMap
+{-# INLINE detachContext #-}
 
 
 {- | Remove a stored 'Context' for the provided 'ThreadId', returning any context previously stored.
@@ -140,6 +152,7 @@ registering additional finalizer functions to be called on thread exit.
 -}
 detachContextFromThread :: (MonadIO m) => ThreadId -> m (Maybe Context)
 detachContextFromThread = detachFromThread threadContextMap
+{-# INLINE detachContextFromThread #-}
 
 
 {- | Alter the context on the current thread using the provided function.
@@ -151,7 +164,78 @@ be applied to an empty context and the result will be stored
 -}
 adjustContext :: (MonadIO m) => (Context -> Context) -> m ()
 adjustContext f = update threadContextMap $ \mctx ->
-  (pure $ f $ fromMaybe empty mctx, ())
+  let !ctx' = f $! fromMaybe empty mctx
+  in (pure ctx', ())
+{-# INLINE adjustContext #-}
+
+
+{- | Atomically read the current context and replace it via @f@ in a single
+CAS operation, returning the old context. This fuses a @getContext@ +
+@adjustContext@ pair into one thread-local round-trip.
+-}
+getAndAdjustContext :: (MonadIO m) => (Context -> Context) -> m Context
+getAndAdjustContext f = update threadContextMap $ \mctx ->
+  let !old = fromMaybe empty mctx
+      !new = f old
+  in (pure new, old)
+{-# INLINE getAndAdjustContext #-}
+
+
+{- | Read the current context, then apply a function that produces both a new
+context and a result, all using a single @myThreadId@ + @getThreadId@ pair.
+
+This is the hot path for span creation: we need to read the current context
+(to find the parent span), then update the context (to insert the new span).
+Doing both in one go avoids a second @myThreadId@ syscall and a second FFI
+call to @rts_getThreadId@.
+
+@
+(ctx, result) <- getContextAndModify $ \ctx ->
+    let !span = createSpanPure tracer ctx name args
+        !ctx' = insertSpan span ctx
+    in (ctx', (ctx, span))
+@
+-}
+getContextAndModify :: (Context -> (Context, a)) -> IO a
+getContextAndModify f = do
+  tid <- myThreadId
+  let !tidWord = getThreadId tid
+  updateRaw threadContextMap tid tidWord $ \mctx ->
+    let !old = fromMaybe empty mctx
+    in case f old of
+      (!new, !result) -> (Just new, result)
+{-# INLINE getContextAndModify #-}
+
+
+{- | Read the current context, run an IO action with it, then restore a
+previous context. Uses a single @myThreadId@ + @getThreadId@ pair cached
+across the lookup, the update-after-action, and the restoration.
+
+This is the pattern used for span lifecycle: read context, create span,
+insert span into context, run user code, then restore original context.
+-}
+getContextAndRestore
+  :: (Context -> IO (Context, a))
+  -- ^ Given the current context, produce a new context and a resource
+  -> (a -> IO ())
+  -- ^ Cleanup action using the resource
+  -> IO Context
+  -- ^ Returns the original context (before modification)
+getContextAndRestore act cleanup = do
+  tid <- myThreadId
+  let !tidWord = getThreadId tid
+  -- Read current context
+  mctx <- lookupRaw threadContextMap tidWord
+  let !ctx = fromMaybe empty mctx
+  -- Run action to produce updated context and resource
+  (!newCtx, !resource) <- act ctx
+  -- Write updated context
+  updateRaw threadContextMap tid tidWord $ \_ ->
+    (Just newCtx, ())
+  -- Run cleanup
+  cleanup resource
+  pure ctx
+{-# INLINE getContextAndRestore #-}
 
 
 {- | Alter the context
@@ -164,3 +248,4 @@ be applied to an empty context and the result will be stored
 adjustContextOnThread :: (MonadIO m) => ThreadId -> (Context -> Context) -> m ()
 adjustContextOnThread tid f = updateOnThread threadContextMap tid $ \mctx ->
   (pure $ f $ fromMaybe empty mctx, ())
+{-# INLINE adjustContextOnThread #-}

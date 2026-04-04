@@ -1,6 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
 
 -----------------------------------------------------------------------------
 
@@ -19,7 +17,9 @@
 module OpenTelemetry.Resource.Telemetry where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- - id: cpp
@@ -58,11 +58,10 @@ data Telemetry = Telemetry
 
 
 instance ToResource Telemetry where
-  type ResourceSchema Telemetry = 'Nothing
   toResource Telemetry {..} =
     mkResource
-      [ "telemetry.sdk.name" .= telemetrySdkName
-      , "telemetry.sdk.language" .=? telemetrySdkLanguage
-      , "telemetry.sdk.version" .=? telemetrySdkVersion
+      [ unkey SC.telemetry_sdk_name .= telemetrySdkName
+      , unkey SC.telemetry_sdk_language .=? telemetrySdkLanguage
+      , unkey SC.telemetry_sdk_version .=? telemetrySdkVersion
       , "telemetry.auto.version" .=? telemetryAutoVersion
       ]

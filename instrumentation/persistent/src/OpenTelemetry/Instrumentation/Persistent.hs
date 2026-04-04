@@ -8,6 +8,11 @@
 module OpenTelemetry.Instrumentation.Persistent (
   wrapSqlBackend,
   wrapSqlBackend',
+
+  -- * Span naming helpers (exported for testing)
+  extractSqlOperation,
+  dbSpanName,
+  lookupDbNamespace,
 ) where
 
 import Control.Monad
@@ -18,20 +23,23 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Data.Word (Word64)
 import qualified Data.Text as T
 import qualified Data.Vault.Strict as Vault
 import Database.Persist.Sql (IsolationLevel (..), SqlReadBackend, SqlWriteBackend, Statement (..))
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
-import OpenTelemetry.Attributes (Attributes)
+import OpenTelemetry.Attributes (Attribute (..), Attributes)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
+import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Monad (MonadTracer (..))
-import System.Clock
 import System.IO.Unsafe (unsafePerformIO)
 import UnliftIO.Exception
 
@@ -107,8 +115,31 @@ wrapSqlBackend' tp attrs conn_ = do
   -}
   connParentSpan <- liftIO $ newIORef Nothing
   connSpanInFlight <- liftIO $ newIORef Nothing
-  -- TODO add schema to tracerOptions?
+  dbSemOpt <- liftIO $ databaseOption <$> getSemanticsOptions
   let t = makeTracer tp $detectInstrumentationLibrary tracerOptions
+      dbNamespace = lookupDbNamespace dbSemOpt attrs
+      rdbms = getRDBMS conn
+      dbSystemAttrs = case dbSemOpt of
+        Stable -> H.fromList [(unkey SC.db_system_name, toAttribute rdbms)]
+        StableAndOld ->
+          H.fromList
+            [ (unkey SC.db_system_name, toAttribute rdbms)
+            , (unkey SC.db_system, toAttribute rdbms)
+            ]
+        Old -> H.fromList [(unkey SC.db_system, toAttribute rdbms)]
+      queryAttrs sql =
+        let v = toAttribute sql
+            opAttrs = case extractSqlOperation sql of
+              Just op -> case dbSemOpt of
+                Stable -> [(unkey SC.db_operation_name, toAttribute op)]
+                StableAndOld -> [(unkey SC.db_operation_name, toAttribute op)]
+                Old -> []
+              Nothing -> []
+        in H.union (H.fromList opAttrs) $ case dbSemOpt of
+            Stable -> H.insert (unkey SC.db_query_text) v attrs
+            StableAndOld -> H.insert (unkey SC.db_query_text) v $ H.insert (unkey SC.db_statement) v attrs
+            Old -> H.insert (unkey SC.db_statement) v attrs
+      spanName sql = dbSpanName (extractSqlOperation sql) dbNamespace
   let hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do
@@ -121,8 +152,8 @@ wrapSqlBackend' tp attrs conn_ = do
                               createSpan
                                 t
                                 ctxt
-                                sql
-                                (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs})
+                                (spanName sql)
+                                (defaultSpanArguments {kind = Client, attributes = queryAttrs sql})
                             adjustContext (insertSpan s)
                             pure (lookupSpan ctxt, s)
                           spanCleanup (parent, s) = do
@@ -132,19 +163,19 @@ wrapSqlBackend' tp attrs conn_ = do
 
                       (p, child) <- mkAcquire spanCreator spanCleanup
 
-                      annotateBasics child conn
+                      addAttributes child dbSystemAttrs
                       case stmtQuery stmt ps of
                         Acquire stmtQueryAcquireF -> Acquire $ \f ->
                           handleAny
                             ( \(SomeException err) -> do
-                                recordException child [("exception.escaped", toAttribute True)] Nothing err
+                                recordException child [(unkey SC.exception_escaped, toAttribute True)] Nothing err
                                 endSpan child Nothing
                                 throwIO err
                             )
                             (stmtQueryAcquireF f)
                   , stmtExecute = \ps -> do
-                      inSpan' t sql (defaultSpanArguments {kind = Client, attributes = H.insert "db.statement" (toAttribute sql) attrs}) $ \s -> do
-                        annotateBasics s conn
+                      inSpan' t (spanName sql) (defaultSpanArguments {kind = Client, attributes = queryAttrs sql}) $ \s -> do
+                        addAttributes s dbSystemAttrs
                         stmtExecute stmt ps
                   , stmtReset = stmtReset stmt
                   , stmtFinalize = stmtFinalize stmt
@@ -156,36 +187,38 @@ wrapSqlBackend' tp attrs conn_ = do
           { connHooks = hooks
           , connBegin = \f mIso -> do
               ctxt <- getContext
-              s <- createSpan t ctxt "transaction" (defaultSpanArguments {kind = Client, attributes = attrs})
-              annotateBasics s conn
+              s <- createSpan t ctxt (dbSpanName (Just "TRANSACTION") dbNamespace) (defaultSpanArguments {kind = Client, attributes = attrs})
+              let isoAttrs = case mIso of
+                    Nothing -> H.empty
+                    Just iso ->
+                      H.singleton "db.transaction.isolation" $ toAttribute $ case iso of
+                        ReadUncommitted -> "read uncommitted" :: Text
+                        ReadCommitted -> "read committed"
+                        RepeatableRead -> "repeatable read"
+                        Serializable -> "serializable"
+              addAttributes s (dbSystemAttrs `H.union` isoAttrs)
               writeIORef connSpanInFlight (Just s)
               writeIORef connParentSpan (lookupSpan ctxt)
               adjustContext (insertSpan s)
-              case mIso of
-                Nothing -> pure ()
-                Just iso -> addAttribute s "db.transaction.isolation" $ case iso of
-                  ReadUncommitted -> "read uncommitted" :: Text
-                  ReadCommitted -> "read committed"
-                  RepeatableRead -> "repeatable read"
-                  Serializable -> "serializable"
               connBegin conn f mIso
           , connCommit = \f -> do
               spanInFlight <- readIORef connSpanInFlight
               parentSpan <- readIORef connParentSpan
               let act = do
-                    (Timestamp tsStart) <- getTimestamp
+                    Timestamp nsStart <- getTimestamp
                     result <- tryAny $ connCommit conn f
-                    (Timestamp tsEnd) <- getTimestamp
+                    Timestamp nsEnd <- getTimestamp
                     forM_ spanInFlight $ \s -> do
+                      let !durationMicros = fromIntegral @Word64 @Int ((nsEnd - nsStart) `div` 1000)
                       addAttributes
                         s
                         [ ("db.transaction.outcome", toAttribute ("committed" :: Text))
-                        , ("db.transaction.commit_duration_ns", toAttribute $ fromIntegral @Integer @Int $ toNanoSecs (diffTimeSpec tsStart tsEnd) `div` 1000)
+                        , ("db.transaction.commit_duration_ns", toAttribute durationMicros)
                         ]
                       endSpan s Nothing
                       case result of
                         Left (SomeException err) -> do
-                          recordException s [("exception.escaped", toAttribute True)] Nothing err
+                          recordException s [(unkey SC.exception_escaped, toAttribute True)] Nothing err
                           throwIO err
                         Right _ -> pure ()
               act `finally` do
@@ -196,37 +229,62 @@ wrapSqlBackend' tp attrs conn_ = do
               spanInFlight <- readIORef connSpanInFlight
               parentSpan <- readIORef connParentSpan
               let act = do
-                    (Timestamp tsStart) <- getTimestamp
+                    Timestamp nsStart <- getTimestamp
                     result <- tryAny $ connRollback conn f
-                    e@(Timestamp tsEnd) <- getTimestamp
+                    e@(Timestamp _) <- getTimestamp
                     forM_ spanInFlight $ \s -> do
+                      let !durationMicros = fromIntegral @Word64 @Int ((timestampToNanoseconds e - nsStart) `div` 1000)
                       addAttributes
                         s
                         [ ("db.transaction.outcome", toAttribute ("rolled back" :: Text))
-                        , ("db.transaction.commit_duration_microseconds", toAttribute $ fromIntegral @Integer @Int $ toNanoSecs (diffTimeSpec tsStart tsEnd `div` 1000))
+                        , ("db.transaction.commit_duration_microseconds", toAttribute durationMicros)
                         ]
                       endSpan s (Just e)
                       case result of
                         Left (SomeException err) -> do
-                          recordException s [("exception.escaped", toAttribute True)] Nothing err
+                          recordException s [(unkey SC.exception_escaped, toAttribute True)] Nothing err
                           throwIO err
                         Right _ -> pure ()
               act `finally` do
                 adjustContext $ \ctx ->
                   maybe (removeSpan ctx) (`insertSpan` ctx) parentSpan
                 forM_ spanInFlight $ \s -> endSpan s Nothing
-          , -- TODO: This doesn't work when we wrap the connections for the pool.
+          , -- Known limitation: connClose spans are not emitted when
+            -- persistent's connection pool wraps the underlying connection,
+            -- since the pool manages connection lifecycle independently.
             connClose = do
-              inSpan' t "close connection" (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
-                annotateBasics s conn
+              inSpan' t (dbSpanName (Just "CLOSE") dbNamespace) (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
+                addAttributes s dbSystemAttrs
                 connClose conn
           }
   pure $ insertOriginalConnection conn' conn
 
 
-annotateBasics :: (MonadIO m) => Span -> SqlBackend -> m ()
-annotateBasics span conn = do
-  addAttributes
-    span
-    [ ("db.system", toAttribute $ getRDBMS conn)
-    ]
+extractSqlOperation :: Text -> Maybe Text
+extractSqlOperation sql =
+  let trimmed = T.dropWhile (\c -> c == ' ' || c == '\n' || c == '\r' || c == '\t') sql
+      keyword = T.takeWhile (\c -> c /= ' ' && c /= '\n' && c /= '\r' && c /= '\t' && c /= '(') trimmed
+  in if T.null keyword
+      then Nothing
+      else Just $ T.toUpper keyword
+
+
+lookupDbNamespace :: StabilityOpt -> AttributeMap -> Maybe Text
+lookupDbNamespace opt attrMap =
+  let tryKey k = case H.lookup k attrMap of
+        Just (AttributeValue (TextAttribute v)) -> Just v
+        _ -> Nothing
+  in case opt of
+      Stable -> tryKey (unkey SC.db_namespace)
+      StableAndOld -> tryKey (unkey SC.db_namespace) <|> tryKey (unkey SC.db_name)
+      Old -> tryKey (unkey SC.db_name)
+  where
+    Nothing <|> b = b
+    a <|> _ = a
+
+
+dbSpanName :: Maybe Text -> Maybe Text -> Text
+dbSpanName (Just op) (Just ns) = op <> " " <> ns
+dbSpanName (Just op) Nothing = op
+dbSpanName Nothing (Just ns) = ns
+dbSpanName Nothing Nothing = "DB"

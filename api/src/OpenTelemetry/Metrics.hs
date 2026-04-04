@@ -40,7 +40,7 @@ module OpenTelemetry.Metrics (
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Int (Int64)
 import Data.Text (Text)
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
@@ -58,8 +58,12 @@ shutdownMeterProvider :: MeterProvider -> IO ShutdownResult
 shutdownMeterProvider = meterProviderShutdown
 
 
-forceFlushMeterProvider :: MeterProvider -> IO FlushResult
-forceFlushMeterProvider = meterProviderForceFlush
+forceFlushMeterProvider
+  :: MeterProvider
+  -> Maybe Int
+  -- ^ Optional timeout in microseconds. @Nothing@ uses the SDK default (5s).
+  -> IO FlushResult
+forceFlushMeterProvider mp = meterProviderForceFlush mp
 
 
 noopCounterI64 :: Counter Int64
@@ -100,7 +104,7 @@ noopObservableCounter scope name =
     { observableCounterRegisterCallback = \_ -> noopReg
     , observableCounterInstrumentScope = scope
     , observableCounterInstrumentName = name
-    , observableCounterEnabled = pure True
+    , observableCounterEnabled = pure False
     }
 
 
@@ -110,7 +114,7 @@ noopObservableUpDown scope name =
     { observableUpDownCounterRegisterCallback = \_ -> noopReg
     , observableUpDownCounterInstrumentScope = scope
     , observableUpDownCounterInstrumentName = name
-    , observableUpDownCounterEnabled = pure True
+    , observableUpDownCounterEnabled = pure False
     }
 
 
@@ -120,7 +124,7 @@ noopObservableGauge scope name =
     { observableGaugeRegisterCallback = \_ -> noopReg
     , observableGaugeInstrumentScope = scope
     , observableGaugeInstrumentName = name
-    , observableGaugeEnabled = pure True
+    , observableGaugeEnabled = pure False
     }
 
 
@@ -151,7 +155,7 @@ noopMeterProvider =
   MeterProvider
     { meterProviderGetMeter = \scope -> pure (noopMeter scope)
     , meterProviderShutdown = pure ShutdownSuccess
-    , meterProviderForceFlush = pure FlushSuccess
+    , meterProviderForceFlush = \_ -> pure FlushSuccess
     }
 
 
@@ -165,4 +169,4 @@ getGlobalMeterProvider = liftIO $ readIORef globalMeterProvider
 
 
 setGlobalMeterProvider :: (MonadIO m) => MeterProvider -> m ()
-setGlobalMeterProvider p = liftIO $ writeIORef globalMeterProvider p
+setGlobalMeterProvider p = liftIO $ atomicWriteIORef globalMeterProvider p

@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -17,7 +14,9 @@
 module OpenTelemetry.Resource.FaaS where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | A "function as a service" aka "serverless function" instance.
@@ -62,15 +61,15 @@ data FaaS = FaaS
   --
   -- Examples: '128'
   }
+  deriving (Show)
 
 
 instance ToResource FaaS where
-  type ResourceSchema FaaS = 'Nothing
   toResource FaaS {..} =
     mkResource
-      [ "faas.name" .= faasName
+      [ unkey SC.faas_name .= faasName
       , "faas.id" .=? faasId
-      , "faas.version" .=? faasVersion
-      , "faas.instance" .=? faasInstance
-      , "faas.max_memory" .=? faasMaxMemory
+      , unkey SC.faas_version .=? faasVersion
+      , unkey SC.faas_instance .=? faasInstance
+      , unkey SC.faas_maxMemory .=? faasMaxMemory
       ]

@@ -1,5 +1,6 @@
 module OpenTelemetry.Trace.Id.Generator.Dummy where
 
+import Data.ByteString.Short (toShort)
 import OpenTelemetry.Trace.Id.Generator
 
 
@@ -9,4 +10,6 @@ dummyIdGenerator =
   IdGenerator
     { generateSpanIdBytes = pure "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
     , generateTraceIdBytes = pure "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
+    , genSpanIdSBS = pure $! toShort "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
+    , genTraceIdSBS = pure $! toShort "\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL\NUL"
     }

@@ -1,0 +1,50 @@
+_common/lib: !include "../../package-common.yaml"
+
+name:                hs-opentelemetry-instrumentation-hedis
+version:             0.1.0.0
+
+<<: *preface
+
+extra-source-files:
+- ChangeLog.md
+
+synopsis:            OpenTelemetry instrumentation for the hedis Redis client
+category:            OpenTelemetry, Redis, Database, Telemetry, Monitoring, Observability
+description:         Automatic tracing for Redis commands via the hedis client library. Provides pre-traced wrappers for common Redis commands and a TracedRedis monad, following the OpenTelemetry database client semantic conventions.
+
+default-extensions:
+- OverloadedStrings
+- RecordWildCards
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  dependencies:
+  - bytestring
+  - hedis >= 0.14 && < 0.16
+  - hs-opentelemetry-api == 0.4.*
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+  - mtl
+  - text
+
+tests:
+  hs-opentelemetry-instrumentation-hedis-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-hedis
+    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - bytestring
+    - hedis >= 0.14 && < 0.16
+    - hspec
+    - text
+    - vector

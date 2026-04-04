@@ -17,7 +17,7 @@ import OpenTelemetry.Trace.Core (Span, SpanStatus (Error, Ok), Tracer, addAttrib
 import Test.Tasty (TestTree, withResource)
 import Test.Tasty.Options (OptionDescription)
 import Test.Tasty.Providers (IsTest (run, testOptions))
-import Test.Tasty.Runners (Outcome (Failure, Success), ResourceSpec (ResourceSpec), Result (Result, resultDescription, resultOutcome), TestTree (After, AskOptions, PlusTestOptions, SingleTest, TestGroup, WithResource))
+import Test.Tasty.Runners (FailureReason (..), Outcome (Failure, Success), ResourceSpec (ResourceSpec), Result (Result, resultDescription, resultOutcome), TestTree (After, AskOptions, PlusTestOptions, SingleTest, TestGroup, WithResource))
 
 
 {- | A test case with a wrapper function that can do some IO around the
@@ -38,9 +38,9 @@ instance IsTest t => IsTest (WrappedTest t) where
           addAttribute s "result.description" (T.pack resultDescription)
           case resultOutcome of
             Success -> do
-              setStatus s $ Ok
+              setStatus s Ok
             Failure reason -> do
-              setStatus s $ Error $ T.pack $ show reason
+              setStatus s $ Error $ failureReasonText reason
         Nothing -> pure ()
 
       pure res
@@ -129,6 +129,14 @@ withParentSpan parentSpan act =
       pure (lookupSpan ctx, ctx)
     teardown (originalParentSpan, _ctx) = do
       adjustContext $ \ctx -> maybe (removeSpan ctx) (`insertSpan` ctx) originalParentSpan
+
+
+failureReasonText :: FailureReason -> T.Text
+failureReasonText = \case
+  TestFailed -> "TestFailed"
+  TestThrewException e -> T.pack $ "TestThrewException: " <> show e
+  TestTimedOut n -> T.pack $ "TestTimedOut: " <> show n
+  TestDepFailed -> "TestDepFailed"
 
 {- Note [Test parallelism]
 Tasty runs tests in parallel by default, and we don't want to disturb that.

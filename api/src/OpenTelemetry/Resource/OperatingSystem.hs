@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -19,7 +16,9 @@
 module OpenTelemetry.Resource.OperatingSystem where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | The operating system (OS) on which the process represented by this resource is running.
@@ -64,14 +63,10 @@ data OperatingSystem = OperatingSystem
 
 
 instance ToResource OperatingSystem where
-  type ResourceSchema OperatingSystem = 'Nothing
-
-
-  -- TODO ^ schema
   toResource OperatingSystem {..} =
     mkResource
-      [ "os.type" .= osType
-      , "os.description" .=? osDescription
-      , "os.name" .=? osName
-      , "os.version" .=? osVersion
+      [ unkey SC.os_type .= osType
+      , unkey SC.os_description .=? osDescription
+      , unkey SC.os_name .=? osName
+      , unkey SC.os_version .=? osVersion
       ]

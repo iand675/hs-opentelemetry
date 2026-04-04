@@ -52,13 +52,23 @@ import Control.Applicative ((<|>))
 import Control.Monad (void)
 import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Char as C
 import Data.Functor (($>))
 import Data.Text (Text)
-import Network.HTTP.Types (HeaderName)
-import OpenTelemetry.Trace.Id (Base (..), SpanId, TraceId, baseEncodedToSpanId, baseEncodedToTraceId, spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder)
+import OpenTelemetry.Trace.Id (
+  Base (..),
+  SpanId,
+  TraceId,
+  baseEncodedToSpanId,
+  baseEncodedToTraceId,
+  bytesToTraceId,
+  spanIdBaseEncodedBuilder,
+  spanIdBytes,
+  traceIdBaseEncodedBuilder,
+ )
 import OpenTelemetry.Trace.TraceState (Value (..))
 
 
@@ -118,10 +128,22 @@ decodeB3SampleHeader tp = case Atto.parseOnly parserSamplingState tp of
 
 --------------------------------------------------------------------------------
 
+{- | Decode a B3 @X-B3-TraceId@ value: 32 hex chars (128-bit) or 16 hex chars
+ (64-bit, zero-padded to 128-bit per B3).
+-}
+decodeTraceIdFromHex :: ByteString -> Either String TraceId
+decodeTraceIdFromHex hexBs
+  | BS.length hexBs == 32 = baseEncodedToTraceId Base16 hexBs
+  | BS.length hexBs == 16 = do
+      sid <- baseEncodedToSpanId Base16 hexBs
+      bytesToTraceId (BS.replicate 8 0 <> spanIdBytes sid)
+  | otherwise = Left "B3 trace id: expected 16 or 32 hex characters"
+
+
 parserTraceId :: Atto.Parser TraceId
 parserTraceId = do
   traceIdBs <- Atto.takeWhile C.isHexDigit
-  case baseEncodedToTraceId Base16 traceIdBs of
+  case decodeTraceIdFromHex traceIdBs of
     Left err -> fail err
     Right traceId -> pure traceId
 
@@ -173,7 +195,7 @@ printSamplingStateSingle = \case
   Defer -> Nothing
 
 
-printSamplingStateMulti :: SamplingState -> Maybe (HeaderName, Text)
+printSamplingStateMulti :: SamplingState -> Maybe (Text, Text)
 printSamplingStateMulti = \case
   Accept -> Just (xb3SampledHeader, "1")
   Deny -> Just (xb3SampledHeader, "0")
@@ -219,21 +241,21 @@ parserB3Single = do
 
 --------------------------------------------------------------------------------
 
-b3Header :: HeaderName
+b3Header :: Text
 b3Header = "b3"
 
 
-xb3TraceIdHeader :: HeaderName
-xb3TraceIdHeader = "X-B3-TraceId"
+xb3TraceIdHeader :: Text
+xb3TraceIdHeader = "x-b3-traceid"
 
 
-xb3SpanIdHeader :: HeaderName
-xb3SpanIdHeader = "X-B3-SpanId"
+xb3SpanIdHeader :: Text
+xb3SpanIdHeader = "x-b3-spanid"
 
 
-xb3SampledHeader :: HeaderName
-xb3SampledHeader = "X-B3-Sampled"
+xb3SampledHeader :: Text
+xb3SampledHeader = "x-b3-sampled"
 
 
-xb3FlagsHeader :: HeaderName
-xb3FlagsHeader = "X-B3-Flags"
+xb3FlagsHeader :: Text
+xb3FlagsHeader = "x-b3-flags"

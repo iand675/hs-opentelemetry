@@ -11,6 +11,9 @@ module OpenTelemetry.Logs.Core (
 
   -- * @Logger@ operations
   InstrumentationLibrary (..),
+  instrumentationLibrary,
+  withSchemaUrl,
+  withLibraryAttributes,
   Logger (..),
   makeLogger,
   loggerIsEnabled,

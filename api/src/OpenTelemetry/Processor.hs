@@ -14,7 +14,6 @@ module OpenTelemetry.Processor
 ) where
 
 import Control.Concurrent.Async (Async)
-import Data.IORef (IORef)
 import OpenTelemetry.Context (Context)
 import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 import OpenTelemetry.Processor.Span
@@ -27,8 +26,8 @@ type Processor = SpanProcessor
 
 
 pattern Processor
-  :: (IORef ImmutableSpan -> Context -> IO ())
-  -> (IORef ImmutableSpan -> IO ())
+  :: (ImmutableSpan -> Context -> IO ())
+  -> (ImmutableSpan -> IO ())
   -> IO (Async ShutdownResult)
   -> IO ()
   -> SpanProcessor

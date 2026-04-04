@@ -13,9 +13,11 @@ module OpenTelemetry.Exporter.Handle.Span (
 
 import Data.IORef
 import qualified Data.Text.Lazy as L
+import Data.Text.Lazy.Builder (fromString, fromText, toLazyText)
 import qualified Data.Text.Lazy.IO as L
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Trace.Core
+import OpenTelemetry.Trace.Id (Base (..), spanIdBaseEncodedText, traceIdBaseEncodedText)
 import System.IO (Handle, hFlush, stderr, stdout)
 
 
@@ -38,12 +40,15 @@ stderrExporter' :: (ImmutableSpan -> IO L.Text) -> SpanExporter
 stderrExporter' = makeHandleExporter stderr
 
 
-defaultFormatter :: ImmutableSpan -> L.Text
-defaultFormatter ImmutableSpan {..} =
-  L.intercalate
-    " "
-    [ L.pack $ show $ traceId spanContext
-    , L.pack $ show $ spanId spanContext
-    , L.pack $ show spanStart
-    , L.fromStrict spanName
-    ]
+defaultFormatter :: ImmutableSpan -> IO L.Text
+defaultFormatter imm = do
+  hot <- readIORef (spanHot imm)
+  let ctx = spanContext imm
+  pure $! toLazyText $
+    fromText (traceIdBaseEncodedText Base16 (traceId ctx))
+      <> " "
+      <> fromText (spanIdBaseEncodedText Base16 (spanId ctx))
+      <> " "
+      <> fromString (show (spanStart imm))
+      <> " "
+      <> fromText (hotName hot)

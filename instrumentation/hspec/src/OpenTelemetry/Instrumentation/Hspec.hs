@@ -35,9 +35,9 @@ wrapSpec = do
   let tracer = makeTracer tp $detectInstrumentationLibrary tracerOptions
   context <- getContext
 
-  -- FIXME: this kind of just dumps everything flat into one span per `it`. We
-  -- could possibly do better, e.g. finding the `describe`s and making them into
-  -- spans but I am not sure how that would be achieved.
+  -- Span structure is flat: one span per @it@ item. Nesting spans under
+  -- @describe@ blocks would require access to hspec's internal spec tree
+  -- before execution, which isn't exposed by the hspec public API.
   pure $ \spec -> mapSpecItem_ (wrapExampleInSpan tracer context) spec
 
 

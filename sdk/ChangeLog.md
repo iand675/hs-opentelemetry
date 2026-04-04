@@ -2,6 +2,114 @@
 
 ## Unreleased
 
+### Bug fixes
+- **Batch processor shutdown deadlock fixed.**
+  Second `shutdownTracerProvider` / `shutdownLoggerProvider` call would hang
+  forever because `putTMVar` blocks when the worker has already consumed the
+  signal. Fixed with `tryPutTMVar` + `IORef` shutdown guard. `OnEnd`/`OnEmit`
+  are now also guarded to prevent buffer growth after shutdown.
+- **Counter rejects negative values.**
+  Monotonic counters now drop negative deltas per spec. Previously, negative
+  values were summed into the same cell, producing incorrect monotonic sums.
+- **`MeterProvider.shutdown` is now idempotent.**
+  Second call returns `ShutdownSuccess` immediately without re-running
+  collection, export, or exporter shutdown.
+- **`OTEL_SDK_DISABLED=true` no longer disables propagators.**
+  `detectPropagators` is now always called, even when the SDK is disabled,
+  so `setGlobalTextMapPropagator` runs and instrumentation libraries can
+  still propagate context.
+- **`service.name` precedence fixed.**
+  `OTEL_SERVICE_NAME` now takes precedence over `service.name` defined in
+  `OTEL_RESOURCE_ATTRIBUTES`, matching the spec.
+- **OTLP exporters return `Failure` after shutdown.**
+  `spanExporterExport` and `logRecordExporterExport` now check a shutdown
+  flag and return `Failure Nothing` after `shutdown()` is called.
+- **Simple processors have 30s export timeout.**
+  `export()` in simple span and log record processors is now wrapped in a
+  `timeout` to prevent indefinite blocking.
+- **BSP default `maxQueueSize` fixed from 1024 to 2048.**
+  Now matches the spec default and the documentation table.
+
+### Changes
+- **`detectPropagators` and `createFromConfig` now set the global propagator.**
+  The SDK initialization path (`initializeGlobalTracerProvider` and
+  `createFromConfig`) now calls `setGlobalTextMapPropagator`, making propagators
+  available via the global API. Instrumentation libraries (WAI, http-client,
+  hw-kafka-client) now use `getGlobalTextMapPropagator` instead of extracting
+  propagators from the `TracerProvider`.
+- **`OTEL_PROPAGATORS` values are now deduplicated and whitespace-stripped.**
+  Per spec: "Values MUST be deduplicated in order to register a Propagator only once."
+- **Breaking: `SimpleSpanProcessor` and `SimpleLogRecordProcessor` now export synchronously.**
+  `onEnd` / `onEmit` calls the exporter directly on the calling thread instead of
+  enqueueing to an unbounded async channel. This matches the OTel specification
+  ("passes finished spans directly to the configured SpanExporter") and the behavior
+  of every other OTel SDK — Go, Java, .NET, C++, Rust, and Python all export
+  synchronously in their simple processors. The previous unbounded `unagi-chan`
+  queue could grow without bound under backpressure. Use `BatchSpanProcessor` /
+  `BatchLogRecordProcessor` for non-blocking, production-grade processing.
+- **Metric storage: per-instrument `IORef` replaces global `IORef`.**
+  Each instrument now owns its own `IORef (HashMap Attributes Cell)`, eliminating
+  cross-instrument contention on the recording hot path. Same-name instrument
+  re-registration shares the underlying `IORef` (spec MUST). `SdkMeterStorageState`,
+  `DimKey`, and `seriesCountByDims` are removed.
+- **Fix: TOCTOU race in instrument registration.** `getOrCreateInstrumentStorage`
+  now performs the lookup and insertion inside a single `atomicModifyIORef'`, preventing
+  duplicate `IORef`s for the same instrument under concurrent registration.
+- **Fix: delta temporality lost-update bug.** `collectResourceMetrics` now atomically
+  snapshots and resets each instrument's cell map in one `atomicModifyIORef'`, preventing
+  recordings between snapshot and reset from being silently dropped.
+- **Fix: metric export grouping.** `buildResourceExport` now groups by
+  `InstrumentationLibrary` (scope) with each instrument producing an independent
+  metric export, rather than merging instruments that share (scope, name, kind, unit,
+  description) but differ in histogram aggregation or export attribute keys.
+- **Fix: `OTEL_CONFIG_FILE` resource.schema_url.** `buildResource` now applies
+  `resourceSchemaUrl` from the config to the materialized resource.
+- **Fix: view matching ignoring unit and meter scope.** `findMatchingView`,
+  `shouldDropInstrument`, `viewOverrideName`, `viewOverrideDescription`, and
+  `exportKeysFor` now receive real instrument unit and meter scope. Previously
+  views with unit or meter-name/version/schema_url selectors never matched.
+- **Fix: batch processor worker crash on export exception.** Both batch span and
+  batch log processors now catch `SomeException` around `publish`, preventing the
+  worker `Async` from dying permanently on a transient exporter failure.
+- **Fix: unsorted explicit histogram bucket boundaries.** Advisory and view-supplied
+  bucket boundaries are now sorted before use, preventing incorrect bucket placement.
+- **Fix: batch processor off-by-one in queue capacity.** Both `BatchSpanProcessor`
+  and `BatchLogRecordProcessor` rejected items when `count + 1 >= maxQueueSize`,
+  meaning a queue configured for 1024 items only held 1023. Changed to
+  `count >= maxQueueSize` so the queue accepts exactly `maxQueueSize` items.
+- **Fix: simple processor shutdown flags used non-atomic `writeIORef`.** Both
+  `SimpleSpanProcessor` and `SimpleLogRecordProcessor` now use `atomicWriteIORef`
+  for the shutdown flag, ensuring happens-before visibility to concurrent readers.
+- **Fix: `MeterProvider` shutdown flag used non-atomic `writeIORef`.** Now uses
+  `atomicWriteIORef` for the shutdown boolean.
+- **Fix: `detectSpanLimits` swapped `OTEL_SPAN_LINK_COUNT_LIMIT` and
+  `OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT`.** Positional applicative construction
+  mapped link count limit to `eventAttributeCountLimit` and vice versa.
+  Corrected field ordering.
+- **Batch processor `ForceFlush` now blocks until the worker completes an export cycle.**
+  Previously `ForceFlush` signaled the worker and returned immediately, offering no
+  guarantee that buffered spans/logs were exported before the caller continued. The new
+  implementation uses a generation counter with a timeout derived from `exportTimeoutMillis`.
+- **Batch processor `maxExportBatchSize` is now enforced as a hard per-export limit.**
+  The buffer is drained fully, then chunked into batches of at most `maxExportBatchSize`
+  items before each chunk is exported separately. Matches the OTel spec requirement.
+- **Per-export timeout on batch processor.** Individual export calls are wrapped in
+  `System.Timeout.timeout exportTimeoutMillis`. A timed-out export returns `Failure`
+  without killing the worker.
+- **`ReadableLogRecord` is now a true point-in-time snapshot.** `mkReadableLogRecord`
+  reads the `IORef` and stores the `ImmutableLogRecord` directly, so exporters see
+  a consistent view regardless of concurrent mutations. `mkReadableLogRecord` is now
+  `IO` (breaking change to the internal API).
+- **Observable callback handles now support real unregistration.** `ObservableCallbackHandle.unregisterObservableCallback`
+  removes the callback from the meter's collection registry. Previously it was a no-op.
+  Internally, callbacks are stored in an `IntMap` keyed by unique ID rather than a `Seq`.
+- Implement declarative SDK configuration via `OTEL_CONFIG_FILE` (`OpenTelemetry.Configuration`)
+  - YAML parsing with environment variable substitution (`${VAR}`, `${env:VAR:-default}`)
+  - In-memory configuration data model (`OpenTelemetry.Configuration.Types`)
+  - Full `Create` operation: TracerProvider, MeterProvider, LoggerProvider, Propagators from config
+  - Supports OTLP HTTP, console, and none exporters; batch and simple processors
+  - Sampler configuration: always_on, always_off, trace_id_ratio_based, parent_based
+  - Resource, attribute limits, span limits, propagator configuration
 - **Shutdown/ForceFlush propagation audit:**
   - Batch span processor now calls `spanExporterShutdown` during processor shutdown (was missing)
   - Batch log processor now calls `logRecordExporterShutdown` during processor shutdown

@@ -28,7 +28,7 @@ import Control.Concurrent.Async
 import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
-import Data.IORef (IORef, atomicModifyIORef, modifyIORef, newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
@@ -180,6 +180,9 @@ data LoggerProvider = LoggerProvider
   -- may be designed in a manner that allows the Resource field to be recorded only once per batch of log records that come from the same source. SHOULD follow OpenTelemetry semantic conventions for Resources.
   -- This field is optional.
   , loggerProviderAttributeLimits :: AttributeLimits
+  , loggerProviderIsShutdown :: IORef Bool
+  -- ^ Set to 'True' after 'shutdownLoggerProvider'. Spec: after shutdown,
+  -- subsequent 'emitLogRecord' calls SHOULD be no-ops.
   }
 
 
@@ -205,11 +208,26 @@ mkReadWriteLogRecord :: Logger -> ImmutableLogRecord -> IO ReadWriteLogRecord
 mkReadWriteLogRecord l = fmap (ReadWriteLogRecord l) . newIORef
 
 
-newtype ReadableLogRecord = ReadableLogRecord {readableLogRecord :: ReadWriteLogRecord}
+data ReadableLogRecord = ReadableLogRecord
+  { readableLogRecordSnapshot :: !ImmutableLogRecord
+  , readableLogRecordScope :: !InstrumentationLibrary
+  , readableLogRecordMaterializedResource :: !MaterializedResources
+  }
 
 
-mkReadableLogRecord :: ReadWriteLogRecord -> ReadableLogRecord
-mkReadableLogRecord = ReadableLogRecord
+{- | Snapshot the current state of a 'ReadWriteLogRecord' into an immutable
+'ReadableLogRecord'. Exporters that receive a 'ReadableLogRecord' are
+guaranteed to see a consistent point-in-time view.
+-}
+mkReadableLogRecord :: ReadWriteLogRecord -> IO ReadableLogRecord
+mkReadableLogRecord rw@(ReadWriteLogRecord logger ref) = do
+  snapshot <- readIORef ref
+  pure
+    ReadableLogRecord
+      { readableLogRecordSnapshot = snapshot
+      , readableLogRecordScope = loggerInstrumentationScope logger
+      , readableLogRecordMaterializedResource = loggerProviderResource (loggerLoggerProvider logger)
+      }
 
 
 {- | This is a typeclass representing @LogRecord@s that can be read from.
@@ -252,18 +270,21 @@ class (IsReadableLogRecord r) => IsReadWriteLogRecord r where
   readLogRecordAttributeLimits :: r -> AttributeLimits
 
 
-  -- | Modifies the @LogRecord@ using its internal @IORef@. This is lazy and is not an atomic operation. The implementation mirrors @modifyIORef@.
+  -- | Atomically modifies the @LogRecord@ using its internal @IORef@.
+  -- Uses @atomicModifyIORef'@ (strict) to avoid thunk buildup and ensure
+  -- thread safety under concurrent mutation.
   modifyLogRecord :: r -> (ImmutableLogRecord -> ImmutableLogRecord) -> IO ()
 
 
-  -- | An atomic version of @modifyLogRecord@. This function is lazy. The implementation mirrors @atomicModifyIORef@.
+  -- | Atomically modifies the @LogRecord@ and returns a value.
+  -- Uses @atomicModifyIORef'@ (strict) for thread safety.
   atomicModifyLogRecord :: r -> (ImmutableLogRecord -> (ImmutableLogRecord, b)) -> IO b
 
 
 instance IsReadableLogRecord ReadableLogRecord where
-  readLogRecord = readLogRecord . readableLogRecord
-  readLogRecordInstrumentationScope = readLogRecordInstrumentationScope . readableLogRecord
-  readLogRecordResource = readLogRecordResource . readableLogRecord
+  readLogRecord = pure . readableLogRecordSnapshot
+  readLogRecordInstrumentationScope = readableLogRecordScope
+  readLogRecordResource = readableLogRecordMaterializedResource
 
 
 instance IsReadableLogRecord ReadWriteLogRecord where
@@ -274,8 +295,8 @@ instance IsReadableLogRecord ReadWriteLogRecord where
 
 instance IsReadWriteLogRecord ReadWriteLogRecord where
   readLogRecordAttributeLimits (ReadWriteLogRecord Logger {loggerLoggerProvider = LoggerProvider {loggerProviderAttributeLimits}} _) = loggerProviderAttributeLimits
-  modifyLogRecord (ReadWriteLogRecord _ ref) = modifyIORef ref
-  atomicModifyLogRecord (ReadWriteLogRecord _ ref) = atomicModifyIORef ref
+  modifyLogRecord (ReadWriteLogRecord _ ref) f = atomicModifyIORef' ref (\ilr -> (f ilr, ()))
+  atomicModifyLogRecord (ReadWriteLogRecord _ ref) = atomicModifyIORef' ref
 
 
 data ImmutableLogRecord = ImmutableLogRecord

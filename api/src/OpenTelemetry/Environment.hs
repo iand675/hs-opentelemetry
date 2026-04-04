@@ -5,6 +5,8 @@ module OpenTelemetry.Environment (
   lookupMetricExportIntervalMillis,
   MetricsExemplarFilter (..),
   lookupMetricsExemplarFilter,
+  LogsExporterSelection (..),
+  lookupLogsExporterSelection,
 ) where
 
 import qualified Data.Char as C
@@ -67,6 +69,36 @@ lookupMetricExportIntervalMillis = do
   pure $ case me >>= readMaybe . trimSpaces of
     Just n | n > 0 -> Just n
     _ -> Nothing
+
+
+{- | Parsed value of @OTEL_LOGS_EXPORTER@ (first entry if comma-separated).
+See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#exporter-selection>.
+
+@since 0.4.0.0
+-}
+data LogsExporterSelection
+  = LogsExporterNone
+  | LogsExporterOtlp
+  | LogsExporterConsole
+  deriving (Eq, Show)
+
+
+-- | Read @OTEL_LOGS_EXPORTER@. Unknown or empty values return 'Nothing' (caller may default to OTLP).
+lookupLogsExporterSelection :: IO (Maybe LogsExporterSelection)
+lookupLogsExporterSelection = do
+  me <- lookupEnv "OTEL_LOGS_EXPORTER"
+  case me of
+    Nothing -> pure Nothing
+    Just raw ->
+      let firstSeg = trimSpaces $ case break (== ',') raw of
+            (a, _) -> a
+          key = map C.toLower $ trimSpaces firstSeg
+      in pure $ case key of
+          "" -> Nothing
+          "none" -> Just LogsExporterNone
+          "otlp" -> Just LogsExporterOtlp
+          "console" -> Just LogsExporterConsole
+          _ -> Nothing
 
 
 -- | Parsed @OTEL_METRICS_EXEMPLAR_FILTER@ (when present).

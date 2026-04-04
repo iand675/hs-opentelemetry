@@ -30,14 +30,20 @@ module OpenTelemetry.Trace.Sampler (
   traceIdRatioBased,
   alwaysOn,
   alwaysOff,
+  alwaysRecord,
 ) where
 
-import Data.Binary.Get
 import Data.Bits
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as L
-import qualified Data.Text as T
-import Data.Word (Word64)
+import qualified Data.ByteString.Unsafe as BU
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Builder (toLazyText)
+import Data.Text.Lazy.Builder.RealFloat (realFloat)
+import Data.Word (Word64, byteSwap64)
+import Foreign.Ptr (castPtr, Ptr)
+import Foreign.Storable (peek)
+import GHC.ByteOrder (targetByteOrder, ByteOrder (..))
+import System.IO.Unsafe (unsafeDupablePerformIO)
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Context
 import OpenTelemetry.Internal.Trace.Types
@@ -87,28 +93,39 @@ alwaysOff =
 -}
 traceIdRatioBased :: Double -> Sampler
 traceIdRatioBased fraction =
-  if fraction >= 1
-    then alwaysOn
-    else sampler
+  Sampler
+    { getDescription = "TraceIdRatioBased{" <> TL.toStrict (toLazyText (realFloat safeFraction)) <> "}"
+    , shouldSample = \ctxt tid _ _ -> do
+        mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
+        let ts = maybe TraceState.empty traceState mspanCtxt
+        if safeFraction >= 1
+          then pure (RecordAndSample, [("sampleRate", sampleRate)], ts)
+          else do
+            let x = getWord64BE (traceIdBytes tid) `shiftR` 1
+            if x < traceIdUpperBound
+              then pure (RecordAndSample, [("sampleRate", sampleRate)], ts)
+              else pure (Drop, [], ts)
+    }
   where
-    safeFraction = max fraction 0
+    safeFraction = max 0 (min 1 fraction)
     sampleRate =
       if safeFraction > 0
         then toAttribute ((round (1 / safeFraction)) :: Int)
         else toAttribute (0 :: Int)
+    traceIdUpperBound = floor (safeFraction * fromIntegral ((1 :: Word64) `shiftL` 63)) :: Word64
 
-    traceIdUpperBound = floor (fraction * fromIntegral ((1 :: Word64) `shiftL` 63)) :: Word64
-    sampler =
-      Sampler
-        { getDescription = "TraceIdRatioBased{" <> T.pack (show fraction) <> "}"
-        , shouldSample = \ctxt tid _ _ -> do
-            mspanCtxt <- sequence (getSpanContext <$> lookupSpan ctxt)
-            let x = runGet getWord64be (L.fromStrict $ B.take 8 $ traceIdBytes tid) `shiftR` 1
-            if x < traceIdUpperBound
-              then do
-                pure (RecordAndSample, [("sampleRate", sampleRate)], maybe TraceState.empty traceState mspanCtxt)
-              else pure (Drop, [], maybe TraceState.empty traceState mspanCtxt)
-        }
+
+-- | Read the first 8 bytes of a ByteString as a big-endian Word64.
+-- Single 64-bit load + bswap on little-endian; direct load on big-endian.
+-- Caller must ensure the ByteString is at least 8 bytes.
+getWord64BE :: B.ByteString -> Word64
+getWord64BE bs = unsafeDupablePerformIO $
+  BU.unsafeUseAsCStringLen bs $ \(ptr, _) -> do
+    w <- peek (castPtr ptr :: Ptr Word64)
+    pure $! case targetByteOrder of
+      BigEndian -> w
+      LittleEndian -> byteSwap64 w
+{-# INLINE getWord64BE #-}
 
 
 {- | This is a composite sampler. ParentBased helps distinguish between the following cases:
@@ -193,4 +210,29 @@ parentBased ParentBasedOptions {..} =
                 if isSampled $ traceFlags root
                   then shouldSample localParentSampled ctx tid name csa
                   else shouldSample localParentNotSampled ctx tid name csa
+    }
+
+
+{- | A decorator that ensures spans always reach processors (IsRecording=true)
+even when the wrapped sampler would DROP them. Per spec:
+
+  - DROP         -> RECORD_ONLY (upgraded: processors see it, exporters don't)
+  - RECORD_ONLY  -> RECORD_ONLY (unchanged)
+  - RECORD_AND_SAMPLE -> RECORD_AND_SAMPLE (unchanged)
+
+Useful for span-to-metrics processors or debugging processors that need
+visibility into all spans without increasing export volume.
+
+@since 0.2.0.0
+-}
+alwaysRecord :: Sampler -> Sampler
+alwaysRecord inner =
+  Sampler
+    { getDescription = "AlwaysRecord{" <> getDescription inner <> "}"
+    , shouldSample = \ctx tid name csa -> do
+        (decision, attrs, ts) <- shouldSample inner ctx tid name csa
+        let decision' = case decision of
+              Drop -> RecordOnly
+              other -> other
+        pure (decision', attrs, ts)
     }

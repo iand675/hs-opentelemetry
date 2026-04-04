@@ -37,9 +37,9 @@ module OpenTelemetry.Trace.Monad (
 ) where
 
 import Control.Monad.IO.Unlift
-import Control.Monad.Identity (IdentityT)
-import Control.Monad.Reader (ReaderT)
-import Control.Monad.Trans (MonadTrans (lift))
+import Control.Monad.Trans.Class (MonadTrans (lift))
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.Reader (ReaderT)
 import Data.Text (Text)
 import GHC.Stack
 import OpenTelemetry.Trace.Core (

@@ -11,6 +11,9 @@ module OpenTelemetry.Debug.MetricExport (
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Builder (Builder, fromText, toLazyText)
+import Data.Text.Lazy.Builder.Int (decimal)
 import qualified Data.Vector as V
 import OpenTelemetry.Exporter.Metric (
   MetricExport (..),
@@ -40,25 +43,55 @@ renderScope ScopeMetricsExport {..} =
 
 
 renderMetric :: MetricExport -> Text
-renderMetric = \case
+renderMetric = TL.toStrict . toLazyText . renderMetricB
+
+
+renderMetricB :: MetricExport -> Builder
+renderMetricB = \case
   MetricExportSum n d u _ m i _ pts ->
-    T.concat
-      [ "Sum "
-      , n
-      , " "
-      , d
-      , " "
-      , u
-      , " monotonic="
-      , T.pack (show m)
-      , " isInt="
-      , T.pack (show i)
-      , " nPts="
-      , T.pack (show (V.length pts))
-      ]
+    "Sum "
+      <> fromText n
+      <> " "
+      <> fromText d
+      <> " "
+      <> fromText u
+      <> " monotonic="
+      <> showBool m
+      <> " isInt="
+      <> showBool i
+      <> " nPts="
+      <> decimal (V.length pts)
   MetricExportHistogram n d u _ _ pts ->
-    T.concat ["Histogram ", n, " ", d, " ", u, " nPts=", T.pack (show (V.length pts))]
+    "Histogram "
+      <> fromText n
+      <> " "
+      <> fromText d
+      <> " "
+      <> fromText u
+      <> " nPts="
+      <> decimal (V.length pts)
   MetricExportExponentialHistogram n d u _ _ pts ->
-    T.concat ["ExponentialHistogram ", n, " ", d, " ", u, " nPts=", T.pack (show (V.length pts))]
+    "ExponentialHistogram "
+      <> fromText n
+      <> " "
+      <> fromText d
+      <> " "
+      <> fromText u
+      <> " nPts="
+      <> decimal (V.length pts)
   MetricExportGauge n d u _ i pts ->
-    T.concat ["Gauge ", n, " ", d, " ", u, " isInt=", T.pack (show i), " nPts=", T.pack (show (V.length pts))]
+    "Gauge "
+      <> fromText n
+      <> " "
+      <> fromText d
+      <> " "
+      <> fromText u
+      <> " isInt="
+      <> showBool i
+      <> " nPts="
+      <> decimal (V.length pts)
+
+
+showBool :: Bool -> Builder
+showBool True = "True"
+showBool False = "False"

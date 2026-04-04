@@ -1,5 +1,5 @@
 .PHONY: all
-all: all.stack-9.4 all.stack-9.6 all.stack-9.8 all.stack-9.10 all.cabal
+all: all.stack-9.4 all.stack-9.6 all.stack-9.8 all.stack-9.10 all.stack-9.12 all.cabal
 
 .PHONY: all.stack-9.4
 all.stack-9.4:
@@ -17,13 +17,17 @@ all.stack-9.8:
 all.stack-9.10:
 	stack --stack-yaml stack-ghc-9.10.yaml build --test --bench
 
+.PHONY: all.stack-9.12
+all.stack-9.12:
+	stack --stack-yaml stack-ghc-9.12.yaml build --test --bench
+
 .PHONY: all.cabal
 all.cabal:
 	cabal v2-build --jobs --enable-tests --enable-benchmarks all
 	cabal v2-test --jobs all
 
 .PHONY: build.all
-build.all: build.all.stack-9.4 build.all.stack-9.6 build.all.stack-9.8 build.all.stack-9.10 build.all.cabal
+build.all: build.all.stack-9.4 build.all.stack-9.6 build.all.stack-9.8 build.all.stack-9.10 build.all.stack-9.12 build.all.cabal
 
 .PHONY: build.all.stack-9.4
 build.all.stack-9.4:
@@ -40,6 +44,10 @@ build.all.stack-9.8:
 .PHONY: build.all.stack-9.10
 build.all.stack-9.10:
 	stack --stack-yaml stack-ghc-9.10.yaml build --test --no-run-tests --bench --no-run-benchmarks
+
+.PHONY: build.all.stack-9.12
+build.all.stack-9.12:
+	stack --stack-yaml stack-ghc-9.12.yaml build --test --no-run-tests --bench --no-run-benchmarks
 
 .PHONY: build.all.cabal
 build.all.cabal:

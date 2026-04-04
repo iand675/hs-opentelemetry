@@ -9,6 +9,7 @@ module OpenTelemetry.Metrics.View (
   View (..),
   ViewSelector (..),
   ViewAggregation (..),
+  MeterScope,
   findMatchingView,
   findAllMatchingViews,
   viewOverrideName,
@@ -77,10 +78,10 @@ matchesSelector sel kind name mUnit (scopeName, scopeVer, scopeSchema) =
     && maybe True (== scopeSchema) (viewMeterSchemaUrl sel)
 
 
--- | First matching view (legacy single-match for backward compat).
-findMatchingView :: [View] -> InstrumentKind -> Text -> Maybe View
-findMatchingView views kind name =
-  find (\v -> matchesSelector (viewSelector v) kind name Nothing ("", "", "")) views
+-- | First matching view with full selector criteria.
+findMatchingView :: [View] -> InstrumentKind -> Text -> Maybe Text -> MeterScope -> Maybe View
+findMatchingView views kind name mUnit scope =
+  find (\v -> matchesSelector (viewSelector v) kind name mUnit scope) views
 
 
 -- | All matching views (spec: each produces a separate metric stream).
@@ -89,18 +90,18 @@ findAllMatchingViews views kind name mUnit scope =
   Data.List.filter (\v -> matchesSelector (viewSelector v) kind name mUnit scope) views
 
 
-viewOverrideName :: [View] -> InstrumentKind -> Text -> Text
-viewOverrideName views kind name =
-  case findMatchingView views kind name of
+viewOverrideName :: [View] -> InstrumentKind -> Text -> Maybe Text -> MeterScope -> Text
+viewOverrideName views kind name mUnit scope =
+  case findMatchingView views kind name mUnit scope of
     Just v -> case viewName v of
       Just n -> n
       Nothing -> name
     Nothing -> name
 
 
-viewOverrideDescription :: [View] -> InstrumentKind -> Text -> Maybe Text -> Maybe Text
-viewOverrideDescription views kind name mDesc =
-  case findMatchingView views kind name of
+viewOverrideDescription :: [View] -> InstrumentKind -> Text -> Maybe Text -> Maybe Text -> MeterScope -> Maybe Text
+viewOverrideDescription views kind name mUnit mDesc scope =
+  case findMatchingView views kind name mUnit scope of
     Just v -> case viewDescription v of
       Just d -> Just d
       Nothing -> mDesc

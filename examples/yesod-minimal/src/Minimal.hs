@@ -74,7 +74,8 @@ instance YesodPersist Minimal where
     app <- getYesod
     runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $
       setAlterBackend defaultSqlPoolHooks $ \conn -> do
-        -- TODO, could probably not do this on each runDB call.
+        -- Static connection attributes (server addr, port, db name) could be
+        -- cached per-pool rather than recomputed per runDB call.
         staticAttrs <- case getSimpleConn conn of
           Nothing -> pure mempty
           Just pgConn -> staticConnectionAttributes pgConn
@@ -86,9 +87,8 @@ getRootR = do
   -- Wouldn't put this here in a real app
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
     liftIO $ newManager defaultManagerSettings
-  let httpConfig = httpClientInstrumentationConfig
   req <- parseUrlThrow "http://localhost:3000/api"
-  resp <- httpLbs httpConfig req m
+  resp <- httpLbs req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 

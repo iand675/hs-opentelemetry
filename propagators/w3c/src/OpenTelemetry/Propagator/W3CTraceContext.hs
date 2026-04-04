@@ -29,6 +29,7 @@
 -}
 module OpenTelemetry.Propagator.W3CTraceContext where
 
+import Control.Monad (when)
 import Data.Attoparsec.ByteString.Char8 (
   Parser,
   char,
@@ -49,9 +50,9 @@ import Data.Char (isHexDigit)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
-import Network.HTTP.Types (RequestHeaders)
 import qualified OpenTelemetry.Context as Ctxt
-import OpenTelemetry.Propagator (Propagator (..))
+import OpenTelemetry.Propagator (Propagator (..), TextMap, textMapInsert, textMapLookup)
+import OpenTelemetry.Registry (registerTextMapPropagator)
 import OpenTelemetry.Trace.Core (
   Span,
   SpanContext (..),
@@ -61,15 +62,12 @@ import OpenTelemetry.Trace.Core (
   traceFlagsValue,
   wrapSpanContext,
  )
-import OpenTelemetry.Trace.Id (Base (..), SpanId, TraceId, baseEncodedToSpanId, baseEncodedToTraceId, spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder)
+import OpenTelemetry.Trace.Id (Base (..), SpanId, TraceId, baseEncodedToSpanId, baseEncodedToTraceId, isEmptySpanId, isEmptyTraceId, spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder)
 import OpenTelemetry.Trace.TraceState (Key (..), TraceState, Value (..), empty, fromList, toList)
 import Prelude hiding (takeWhile)
 
 
-{-
-TODO: test against the conformance spec:
-https://github.com/w3c/trace-context
--}
+{- W3C trace-context conformance suite: https://github.com/w3c/trace-context -}
 data TraceParent = TraceParent
   { version :: {-# UNPACK #-} !Word8
   , traceId :: {-# UNPACK #-} !TraceId
@@ -123,11 +121,13 @@ traceparentParser = do
   traceId <- case baseEncodedToTraceId Base16 traceIdBs of
     Left err -> fail err
     Right ok -> pure ok
+  when (isEmptyTraceId traceId) $ fail "trace-id is all zeros"
   _ <- string "-"
   parentIdBs <- takeWhile isHexDigit
   parentId <- case baseEncodedToSpanId Base16 parentIdBs of
     Left err -> fail err
     Right ok -> pure ok
+  when (isEmptySpanId parentId) $ fail "parent-id is all zeros"
   _ <- string "-"
   traceFlags <- traceFlagsFromWord8 <$> hexadecimal
   -- Intentionally not consuming end of input in case of version > 0
@@ -330,25 +330,34 @@ encodeSpanContext s = do
 
  @since 0.0.1.0
 -}
-w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders RequestHeaders
+w3cTraceContextPropagator :: Propagator Ctxt.Context TextMap TextMap
 w3cTraceContextPropagator = Propagator {..}
   where
-    propagatorNames = ["tracecontext"]
+    propagatorFields = ["traceparent", "tracestate"]
 
-    extractor hs c = do
-      let traceParentHeader = Prelude.lookup "traceparent" hs
-          traceStateHeader = Prelude.lookup "tracestate" hs
-          mspanContext = decodeSpanContext traceParentHeader traceStateHeader
+    extractor tm c = do
+      let traceParentHeader = TE.encodeUtf8 <$> textMapLookup "traceparent" tm
+          combinedTraceState = TE.encodeUtf8 <$> textMapLookup "tracestate" tm
+          mspanContext = decodeSpanContext traceParentHeader combinedTraceState
       pure $! case mspanContext of
         Nothing -> c
         Just s -> Ctxt.insertSpan (wrapSpanContext (s {isRemote = True})) c
 
-    injector c hs = case Ctxt.lookupSpan c of
-      Nothing -> pure hs
+    injector c tm = case Ctxt.lookupSpan c of
+      Nothing -> pure tm
       Just s -> do
         (traceParentHeader, traceStateHeader) <- encodeSpanContext s
-        pure
-          ( ("traceparent", traceParentHeader)
-              : ("tracestate", traceStateHeader)
-              : hs
-          )
+        pure $
+          textMapInsert "traceparent" (TE.decodeUtf8 traceParentHeader) $
+            textMapInsert "tracestate" (TE.decodeUtf8 traceStateHeader) $
+              tm
+
+
+{- | Register the W3C Trace Context propagator under the name
+@\"tracecontext\"@ in the global registry.
+
+@since 0.1.0.0
+-}
+registerW3CTraceContextPropagator :: IO ()
+registerW3CTraceContextPropagator =
+  registerTextMapPropagator "tracecontext" w3cTraceContextPropagator

@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The project uses both Cabal and Stack as build tools, with Nix for environment management:
 
 ### Build Commands
-- `make` - Build and test everything across multiple GHC versions (9.4, 9.6, 9.8, 9.10) using both Stack and Cabal
+- `make` - Build and test everything across multiple GHC versions (9.4, 9.6, 9.8, 9.10, 9.12) using both Stack and Cabal
 - `make build.all` - Build everything without running tests
+- `make all.stack-9.10` - Build and test with a specific GHC version (9.4, 9.6, 9.8, 9.10, 9.12)
 - `stack build --test --bench` - Build with Stack (default: GHC 9.10)
 - `cabal build --enable-tests --enable-benchmarks all` - Build with Cabal
 - `cabal test all` - Run all tests with Cabal
@@ -22,6 +23,22 @@ The project uses both Cabal and Stack as build tools, with Nix for environment m
 - `nix develop .#ghc94` - Enter specific GHC version environment (9.4, 9.6, 9.8, 9.10 available)
 - `direnv allow` - Allow direnv to load `.envrc` for automatic environment setup
 
+### GHC Version Matrix
+Stack files exist for each supported GHC version:
+| GHC | Stack file | Resolver | Notes |
+|-----|-----------|----------|-------|
+| 9.4 | `stack-ghc-9.4.yaml` | lts-21.25 | No hw-kafka-client, no gogol |
+| 9.6 | `stack-ghc-9.6.yaml` | lts-22.44 | No gogol |
+| 9.8 | `stack-ghc-9.8.yaml` | lts-23.28 | No gogol |
+| 9.10 | `stack-ghc-9.10.yaml` | lts-24.35 | Full support |
+| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-02-15 | No persistent-mysql; proto-lens via allow-newer |
+
+Key compat notes:
+- `foldl'` moved to Prelude in GHC 9.10; older versions need `import Data.List (foldl')`
+- `proto-lens` caps at `base < 4.21`; GHC 9.12 uses `allow-newer`
+- `gogol-core` only available in LTS 24+ / nightly
+- hw-kafka-client headers API only in LTS 22+
+
 ### Testing
 - Run tests via the build commands above (`--test` flag for Stack, `cabal test` for Cabal)
 - Tests are located in `test/` directories within each package
@@ -31,9 +48,10 @@ The project uses both Cabal and Stack as build tools, with Nix for environment m
 This is a multi-package Haskell project implementing OpenTelemetry for Haskell. The architecture follows the OpenTelemetry specification with clear separation between API and SDK:
 
 ### Core Package Structure
+- **`api-types/`** - Leaf package with core `Attribute`/`AttributeKey` types (no internal deps)
 - **`api/`** - OpenTelemetry API types and interfaces (for library instrumentation)
 - **`sdk/`** - OpenTelemetry SDK implementation (for applications)
-- **`otlp/`** - OpenTelemetry Protocol (OTLP) implementation
+- **`otlp/`** - OpenTelemetry Protocol (OTLP) proto-lens generated types
 - **`semantic-conventions/`** - Auto-generated semantic conventions
 
 ### Instrumentation Libraries
@@ -43,12 +61,15 @@ Located in `instrumentation/`:
 - `persistent/` - Persistent database library instrumentation
 - `http-client/` - HTTP client instrumentation
 - `conduit/` - Conduit streaming library instrumentation
+- `gogol/` - Google Cloud (gogol) instrumentation (GHC 9.10+ only)
+- `hw-kafka-client/` - Kafka instrumentation (GHC 9.6+ only, requires headers API)
 
 ### Exporters
 Located in `exporters/`:
 - `otlp/` - OTLP exporter (primary export format)
 - `handle/` - Handle-based exporter (e.g., stdout)
 - `in-memory/` - In-memory exporter for testing
+- `prometheus/` - Prometheus metrics exporter
 
 ### Propagators
 Located in `propagators/`:

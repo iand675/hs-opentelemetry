@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -17,7 +14,9 @@
 module OpenTelemetry.Resource.Service where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | A service instance
@@ -51,11 +50,10 @@ data Service = Service
 
 
 instance ToResource Service where
-  type ResourceSchema Service = 'Nothing
   toResource Service {..} =
     mkResource
-      [ "service.name" .= serviceName
-      , "service.namespace" .=? serviceNamespace
-      , "service.instance.id" .=? serviceInstanceId
-      , "service.version" .=? serviceVersion
+      [ unkey SC.service_name .= serviceName
+      , unkey SC.service_namespace .=? serviceNamespace
+      , unkey SC.service_instance_id .=? serviceInstanceId
+      , unkey SC.service_version .=? serviceVersion
       ]

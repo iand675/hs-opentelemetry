@@ -40,8 +40,17 @@ spec = do
       enabled <- counterEnabled c
       enabled `shouldBe` False
       counterAdd c 1 emptyAttributes
+    it "SHOULD return disabled observable instruments (Enabled API)" $ do
+      let mp = noopMeterProvider
+      m <- getMeter mp ("obs" :: InstrumentationLibrary)
+      oc <- meterCreateObservableCounterInt64 m "oc" Nothing Nothing defaultAdvisoryParameters []
+      oud <- meterCreateObservableUpDownCounterInt64 m "oud" Nothing Nothing defaultAdvisoryParameters []
+      og <- meterCreateObservableGaugeInt64 m "og" Nothing Nothing defaultAdvisoryParameters []
+      observableCounterEnabled oc `shouldReturn` False
+      observableUpDownCounterEnabled oud `shouldReturn` False
+      observableGaugeEnabled og `shouldReturn` False
 
   describe "noopMeterProvider shutdown" $ do
     it "implements Shutdown and ForceFlush without error" $ do
       shutdownMeterProvider noopMeterProvider `shouldReturn` ShutdownSuccess
-      forceFlushMeterProvider noopMeterProvider `shouldReturn` FlushSuccess
+      forceFlushMeterProvider noopMeterProvider Nothing `shouldReturn` FlushSuccess

@@ -24,6 +24,10 @@ dependencies:
 
 library:
   exposed-modules:
+  - OpenTelemetry.Configuration
+  - OpenTelemetry.Configuration.Create
+  - OpenTelemetry.Configuration.Parse
+  - OpenTelemetry.Configuration.Types
   - OpenTelemetry.MetricReader
   - OpenTelemetry.MeterProvider
   - OpenTelemetry.Metrics.ExporterSelection
@@ -34,7 +38,18 @@ library:
   - OpenTelemetry.Processor.Simple
   - OpenTelemetry.Processor.Simple.LogRecord
   - OpenTelemetry.Processor.Simple.Span
+  - OpenTelemetry.Resource.Cloud.Detector
+  - OpenTelemetry.Resource.Container.Detector
+  - OpenTelemetry.Resource.Detector.AWS.EC2
+  - OpenTelemetry.Resource.Detector.AWS.ECS
+  - OpenTelemetry.Resource.Detector.AWS.EKS
+  - OpenTelemetry.Resource.Detector.Azure
+  - OpenTelemetry.Resource.Detector.GCP
+  - OpenTelemetry.Resource.Detector.Heroku
+  - OpenTelemetry.Resource.Detector.Metadata
+  - OpenTelemetry.Resource.FaaS.Detector
   - OpenTelemetry.Resource.Host.Detector
+  - OpenTelemetry.Resource.Kubernetes.Detector
   - OpenTelemetry.Resource.OperatingSystem.Detector
   - OpenTelemetry.Resource.Process.Detector
   - OpenTelemetry.Resource.Service.Detector
@@ -51,33 +66,43 @@ library:
         source-dirs: src/platform/unix
         dependencies: unix # for getEffectiveUserID
   dependencies:
+  - aeson
   - async
   - bytestring
-  - clock
+  - case-insensitive
+  - connection
   - containers
   - hashable
+  - http-client
+  - http-client-tls
   - http-types
+  - tls
+  - x509-store
   - network-bsd
-  - random >= 1.2.0
+  - scientific
   - stm
   - text
-  - unagi-chan
+  - yaml
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
   - vector
-  - vector-builder
+  - unagi-chan >= 0.4 && < 0.5
   # These are "distribution" packages
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0
   - hs-opentelemetry-exporter-handle ^>= 0.0.1
   - hs-opentelemetry-exporter-otlp ^>= 0.1
   - hs-opentelemetry-propagator-b3 ^>=0.0.1
   - hs-opentelemetry-propagator-datadog ^>=0.0.0
+  - hs-opentelemetry-propagator-jaeger ^>=0.0.1
+  - hs-opentelemetry-propagator-xray ^>=0.0.1
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
+    - OpenTelemetry.Context.Environment
     - OpenTelemetry.Context.ThreadLocal
+    - OpenTelemetry.Context.ThreadLocal.Propagation
     - OpenTelemetry.Exporter.Span
     - OpenTelemetry.Exporter.LogRecord
     - OpenTelemetry.Exporter
@@ -112,17 +137,34 @@ tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs
     other-modules:
+    - OpenTelemetry.BaggageSpec
+    - OpenTelemetry.ConfigurationSpec
+    - OpenTelemetry.ContextSpec
+    - OpenTelemetry.ContextInSpanSpec
     - OpenTelemetry.MeterProviderSpec
+    - OpenTelemetry.Resource.DetectorSpec
+    - OpenTelemetry.ResourceSpec
+    - OpenTelemetry.TraceSpec
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    when:
+    - condition: "!os(windows)"
+      dependencies: unix
     dependencies:
-    - clock
-    - hs-opentelemetry-api
+    - async
+    - bytestring
+    - containers
+    - directory
+    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-propagator-b3 >= 0.0.1 && < 0.1
+    - hs-opentelemetry-propagator-w3c >= 0.1.0 && < 0.2
     - hs-opentelemetry-sdk
     - hspec
+    - process
     - text
     - unordered-containers
     - vector

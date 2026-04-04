@@ -1,6 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
@@ -17,7 +14,9 @@
 module OpenTelemetry.Resource.Kubernetes where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | A Kubernetes Cluster.
@@ -25,13 +24,13 @@ newtype Cluster = Cluster
   { clusterName :: Maybe Text
   -- ^ The name of the cluster.
   }
+  deriving (Show)
 
 
 instance ToResource Cluster where
-  type ResourceSchema Cluster = 'Nothing
   toResource Cluster {..} =
     mkResource
-      ["k8s.cluster.name" .=? clusterName]
+      [unkey SC.k8s_cluster_name .=? clusterName]
 
 
 -- | A Kubernetes Node.
@@ -39,14 +38,14 @@ data Node = Node
   { nodeName :: Maybe Text
   , nodeUid :: Maybe Text
   }
+  deriving (Show)
 
 
 instance ToResource Node where
-  type ResourceSchema Node = 'Nothing
   toResource Node {..} =
     mkResource
-      [ "k8s.node.name" .=? nodeName
-      , "k8s.node.uid" .=? nodeUid
+      [ unkey SC.k8s_node_name .=? nodeName
+      , unkey SC.k8s_node_uid .=? nodeUid
       ]
 
 
@@ -55,13 +54,13 @@ newtype Namespace = Namespace
   { namespaceName :: Maybe Text
   -- ^ The name of the namespace that the pod is running in.
   }
+  deriving (Show)
 
 
 instance ToResource Namespace where
-  type ResourceSchema Namespace = 'Nothing
   toResource Namespace {..} =
     mkResource
-      [ "k8s.namespace.name" .=? namespaceName
+      [ unkey SC.k8s_namespace_name .=? namespaceName
       ]
 
 
@@ -72,14 +71,14 @@ data Pod = Pod
   , podUid :: Maybe Text
   -- ^ The UID of the Pod.
   }
+  deriving (Show)
 
 
 instance ToResource Pod where
-  type ResourceSchema Pod = 'Nothing
   toResource Pod {..} =
     mkResource
-      [ "k8s.pod.name" .=? podName
-      , "k8s.pod.uid" .=? podUid
+      [ unkey SC.k8s_pod_name .=? podName
+      , unkey SC.k8s_pod_uid .=? podUid
       ]
 
 
@@ -93,11 +92,10 @@ data Container = Container
 
 
 instance ToResource Container where
-  type ResourceSchema Container = 'Nothing
   toResource Container {..} =
     mkResource
-      [ "k8s.container.name" .=? containerName
-      , "k8s.container.restart_count" .=? containerRestartCount
+      [ unkey SC.k8s_container_name .=? containerName
+      , unkey SC.k8s_container_restartCount .=? containerRestartCount
       ]
 
 
@@ -109,11 +107,10 @@ data ReplicaSet = ReplicaSet
 
 
 instance ToResource ReplicaSet where
-  type ResourceSchema ReplicaSet = 'Nothing
   toResource ReplicaSet {..} =
     mkResource
-      [ "k8s.replicaset.name" .=? replicaSetName
-      , "k8s.replicaset.uid" .=? replicaSetUid
+      [ unkey SC.k8s_replicaset_name .=? replicaSetName
+      , unkey SC.k8s_replicaset_uid .=? replicaSetUid
       ]
 
 
@@ -127,11 +124,10 @@ data Deployment = Deployment
 
 
 instance ToResource Deployment where
-  type ResourceSchema Deployment = 'Nothing
   toResource Deployment {..} =
     mkResource
-      [ "k8s.deployment.name" .=? deploymentName
-      , "k8s.deployment.uid" .=? deploymentUid
+      [ unkey SC.k8s_deployment_name .=? deploymentName
+      , unkey SC.k8s_deployment_uid .=? deploymentUid
       ]
 
 
@@ -145,11 +141,10 @@ data StatefulSet = StatefulSet
 
 
 instance ToResource StatefulSet where
-  type ResourceSchema StatefulSet = 'Nothing
   toResource StatefulSet {..} =
     mkResource
-      [ "k8s.statefulset.name" .=? statefulSetName
-      , "k8s.statefulset.uid" .=? statefulSetUid
+      [ unkey SC.k8s_statefulset_name .=? statefulSetName
+      , unkey SC.k8s_statefulset_uid .=? statefulSetUid
       ]
 
 
@@ -163,11 +158,10 @@ data DaemonSet = DaemonSet
 
 
 instance ToResource DaemonSet where
-  type ResourceSchema DaemonSet = 'Nothing
   toResource DaemonSet {..} =
     mkResource
-      [ "k8s.daemonset.name" .=? daemonSetName
-      , "k8s.daemonset.uid" .=? daemonSetUid
+      [ unkey SC.k8s_daemonset_name .=? daemonSetName
+      , unkey SC.k8s_daemonset_uid .=? daemonSetUid
       ]
 
 
@@ -181,11 +175,10 @@ data Job = Job
 
 
 instance ToResource Job where
-  type ResourceSchema Job = 'Nothing
   toResource Job {..} =
     mkResource
-      [ "k8s.job.name" .=? jobName
-      , "k8s.job.uid" .=? jobUid
+      [ unkey SC.k8s_job_name .=? jobName
+      , unkey SC.k8s_job_uid .=? jobUid
       ]
 
 
@@ -199,9 +192,8 @@ data CronJob = CronJob
 
 
 instance ToResource CronJob where
-  type ResourceSchema CronJob = 'Nothing
   toResource CronJob {..} =
     mkResource
-      [ "k8s.cronjob.name" .=? cronJobName
-      , "k8s.cronjob.uid" .=? cronJobUid
+      [ unkey SC.k8s_cronjob_name .=? cronJobName
+      , unkey SC.k8s_cronjob_uid .=? cronJobUid
       ]

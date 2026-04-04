@@ -1,5 +1,7 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UnboxedSums #-}
 
 -----------------------------------------------------------------------------
 
@@ -43,13 +45,13 @@ module OpenTelemetry.Context (
 ) where
 
 import Control.Monad.IO.Class
-import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Vault.Strict as V
 import OpenTelemetry.Baggage (Baggage)
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Internal.Trace.Types
-import System.IO.Unsafe
+import OpenTelemetry.Internal.UnpackedMaybe
+import Unsafe.Coerce (unsafeCoerce)
 import Prelude hiding (lookup)
 
 
@@ -62,68 +64,65 @@ class HasContext s where
 
 
 empty :: Context
-empty = Context V.empty
+empty = Context UNothing UNothing V.empty
+{-# INLINE empty #-}
 
 
 lookup :: Key a -> Context -> Maybe a
-lookup (Key _ k) (Context v) = V.lookup k v
+lookup (Key _ k) (Context _ _ v) = V.lookup k v
+{-# INLINE lookup #-}
 
 
 insert :: Key a -> a -> Context -> Context
-insert (Key _ k) x (Context v) = Context $ V.insert k x v
+insert (Key _ k) x (Context s b v) = Context s b (V.insert k x v)
+{-# INLINE insert #-}
 
-
--- insertWith
---   :: (a -> a -> a)
---   -- ^ new value -> old value -> result
---   -> Key a -> a -> Context -> Context
--- insertWith f (Key _ k) x (Context v) = Context $ case V.lookup k of
---   Nothing -> V.insert k x v
---   Just ox -> V.insert k (f x ox) v
 
 adjust :: (a -> a) -> Key a -> Context -> Context
-adjust f (Key _ k) (Context v) = Context $ V.adjust f k v
+adjust f (Key _ k) (Context s b v) = Context s b (V.adjust f k v)
 
 
 delete :: Key a -> Context -> Context
-delete (Key _ k) (Context v) = Context $ V.delete k v
+delete (Key _ k) (Context s b v) = Context s b (V.delete k v)
 
 
 union :: Context -> Context -> Context
-union (Context v1) (Context v2) = Context $ V.union v1 v2
+union = (<>)
 
 
-spanKey :: Key Span
-spanKey = unsafePerformIO $ newKey "span"
-{-# NOINLINE spanKey #-}
-
+-- Span operations — O(1) via dedicated unboxed slot, no vault/hash overhead
 
 lookupSpan :: Context -> Maybe Span
-lookupSpan = lookup spanKey
+lookupSpan (Context s _ _) = case s of
+  UNothing -> Nothing
+  UJust x -> Just (unsafeCoerce x)
+{-# INLINE lookupSpan #-}
 
 
 insertSpan :: Span -> Context -> Context
-insertSpan = insert spanKey
+insertSpan !span (Context _ b v) = Context (UJust (unsafeCoerce span)) b v
+{-# INLINE insertSpan #-}
 
 
 removeSpan :: Context -> Context
-removeSpan = delete spanKey
+removeSpan (Context _ b v) = Context UNothing b v
+{-# INLINE removeSpan #-}
 
 
-baggageKey :: Key Baggage
-baggageKey = unsafePerformIO $ newKey "baggage"
-{-# NOINLINE baggageKey #-}
-
+-- Baggage operations — O(1) via dedicated unboxed slot
 
 lookupBaggage :: Context -> Maybe Baggage
-lookupBaggage = lookup baggageKey
+lookupBaggage (Context _ b _) = toBaseMaybe b
+{-# INLINE lookupBaggage #-}
 
 
 insertBaggage :: Baggage -> Context -> Context
-insertBaggage b c = case lookup baggageKey c of
-  Nothing -> insert baggageKey b c
-  Just b' -> insert baggageKey (b <> b') c
+insertBaggage bag (Context s mb v) = case mb of
+  UNothing -> Context s (UJust bag) v
+  UJust existing -> Context s (UJust (bag <> existing)) v
+{-# INLINE insertBaggage #-}
 
 
 removeBaggage :: Context -> Context
-removeBaggage = delete baggageKey
+removeBaggage (Context s _ v) = Context s UNothing v
+{-# INLINE removeBaggage #-}

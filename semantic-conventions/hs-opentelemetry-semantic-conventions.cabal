@@ -1,14 +1,14 @@
 cabal-version: 2.4
 
 name: hs-opentelemetry-semantic-conventions
-version: 0.1.0.0
+version: 1.40.0.0
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 license: BSD-3-Clause
 synopsis: OpenTelemetry Semantic Conventions for Haskell
 description:
   OpenTelemetry Semantic Conventions for Haskell is a library that is automatically generated
-  based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.24.
+  based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.40.
 
 common common
   build-depends: base >= 4 && < 5
@@ -52,7 +52,7 @@ library
   import: artifact
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.SemanticConventions
-  build-depends: hs-opentelemetry-api,
+  build-depends: hs-opentelemetry-api-types ==0.1.*,
                  text,
 
 executable generate

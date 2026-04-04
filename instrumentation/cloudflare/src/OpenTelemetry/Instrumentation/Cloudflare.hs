@@ -12,8 +12,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Network.Wai
 import OpenTelemetry.Attributes (PrimitiveAttribute (..), ToAttribute (..))
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Context
 import OpenTelemetry.Instrumentation.Wai (requestContext)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core (addAttributes)
 
 
@@ -29,7 +31,7 @@ cloudflareInstrumentationMiddleware app req sendResp = do
                 Nothing -> []
                 Just val ->
                   [
-                    ( "http.request.header." <> T.decodeUtf8 (CI.foldedCase hn)
+                    ( unkey (SC.http_request_header (T.decodeUtf8 (CI.foldedCase hn)))
                     , toAttribute $ T.decodeUtf8 val
                     )
                   ]

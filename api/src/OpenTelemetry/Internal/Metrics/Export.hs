@@ -5,6 +5,9 @@
 -- | Haskell view of metric data for 'MetricExporter' (see specification/metrics/sdk.md).
 module OpenTelemetry.Internal.Metrics.Export (
   AggregationTemporality (..),
+  NumberValue (..),
+  OptionalDouble (..),
+  toMaybeDouble,
   MetricExemplar (..),
   SumDataPoint (..),
   HistogramDataPoint (..),
@@ -15,6 +18,7 @@ module OpenTelemetry.Internal.Metrics.Export (
   ResourceMetricsExport (..),
   MetricExporter (..),
   filterAttributesByKeys,
+  complementAttributesByKeys,
 ) where
 
 import Data.ByteString (ByteString)
@@ -25,7 +29,7 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word64)
 import GHC.Generics (Generic)
-import OpenTelemetry.Attributes (Attributes, getAttributeMap, unsafeAttributesFromListIgnoringLimits)
+import OpenTelemetry.Attributes (Attributes, emptyAttributes, getAttributeMap, unsafeAttributesFromListIgnoringLimits)
 import OpenTelemetry.Internal.Common.Types (ExportResult, FlushResult, InstrumentationLibrary, ShutdownResult)
 import OpenTelemetry.Resource (MaterializedResources)
 
@@ -37,13 +41,38 @@ data AggregationTemporality
   deriving stock (Eq, Show, Generic)
 
 
+{- | A numeric metric value, either integral or floating-point.
+Uses UNPACK to avoid the extra indirection that 'Either' 'Int64' 'Double' incurs.
+-}
+data NumberValue
+  = IntNumber {-# UNPACK #-} !Int64
+  | DoubleNumber {-# UNPACK #-} !Double
+  deriving stock (Eq, Show, Generic)
+
+
+{- | An optional 'Double', using UNPACK to avoid the extra box that @Maybe Double@ incurs.
+2 words for 'SomeDouble' vs 4 for @Just (D# x)@.
+-}
+data OptionalDouble
+  = NoDouble
+  | SomeDouble {-# UNPACK #-} !Double
+  deriving stock (Eq, Show, Generic)
+
+
+-- | Convert to the standard @Maybe Double@ (e.g. for OTLP export).
+toMaybeDouble :: OptionalDouble -> Maybe Double
+toMaybeDouble NoDouble = Nothing
+toMaybeDouble (SomeDouble d) = Just d
+{-# INLINE toMaybeDouble #-}
+
+
 -- | Exemplar (trace link + optional measurement) for OTLP 'Exemplar'.
 data MetricExemplar = MetricExemplar
   { metricExemplarTraceId :: !ByteString
   , metricExemplarSpanId :: !ByteString
   , metricExemplarTimeUnixNano :: !Word64
   , metricExemplarFilteredAttributes :: !Attributes
-  , metricExemplarValue :: !(Maybe (Either Int64 Double))
+  , metricExemplarValue :: !(Maybe NumberValue)
   }
   deriving stock (Eq, Show, Generic)
 
@@ -52,7 +81,7 @@ data MetricExemplar = MetricExemplar
 data SumDataPoint = SumDataPoint
   { sumDataPointStartTimeUnixNano :: !Word64
   , sumDataPointTimeUnixNano :: !Word64
-  , sumDataPointValue :: !(Either Int64 Double)
+  , sumDataPointValue :: !NumberValue
   , sumDataPointAttributes :: !Attributes
   , sumDataPointExemplars :: !(Vector MetricExemplar)
   }
@@ -100,7 +129,7 @@ data ExponentialHistogramDataPoint = ExponentialHistogramDataPoint
 data GaugeDataPoint = GaugeDataPoint
   { gaugeDataPointStartTimeUnixNano :: !Word64
   , gaugeDataPointTimeUnixNano :: !Word64
-  , gaugeDataPointValue :: !(Either Int64 Double)
+  , gaugeDataPointValue :: !NumberValue
   , gaugeDataPointAttributes :: !Attributes
   , gaugeDataPointExemplars :: !(Vector MetricExemplar)
   }
@@ -174,4 +203,18 @@ filterAttributesByKeys (Just ks) attrs =
   let keep = HS.fromList ks
       m = getAttributeMap attrs
       m' = H.filterWithKey (\k _ -> k `HS.member` keep) m
+  in unsafeAttributesFromListIgnoringLimits (H.toList m')
+
+
+{- | Complement of 'filterAttributesByKeys': returns attributes whose keys
+are NOT in the export set. Used for exemplar @filtered_attributes@ per spec
+§ metrics/sdk.md "Exemplar" — "the set of attributes that were filtered out
+by the aggregator".
+-}
+complementAttributesByKeys :: Maybe [Text] -> Attributes -> Attributes
+complementAttributesByKeys Nothing _ = emptyAttributes
+complementAttributesByKeys (Just ks) attrs =
+  let keep = HS.fromList ks
+      m = getAttributeMap attrs
+      m' = H.filterWithKey (\k _ -> not (k `HS.member` keep)) m
   in unsafeAttributesFromListIgnoringLimits (H.toList m')

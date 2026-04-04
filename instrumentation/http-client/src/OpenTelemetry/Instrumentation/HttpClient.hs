@@ -1,24 +1,85 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{- | Offer a few options for HTTP instrumentation
+{- | OpenTelemetry instrumentation for @http-client@.
 
-- Add attributes via 'Request' and 'Response' to an existing span (Best)
-- Use internals to instrument a particular callsite using modifyRequest, modifyResponse (Next best)
-- Provide a middleware to pull from the thread-local state (okay)
-- Modify the global manager to pull from the thread-local state (least good, can't be helped sometimes)
+== Recommended: Manager-level instrumentation
 
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+The easiest approach — instrument the 'Manager' once and all requests
+through it are automatically traced, including requests from third-party
+libraries:
+
+@
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import OpenTelemetry.Instrumentation.HttpClient.Raw
+  ('instrumentManagerSettings', 'httpClientInstrumentationConfig')
+
+manager <- 'newTracedManager' 'httpClientInstrumentationConfig' tlsManagerSettings
+-- Every request through this manager now creates a client span
+-- with HTTP attributes and propagation headers.
+resp <- Client.httpLbs req manager
+@
+
+== Alternative: per-request combinator
+
+If you can't control 'Manager' creation, wrap individual calls:
+
+@
+resp <- 'tracedHttpRequest' 'httpClientInstrumentationConfig' req $ \\req' ->
+  Client.httpLbs req' manager
+@
+
+== Alternative: drop-in replacement functions
+
+These create a span per call and are backward-compatible with the
+pre-0.2 API:
+
+@
+resp <- 'httpLbs' req manager              -- uses default config
+resp <- 'httpLbs'' myConfig req manager    -- custom config
+@
+
+== Propagation-only mode
+
+If you manage spans yourself (e.g., via @inSpan@) but want propagation
+headers injected automatically:
+
+@
+settings <- 'httpClientPropagateHeaders' tlsManagerSettings
+manager <- newManager settings
+@
+
+[HTTP semantic conventions are stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in via @OTEL_SEMCONV_STABILITY_OPT_IN@:
+
+- @\"http\"@ — stable conventions only
+- @\"http\/dup\"@ — emit both stable and old
+- (default) — old conventions only
 -}
 module OpenTelemetry.Instrumentation.HttpClient (
+  -- * Manager-level instrumentation (recommended)
+  instrumentManagerSettings,
+  newTracedManager,
+  httpClientPropagateHeaders,
+
+  -- * Per-request combinator
+  tracedHttpRequest,
+
+  -- * Drop-in replacements (zero-config)
   withResponse,
   httpLbs,
   httpNoBody,
   responseOpen,
+
+  -- * Drop-in replacements (with config)
+  withResponse',
+  httpLbs',
+  httpNoBody',
+  responseOpen',
+
+  -- * Configuration
   httpClientInstrumentationConfig,
   HttpClientInstrumentationConfig (..),
+
+  -- * Re-exports
   module X,
 ) where
 
@@ -31,9 +92,13 @@ import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Instrumentation.HttpClient.Raw (
   HttpClientInstrumentationConfig (..),
   httpClientInstrumentationConfig,
+  httpClientPropagateHeaders,
   httpTracerProvider,
+  instrumentManagerSettings,
   instrumentRequest,
   instrumentResponse,
+  newTracedManager,
+  tracedHttpRequest,
  )
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
@@ -50,34 +115,70 @@ spanArgs :: SpanArguments
 spanArgs = defaultSpanArguments {kind = Client}
 
 
-{- | Instrumented variant of @Network.HTTP.Client.withResponse@
+{- | 'withResponse' with default instrumentation config.
 
- Perform a @Request@ using a connection acquired from the given @Manager@,
- and then provide the @Response@ to the given function. This function is
- fully exception safe, guaranteeing that the response will be closed when the
- inner function exits. It is defined as:
-
- > withResponse req man f = bracket (responseOpen req man) responseClose f
-
- It is recommended that you use this function in place of explicit calls to
- 'responseOpen' and 'responseClose'.
-
- You will need to use functions such as 'brRead' to consume the response
- body.
+@since 0.2.0.0
 -}
 withResponse
+  :: (MonadUnliftIO m, HasCallStack)
+  => Client.Request
+  -> Client.Manager
+  -> (Client.Response Client.BodyReader -> m a)
+  -> m a
+withResponse = withResponse' mempty
+
+
+{- | 'httpLbs' with default instrumentation config.
+
+@since 0.2.0.0
+-}
+httpLbs
+  :: (MonadUnliftIO m, HasCallStack)
+  => Client.Request
+  -> Client.Manager
+  -> m (Client.Response L.ByteString)
+httpLbs = httpLbs' mempty
+
+
+{- | 'httpNoBody' with default instrumentation config.
+
+@since 0.2.0.0
+-}
+httpNoBody
+  :: (MonadUnliftIO m, HasCallStack)
+  => Client.Request
+  -> Client.Manager
+  -> m (Client.Response ())
+httpNoBody = httpNoBody' mempty
+
+
+{- | 'responseOpen' with default instrumentation config.
+
+@since 0.2.0.0
+-}
+responseOpen
+  :: (MonadUnliftIO m, HasCallStack)
+  => Client.Request
+  -> Client.Manager
+  -> m (Client.Response Client.BodyReader)
+responseOpen = responseOpen' mempty
+
+
+{- | Instrumented 'Client.withResponse' with explicit config.
+
+@since 0.2.0.0
+-}
+withResponse'
   :: (MonadUnliftIO m, HasCallStack)
   => HttpClientInstrumentationConfig
   -> Client.Request
   -> Client.Manager
   -> (Client.Response Client.BodyReader -> m a)
   -> m a
-withResponse httpConf req man f = do
+withResponse' httpConf req man f = do
   tracer <- httpTracerProvider
   inSpan'' tracer "withResponse" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_wrSpan -> do
     ctxt <- getContext
-    -- TODO would like to capture the req/resp time specifically
-    -- inSpan "http.request" (defaultSpanArguments { startingKind = Client }) $ \httpReqSpan -> do
     req' <- instrumentRequest httpConf ctxt req
     runInIO <- askRunInIO
     liftIO $ Client.withResponse req' man $ \resp -> do
@@ -85,14 +186,17 @@ withResponse httpConf req man f = do
       runInIO $ f resp
 
 
-{- | A convenience wrapper around 'withResponse' which reads in the entire
- response body and immediately closes the connection. Note that this function
- performs fully strict I\/O, and only uses a lazy ByteString in its response
- for memory efficiency. If you are anticipating a large response body, you
- are encouraged to use 'withResponse' and 'brRead' instead.
+{- | Instrumented 'Client.httpLbs' with explicit config.
+
+@since 0.2.0.0
 -}
-httpLbs :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response L.ByteString)
-httpLbs httpConf req man = do
+httpLbs'
+  :: (MonadUnliftIO m, HasCallStack)
+  => HttpClientInstrumentationConfig
+  -> Client.Request
+  -> Client.Manager
+  -> m (Client.Response L.ByteString)
+httpLbs' httpConf req man = do
   tracer <- httpTracerProvider
   inSpan'' tracer "httpLbs" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
@@ -102,11 +206,17 @@ httpLbs httpConf req man = do
     pure resp
 
 
-{- | A convenient wrapper around 'withResponse' which ignores the response
- body. This is useful, for example, when performing a HEAD request.
+{- | Instrumented 'Client.httpNoBody' with explicit config.
+
+@since 0.2.0.0
 -}
-httpNoBody :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response ())
-httpNoBody httpConf req man = do
+httpNoBody'
+  :: (MonadUnliftIO m, HasCallStack)
+  => HttpClientInstrumentationConfig
+  -> Client.Request
+  -> Client.Manager
+  -> m (Client.Response ())
+httpNoBody' httpConf req man = do
   tracer <- httpTracerProvider
   inSpan'' tracer "httpNoBody" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext
@@ -116,36 +226,17 @@ httpNoBody httpConf req man = do
     pure resp
 
 
-{- | The most low-level function for initiating an HTTP request.
+{- | Instrumented 'Client.responseOpen' with explicit config.
 
- The first argument to this function gives a full specification
- on the request: the host to connect to, whether to use SSL,
- headers, etc. Please see 'Request' for full details.  The
- second argument specifies which 'Manager' should be used.
-
- This function then returns a 'Response' with a
- 'BodyReader'.  The 'Response' contains the status code
- and headers that were sent back to us, and the
- 'BodyReader' contains the body of the request.  Note
- that this 'BodyReader' allows you to have fully
- interleaved IO actions during your HTTP download, making it
- possible to download very large responses in constant memory.
-
- An important note: the response body returned by this function represents a
- live HTTP connection. As such, if you do not use the response body, an open
- socket will be retained indefinitely. You must be certain to call
- 'responseClose' on this response to free up resources.
-
- This function automatically performs any necessary redirects, as specified
- by the 'redirectCount' setting.
-
- When implementing a (reverse) proxy using this function or relating
- functions, it's wise to remove Transfer-Encoding:, Content-Length:,
- Content-Encoding: and Accept-Encoding: from request and response
- headers to be relayed.
+@since 0.2.0.0
 -}
-responseOpen :: (MonadUnliftIO m, HasCallStack) => HttpClientInstrumentationConfig -> Client.Request -> Client.Manager -> m (Client.Response Client.BodyReader)
-responseOpen httpConf req man = do
+responseOpen'
+  :: (MonadUnliftIO m, HasCallStack)
+  => HttpClientInstrumentationConfig
+  -> Client.Request
+  -> Client.Manager
+  -> m (Client.Response Client.BodyReader)
+responseOpen' httpConf req man = do
   tracer <- httpTracerProvider
   inSpan'' tracer "responseOpen" (addAttributesToSpanArguments callerAttributes spanArgs) $ \_ -> do
     ctxt <- getContext

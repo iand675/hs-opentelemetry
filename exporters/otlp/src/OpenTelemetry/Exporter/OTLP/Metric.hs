@@ -45,11 +45,12 @@ import OpenTelemetry.Exporter.Metric (
   MetricExemplar (..),
   MetricExport (..),
   MetricExporter (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
-import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
+import OpenTelemetry.Exporter.OTLP.Internal.Config
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
 import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest)
@@ -61,11 +62,6 @@ import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Rf
 import Text.Read (readMaybe)
-
-
--- | Default OTLP timeout (milliseconds), aligned with "OpenTelemetry.Exporter.OTLP.Span".
-defaultExporterTimeout :: Int
-defaultExporterTimeout = 10_000
 
 
 httpHost :: OTLPExporterConfig -> String
@@ -188,7 +184,7 @@ httpMetricsBaseHeaders :: OTLPExporterConfig -> Request -> RequestHeaders
 httpMetricsBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
+    , [(hAccept, httpProtobufMimeType)]
     , fromMaybe [] (otlpHeaders conf)
     , fromMaybe [] (otlpMetricsHeaders conf)
     , requestHeaders req
@@ -234,7 +230,7 @@ materializedResourceToProto r =
       & Rf.vec'attributes
         .~ attributesToProto attrs
       & Rf.droppedAttributesCount
-        .~ fromIntegral (getCount attrs)
+        .~ fromIntegral (getDropped attrs)
 
 
 scopeMetricsExportToProto :: ScopeMetricsExport -> PM.ScopeMetrics
@@ -258,7 +254,7 @@ instrumentationLibraryToProto InstrumentationLibrary {..} =
     & Common_Fields.vec'attributes
       .~ attributesToProto libraryAttributes
     & Common_Fields.droppedAttributesCount
-      .~ fromIntegral (getCount libraryAttributes)
+      .~ fromIntegral (getDropped libraryAttributes)
 
 
 temporalityToProto :: AggregationTemporality -> PM.AggregationTemporality
@@ -333,7 +329,7 @@ metricExportToProto = \case
 
 sumPointToProto :: SumDataPoint -> PM.NumberDataPoint
 sumPointToProto SumDataPoint {..} =
-  numberDataPointFromEither sumDataPointValue $
+  setNumberValue sumDataPointValue $
     defMessage
       & Mf.vec'attributes
         .~ attributesToProto sumDataPointAttributes
@@ -347,7 +343,7 @@ sumPointToProto SumDataPoint {..} =
 
 gaugePointToProto :: GaugeDataPoint -> PM.NumberDataPoint
 gaugePointToProto GaugeDataPoint {..} =
-  numberDataPointFromEither gaugeDataPointValue $
+  setNumberValue gaugeDataPointValue $
     defMessage
       & Mf.vec'attributes
         .~ attributesToProto gaugeDataPointAttributes
@@ -359,10 +355,9 @@ gaugePointToProto GaugeDataPoint {..} =
         .~ V.map metricExemplarToProto gaugeDataPointExemplars
 
 
-numberDataPointFromEither :: Either Int64 Double -> PM.NumberDataPoint -> PM.NumberDataPoint
-numberDataPointFromEither val dp = case val of
-  Left i -> dp & Mf.asInt .~ i
-  Right d -> dp & Mf.asDouble .~ d
+setNumberValue :: NumberValue -> PM.NumberDataPoint -> PM.NumberDataPoint
+setNumberValue (IntNumber i) dp = dp & Mf.asInt .~ i
+setNumberValue (DoubleNumber d) dp = dp & Mf.asDouble .~ d
 
 
 histogramPointToProto :: HistogramDataPoint -> PM.HistogramDataPoint
@@ -404,8 +399,8 @@ metricExemplarToProto MetricExemplar {..} =
     & Mf.maybe'value
       .~ fmap
         ( \case
-            Left i -> PM.Exemplar'AsInt i
-            Right d -> PM.Exemplar'AsDouble d
+            IntNumber i -> PM.Exemplar'AsInt i
+            DoubleNumber d -> PM.Exemplar'AsDouble d
         )
         metricExemplarValue
 
@@ -460,20 +455,17 @@ exponentialHistogramPointToProto ExponentialHistogramDataPoint {..} =
 
 
 attributesToProto :: Attributes -> Vector KeyValue
-attributesToProto =
-  V.fromList
-    . fmap attributeToKeyValue
-    . H.toList
-    . snd
-    . ((,) <$> getCount <*> getAttributeMap)
+attributesToProto attrs =
+  V.fromList $
+    H.foldrWithKey' (\k v acc -> attributeToKeyValue k v : acc) [] (getAttributeMap attrs)
   where
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
       BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b
       DoubleAttribute d -> defMessage & Common_Fields.doubleValue .~ d
       IntAttribute i -> defMessage & Common_Fields.intValue .~ i
-    attributeToKeyValue :: (Text, Attribute) -> KeyValue
-    attributeToKeyValue (k, v) =
+    attributeToKeyValue :: Text -> Attribute -> KeyValue
+    attributeToKeyValue k v =
       defMessage
         & Common_Fields.key
           .~ k

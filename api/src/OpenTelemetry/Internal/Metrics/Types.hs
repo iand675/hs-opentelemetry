@@ -171,5 +171,6 @@ data Meter = Meter
 data MeterProvider = MeterProvider
   { meterProviderGetMeter :: !(InstrumentationLibrary -> IO Meter)
   , meterProviderShutdown :: !(IO ShutdownResult)
-  , meterProviderForceFlush :: !(IO FlushResult)
+  , meterProviderForceFlush :: !(Maybe Int -> IO FlushResult)
+  -- ^ Optional timeout in microseconds. @Nothing@ uses the SDK default (5s).
   }

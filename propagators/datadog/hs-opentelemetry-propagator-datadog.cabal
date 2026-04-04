@@ -25,8 +25,7 @@ library
   exposed-modules: OpenTelemetry.Propagator.Datadog
                    OpenTelemetry.Propagator.Datadog.Internal
   build-depends: bytestring,
-                 hs-opentelemetry-api ^>= 0.3,
-                 http-types,
+                 hs-opentelemetry-api ^>= 0.4,
                  primitive,
                  text
   ghc-options: -Wcompat
@@ -69,13 +68,14 @@ test-suite spec
                  OpenTelemetry.Propagator.Datadog.InternalSpec
                  Raw
                  String
-  build-depends: hs-opentelemetry-propagator-datadog,
-                 hs-opentelemetry-api,
+  build-depends: hs-opentelemetry-propagator-datadog >= 0.0.0 && < 0.1,
+                 hs-opentelemetry-api == 0.4.*,
                  bytestring,
                  hspec,
                  pretty-hex,
                  primitive,
-                 QuickCheck
+                 QuickCheck,
+                 text
   ghc-options: -threaded
                -rtsopts
                -with-rtsopts=-N

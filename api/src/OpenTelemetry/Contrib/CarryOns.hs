@@ -5,9 +5,8 @@ module OpenTelemetry.Contrib.CarryOns (
 
 import Control.Monad.IO.Class
 import qualified Data.HashMap.Strict as H
-import Data.IORef (modifyIORef')
+import Data.IORef (atomicModifyIORef')
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
 import qualified OpenTelemetry.Attributes as Attributes
 import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Context
@@ -39,22 +38,23 @@ withCarryOnProcessor :: SpanProcessor -> SpanProcessor
 withCarryOnProcessor p =
   SpanProcessor
     { spanProcessorOnStart = spanProcessorOnStart p
-    , spanProcessorOnEnd = \spanRef -> do
+    , spanProcessorOnEnd = \imm -> do
         ctxt <- getContext
         let carryOns = fromMaybe mempty $ Context.lookup carryOnKey ctxt
         if H.null carryOns
           then pure ()
           else do
-            -- I doubt we need atomicity at this point. Hopefully people aren't trying to modify the same span after it has ended from multiple threads.
-            modifyIORef' spanRef $ \is ->
-              is
-                { spanAttributes =
-                    Attributes.addAttributes
-                      (tracerProviderAttributeLimits $ tracerProvider $ spanTracer is)
-                      (spanAttributes is)
-                      carryOns
-                }
-        spanProcessorOnEnd p spanRef
+            atomicModifyIORef' (spanHot imm) $ \h ->
+              ( h
+                  { hotAttributes =
+                      Attributes.addAttributes
+                        (tracerProviderAttributeLimits $ tracerProvider $ spanTracer imm)
+                        (hotAttributes h)
+                        carryOns
+                  }
+              , ()
+              )
+        spanProcessorOnEnd p imm
     , spanProcessorShutdown = spanProcessorShutdown p
     , spanProcessorForceFlush = spanProcessorForceFlush p
     }

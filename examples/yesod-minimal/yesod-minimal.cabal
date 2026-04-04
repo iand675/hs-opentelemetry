@@ -19,12 +19,12 @@ executable yesod-minimal
       base >=4.7 && <5
     , bytestring
     , conduit
-    , hs-opentelemetry-instrumentation-http-client
-    , hs-opentelemetry-instrumentation-persistent
-    , hs-opentelemetry-instrumentation-postgresql-simple
-    , hs-opentelemetry-instrumentation-wai
-    , hs-opentelemetry-instrumentation-yesod
-    , hs-opentelemetry-sdk
+    , hs-opentelemetry-instrumentation-http-client ==0.1.*
+    , hs-opentelemetry-instrumentation-persistent ==0.1.*
+    , hs-opentelemetry-instrumentation-postgresql-simple ==0.2.*
+    , hs-opentelemetry-instrumentation-wai ==0.1.*
+    , hs-opentelemetry-instrumentation-yesod ==0.1.*
+    , hs-opentelemetry-sdk ==0.1.*
     , monad-logger
     , persistent >=2.13.3
     , persistent-postgresql >=2.13.4

@@ -29,7 +29,8 @@ library:
   - bytestring
   - case-insensitive
   - conduit
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
   - http-client
   - http-conduit
@@ -38,8 +39,7 @@ library:
   - unliftio
   - unordered-containers
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-instrumentation-http-client-test:
     main:                Spec.hs
     source-dirs:         test
@@ -48,4 +48,12 @@ _tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-http-client
+    - hs-opentelemetry-instrumentation-http-client >= 0.1 && < 0.2
+    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hspec
+    - text
+    - http-client
+    - http-types
+    - unordered-containers

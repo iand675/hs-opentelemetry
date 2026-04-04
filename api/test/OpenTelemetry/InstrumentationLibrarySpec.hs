@@ -1,25 +1,114 @@
 module OpenTelemetry.InstrumentationLibrarySpec where
 
-import OpenTelemetry.Attributes
-import OpenTelemetry.Internal.Common.Types
+import OpenTelemetry.Attributes (addAttribute, defaultAttributeLimits, emptyAttributes)
+import OpenTelemetry.Internal.Common.Types (
+  InstrumentationLibrary (..),
+  instrumentationLibrary,
+  parseInstrumentationLibrary,
+  withLibraryAttributes,
+  withSchemaUrl,
+ )
 import Test.Hspec
 
 
 spec :: Spec
 spec = describe "InstrumentationLibrary" $ do
+  describe "construction helpers" $ do
+    it "builds a library with name, version, and empty schema and attributes" $ do
+      let lib = instrumentationLibrary "my-lib" "1.0"
+      libraryName lib `shouldBe` "my-lib"
+      libraryVersion lib `shouldBe` "1.0"
+      librarySchemaUrl lib `shouldBe` ""
+      libraryAttributes lib `shouldBe` emptyAttributes
+
+    it "withSchemaUrl sets librarySchemaUrl" $ do
+      let lib =
+            withSchemaUrl "https://example.com" (instrumentationLibrary "x" "1")
+      librarySchemaUrl lib `shouldBe` "https://example.com"
+
+    it "withLibraryAttributes sets libraryAttributes" $ do
+      let someAttrs = addAttribute defaultAttributeLimits emptyAttributes "k" (True :: Bool)
+          lib = withLibraryAttributes someAttrs (instrumentationLibrary "x" "1")
+      libraryAttributes lib `shouldBe` someAttrs
+
   describe "parsing" $ do
-    it "handles a simple example basic example" $ do
+    let mkLib n v =
+          Just
+            InstrumentationLibrary
+              { libraryName = n
+              , libraryVersion = v
+              , librarySchemaUrl = ""
+              , libraryAttributes = emptyAttributes
+              }
+
+    it "handles a simple versioned package" $ do
       parseInstrumentationLibrary "hello-world-1.0.5"
-        `shouldBe` Just (InstrumentationLibrary {libraryName = "hello-world", libraryVersion = "1.0.5", librarySchemaUrl = "", libraryAttributes = emptyAttributes})
+        `shouldBe` mkLib "hello-world" "1.0.5"
 
     it "handles capital letters and numbers in package names" $ do
       parseInstrumentationLibrary "HUnit2-v3-1"
-        `shouldBe` Just (InstrumentationLibrary {libraryName = "HUnit2-v3", libraryVersion = "1", librarySchemaUrl = "", libraryAttributes = emptyAttributes})
+        `shouldBe` mkLib "HUnit2-v3" "1"
 
-    it "discards trailing content" $ do
+    it "discards trailing content after version" $ do
       parseInstrumentationLibrary "hello-world-1.0.5-inplace"
-        `shouldBe` Just (InstrumentationLibrary {libraryName = "hello-world", libraryVersion = "1.0.5", librarySchemaUrl = "", libraryAttributes = emptyAttributes})
+        `shouldBe` mkLib "hello-world" "1.0.5"
 
-    it "handles missing version" $ do
+    it "handles GHC-style package-id with hash suffix" $ do
+      parseInstrumentationLibrary "base-4.20.2.0-3188"
+        `shouldBe` mkLib "base" "4.20.2.0"
+
+    it "handles missing version (bare package name)" $ do
       parseInstrumentationLibrary "hello-world"
-        `shouldBe` Just (InstrumentationLibrary {libraryName = "hello-world", libraryVersion = "", librarySchemaUrl = "", libraryAttributes = emptyAttributes})
+        `shouldBe` mkLib "hello-world" ""
+
+    it "handles single-segment version" $ do
+      parseInstrumentationLibrary "aeson-2"
+        `shouldBe` mkLib "aeson" "2"
+
+    it "handles multi-segment package names" $ do
+      parseInstrumentationLibrary "hs-opentelemetry-api-0.4.0.0"
+        `shouldBe` mkLib "hs-opentelemetry-api" "0.4.0.0"
+
+    it "handles package name with only digits in segments" $ do
+      parseInstrumentationLibrary "utf8-string-1.0.2"
+        `shouldBe` mkLib "utf8-string" "1.0.2"
+
+    it "rejects empty string" $ do
+      (parseInstrumentationLibrary "" :: Maybe InstrumentationLibrary)
+        `shouldBe` Nothing
+
+    it "rejects single character" $ do
+      (parseInstrumentationLibrary "a" :: Maybe InstrumentationLibrary)
+        `shouldBe` Nothing
+
+    it "rejects name ending with dash" $ do
+      (parseInstrumentationLibrary "hello-" :: Maybe InstrumentationLibrary)
+        `shouldBe` Nothing
+
+    it "rejects pure version string" $ do
+      (parseInstrumentationLibrary "1.2.3" :: Maybe InstrumentationLibrary)
+        `shouldBe` Nothing
+
+    it "rejects invalid characters" $ do
+      (parseInstrumentationLibrary "hello world" :: Maybe InstrumentationLibrary)
+        `shouldBe` Nothing
+
+    it "handles two-character package name without version" $ do
+      parseInstrumentationLibrary "ab"
+        `shouldBe` mkLib "ab" ""
+
+    it "handles package name with version starting with zero" $ do
+      parseInstrumentationLibrary "foo-0.1"
+        `shouldBe` mkLib "foo" "0.1"
+
+    it "prefers rightmost valid version split" $ do
+      parseInstrumentationLibrary "x-1-2"
+        `shouldBe` mkLib "x-1" "2"
+
+    it "handles real-world GHC package names" $ do
+      parseInstrumentationLibrary "hs-opentelemetry-sdk-0.1.0.0-inplace"
+        `shouldBe` mkLib "hs-opentelemetry-sdk" "0.1.0.0"
+
+    it "handles real-world GHC package with letter-only trailing" $ do
+      parseInstrumentationLibrary "text-2.1.3-a641"
+        `shouldBe` mkLib "text" "2.1.3"

@@ -8,7 +8,13 @@ import qualified Data.ByteString.Char8 as C8
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import OpenTelemetry.Common (TraceFlags (..))
-import OpenTelemetry.Propagator.W3CTraceContext
+import qualified OpenTelemetry.Context as Ctxt
+import OpenTelemetry.Propagator (Propagator (..), emptyTextMap, textMapFromList, textMapLookup)
+import OpenTelemetry.Propagator.W3CTraceContext (
+  decodeSpanContext,
+  encodeTraceState,
+  w3cTraceContextPropagator,
+ )
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.TraceState (Key (..), Value (..), empty, fromList, insert, toList)
@@ -72,6 +78,21 @@ spec = describe "W3C TraceContext Integration" $ do
       let traceparent = Nothing
           tracestate = Just "vendor1=value1"
           result = decodeSpanContext traceparent tracestate
+      result `shouldBe` Nothing
+
+    it "rejects all-zero trace-id" $ do
+      let traceparent = Just "00-00000000000000000000000000000000-b7ad6b7169203331-01"
+          result = decodeSpanContext traceparent Nothing
+      result `shouldBe` Nothing
+
+    it "rejects all-zero parent-id" $ do
+      let traceparent = Just "00-0af7651916cd43dd8448eb211c80319c-0000000000000000-01"
+          result = decodeSpanContext traceparent Nothing
+      result `shouldBe` Nothing
+
+    it "rejects all-zero trace-id and parent-id" $ do
+      let traceparent = Just "00-00000000000000000000000000000000-0000000000000000-01"
+          result = decodeSpanContext traceparent Nothing
       result `shouldBe` Nothing
 
   describe "encodeTraceState integration" $ do
@@ -177,3 +198,148 @@ spec = describe "W3C TraceContext Integration" $ do
                                   )
         )
         testCases
+
+  describe "w3cTraceContextPropagator injector" $ do
+    it "injects traceparent and tracestate headers" $ do
+      case baseEncodedToTraceId Base16 "0af7651916cd43dd8448eb211c80319c" of
+        Left err -> expectationFailure err
+        Right tid ->
+          case baseEncodedToSpanId Base16 "b7ad6b7169203331" of
+            Left err -> expectationFailure err
+            Right sid -> do
+              let ts = insert (Key "vendor1") (Value "value1") empty
+                  spanCtx =
+                    SpanContext
+                      { traceFlags = TraceFlags 1
+                      , isRemote = False
+                      , traceId = tid
+                      , spanId = sid
+                      , traceState = ts
+                      }
+                  ctxt = Ctxt.insertSpan (wrapSpanContext spanCtx) Ctxt.empty
+              hdrs <- injector w3cTraceContextPropagator ctxt emptyTextMap
+              textMapLookup "traceparent" hdrs
+                `shouldBe` Just "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+              textMapLookup "tracestate" hdrs `shouldBe` Just "vendor1=value1"
+
+    it "injects empty tracestate for span with no tracestate" $ do
+      case baseEncodedToTraceId Base16 "0af7651916cd43dd8448eb211c80319c" of
+        Left err -> expectationFailure err
+        Right tid ->
+          case baseEncodedToSpanId Base16 "b7ad6b7169203331" of
+            Left err -> expectationFailure err
+            Right sid -> do
+              let spanCtx =
+                    SpanContext
+                      { traceFlags = TraceFlags 1
+                      , isRemote = False
+                      , traceId = tid
+                      , spanId = sid
+                      , traceState = empty
+                      }
+                  ctxt = Ctxt.insertSpan (wrapSpanContext spanCtx) Ctxt.empty
+              hdrs <- injector w3cTraceContextPropagator ctxt emptyTextMap
+              textMapLookup "tracestate" hdrs `shouldBe` Just ""
+
+    it "does not inject when context has no span" $ do
+      hdrs <- injector w3cTraceContextPropagator Ctxt.empty emptyTextMap
+      hdrs `shouldBe` emptyTextMap
+
+  describe "w3cTraceContextPropagator extractor" $ do
+    it "extracts span from traceparent header" $ do
+      case baseEncodedToTraceId Base16 "0af7651916cd43dd8448eb211c80319c" of
+        Left err -> expectationFailure err
+        Right tid ->
+          case baseEncodedToSpanId Base16 "b7ad6b7169203331" of
+            Left err -> expectationFailure err
+            Right sid -> do
+              let hs =
+                    textMapFromList
+                      [ ("traceparent", "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
+                      ]
+              ctxt <- extractor w3cTraceContextPropagator hs Ctxt.empty
+              case Ctxt.lookupSpan ctxt of
+                Nothing -> expectationFailure "expected span in context"
+                Just sp -> do
+                  sc <- getSpanContext sp
+                  traceFlags sc `shouldBe` TraceFlags 1
+                  traceId sc `shouldBe` tid
+                  spanId sc `shouldBe` sid
+                  traceState sc `shouldBe` empty
+
+    it "combines multiple tracestate headers" $ do
+      let hs =
+            textMapFromList
+              [ ("traceparent", "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01")
+              , ("tracestate", "vendor1=value1,vendor2=value2")
+              ]
+      ctxt <- extractor w3cTraceContextPropagator hs Ctxt.empty
+      case Ctxt.lookupSpan ctxt of
+        Nothing -> expectationFailure "expected span in context"
+        Just sp -> do
+          sc <- getSpanContext sp
+          let pairs = toList (traceState sc)
+          pairs `shouldContain` [(Key "vendor1", Value "value1")]
+          pairs `shouldContain` [(Key "vendor2", Value "value2")]
+
+    it "leaves context unchanged when traceparent missing" $ do
+      ctxt <- extractor w3cTraceContextPropagator emptyTextMap Ctxt.empty
+      case Ctxt.lookupSpan ctxt of
+        Nothing -> pure ()
+        Just _ -> expectationFailure "expected no span in context"
+
+    -- TextMap normalizes keys to lowercase on construction, so traceparent lookup is
+    -- case-insensitive (HTTP header semantics). Duplicate keys collapse to one entry:
+    -- Data.HashMap.Strict.fromList keeps the last association for a key.
+
+    it "extracts span when duplicate traceparent keys appear (last value wins)" $ do
+      let tp1 = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+          tp2 = "00-0af7651916cd43dd8448eb211c80319c-1111111111111111-01"
+      case baseEncodedToSpanId Base16 "1111111111111111" of
+        Left err -> expectationFailure err
+        Right expectedSid -> do
+          let hs =
+                textMapFromList
+                  [ ("traceparent", tp1)
+                  , ("traceparent", tp2)
+                  ]
+          ctxt <- extractor w3cTraceContextPropagator hs Ctxt.empty
+          case Ctxt.lookupSpan ctxt of
+            Nothing -> expectationFailure "expected span in context"
+            Just sp -> do
+              sc <- getSpanContext sp
+              spanId sc `shouldBe` expectedSid
+
+    it "extracts span when traceparent header name uses non-lowercase spelling" $ do
+      let tp = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+      case baseEncodedToTraceId Base16 "0af7651916cd43dd8448eb211c80319c" of
+        Left err -> expectationFailure err
+        Right tid ->
+          case baseEncodedToSpanId Base16 "b7ad6b7169203331" of
+            Left err2 -> expectationFailure err2
+            Right sid -> do
+              let hs = textMapFromList [("TraceParent", tp)]
+              ctxt <- extractor w3cTraceContextPropagator hs Ctxt.empty
+              case Ctxt.lookupSpan ctxt of
+                Nothing -> expectationFailure "expected span in context"
+                Just sp -> do
+                  sc <- getSpanContext sp
+                  traceId sc `shouldBe` tid
+                  spanId sc `shouldBe` sid
+
+    it "extracts span when traceparent header name is uppercase" $ do
+      let tp = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+      case baseEncodedToTraceId Base16 "0af7651916cd43dd8448eb211c80319c" of
+        Left err -> expectationFailure err
+        Right tid ->
+          case baseEncodedToSpanId Base16 "b7ad6b7169203331" of
+            Left err2 -> expectationFailure err2
+            Right sid -> do
+              let hs = textMapFromList [("TRACEPARENT", tp)]
+              ctxt <- extractor w3cTraceContextPropagator hs Ctxt.empty
+              case Ctxt.lookupSpan ctxt of
+                Nothing -> expectationFailure "expected span in context"
+                Just sp -> do
+                  sc <- getSpanContext sp
+                  traceId sc `shouldBe` tid
+                  spanId sc `shouldBe` sid

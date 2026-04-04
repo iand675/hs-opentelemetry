@@ -18,8 +18,9 @@ library
   import: common
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.Persistent.MySQL
-  build-depends: hs-opentelemetry-api,
-                 hs-opentelemetry-instrumentation-persistent,
+  build-depends: hs-opentelemetry-api == 0.4.*,
+                 hs-opentelemetry-instrumentation-persistent >= 0.1 && < 0.2,
+                 hs-opentelemetry-semantic-conventions >= 1.40 && < 2,
                  iproute,
                  monad-logger,
                  mysql,

@@ -8,25 +8,83 @@
 module OpenTelemetry.Internal.Trace.Types where
 
 import Control.Concurrent.Async (Async)
+import Control.Exception (SomeException)
 import Control.Monad.IO.Class
 import Data.Bits
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
-import Data.IORef (IORef, readIORef)
+import Data.IORef (IORef)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import Data.Word (Word8)
-import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Common
 import OpenTelemetry.Context.Types
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Propagator (TextMapPropagator)
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Id.Generator
 import OpenTelemetry.Trace.TraceState
 import OpenTelemetry.Util
+
+
+{- | How an exception should be treated by the tracing system when caught
+by 'inSpan' and similar bracket-style functions.
+
+@since 0.4.0.0
+-}
+data ExceptionClassification
+  = -- | Set span status to 'Error', record an exception event. This is the
+    -- default behavior for all exceptions.
+    ErrorException
+  | -- | Record an exception event on the span, but do not set the span status
+    -- to 'Error'. Useful for exceptions that represent expected control flow
+    -- (e.g. a cache miss exception) that you still want visibility into.
+    RecordedException
+  | -- | Do not record an exception event and do not set the span status to
+    -- 'Error'. The exception is completely invisible to the tracing system.
+    -- Useful for 'System.Exit.ExitSuccess', 'Control.Exception.AsyncCancelled',
+    -- and similar non-error exceptions.
+    IgnoredException
+  deriving (Show, Eq, Ord)
+
+
+{- | The result of classifying an exception via an 'ExceptionHandler'.
+
+@since 0.4.0.0
+-}
+data ExceptionResponse = ExceptionResponse
+  { exceptionClassification :: !ExceptionClassification
+  , exceptionAdditionalAttributes :: !AttributeMap
+  -- ^ Extra attributes to add to the exception event (when classification is
+  -- 'ErrorException' or 'RecordedException') or directly to the span.
+  }
+
+
+{- | A function that inspects a 'SomeException' and optionally classifies it.
+
+Returns 'Nothing' to indicate this handler does not recognize the exception,
+deferring to the next handler in the chain. Returns @'Just' 'ExceptionResponse'@
+to provide a classification and optional extra attributes.
+
+Multiple handlers are chained: tracer-level handlers are consulted first,
+then provider-level handlers. The first @Just@ result wins. If all handlers
+return 'Nothing', the default behavior ('ErrorException' with no extra
+attributes) applies.
+
+@since 0.4.0.0
+-}
+type ExceptionHandler = SomeException -> Maybe ExceptionResponse
+
+
+{- | The default response when no handler matches: classify as 'ErrorException'
+with no additional attributes.
+
+@since 0.4.0.0
+-}
+defaultExceptionResponse :: ExceptionResponse
+defaultExceptionResponse = ExceptionResponse ErrorException H.empty
 
 
 data SpanExporter = SpanExporter
@@ -37,10 +95,10 @@ data SpanExporter = SpanExporter
 
 
 data SpanProcessor = SpanProcessor
-  { spanProcessorOnStart :: IORef ImmutableSpan -> Context -> IO ()
-  -- ^ Called when a span is started. This method is called synchronously on the thread that started the span, therefore it should not block or throw exceptions.
-  , spanProcessorOnEnd :: IORef ImmutableSpan -> IO ()
-  -- ^ Called after a span is ended (i.e., the end timestamp is already set). This method is called synchronously within the 'OpenTelemetry.Trace.endSpan' API, therefore it should not block or throw an exception.
+  { spanProcessorOnStart :: ImmutableSpan -> Context -> IO ()
+  -- ^ Called when a span is started with a snapshot of the initial span state.
+  , spanProcessorOnEnd :: ImmutableSpan -> IO ()
+  -- ^ Called after a span is ended with the final frozen span state.
   , spanProcessorShutdown :: IO (Async ShutdownResult)
   -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
   --
@@ -74,7 +132,13 @@ data TracerProvider = TracerProvider
   , tracerProviderResources :: !MaterializedResources
   , tracerProviderAttributeLimits :: !AttributeLimits
   , tracerProviderSpanLimits :: !SpanLimits
-  , tracerProviderPropagators :: !(Propagator Context RequestHeaders RequestHeaders)
+  , tracerProviderPropagators :: !TextMapPropagator
+  , tracerProviderExceptionHandlers :: ![ExceptionHandler]
+  -- ^ Ordered list of exception handlers consulted when 'inSpan' catches an
+  -- exception. These are checked after any tracer-level handlers.
+  , tracerProviderIsShutdown :: !(IORef Bool)
+  -- ^ Set to 'True' after 'shutdownTracerProvider'. Spec: after shutdown,
+  -- subsequent 'createSpan' calls SHOULD return non-recording spans.
   }
 
 
@@ -92,11 +156,39 @@ data Tracer = Tracer
   -- ^ Get the TracerProvider from which the 'Tracer' was created
   --
   -- @since 0.0.10
+  , tracerExceptionHandlers :: ![ExceptionHandler]
+  -- ^ Tracer-level exception handlers, consulted before provider-level handlers.
+  --
+  -- @since 0.4.0.0
+  , tracerSpanAttributeLimits :: !AttributeLimits
+  -- ^ Pre-resolved attribute limits for span attributes, avoiding repeated
+  -- pointer chasing through TracerProvider on every addAttribute call.
+  , tracerEventAttributeLimits :: !AttributeLimits
+  -- ^ Pre-resolved attribute limits for event attributes.
+  , tracerLinkAttributeLimits :: !AttributeLimits
+  -- ^ Pre-resolved attribute limits for link attributes.
   }
 
 
 instance Show Tracer where
   showsPrec d Tracer {tracerName = name} = showParen (d > 10) $ showString "Tracer {tracerName = " . shows name . showString "}"
+
+
+{- | Resolve exception classification by consulting tracer-level handlers first,
+then provider-level handlers. Returns 'defaultExceptionResponse' if no handler
+matches.
+
+@since 0.4.0.0
+-}
+resolveException :: Tracer -> SomeException -> ExceptionResponse
+resolveException t ex =
+  let allHandlers = tracerExceptionHandlers t <> tracerProviderExceptionHandlers (tracerProvider t)
+  in go allHandlers
+  where
+    go [] = defaultExceptionResponse
+    go (h : hs) = case h ex of
+      Just resp -> resp
+      Nothing -> go hs
 
 
 {- |
@@ -217,7 +309,7 @@ data SpanKind
   | -- |  Default value. Indicates that the span represents an internal operation within an application,
     -- as opposed to an operations with remote parents or children.
     Internal
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 {- | The status of a @Span@. This may be used to indicate the successful completion of a span.
@@ -236,46 +328,64 @@ data SpanStatus
   deriving (Show, Eq)
 
 
+{- | Ok > Error > Unset. When both are Error, they compare as EQ so
+@max existing new@ returns the new (second) argument — achieving
+last-writer-wins semantics in 'setStatus'.
+-}
 instance Ord SpanStatus where
   compare Unset Unset = EQ
   compare Unset (Error _) = LT
   compare Unset Ok = LT
   compare (Error _) Unset = GT
-  compare (Error _) (Error _) = GT -- This is a weird one, but last writer wins for errors
+  compare (Error _) (Error _) = EQ
   compare (Error _) Ok = LT
   compare Ok Unset = GT
   compare Ok (Error _) = GT
   compare Ok Ok = EQ
 
 
-{- | The frozen representation of a 'Span' that originates from the currently running process.
-
- Only 'Processor's and 'Exporter's should use rely on this interface.
--}
-data ImmutableSpan = ImmutableSpan
-  { spanName :: Text
-  -- ^ A name identifying the role of the span (like function or method name).
-  , spanParent :: Maybe Span
-  , spanContext :: SpanContext
-  -- ^ A `SpanContext` represents the portion of a `Span` which must be serialized and
-  -- propagated along side of a distributed context. `SpanContext`s are immutable.
-  , spanKind :: SpanKind
-  -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
-  -- of the various values that may be specified.
-  , spanStart :: Timestamp
-  -- ^ A timestamp that corresponds to the start of the span
-  , spanEnd :: Maybe Timestamp
-  -- ^ A timestamp that corresponds to the end of the span, if the span has ended.
-  , spanAttributes :: Attributes
-  , spanLinks :: AppendOnlyBoundedCollection Link
-  -- ^ Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
-  , spanEvents :: AppendOnlyBoundedCollection Event
-  -- ^ Events, which denote a point in time occurrence. These can be useful for recording data about a span such as when an exception was thrown, or to emit structured logs into the span tree.
-  , spanStatus :: SpanStatus
-  , spanTracer :: Tracer
-  -- ^ Creator of the span
+-- | Mutable fields of a span, stored behind an 'IORef' and updated via CAS.
+-- Only ~48 bytes, so each CAS allocates much less than copying the full span.
+data SpanHot = SpanHot
+  { hotName :: !Text
+  , hotEnd :: !OptionalTimestamp
+  , hotAttributes :: !Attributes
+  , hotLinks :: !(AppendOnlyBoundedCollection Link)
+  , hotEvents :: !(AppendOnlyBoundedCollection Event)
+  , hotStatus :: !SpanStatus
   }
   deriving (Show)
+
+
+{- | The representation of a 'Span' for processors and exporters.
+
+Cold (immutable) fields live directly in the record and are never copied.
+Hot (mutable) fields sit behind an 'IORef' so that CAS operations only
+allocate a fresh 'SpanHot' instead of the entire span.
+-}
+data ImmutableSpan = ImmutableSpan
+  { spanContext :: !SpanContext
+  -- ^ A @SpanContext@ represents the portion of a @Span@ which must be serialized and
+  -- propagated along side of a distributed context. @SpanContext@s are immutable.
+  , spanKind :: !SpanKind
+  -- ^ The kind of the span.
+  , spanStart :: !Timestamp
+  -- ^ Timestamp corresponding to the start of the span.
+  , spanParent :: !(Maybe Span)
+  , spanTracer :: !Tracer
+  -- ^ Creator of the span.
+  , spanHot :: {-# UNPACK #-} !(IORef SpanHot)
+  -- ^ Mutable span fields (name, end time, attributes, links, events, status).
+  -- Updated via CAS during the span's lifetime.
+  }
+
+
+instance Show ImmutableSpan where
+  showsPrec d imm = showParen (d > 10) $
+    showString "ImmutableSpan {spanContext = " . showsPrec 11 (spanContext imm)
+      . showString ", spanKind = " . showsPrec 11 (spanKind imm)
+      . showString ", spanStart = " . showsPrec 11 (spanStart imm)
+      . showString ", spanHot = <IORef>}"
 
 
 {- | A 'Span' is the fundamental type you'll work with to trace your systems.
@@ -296,13 +406,13 @@ data ImmutableSpan = ImmutableSpan
  A trace is made up of multiple spans. Tracing vendors such as Zipkin, Jaeger, Honeycomb, Datadog, Lightstep, etc. use the metadata from each span to reconstruct the relationships between them and generate a trace diagram.
 -}
 data Span
-  = Span (IORef ImmutableSpan)
-  | FrozenSpan SpanContext
-  | Dropped SpanContext
+  = Span !ImmutableSpan
+  | FrozenSpan !SpanContext
+  | Dropped !SpanContext
 
 
 instance Show Span where
-  showsPrec d (Span _ioref) = showParen (d > 10) $ showString "Span _ioref"
+  showsPrec d (Span imm) = showParen (d > 10) $ showString "Span " . showsPrec 11 imm
   showsPrec d (FrozenSpan ctx) = showParen (d > 10) $ showString "FrozenSpan " . showsPrec 11 ctx
   showsPrec d (Dropped ctx) = showParen (d > 10) $ showString "Dropped " . showsPrec 11 ctx
 
@@ -312,10 +422,10 @@ data FrozenOrDropped = SpanFrozen | SpanDropped deriving (Show, Eq)
 
 -- | Extracts the values from a @Span@ if it is still mutable. Returns a @Left@ with @FrozenOrDropped@ if the @Span@ is frozen or dropped.
 toImmutableSpan :: MonadIO m => Span -> m (Either FrozenOrDropped ImmutableSpan)
-toImmutableSpan s = case s of
-  Span ioref -> Right <$> liftIO (readIORef ioref)
-  FrozenSpan _ctx -> pure $ Left SpanFrozen
-  Dropped _ctx -> pure $ Left SpanDropped
+toImmutableSpan (Span imm) = pure (Right imm)
+toImmutableSpan (FrozenSpan _ctx) = pure $ Left SpanFrozen
+toImmutableSpan (Dropped _ctx) = pure $ Left SpanDropped
+{-# INLINE toImmutableSpan #-}
 
 
 {- | TraceFlags with the @sampled@ flag not set. This means that it is up to the
@@ -323,16 +433,19 @@ toImmutableSpan s = case s of
 -}
 defaultTraceFlags :: TraceFlags
 defaultTraceFlags = TraceFlags 0
+{-# INLINE defaultTraceFlags #-}
 
 
 -- | Will the trace associated with this @TraceFlags@ value be sampled?
 isSampled :: TraceFlags -> Bool
 isSampled (TraceFlags flags) = flags `testBit` 0
+{-# INLINE isSampled #-}
 
 
 -- | Set the @sampled@ flag on the @TraceFlags@
 setSampled :: TraceFlags -> TraceFlags
 setSampled (TraceFlags flags) = TraceFlags (flags `setBit` 0)
+{-# INLINE setSampled #-}
 
 
 {- | Unset the @sampled@ flag on the @TraceFlags@. This means that the
@@ -383,13 +496,11 @@ traceFlagsFromWord8 = TraceFlags
 -- create a `SpanContext`. This functionality MUST be fully implemented in the API, and SHOULD NOT be
 -- overridable.
 data SpanContext = SpanContext
-  { traceFlags :: TraceFlags
-  , isRemote :: Bool
-  , traceId :: TraceId
-  , spanId :: SpanId
-  , traceState :: TraceState -- TODO have to move TraceState impl from W3CTraceContext to here
-  -- list of up to 32, remove rightmost if exceeded
-  -- see w3c trace-context spec
+  { traceFlags :: {-# UNPACK #-} !TraceFlags
+  , isRemote :: !Bool
+  , traceId :: {-# UNPACK #-} !TraceId
+  , spanId :: {-# UNPACK #-} !SpanId
+  , traceState :: !TraceState
   }
   deriving (Show, Eq)
 
@@ -496,6 +607,7 @@ type Lens' s a = Lens s s a a
  the @SpanContext@ is used to serialize the relevant information.
 -}
 getSpanContext :: (MonadIO m) => Span -> m SpanContext
-getSpanContext (Span s) = liftIO (spanContext <$> readIORef s)
+getSpanContext (Span imm) = pure (spanContext imm)
 getSpanContext (FrozenSpan c) = pure c
 getSpanContext (Dropped c) = pure c
+{-# INLINE getSpanContext #-}

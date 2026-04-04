@@ -9,6 +9,7 @@ module OpenTelemetry.Exporter.OTLP.LogRecord (
 ) where
 
 import Codec.Compression.GZip (compress)
+import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -17,6 +18,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
+import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
@@ -32,7 +34,7 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
-import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
+import OpenTelemetry.Exporter.OTLP.Internal.Config
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Logs.Types
 import OpenTelemetry.Internal.Trace.Id (spanIdBytes, traceIdBytes)
@@ -52,10 +54,6 @@ import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as RF
 import Text.Read (readMaybe)
 
 
-defaultExporterTimeout :: Int
-defaultExporterTimeout = 10_000
-
-
 httpProtobufMimeType :: C.ByteString
 httpProtobufMimeType = "application/x-protobuf"
 
@@ -63,6 +61,7 @@ httpProtobufMimeType = "application/x-protobuf"
 otlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
 otlpLogRecordExporter conf = liftIO $ do
   req <- parseRequest (logsEndpointUrl conf)
+  shutdownRef <- newIORef False
   let (encodingHeaders, encoder) = httpLogsCompression conf
   let baseReq =
         req
@@ -73,17 +72,23 @@ otlpLogRecordExporter conf = liftIO $ do
   mkLogRecordExporter
     LogRecordExporterArguments
       { logRecordExporterArgumentsExport = \lrs -> do
-          if V.null lrs
-            then pure Success
-            else do
-              result <- try $ exporterExportCall encoder baseReq lrs
-              case result of
-                Left err -> case fromException err of
-                  Just (SomeAsyncException _) -> throwIO err
-                  Nothing -> pure $ Failure $ Just err
-                Right ok -> pure ok
+          isShutdown <- readIORef shutdownRef
+          if isShutdown
+            then pure $ Failure Nothing
+            else
+              if V.null lrs
+                then pure Success
+                else do
+                  result <- try $ exporterExportCall encoder baseReq lrs
+                  case result of
+                    Left err -> case fromException err of
+                      Just (SomeAsyncException _) -> throwIO err
+                      Nothing -> pure $ Failure $ Just err
+                    Right ok -> pure ok
       , logRecordExporterArgumentsForceFlush = pure ()
-      , logRecordExporterArgumentsShutdown = pure ()
+      , logRecordExporterArgumentsShutdown = do
+          _ <- atomicModifyIORef' shutdownRef $ \s -> (True, s)
+          pure ()
       }
   where
     retryDelay = 100_000
@@ -216,7 +221,7 @@ immutableLogRecordToProto ImmutableLogRecord {..} =
 
 
 tsToNanos :: Timestamp -> Word64
-tsToNanos = fromIntegral . timestampNanoseconds
+tsToNanos = timestampNanoseconds
 
 
 severityToProto :: SeverityNumber -> PL.SeverityNumber
@@ -245,7 +250,9 @@ severityToProto = \case
   Fatal2 -> PL.SEVERITY_NUMBER_FATAL2
   Fatal3 -> PL.SEVERITY_NUMBER_FATAL3
   Fatal4 -> PL.SEVERITY_NUMBER_FATAL4
-  Unknown n -> toEnum n
+  Unknown n
+    | n >= 0 && n <= 24 -> toEnum n
+    | otherwise -> PL.SEVERITY_NUMBER_UNSPECIFIED
 
 
 logAttributesToProto :: LogAttributes -> V.Vector KeyValue
@@ -284,7 +291,7 @@ materializedResourceToProto r =
       & RF.vec'attributes
         .~ attrsToProto attrs
       & RF.droppedAttributesCount
-        .~ fromIntegral (A.getCount attrs)
+        .~ fromIntegral (A.getDropped attrs)
 
 
 instrumentationLibraryToProto :: InstrumentationLibrary -> InstrumentationScope
@@ -293,23 +300,21 @@ instrumentationLibraryToProto InstrumentationLibrary {..} =
     & CF.name .~ libraryName
     & CF.version .~ libraryVersion
     & CF.vec'attributes .~ attrsToProto libraryAttributes
-    & CF.droppedAttributesCount .~ fromIntegral (A.getCount libraryAttributes)
+    & CF.droppedAttributesCount .~ fromIntegral (A.getDropped libraryAttributes)
 
 
 attrsToProto :: A.Attributes -> V.Vector KeyValue
-attrsToProto =
-  V.fromList
-    . fmap attrToKeyValue
-    . H.toList
-    . A.getAttributeMap
+attrsToProto attrs =
+  V.fromList $
+    H.foldrWithKey' (\k v acc -> attrToKeyValue k v : acc) [] (A.getAttributeMap attrs)
   where
     primToAnyValue = \case
       A.TextAttribute t -> defMessage & CF.stringValue .~ t
       A.BoolAttribute b -> defMessage & CF.boolValue .~ b
       A.DoubleAttribute d -> defMessage & CF.doubleValue .~ d
       A.IntAttribute i -> defMessage & CF.intValue .~ i
-    attrToKeyValue :: (Text, A.Attribute) -> KeyValue
-    attrToKeyValue (k, v) =
+    attrToKeyValue :: Text -> A.Attribute -> KeyValue
+    attrToKeyValue k v =
       defMessage
         & CF.key .~ k
         & CF.value
@@ -327,37 +332,41 @@ type Encoder = L.ByteString -> L.ByteString
 
 httpLogsCompression :: OTLPExporterConfig -> ([(HeaderName, C.ByteString)], Encoder)
 httpLogsCompression conf =
-  case otlpCompression conf of
+  case otlpLogsCompression conf <|> otlpCompression conf of
     Just GZip -> ([(hContentEncoding, "gzip")], compress)
     _ -> ([], id)
 
 
 httpLogsResponseTimeout :: OTLPExporterConfig -> ResponseTimeout
-httpLogsResponseTimeout conf = case otlpTimeout conf of
-  Just timeoutMilli
-    | timeoutMilli == 0 -> responseTimeoutNone
-    | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
-  _ -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
+httpLogsResponseTimeout conf =
+  case otlpLogsTimeout conf <|> otlpTimeout conf of
+    Just timeoutMilli
+      | timeoutMilli == 0 -> responseTimeoutNone
+      | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
+    _ -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
 
 
 httpLogsBaseHeaders :: OTLPExporterConfig -> Request -> RequestHeaders
 httpLogsBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
+    , [(hAccept, httpProtobufMimeType)]
     , fromMaybe [] (otlpHeaders conf)
+    , fromMaybe [] (otlpLogsHeaders conf)
     , requestHeaders req
     ]
 
 
 logsEndpointUrl :: OTLPExporterConfig -> String
 logsEndpointUrl conf =
-  case otlpEndpoint conf of
-    Nothing -> "http://localhost:4318/v1/logs"
-    Just e ->
-      if "/v1/" `isInfixOf` e
-        then e
-        else trimTrailingSlash e <> "/v1/logs"
+  case otlpLogsEndpoint conf of
+    Just e -> e
+    Nothing -> case otlpEndpoint conf of
+      Nothing -> "http://localhost:4318/v1/logs"
+      Just e ->
+        if "/v1/" `isInfixOf` e
+          then e
+          else trimTrailingSlash e <> "/v1/logs"
 
 
 trimTrailingSlash :: String -> String

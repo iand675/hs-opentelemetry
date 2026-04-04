@@ -21,8 +21,8 @@ inMemoryChannelExporter = liftIO $ do
   let processor =
         SpanProcessor
           { spanProcessorOnStart = \_ _ -> pure ()
-          , spanProcessorOnEnd = \ref -> do
-              writeChan inChan =<< readIORef ref
+          , spanProcessorOnEnd = \imm ->
+              writeChan inChan imm
           , spanProcessorShutdown = do
               async $ pure ShutdownSuccess
           , spanProcessorForceFlush = pure ()
@@ -39,9 +39,8 @@ inMemoryListExporter = liftIO $ do
   let processor =
         SpanProcessor
           { spanProcessorOnStart = \_ _ -> pure ()
-          , spanProcessorOnEnd = \ref -> do
-              s <- readIORef ref
-              atomicModifyIORef listRef (\l -> (s : l, ()))
+          , spanProcessorOnEnd = \imm ->
+              atomicModifyIORef listRef (\l -> (imm : l, ()))
           , spanProcessorShutdown = do
               async $ pure ShutdownSuccess
           , spanProcessorForceFlush = pure ()

@@ -11,16 +11,21 @@ import OpenTelemetry.Internal.Trace.Types
 data IterationInstruction a = Continue a | Halt
 
 
-{- | Alter traces upwards from the provides span to the highest available mutable span. Only mutable spans may be altered.
+{- | Alter traces upwards from the provided span to the highest available mutable span.
 
- The step value indicates whether the desired topmost span has been reached or not. This function will continue to iterate
- upwards until either a span that cannot be mutated has been reached, or there are no more parent spans remaining.
+The callback receives the 'ImmutableSpan' (for reading cold fields like parent)
+and the current 'SpanHot' (for reading\/modifying mutable fields). It returns an
+'IterationInstruction' and the (possibly modified) 'SpanHot'.
+
+Iteration continues upward until a non-mutable span is reached, there are no
+more parents, or the callback returns 'Halt'.
 -}
-alterSpansUpwards :: (MonadIO m) => Span -> st -> (st -> ImmutableSpan -> (IterationInstruction st, ImmutableSpan)) -> m st
-alterSpansUpwards (Span immutableSpanRef) st f = liftIO $ do
-  (step, a') <- atomicModifyIORef' immutableSpanRef (\a -> let (step, a') = f st a in (a', (step, a')))
+alterSpansUpwards :: (MonadIO m) => Span -> st -> (st -> ImmutableSpan -> SpanHot -> (IterationInstruction st, SpanHot)) -> m st
+alterSpansUpwards (Span imm) st f = liftIO $ do
+  step <- atomicModifyIORef' (spanHot imm) $ \h ->
+    let (step, h') = f st imm h in (h', step)
   case step of
-    Continue st' -> case spanParent a' of
+    Continue st' -> case spanParent imm of
       Nothing -> return st'
       Just s -> alterSpansUpwards s st' f
     Halt -> return st
