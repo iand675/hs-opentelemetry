@@ -32,9 +32,10 @@ formats is required. Implementing more than one format is optional.
 | Mark Span active                                                                                 |          | +  |
 | Safe for concurrent calls                                                                        |          | +  |
 | [SpanContext](specification/trace/api.md#spancontext)                                            |          | +  |
-| IsValid                                                                                          |          | +  |
+| IsValid (both TraceId AND SpanId non-zero)                                                       |          | +  |
 | IsRemote                                                                                         |          | +  |
 | Conforms to the W3C TraceContext spec                                                            |          | (partial)  |
+| [TraceState](specification/trace/api.md#tracestate) get/add/update/delete                        |          | +  |
 | [Span](specification/trace/api.md#span)                                                          |          | +  |
 | Create root span                                                                                 |          | +  |
 | Create with default parent (active span)                                                         |          | +  |
@@ -80,6 +81,8 @@ formats is required. Implementing more than one format is optional.
 | [IdGenerators](specification/trace/sdk.md#id-generators)                                         |          | +  |
 | [SpanLimits](specification/trace/sdk.md#span-limits)                                             | X        | +  |
 | [Built-in `Processor`s implement `ForceFlush` spec](specification/trace/sdk.md#forceflush-1)     |          | +  |
+| [Tracer.Enabled](specification/trace/api.md#enabled)                                             | X        | +  |
+| [SpanExporter ForceFlush](specification/trace/sdk.md#forceflush-2)                               |          | +  |
 | [Attribute Limits](specification/common/common.md#attribute-limits)                              | X        | +  |
 
 ## Baggage
@@ -123,6 +126,26 @@ formats is required. Implementing more than one format is optional.
 | NaN/Inf measurement handling (silently dropped) | | + |
 
 See `OpenTelemetry.Metrics`, `OpenTelemetry.MeterProvider`, `OpenTelemetry.Metrics.View`, `OpenTelemetry.MetricReader` (SDK), `OpenTelemetry.Exporter.Metric`, `OpenTelemetry.Exporter.OTLP.Metric`, `OpenTelemetry.Exporter.Prometheus`.
+
+## Logs
+
+| Feature                                                                         | Optional | Haskell |
+|---------------------------------------------------------------------------------|----------|---------|
+| [LoggerProvider](specification/logs/api.md#loggerprovider)                      |          | +       |
+| Get a Logger (name, version, schema_url, attributes)                            |          | +       |
+| [Logger.Enabled](specification/logs/api.md#enabled)                             | X        | +       |
+| [Emit LogRecord](specification/logs/api.md#emit-a-logrecord)                    |          | +       |
+| LogRecord: timestamp, observed timestamp, severity, body, attributes            |          | +       |
+| LogRecord: EventName                                                            |          | +       |
+| LogRecord: trace context fields (TraceId, SpanId, TraceFlags)                   |          | +       |
+| Shutdown / ForceFlush (LoggerProvider)                                           |          | +       |
+| [LogRecordProcessor](specification/logs/sdk.md#logrecordprocessor) interface     |          | +       |
+| Built-in Simple processor                                                       |          | - (stub) |
+| Built-in Batch processor                                                        |          | - (stub) |
+| [LogRecordExporter](specification/logs/sdk.md#logrecordexporter) interface       |          | +       |
+| Concrete OTLP log exporter                                                      |          | - (stub) |
+| Concrete handle/console log exporter                                            |          | - (stub) |
+| Concrete in-memory log exporter (testing)                                       |          | - (stub) |
 
 ## Resource
 
