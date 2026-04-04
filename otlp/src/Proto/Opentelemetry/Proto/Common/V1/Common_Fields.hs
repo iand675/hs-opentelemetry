@@ -87,6 +87,15 @@ key ::
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "key" a) =>
   Lens.Family2.LensLike' f s a
 key = Data.ProtoLens.Field.field @"key"
+
+
+keyStrindex
+  :: forall f s a
+   . ( Prelude.Functor f
+     , Data.ProtoLens.Field.HasField s "keyStrindex" a
+     )
+  => Lens.Family2.LensLike' f s a
+keyStrindex = Data.ProtoLens.Field.field @"keyStrindex"
 kvlistValue ::
   forall f s a.
   (Prelude.Functor f,
@@ -135,6 +144,10 @@ maybe'stringValue ::
    Data.ProtoLens.Field.HasField s "maybe'stringValue" a) =>
   Lens.Family2.LensLike' f s a
 maybe'stringValue = Data.ProtoLens.Field.field @"maybe'stringValue"
+
+
+maybe'stringValueStrindex
+  = Data.ProtoLens.Field.field @"maybe'stringValueStrindex"
 maybe'value ::
   forall f s a.
   (Prelude.Functor f,
@@ -158,6 +171,10 @@ stringValue ::
    Data.ProtoLens.Field.HasField s "stringValue" a) =>
   Lens.Family2.LensLike' f s a
 stringValue = Data.ProtoLens.Field.field @"stringValue"
+
+
+stringValueStrindex
+  = Data.ProtoLens.Field.field @"stringValueStrindex"
 type' ::
   forall f s a.
   (Prelude.Functor f, Data.ProtoLens.Field.HasField s "type'" a) =>
