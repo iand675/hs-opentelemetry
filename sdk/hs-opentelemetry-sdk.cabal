@@ -29,6 +29,10 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.MetricReader
+      OpenTelemetry.MeterProvider
+      OpenTelemetry.Metrics.ExporterSelection
+      OpenTelemetry.Metrics.View
       OpenTelemetry.Processor.Batch
       OpenTelemetry.Processor.Batch.LogRecord
       OpenTelemetry.Processor.Batch.Span
@@ -81,7 +85,11 @@ library
       async
     , base >=4.7 && <5
     , bytestring
+    , clock
+    , containers
+    , hashable
     , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-exporter-handle >=0.0.1 && <0.1
     , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-datadog >=0.0.0 && <0.1
@@ -114,11 +122,7 @@ test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      OpenTelemetry.BaggageSpec
-      OpenTelemetry.ContextSpec
-      OpenTelemetry.ResourceSpec
-      OpenTelemetry.TraceSpec
-      Paths_hs_opentelemetry_sdk
+      OpenTelemetry.MeterProviderSpec
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
@@ -130,4 +134,5 @@ test-suite hs-opentelemetry-sdk-test
     , hspec
     , text
     , unordered-containers
+    , vector
   default-language: Haskell2010
