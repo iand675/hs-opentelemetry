@@ -8,8 +8,8 @@ module Proto.Opentelemetry.Proto.Common.V1.Common (
         AnyValue(), AnyValue'Value(..), _AnyValue'StringValue,
         _AnyValue'BoolValue, _AnyValue'IntValue, _AnyValue'DoubleValue,
         _AnyValue'ArrayValue, _AnyValue'KvlistValue, _AnyValue'BytesValue,
-        ArrayValue(), EntityRef(), InstrumentationScope(), KeyValue(),
-        KeyValueList()
+        _AnyValue'StringValueStrindex, ArrayValue(), EntityRef(),
+        InstrumentationScope(), KeyValue(), KeyValueList()
     ) where
 import qualified Data.ProtoLens.Runtime.Control.DeepSeq as Control.DeepSeq
 import qualified Data.ProtoLens.Runtime.Data.ProtoLens.Prism as Data.ProtoLens.Prism
@@ -52,7 +52,9 @@ import qualified Data.ProtoLens.Runtime.Text.Read as Text.Read
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.maybe'kvlistValue' @:: Lens' AnyValue (Prelude.Maybe KeyValueList)@
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.kvlistValue' @:: Lens' AnyValue KeyValueList@
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.maybe'bytesValue' @:: Lens' AnyValue (Prelude.Maybe Data.ByteString.ByteString)@
-         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.bytesValue' @:: Lens' AnyValue Data.ByteString.ByteString@ -}
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.bytesValue' @:: Lens' AnyValue Data.ByteString.ByteString@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.maybe'stringValueStrindex' @:: Lens' AnyValue (Prelude.Maybe Data.Int.Int32)@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.stringValueStrindex' @:: Lens' AnyValue Data.Int.Int32@ -}
 data AnyValue
   = AnyValue'_constructor {_AnyValue'value :: !(Prelude.Maybe AnyValue'Value),
                            _AnyValue'_unknownFields :: !Data.ProtoLens.FieldSet}
@@ -70,7 +72,8 @@ data AnyValue'Value
     AnyValue'DoubleValue !Prelude.Double |
     AnyValue'ArrayValue !ArrayValue |
     AnyValue'KvlistValue !KeyValueList |
-    AnyValue'BytesValue !Data.ByteString.ByteString
+    AnyValue'BytesValue !Data.ByteString.ByteString |
+    AnyValue'StringValueStrindex !Data.Int.Int32
   deriving stock (Prelude.Show, Prelude.Eq, Prelude.Ord)
 instance Data.ProtoLens.Field.HasField AnyValue "maybe'value" (Prelude.Maybe AnyValue'Value) where
   fieldOf _
@@ -246,6 +249,32 @@ instance Data.ProtoLens.Field.HasField AnyValue "bytesValue" Data.ByteString.Byt
                       _otherwise -> Prelude.Nothing)
               (\ _ y__ -> Prelude.fmap AnyValue'BytesValue y__))
            (Data.ProtoLens.maybeLens Data.ProtoLens.fieldDefault))
+instance Data.ProtoLens.Field.HasField AnyValue "maybe'stringValueStrindex" (Prelude.Maybe Data.Int.Int32) where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _AnyValue'value (\ x__ y__ -> x__ {_AnyValue'value = y__}))
+        (Lens.Family2.Unchecked.lens
+           (\ x__
+              -> case x__ of
+                   (Prelude.Just (AnyValue'StringValueStrindex x__val))
+                     -> Prelude.Just x__val
+                   _otherwise -> Prelude.Nothing)
+           (\ _ y__ -> Prelude.fmap AnyValue'StringValueStrindex y__))
+instance Data.ProtoLens.Field.HasField AnyValue "stringValueStrindex" Data.Int.Int32 where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _AnyValue'value (\ x__ y__ -> x__ {_AnyValue'value = y__}))
+        ((Prelude..)
+           (Lens.Family2.Unchecked.lens
+              (\ x__
+                 -> case x__ of
+                      (Prelude.Just (AnyValue'StringValueStrindex x__val))
+                        -> Prelude.Just x__val
+                      _otherwise -> Prelude.Nothing)
+              (\ _ y__ -> Prelude.fmap AnyValue'StringValueStrindex y__))
+           (Data.ProtoLens.maybeLens Data.ProtoLens.fieldDefault))
 instance Data.ProtoLens.Message AnyValue where
   messageName _
     = Data.Text.pack "opentelemetry.proto.common.v1.AnyValue"
@@ -261,7 +290,8 @@ instance Data.ProtoLens.Message AnyValue where
       \arrayValue\DC2P\n\
       \\fkvlist_value\CAN\ACK \SOH(\v2+.opentelemetry.proto.common.v1.KeyValueListH\NULR\vkvlistValue\DC2!\n\
       \\vbytes_value\CAN\a \SOH(\fH\NULR\n\
-      \bytesValueB\a\n\
+      \bytesValue\DC24\n\
+      \\NAKstring_value_strindex\CAN\b \SOH(\ENQH\NULR\DC3stringValueStrindexB\a\n\
       \\ENQvalue"
   packedFileDescriptor _ = packedFileDescriptor
   fieldsByTag
@@ -322,6 +352,14 @@ instance Data.ProtoLens.Message AnyValue where
               (Data.ProtoLens.OptionalField
                  (Data.ProtoLens.Field.field @"maybe'bytesValue")) ::
               Data.ProtoLens.FieldDescriptor AnyValue
+        stringValueStrindex__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "string_value_strindex"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.Int32Field ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32)
+              (Data.ProtoLens.OptionalField
+                 (Data.ProtoLens.Field.field @"maybe'stringValueStrindex")) ::
+              Data.ProtoLens.FieldDescriptor AnyValue
       in
         Data.Map.fromList
           [(Data.ProtoLens.Tag 1, stringValue__field_descriptor),
@@ -330,7 +368,8 @@ instance Data.ProtoLens.Message AnyValue where
            (Data.ProtoLens.Tag 4, doubleValue__field_descriptor),
            (Data.ProtoLens.Tag 5, arrayValue__field_descriptor),
            (Data.ProtoLens.Tag 6, kvlistValue__field_descriptor),
-           (Data.ProtoLens.Tag 7, bytesValue__field_descriptor)]
+           (Data.ProtoLens.Tag 7, bytesValue__field_descriptor),
+           (Data.ProtoLens.Tag 8, stringValueStrindex__field_descriptor)]
   unknownFields
     = Lens.Family2.Unchecked.lens
         _AnyValue'_unknownFields
@@ -414,6 +453,15 @@ instance Data.ProtoLens.Message AnyValue where
                                        "bytes_value"
                                 loop
                                   (Lens.Family2.set (Data.ProtoLens.Field.field @"bytesValue") y x)
+                        64
+                          -> do y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                       (Prelude.fmap
+                                          Prelude.fromIntegral
+                                          Data.ProtoLens.Encoding.Bytes.getVarInt)
+                                       "string_value_strindex"
+                                loop
+                                  (Lens.Family2.set
+                                     (Data.ProtoLens.Field.field @"stringValueStrindex") y x)
                         wire
                           -> do !y <- Data.ProtoLens.Encoding.Wire.parseTaggedValueFromWire
                                         wire
@@ -485,7 +533,12 @@ instance Data.ProtoLens.Message AnyValue where
                                 (Data.ProtoLens.Encoding.Bytes.putVarInt
                                    (Prelude.fromIntegral (Data.ByteString.length bs)))
                                 (Data.ProtoLens.Encoding.Bytes.putBytes bs))
-                          v))
+                          v)
+                (Prelude.Just (AnyValue'StringValueStrindex v))
+                  -> (Data.Monoid.<>)
+                       (Data.ProtoLens.Encoding.Bytes.putVarInt 64)
+                       ((Prelude..)
+                          Data.ProtoLens.Encoding.Bytes.putVarInt Prelude.fromIntegral v))
              (Data.ProtoLens.Encoding.Wire.buildFieldSet
                 (Lens.Family2.view Data.ProtoLens.unknownFields _x))
 instance Control.DeepSeq.NFData AnyValue where
@@ -502,6 +555,7 @@ instance Control.DeepSeq.NFData AnyValue'Value where
   rnf (AnyValue'ArrayValue x__) = Control.DeepSeq.rnf x__
   rnf (AnyValue'KvlistValue x__) = Control.DeepSeq.rnf x__
   rnf (AnyValue'BytesValue x__) = Control.DeepSeq.rnf x__
+  rnf (AnyValue'StringValueStrindex x__) = Control.DeepSeq.rnf x__
 _AnyValue'StringValue ::
   Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Text.Text
 _AnyValue'StringValue
@@ -564,6 +618,15 @@ _AnyValue'BytesValue
       (\ p__
          -> case p__ of
               (AnyValue'BytesValue p__val) -> Prelude.Just p__val
+              _otherwise -> Prelude.Nothing)
+_AnyValue'StringValueStrindex ::
+  Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Int.Int32
+_AnyValue'StringValueStrindex
+  = Data.ProtoLens.Prism.prism'
+      AnyValue'StringValueStrindex
+      (\ p__
+         -> case p__ of
+              (AnyValue'StringValueStrindex p__val) -> Prelude.Just p__val
               _otherwise -> Prelude.Nothing)
 {- | Fields :
      
@@ -1276,10 +1339,12 @@ instance Control.DeepSeq.NFData InstrumentationScope where
      
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.key' @:: Lens' KeyValue Data.Text.Text@
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.value' @:: Lens' KeyValue AnyValue@
-         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.maybe'value' @:: Lens' KeyValue (Prelude.Maybe AnyValue)@ -}
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.maybe'value' @:: Lens' KeyValue (Prelude.Maybe AnyValue)@
+         * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.keyStrindex' @:: Lens' KeyValue Data.Int.Int32@ -}
 data KeyValue
   = KeyValue'_constructor {_KeyValue'key :: !Data.Text.Text,
                            _KeyValue'value :: !(Prelude.Maybe AnyValue),
+                           _KeyValue'keyStrindex :: !Data.Int.Int32,
                            _KeyValue'_unknownFields :: !Data.ProtoLens.FieldSet}
   deriving stock (Prelude.Eq, Prelude.Ord)
 instance Prelude.Show KeyValue where
@@ -1306,6 +1371,13 @@ instance Data.ProtoLens.Field.HasField KeyValue "maybe'value" (Prelude.Maybe Any
         (Lens.Family2.Unchecked.lens
            _KeyValue'value (\ x__ y__ -> x__ {_KeyValue'value = y__}))
         Prelude.id
+instance Data.ProtoLens.Field.HasField KeyValue "keyStrindex" Data.Int.Int32 where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _KeyValue'keyStrindex
+           (\ x__ y__ -> x__ {_KeyValue'keyStrindex = y__}))
+        Prelude.id
 instance Data.ProtoLens.Message KeyValue where
   messageName _
     = Data.Text.pack "opentelemetry.proto.common.v1.KeyValue"
@@ -1313,7 +1385,8 @@ instance Data.ProtoLens.Message KeyValue where
     = "\n\
       \\bKeyValue\DC2\DLE\n\
       \\ETXkey\CAN\SOH \SOH(\tR\ETXkey\DC2=\n\
-      \\ENQvalue\CAN\STX \SOH(\v2'.opentelemetry.proto.common.v1.AnyValueR\ENQvalue"
+      \\ENQvalue\CAN\STX \SOH(\v2'.opentelemetry.proto.common.v1.AnyValueR\ENQvalue\DC2!\n\
+      \\fkey_strindex\CAN\ETX \SOH(\ENQR\vkeyStrindex"
   packedFileDescriptor _ = packedFileDescriptor
   fieldsByTag
     = let
@@ -1333,10 +1406,20 @@ instance Data.ProtoLens.Message KeyValue where
               (Data.ProtoLens.OptionalField
                  (Data.ProtoLens.Field.field @"maybe'value")) ::
               Data.ProtoLens.FieldDescriptor KeyValue
+        keyStrindex__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "key_strindex"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.Int32Field ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Int.Int32)
+              (Data.ProtoLens.PlainField
+                 Data.ProtoLens.Optional
+                 (Data.ProtoLens.Field.field @"keyStrindex")) ::
+              Data.ProtoLens.FieldDescriptor KeyValue
       in
         Data.Map.fromList
           [(Data.ProtoLens.Tag 1, key__field_descriptor),
-           (Data.ProtoLens.Tag 2, value__field_descriptor)]
+           (Data.ProtoLens.Tag 2, value__field_descriptor),
+           (Data.ProtoLens.Tag 3, keyStrindex__field_descriptor)]
   unknownFields
     = Lens.Family2.Unchecked.lens
         _KeyValue'_unknownFields
@@ -1344,7 +1427,9 @@ instance Data.ProtoLens.Message KeyValue where
   defMessage
     = KeyValue'_constructor
         {_KeyValue'key = Data.ProtoLens.fieldDefault,
-         _KeyValue'value = Prelude.Nothing, _KeyValue'_unknownFields = []}
+         _KeyValue'value = Prelude.Nothing,
+         _KeyValue'keyStrindex = Data.ProtoLens.fieldDefault,
+         _KeyValue'_unknownFields = []}
   parseMessage
     = let
         loop :: KeyValue -> Data.ProtoLens.Encoding.Bytes.Parser KeyValue
@@ -1380,6 +1465,14 @@ instance Data.ProtoLens.Message KeyValue where
                                              (Prelude.fromIntegral len) Data.ProtoLens.parseMessage)
                                        "value"
                                 loop (Lens.Family2.set (Data.ProtoLens.Field.field @"value") y x)
+                        24
+                          -> do y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                       (Prelude.fmap
+                                          Prelude.fromIntegral
+                                          Data.ProtoLens.Encoding.Bytes.getVarInt)
+                                       "key_strindex"
+                                loop
+                                  (Lens.Family2.set (Data.ProtoLens.Field.field @"keyStrindex") y x)
                         wire
                           -> do !y <- Data.ProtoLens.Encoding.Wire.parseTaggedValueFromWire
                                         wire
@@ -1421,8 +1514,20 @@ instance Data.ProtoLens.Message KeyValue where
                                         (Prelude.fromIntegral (Data.ByteString.length bs)))
                                      (Data.ProtoLens.Encoding.Bytes.putBytes bs))
                              Data.ProtoLens.encodeMessage _v))
-                (Data.ProtoLens.Encoding.Wire.buildFieldSet
-                   (Lens.Family2.view Data.ProtoLens.unknownFields _x)))
+                ((Data.Monoid.<>)
+                   (let
+                      _v
+                        = Lens.Family2.view (Data.ProtoLens.Field.field @"keyStrindex") _x
+                    in
+                      if (Prelude.==) _v Data.ProtoLens.fieldDefault then
+                          Data.Monoid.mempty
+                      else
+                          (Data.Monoid.<>)
+                            (Data.ProtoLens.Encoding.Bytes.putVarInt 24)
+                            ((Prelude..)
+                               Data.ProtoLens.Encoding.Bytes.putVarInt Prelude.fromIntegral _v))
+                   (Data.ProtoLens.Encoding.Wire.buildFieldSet
+                      (Lens.Family2.view Data.ProtoLens.unknownFields _x))))
 instance Control.DeepSeq.NFData KeyValue where
   rnf
     = \ x__
@@ -1430,7 +1535,9 @@ instance Control.DeepSeq.NFData KeyValue where
              (_KeyValue'_unknownFields x__)
              (Control.DeepSeq.deepseq
                 (_KeyValue'key x__)
-                (Control.DeepSeq.deepseq (_KeyValue'value x__) ()))
+                (Control.DeepSeq.deepseq
+                   (_KeyValue'value x__)
+                   (Control.DeepSeq.deepseq (_KeyValue'keyStrindex x__) ())))
 {- | Fields :
      
          * 'Proto.Opentelemetry.Proto.Common.V1.Common_Fields.values' @:: Lens' KeyValueList [KeyValue]@
@@ -1568,7 +1675,7 @@ instance Control.DeepSeq.NFData KeyValueList where
 packedFileDescriptor :: Data.ByteString.ByteString
 packedFileDescriptor
   = "\n\
-    \*opentelemetry/proto/common/v1/common.proto\DC2\GSopentelemetry.proto.common.v1\"\224\STX\n\
+    \*opentelemetry/proto/common/v1/common.proto\DC2\GSopentelemetry.proto.common.v1\"\150\ETX\n\
     \\bAnyValue\DC2#\n\
     \\fstring_value\CAN\SOH \SOH(\tH\NULR\vstringValue\DC2\US\n\
     \\n\
@@ -1579,16 +1686,18 @@ packedFileDescriptor
     \arrayValue\DC2P\n\
     \\fkvlist_value\CAN\ACK \SOH(\v2+.opentelemetry.proto.common.v1.KeyValueListH\NULR\vkvlistValue\DC2!\n\
     \\vbytes_value\CAN\a \SOH(\fH\NULR\n\
-    \bytesValueB\a\n\
+    \bytesValue\DC24\n\
+    \\NAKstring_value_strindex\CAN\b \SOH(\ENQH\NULR\DC3stringValueStrindexB\a\n\
     \\ENQvalue\"M\n\
     \\n\
     \ArrayValue\DC2?\n\
     \\ACKvalues\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.AnyValueR\ACKvalues\"O\n\
     \\fKeyValueList\DC2?\n\
-    \\ACKvalues\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\ACKvalues\"[\n\
+    \\ACKvalues\CAN\SOH \ETX(\v2'.opentelemetry.proto.common.v1.KeyValueR\ACKvalues\"~\n\
     \\bKeyValue\DC2\DLE\n\
     \\ETXkey\CAN\SOH \SOH(\tR\ETXkey\DC2=\n\
-    \\ENQvalue\CAN\STX \SOH(\v2'.opentelemetry.proto.common.v1.AnyValueR\ENQvalue\"\199\SOH\n\
+    \\ENQvalue\CAN\STX \SOH(\v2'.opentelemetry.proto.common.v1.AnyValueR\ENQvalue\DC2!\n\
+    \\fkey_strindex\CAN\ETX \SOH(\ENQR\vkeyStrindex\"\199\SOH\n\
     \\DC4InstrumentationScope\DC2\DC2\n\
     \\EOTname\CAN\SOH \SOH(\tR\EOTname\DC2\CAN\n\
     \\aversion\CAN\STX \SOH(\tR\aversion\DC2G\n\
@@ -1602,8 +1711,8 @@ packedFileDescriptor
     \\EOTtype\CAN\STX \SOH(\tR\EOTtype\DC2\ETB\n\
     \\aid_keys\CAN\ETX \ETX(\tR\ACKidKeys\DC2)\n\
     \\DLEdescription_keys\CAN\EOT \ETX(\tR\SIdescriptionKeysB{\n\
-    \ io.opentelemetry.proto.common.v1B\vCommonProtoP\SOHZ(go.opentelemetry.io/proto/otlp/common/v1\170\STX\GSOpenTelemetry.Proto.Common.V1J\145+\n\
-    \\a\DC2\ENQ\SO\NUL\128\SOH\SOH\n\
+    \ io.opentelemetry.proto.common.v1B\vCommonProtoP\SOHZ(go.opentelemetry.io/proto/otlp/common/v1\170\STX\GSOpenTelemetry.Proto.Common.V1J\210\&4\n\
+    \\a\DC2\ENQ\SO\NUL\153\SOH\SOH\n\
     \\200\EOT\n\
     \\SOH\f\DC2\ETX\SO\NUL\DC22\189\EOT Copyright 2019, OpenTelemetry Authors\n\
     \\n\
@@ -1643,7 +1752,7 @@ packedFileDescriptor
     \\t\n\
     \\STX\b\v\DC2\ETX\SYN\NUL?\n\
     \\219\SOH\n\
-    \\STX\EOT\NUL\DC2\EOT\ESC\NUL'\SOH\SUB\206\SOH Represents any type of attribute value. AnyValue may contain a\n\
+    \\STX\EOT\NUL\DC2\EOT\ESC\NUL2\SOH\SUB\206\SOH Represents any type of attribute value. AnyValue may contain a\n\
     \ primitive value such as a string or integer or it may contain an arbitrary nested\n\
     \ object containing arrays, key-value lists and primitives.\n\
     \\n\
@@ -1651,7 +1760,7 @@ packedFileDescriptor
     \\n\
     \\ETX\EOT\NUL\SOH\DC2\ETX\ESC\b\DLE\n\
     \\158\SOH\n\
-    \\EOT\EOT\NUL\b\NUL\DC2\EOT\RS\STX&\ETX\SUB\143\SOH The value is one of the listed fields. It is valid for all values to be unspecified\n\
+    \\EOT\EOT\NUL\b\NUL\DC2\EOT\RS\STX1\ETX\SUB\143\SOH The value is one of the listed fields. It is valid for all values to be unspecified\n\
     \ in which case this AnyValue is considered to be \"empty\".\n\
     \\n\
     \\f\n\
@@ -1716,27 +1825,46 @@ packedFileDescriptor
     \\NAK\n\
     \\f\n\
     \\ENQ\EOT\NUL\STX\ACK\ETX\DC2\ETX%\CAN\EM\n\
+    \\129\EOT\n\
+    \\EOT\EOT\NUL\STX\a\DC2\ETX0\EOT$\SUB\243\ETX Reference to the string value in ProfilesDictionary.string_table.\n\
+    \\n\
+    \ Note: This is currently used exclusively in the Profiling signal.\n\
+    \ Implementers of OTLP receivers for signals other than Profiling should\n\
+    \ treat the presence of this value as a non-fatal issue.\n\
+    \ Log an error or warning indicating an unexpected field intended for the\n\
+    \ Profiling signal and process the data as if this value were absent or\n\
+    \ empty, ignoring its semantic content for the non-Profiling signal.\n\
+    \\n\
+    \ Status: [Development]\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\a\ENQ\DC2\ETX0\EOT\t\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\a\SOH\DC2\ETX0\n\
+    \\US\n\
+    \\f\n\
+    \\ENQ\EOT\NUL\STX\a\ETX\DC2\ETX0\"#\n\
     \\146\SOH\n\
-    \\STX\EOT\SOH\DC2\EOT+\NUL.\SOH\SUB\133\SOH ArrayValue is a list of AnyValue messages. We need ArrayValue as a message\n\
+    \\STX\EOT\SOH\DC2\EOT6\NUL9\SOH\SUB\133\SOH ArrayValue is a list of AnyValue messages. We need ArrayValue as a message\n\
     \ since oneof in AnyValue does not allow repeated fields.\n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\SOH\SOH\DC2\ETX+\b\DC2\n\
+    \\ETX\EOT\SOH\SOH\DC2\ETX6\b\DC2\n\
     \L\n\
-    \\EOT\EOT\SOH\STX\NUL\DC2\ETX-\STX\US\SUB? Array of values. The array may be empty (contain 0 elements).\n\
+    \\EOT\EOT\SOH\STX\NUL\DC2\ETX8\STX\US\SUB? Array of values. The array may be empty (contain 0 elements).\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\EOT\DC2\ETX-\STX\n\
+    \\ENQ\EOT\SOH\STX\NUL\EOT\DC2\ETX8\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\ACK\DC2\ETX-\v\DC3\n\
+    \\ENQ\EOT\SOH\STX\NUL\ACK\DC2\ETX8\v\DC3\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\SOH\DC2\ETX-\DC4\SUB\n\
+    \\ENQ\EOT\SOH\STX\NUL\SOH\DC2\ETX8\DC4\SUB\n\
     \\f\n\
-    \\ENQ\EOT\SOH\STX\NUL\ETX\DC2\ETX-\GS\RS\n\
+    \\ENQ\EOT\SOH\STX\NUL\ETX\DC2\ETX8\GS\RS\n\
     \\251\STX\n\
-    \\STX\EOT\STX\DC2\EOT5\NUL=\SOH\SUB\238\STX KeyValueList is a list of KeyValue messages. We need KeyValueList as a message\n\
+    \\STX\EOT\STX\DC2\EOT@\NULH\SOH\SUB\238\STX KeyValueList is a list of KeyValue messages. We need KeyValueList as a message\n\
     \ since `oneof` in AnyValue does not allow repeated fields. Everywhere else where we need\n\
     \ a list of KeyValue messages (e.g. in Span) we use `repeated KeyValue` directly to\n\
     \ avoid unnecessary extra wrapping (which slows down the protocol). The 2 approaches\n\
@@ -1744,9 +1872,9 @@ packedFileDescriptor
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\STX\SOH\DC2\ETX5\b\DC4\n\
+    \\ETX\EOT\STX\SOH\DC2\ETX@\b\DC4\n\
     \\160\STX\n\
-    \\EOT\EOT\STX\STX\NUL\DC2\ETX<\STX\US\SUB\146\STX A collection of key/value pairs of key-value pairs. The list may be empty (may\n\
+    \\EOT\EOT\STX\STX\NUL\DC2\ETXG\STX\US\SUB\146\STX A collection of key/value pairs of key-value pairs. The list may be empty (may\n\
     \ contain 0 elements).\n\
     \\n\
     \ The keys MUST be unique (it is not allowed to have more than one\n\
@@ -1754,104 +1882,124 @@ packedFileDescriptor
     \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\EOT\DC2\ETX<\STX\n\
+    \\ENQ\EOT\STX\STX\NUL\EOT\DC2\ETXG\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\ACK\DC2\ETX<\v\DC3\n\
+    \\ENQ\EOT\STX\STX\NUL\ACK\DC2\ETXG\v\DC3\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\SOH\DC2\ETX<\DC4\SUB\n\
+    \\ENQ\EOT\STX\STX\NUL\SOH\DC2\ETXG\DC4\SUB\n\
     \\f\n\
-    \\ENQ\EOT\STX\STX\NUL\ETX\DC2\ETX<\GS\RS\n\
+    \\ENQ\EOT\STX\STX\NUL\ETX\DC2\ETXG\GS\RS\n\
     \g\n\
-    \\STX\EOT\ETX\DC2\EOTA\NULG\SOH\SUB[ Represents a key-value pair that is used to store Span attributes, Link\n\
+    \\STX\EOT\ETX\DC2\EOTL\NUL`\SOH\SUB[ Represents a key-value pair that is used to store Span attributes, Link\n\
     \ attributes, etc.\n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\ETX\SOH\DC2\ETXA\b\DLE\n\
-    \(\n\
-    \\EOT\EOT\ETX\STX\NUL\DC2\ETXC\STX\DC1\SUB\ESC The key name of the pair.\n\
+    \\ETX\EOT\ETX\SOH\DC2\ETXL\b\DLE\n\
+    \Q\n\
+    \\EOT\EOT\ETX\STX\NUL\DC2\ETXO\STX\DC1\SUBD The key name of the pair.\n\
+    \ key_ref MUST NOT be set if key is used.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\ENQ\DC2\ETXC\STX\b\n\
+    \\ENQ\EOT\ETX\STX\NUL\ENQ\DC2\ETXO\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\SOH\DC2\ETXC\t\f\n\
+    \\ENQ\EOT\ETX\STX\NUL\SOH\DC2\ETXO\t\f\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\NUL\ETX\DC2\ETXC\SI\DLE\n\
+    \\ENQ\EOT\ETX\STX\NUL\ETX\DC2\ETXO\SI\DLE\n\
     \%\n\
-    \\EOT\EOT\ETX\STX\SOH\DC2\ETXF\STX\NAK\SUB\CAN The value of the pair.\n\
+    \\EOT\EOT\ETX\STX\SOH\DC2\ETXR\STX\NAK\SUB\CAN The value of the pair.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\ACK\DC2\ETXF\STX\n\
+    \\ENQ\EOT\ETX\STX\SOH\ACK\DC2\ETXR\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\SOH\DC2\ETXF\v\DLE\n\
+    \\ENQ\EOT\ETX\STX\SOH\SOH\DC2\ETXR\v\DLE\n\
     \\f\n\
-    \\ENQ\EOT\ETX\STX\SOH\ETX\DC2\ETXF\DC3\DC4\n\
+    \\ENQ\EOT\ETX\STX\SOH\ETX\DC2\ETXR\DC3\DC4\n\
+    \\171\EOT\n\
+    \\EOT\EOT\ETX\STX\STX\DC2\ETX_\STX\EM\SUB\157\EOT Reference to the string key in ProfilesDictionary.string_table.\n\
+    \ key MUST NOT be set if key_strindex is used.\n\
+    \\n\
+    \ Note: This is currently used exclusively in the Profiling signal.\n\
+    \ Implementers of OTLP receivers for signals other than Profiling should\n\
+    \ treat the presence of this key as a non-fatal issue.\n\
+    \ Log an error or warning indicating an unexpected field intended for the\n\
+    \ Profiling signal and process the data as if this value were absent or\n\
+    \ empty, ignoring its semantic content for the non-Profiling signal.\n\
+    \\n\
+    \ Status: [Development]\n\
+    \\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\STX\ENQ\DC2\ETX_\STX\a\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\STX\SOH\DC2\ETX_\b\DC4\n\
+    \\f\n\
+    \\ENQ\EOT\ETX\STX\STX\ETX\DC2\ETX_\ETB\CAN\n\
     \\147\SOH\n\
-    \\STX\EOT\EOT\DC2\EOTK\NUL^\SOH\SUB\134\SOH InstrumentationScope is a message representing the instrumentation scope information\n\
+    \\STX\EOT\EOT\DC2\EOTd\NULw\SOH\SUB\134\SOH InstrumentationScope is a message representing the instrumentation scope information\n\
     \ such as the fully qualified name and version. \n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\EOT\SOH\DC2\ETXK\b\FS\n\
+    \\ETX\EOT\EOT\SOH\DC2\ETXd\b\FS\n\
     \y\n\
-    \\EOT\EOT\EOT\STX\NUL\DC2\ETXN\STX\DC2\SUBl A name denoting the Instrumentation scope.\n\
+    \\EOT\EOT\EOT\STX\NUL\DC2\ETXg\STX\DC2\SUBl A name denoting the Instrumentation scope.\n\
     \ An empty instrumentation scope name means the name is unknown.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\NUL\ENQ\DC2\ETXN\STX\b\n\
+    \\ENQ\EOT\EOT\STX\NUL\ENQ\DC2\ETXg\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\NUL\SOH\DC2\ETXN\t\r\n\
+    \\ENQ\EOT\EOT\STX\NUL\SOH\DC2\ETXg\t\r\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\NUL\ETX\DC2\ETXN\DLE\DC1\n\
+    \\ENQ\EOT\EOT\STX\NUL\ETX\DC2\ETXg\DLE\DC1\n\
     \\134\SOH\n\
-    \\EOT\EOT\EOT\STX\SOH\DC2\ETXR\STX\NAK\SUBy Defines the version of the instrumentation scope.\n\
+    \\EOT\EOT\EOT\STX\SOH\DC2\ETXk\STX\NAK\SUBy Defines the version of the instrumentation scope.\n\
     \ An empty instrumentation scope version means the version is unknown.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\SOH\ENQ\DC2\ETXR\STX\b\n\
+    \\ENQ\EOT\EOT\STX\SOH\ENQ\DC2\ETXk\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\ETXR\t\DLE\n\
+    \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\ETXk\t\DLE\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\ETXR\DC3\DC4\n\
+    \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\ETXk\DC3\DC4\n\
     \\255\SOH\n\
-    \\EOT\EOT\EOT\STX\STX\DC2\ETXX\STX#\SUB\241\SOH Additional attributes that describe the scope. [Optional].\n\
+    \\EOT\EOT\EOT\STX\STX\DC2\ETXq\STX#\SUB\241\SOH Additional attributes that describe the scope. [Optional].\n\
     \ Attribute keys MUST be unique (it is not allowed to have more than one\n\
     \ attribute with the same key).\n\
     \ The behavior of software that receives duplicated keys can be unpredictable.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\EOT\DC2\ETXX\STX\n\
+    \\ENQ\EOT\EOT\STX\STX\EOT\DC2\ETXq\STX\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\ACK\DC2\ETXX\v\DC3\n\
+    \\ENQ\EOT\EOT\STX\STX\ACK\DC2\ETXq\v\DC3\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\SOH\DC2\ETXX\DC4\RS\n\
+    \\ENQ\EOT\EOT\STX\STX\SOH\DC2\ETXq\DC4\RS\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\STX\ETX\DC2\ETXX!\"\n\
+    \\ENQ\EOT\EOT\STX\STX\ETX\DC2\ETXq!\"\n\
     \\218\SOH\n\
-    \\EOT\EOT\EOT\STX\ETX\DC2\ETX]\STX&\SUB\204\SOH The number of attributes that were discarded. Attributes\n\
+    \\EOT\EOT\EOT\STX\ETX\DC2\ETXv\STX&\SUB\204\SOH The number of attributes that were discarded. Attributes\n\
     \ can be discarded because their keys are too long or because there are too many\n\
     \ attributes. If this value is 0, then no attributes were dropped.\n\
     \\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\ENQ\DC2\ETX]\STX\b\n\
+    \\ENQ\EOT\EOT\STX\ETX\ENQ\DC2\ETXv\STX\b\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\ETX]\t!\n\
+    \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\ETXv\t!\n\
     \\f\n\
-    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\ETX]$%\n\
+    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\ETXv$%\n\
     \\181\SOH\n\
-    \\STX\EOT\ENQ\DC2\ENQd\NUL\128\SOH\SOH\SUB\167\SOH A reference to an Entity.\n\
+    \\STX\EOT\ENQ\DC2\ENQ}\NUL\153\SOH\SOH\SUB\167\SOH A reference to an Entity.\n\
     \ Entity represents an object of interest associated with produced telemetry: e.g spans, metrics, profiles, or logs.\n\
     \\n\
     \ Status: [Development]\n\
     \\n\
     \\n\
     \\n\
-    \\ETX\EOT\ENQ\SOH\DC2\ETXd\b\DC1\n\
-    \\159\EOT\n\
-    \\EOT\EOT\ENQ\STX\NUL\DC2\ETXo\STX\CAN\SUB\145\EOT The Schema URL, if known. This is the identifier of the Schema that the entity data\n\
+    \\ETX\EOT\ENQ\SOH\DC2\ETX}\b\DC1\n\
+    \\160\EOT\n\
+    \\EOT\EOT\ENQ\STX\NUL\DC2\EOT\136\SOH\STX\CAN\SUB\145\EOT The Schema URL, if known. This is the identifier of the Schema that the entity data\n\
     \ is recorded in. To learn more about Schema URL see\n\
     \ https://opentelemetry.io/docs/specs/otel/schemas/#schema-url\n\
     \\n\
@@ -1862,49 +2010,49 @@ packedFileDescriptor
     \\n\
     \ This field obsoletes the schema_url field in ResourceMetrics/ResourceSpans/ResourceLogs.\n\
     \\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\ETXo\STX\b\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\ETXo\t\DC3\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\ETXo\SYN\ETB\n\
-    \\199\SOH\n\
-    \\EOT\EOT\ENQ\STX\SOH\DC2\ETXt\STX\DC2\SUB\185\SOH Defines the type of the entity. MUST not change during the lifetime of the entity.\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\EOT\136\SOH\STX\b\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\EOT\136\SOH\t\DC3\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\EOT\136\SOH\SYN\ETB\n\
+    \\200\SOH\n\
+    \\EOT\EOT\ENQ\STX\SOH\DC2\EOT\141\SOH\STX\DC2\SUB\185\SOH Defines the type of the entity. MUST not change during the lifetime of the entity.\n\
     \ For example: \"service\" or \"host\". This field is required and MUST not be empty\n\
     \ for valid entities.\n\
     \\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\ETXt\STX\b\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\ETXt\t\r\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\ETXt\DLE\DC1\n\
-    \\215\SOH\n\
-    \\EOT\EOT\ENQ\STX\STX\DC2\ETXy\STX\RS\SUB\201\SOH Attribute Keys that identify the entity.\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\EOT\141\SOH\STX\b\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\EOT\141\SOH\t\r\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\EOT\141\SOH\DLE\DC1\n\
+    \\216\SOH\n\
+    \\EOT\EOT\ENQ\STX\STX\DC2\EOT\146\SOH\STX\RS\SUB\201\SOH Attribute Keys that identify the entity.\n\
     \ MUST not change during the lifetime of the entity. The Id must contain at least one attribute.\n\
     \ These keys MUST exist in the containing {message}.attributes.\n\
     \\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\EOT\DC2\ETXy\STX\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\STX\EOT\DC2\EOT\146\SOH\STX\n\
     \\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\ENQ\DC2\ETXy\v\DC1\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\SOH\DC2\ETXy\DC2\EM\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\STX\ETX\DC2\ETXy\FS\GS\n\
-    \\254\SOH\n\
-    \\EOT\EOT\ENQ\STX\ETX\DC2\ETX\DEL\STX'\SUB\240\SOH Descriptive (non-identifying) attribute keys of the entity.\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\STX\ENQ\DC2\EOT\146\SOH\v\DC1\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\STX\SOH\DC2\EOT\146\SOH\DC2\EM\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\STX\ETX\DC2\EOT\146\SOH\FS\GS\n\
+    \\255\SOH\n\
+    \\EOT\EOT\ENQ\STX\ETX\DC2\EOT\152\SOH\STX'\SUB\240\SOH Descriptive (non-identifying) attribute keys of the entity.\n\
     \ MAY change over the lifetime of the entity. MAY be empty.\n\
     \ These attribute keys are not part of entity's identity.\n\
     \ These keys MUST exist in the containing {message}.attributes.\n\
     \\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\EOT\DC2\ETX\DEL\STX\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\ETX\EOT\DC2\EOT\152\SOH\STX\n\
     \\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\ENQ\DC2\ETX\DEL\v\DC1\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\SOH\DC2\ETX\DEL\DC2\"\n\
-    \\f\n\
-    \\ENQ\EOT\ENQ\STX\ETX\ETX\DC2\ETX\DEL%&b\ACKproto3"
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\ETX\ENQ\DC2\EOT\152\SOH\v\DC1\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\ETX\SOH\DC2\EOT\152\SOH\DC2\"\n\
+    \\r\n\
+    \\ENQ\EOT\ENQ\STX\ETX\ETX\DC2\EOT\152\SOH%&b\ACKproto3"

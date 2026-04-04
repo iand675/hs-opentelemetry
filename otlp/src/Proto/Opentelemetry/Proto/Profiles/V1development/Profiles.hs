@@ -3149,18 +3149,18 @@ instance Control.DeepSeq.NFData ResourceProfiles where
 {- | Fields :
      
          * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.stackIndex' @:: Lens' Sample Data.Int.Int32@
-         * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.values' @:: Lens' Sample [Data.Int.Int64]@
-         * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.vec'values' @:: Lens' Sample (Data.Vector.Unboxed.Vector Data.Int.Int64)@
          * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.attributeIndices' @:: Lens' Sample [Data.Int.Int32]@
          * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.vec'attributeIndices' @:: Lens' Sample (Data.Vector.Unboxed.Vector Data.Int.Int32)@
          * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.linkIndex' @:: Lens' Sample Data.Int.Int32@
+         * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.values' @:: Lens' Sample [Data.Int.Int64]@
+         * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.vec'values' @:: Lens' Sample (Data.Vector.Unboxed.Vector Data.Int.Int64)@
          * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.timestampsUnixNano' @:: Lens' Sample [Data.Word.Word64]@
          * 'Proto.Opentelemetry.Proto.Profiles.V1development.Profiles_Fields.vec'timestampsUnixNano' @:: Lens' Sample (Data.Vector.Unboxed.Vector Data.Word.Word64)@ -}
 data Sample
   = Sample'_constructor {_Sample'stackIndex :: !Data.Int.Int32,
-                         _Sample'values :: !(Data.Vector.Unboxed.Vector Data.Int.Int64),
                          _Sample'attributeIndices :: !(Data.Vector.Unboxed.Vector Data.Int.Int32),
                          _Sample'linkIndex :: !Data.Int.Int32,
+                         _Sample'values :: !(Data.Vector.Unboxed.Vector Data.Int.Int64),
                          _Sample'timestampsUnixNano :: !(Data.Vector.Unboxed.Vector Data.Word.Word64),
                          _Sample'_unknownFields :: !Data.ProtoLens.FieldSet}
   deriving stock (Prelude.Eq, Prelude.Ord)
@@ -3175,20 +3175,6 @@ instance Data.ProtoLens.Field.HasField Sample "stackIndex" Data.Int.Int32 where
     = (Prelude..)
         (Lens.Family2.Unchecked.lens
            _Sample'stackIndex (\ x__ y__ -> x__ {_Sample'stackIndex = y__}))
-        Prelude.id
-instance Data.ProtoLens.Field.HasField Sample "values" [Data.Int.Int64] where
-  fieldOf _
-    = (Prelude..)
-        (Lens.Family2.Unchecked.lens
-           _Sample'values (\ x__ y__ -> x__ {_Sample'values = y__}))
-        (Lens.Family2.Unchecked.lens
-           Data.Vector.Generic.toList
-           (\ _ y__ -> Data.Vector.Generic.fromList y__))
-instance Data.ProtoLens.Field.HasField Sample "vec'values" (Data.Vector.Unboxed.Vector Data.Int.Int64) where
-  fieldOf _
-    = (Prelude..)
-        (Lens.Family2.Unchecked.lens
-           _Sample'values (\ x__ y__ -> x__ {_Sample'values = y__}))
         Prelude.id
 instance Data.ProtoLens.Field.HasField Sample "attributeIndices" [Data.Int.Int32] where
   fieldOf _
@@ -3211,6 +3197,20 @@ instance Data.ProtoLens.Field.HasField Sample "linkIndex" Data.Int.Int32 where
     = (Prelude..)
         (Lens.Family2.Unchecked.lens
            _Sample'linkIndex (\ x__ y__ -> x__ {_Sample'linkIndex = y__}))
+        Prelude.id
+instance Data.ProtoLens.Field.HasField Sample "values" [Data.Int.Int64] where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _Sample'values (\ x__ y__ -> x__ {_Sample'values = y__}))
+        (Lens.Family2.Unchecked.lens
+           Data.Vector.Generic.toList
+           (\ _ y__ -> Data.Vector.Generic.fromList y__))
+instance Data.ProtoLens.Field.HasField Sample "vec'values" (Data.Vector.Unboxed.Vector Data.Int.Int64) where
+  fieldOf _
+    = (Prelude..)
+        (Lens.Family2.Unchecked.lens
+           _Sample'values (\ x__ y__ -> x__ {_Sample'values = y__}))
         Prelude.id
 instance Data.ProtoLens.Field.HasField Sample "timestampsUnixNano" [Data.Word.Word64] where
   fieldOf _
@@ -3236,11 +3236,11 @@ instance Data.ProtoLens.Message Sample where
     = "\n\
       \\ACKSample\DC2\US\n\
       \\vstack_index\CAN\SOH \SOH(\ENQR\n\
-      \stackIndex\DC2\SYN\n\
-      \\ACKvalues\CAN\STX \ETX(\ETXR\ACKvalues\DC2+\n\
-      \\DC1attribute_indices\CAN\ETX \ETX(\ENQR\DLEattributeIndices\DC2\GS\n\
+      \stackIndex\DC2+\n\
+      \\DC1attribute_indices\CAN\STX \ETX(\ENQR\DLEattributeIndices\DC2\GS\n\
       \\n\
-      \link_index\CAN\EOT \SOH(\ENQR\tlinkIndex\DC20\n\
+      \link_index\CAN\ETX \SOH(\ENQR\tlinkIndex\DC2\SYN\n\
+      \\ACKvalues\CAN\EOT \ETX(\ETXR\ACKvalues\DC20\n\
       \\DC4timestamps_unix_nano\CAN\ENQ \ETX(\ACKR\DC2timestampsUnixNano"
   packedFileDescriptor _ = packedFileDescriptor
   fieldsByTag
@@ -3253,14 +3253,6 @@ instance Data.ProtoLens.Message Sample where
               (Data.ProtoLens.PlainField
                  Data.ProtoLens.Optional
                  (Data.ProtoLens.Field.field @"stackIndex")) ::
-              Data.ProtoLens.FieldDescriptor Sample
-        values__field_descriptor
-          = Data.ProtoLens.FieldDescriptor
-              "values"
-              (Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
-                 Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64)
-              (Data.ProtoLens.RepeatedField
-                 Data.ProtoLens.Packed (Data.ProtoLens.Field.field @"values")) ::
               Data.ProtoLens.FieldDescriptor Sample
         attributeIndices__field_descriptor
           = Data.ProtoLens.FieldDescriptor
@@ -3280,6 +3272,14 @@ instance Data.ProtoLens.Message Sample where
                  Data.ProtoLens.Optional
                  (Data.ProtoLens.Field.field @"linkIndex")) ::
               Data.ProtoLens.FieldDescriptor Sample
+        values__field_descriptor
+          = Data.ProtoLens.FieldDescriptor
+              "values"
+              (Data.ProtoLens.ScalarField Data.ProtoLens.Int64Field ::
+                 Data.ProtoLens.FieldTypeDescriptor Data.Int.Int64)
+              (Data.ProtoLens.RepeatedField
+                 Data.ProtoLens.Packed (Data.ProtoLens.Field.field @"values")) ::
+              Data.ProtoLens.FieldDescriptor Sample
         timestampsUnixNano__field_descriptor
           = Data.ProtoLens.FieldDescriptor
               "timestamps_unix_nano"
@@ -3292,9 +3292,9 @@ instance Data.ProtoLens.Message Sample where
       in
         Data.Map.fromList
           [(Data.ProtoLens.Tag 1, stackIndex__field_descriptor),
-           (Data.ProtoLens.Tag 2, values__field_descriptor),
-           (Data.ProtoLens.Tag 3, attributeIndices__field_descriptor),
-           (Data.ProtoLens.Tag 4, linkIndex__field_descriptor),
+           (Data.ProtoLens.Tag 2, attributeIndices__field_descriptor),
+           (Data.ProtoLens.Tag 3, linkIndex__field_descriptor),
+           (Data.ProtoLens.Tag 4, values__field_descriptor),
            (Data.ProtoLens.Tag 5, timestampsUnixNano__field_descriptor)]
   unknownFields
     = Lens.Family2.Unchecked.lens
@@ -3303,9 +3303,9 @@ instance Data.ProtoLens.Message Sample where
   defMessage
     = Sample'_constructor
         {_Sample'stackIndex = Data.ProtoLens.fieldDefault,
-         _Sample'values = Data.Vector.Generic.empty,
          _Sample'attributeIndices = Data.Vector.Generic.empty,
          _Sample'linkIndex = Data.ProtoLens.fieldDefault,
+         _Sample'values = Data.Vector.Generic.empty,
          _Sample'timestampsUnixNano = Data.Vector.Generic.empty,
          _Sample'_unknownFields = []}
   parseMessage
@@ -3368,43 +3368,12 @@ instance Data.ProtoLens.Message Sample where
                                         (Prelude.fmap
                                            Prelude.fromIntegral
                                            Data.ProtoLens.Encoding.Bytes.getVarInt)
-                                        "values"
-                                v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                                       (Data.ProtoLens.Encoding.Growing.append mutable'values y)
-                                loop x mutable'attributeIndices mutable'timestampsUnixNano v
-                        18
-                          -> do y <- do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
-                                        Data.ProtoLens.Encoding.Bytes.isolate
-                                          (Prelude.fromIntegral len)
-                                          ((let
-                                              ploop qs
-                                                = do packedEnd <- Data.ProtoLens.Encoding.Bytes.atEnd
-                                                     if packedEnd then
-                                                         Prelude.return qs
-                                                     else
-                                                         do !q <- (Data.ProtoLens.Encoding.Bytes.<?>)
-                                                                    (Prelude.fmap
-                                                                       Prelude.fromIntegral
-                                                                       Data.ProtoLens.Encoding.Bytes.getVarInt)
-                                                                    "values"
-                                                            qs' <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
-                                                                     (Data.ProtoLens.Encoding.Growing.append
-                                                                        qs q)
-                                                            ploop qs'
-                                            in ploop)
-                                             mutable'values)
-                                loop x mutable'attributeIndices mutable'timestampsUnixNano y
-                        24
-                          -> do !y <- (Data.ProtoLens.Encoding.Bytes.<?>)
-                                        (Prelude.fmap
-                                           Prelude.fromIntegral
-                                           Data.ProtoLens.Encoding.Bytes.getVarInt)
                                         "attribute_indices"
                                 v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
                                        (Data.ProtoLens.Encoding.Growing.append
                                           mutable'attributeIndices y)
                                 loop x v mutable'timestampsUnixNano mutable'values
-                        26
+                        18
                           -> do y <- do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
                                         Data.ProtoLens.Encoding.Bytes.isolate
                                           (Prelude.fromIntegral len)
@@ -3426,7 +3395,7 @@ instance Data.ProtoLens.Message Sample where
                                             in ploop)
                                              mutable'attributeIndices)
                                 loop x y mutable'timestampsUnixNano mutable'values
-                        32
+                        24
                           -> do y <- (Data.ProtoLens.Encoding.Bytes.<?>)
                                        (Prelude.fmap
                                           Prelude.fromIntegral
@@ -3435,6 +3404,37 @@ instance Data.ProtoLens.Message Sample where
                                 loop
                                   (Lens.Family2.set (Data.ProtoLens.Field.field @"linkIndex") y x)
                                   mutable'attributeIndices mutable'timestampsUnixNano mutable'values
+                        32
+                          -> do !y <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                        (Prelude.fmap
+                                           Prelude.fromIntegral
+                                           Data.ProtoLens.Encoding.Bytes.getVarInt)
+                                        "values"
+                                v <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                       (Data.ProtoLens.Encoding.Growing.append mutable'values y)
+                                loop x mutable'attributeIndices mutable'timestampsUnixNano v
+                        34
+                          -> do y <- do len <- Data.ProtoLens.Encoding.Bytes.getVarInt
+                                        Data.ProtoLens.Encoding.Bytes.isolate
+                                          (Prelude.fromIntegral len)
+                                          ((let
+                                              ploop qs
+                                                = do packedEnd <- Data.ProtoLens.Encoding.Bytes.atEnd
+                                                     if packedEnd then
+                                                         Prelude.return qs
+                                                     else
+                                                         do !q <- (Data.ProtoLens.Encoding.Bytes.<?>)
+                                                                    (Prelude.fmap
+                                                                       Prelude.fromIntegral
+                                                                       Data.ProtoLens.Encoding.Bytes.getVarInt)
+                                                                    "values"
+                                                            qs' <- Data.ProtoLens.Encoding.Parser.Unsafe.unsafeLiftIO
+                                                                     (Data.ProtoLens.Encoding.Growing.append
+                                                                        qs q)
+                                                            ploop qs'
+                                            in ploop)
+                                             mutable'values)
+                                loop x mutable'attributeIndices mutable'timestampsUnixNano y
                         41
                           -> do !y <- (Data.ProtoLens.Encoding.Bytes.<?>)
                                         Data.ProtoLens.Encoding.Bytes.getFixed64
@@ -3498,7 +3498,8 @@ instance Data.ProtoLens.Message Sample where
                          Data.ProtoLens.Encoding.Bytes.putVarInt Prelude.fromIntegral _v))
              ((Data.Monoid.<>)
                 (let
-                   p = Lens.Family2.view (Data.ProtoLens.Field.field @"vec'values") _x
+                   p = Lens.Family2.view
+                         (Data.ProtoLens.Field.field @"vec'attributeIndices") _x
                  in
                    if Data.Vector.Generic.null p then
                        Data.Monoid.mempty
@@ -3517,36 +3518,35 @@ instance Data.ProtoLens.Message Sample where
                                   p))))
                 ((Data.Monoid.<>)
                    (let
-                      p = Lens.Family2.view
-                            (Data.ProtoLens.Field.field @"vec'attributeIndices") _x
+                      _v = Lens.Family2.view (Data.ProtoLens.Field.field @"linkIndex") _x
                     in
-                      if Data.Vector.Generic.null p then
+                      if (Prelude.==) _v Data.ProtoLens.fieldDefault then
                           Data.Monoid.mempty
                       else
                           (Data.Monoid.<>)
-                            (Data.ProtoLens.Encoding.Bytes.putVarInt 26)
-                            ((\ bs
-                                -> (Data.Monoid.<>)
-                                     (Data.ProtoLens.Encoding.Bytes.putVarInt
-                                        (Prelude.fromIntegral (Data.ByteString.length bs)))
-                                     (Data.ProtoLens.Encoding.Bytes.putBytes bs))
-                               (Data.ProtoLens.Encoding.Bytes.runBuilder
-                                  (Data.ProtoLens.Encoding.Bytes.foldMapBuilder
-                                     ((Prelude..)
-                                        Data.ProtoLens.Encoding.Bytes.putVarInt
-                                        Prelude.fromIntegral)
-                                     p))))
+                            (Data.ProtoLens.Encoding.Bytes.putVarInt 24)
+                            ((Prelude..)
+                               Data.ProtoLens.Encoding.Bytes.putVarInt Prelude.fromIntegral _v))
                    ((Data.Monoid.<>)
                       (let
-                         _v = Lens.Family2.view (Data.ProtoLens.Field.field @"linkIndex") _x
+                         p = Lens.Family2.view (Data.ProtoLens.Field.field @"vec'values") _x
                        in
-                         if (Prelude.==) _v Data.ProtoLens.fieldDefault then
+                         if Data.Vector.Generic.null p then
                              Data.Monoid.mempty
                          else
                              (Data.Monoid.<>)
-                               (Data.ProtoLens.Encoding.Bytes.putVarInt 32)
-                               ((Prelude..)
-                                  Data.ProtoLens.Encoding.Bytes.putVarInt Prelude.fromIntegral _v))
+                               (Data.ProtoLens.Encoding.Bytes.putVarInt 34)
+                               ((\ bs
+                                   -> (Data.Monoid.<>)
+                                        (Data.ProtoLens.Encoding.Bytes.putVarInt
+                                           (Prelude.fromIntegral (Data.ByteString.length bs)))
+                                        (Data.ProtoLens.Encoding.Bytes.putBytes bs))
+                                  (Data.ProtoLens.Encoding.Bytes.runBuilder
+                                     (Data.ProtoLens.Encoding.Bytes.foldMapBuilder
+                                        ((Prelude..)
+                                           Data.ProtoLens.Encoding.Bytes.putVarInt
+                                           Prelude.fromIntegral)
+                                        p))))
                       ((Data.Monoid.<>)
                          (let
                             p = Lens.Family2.view
@@ -3575,11 +3575,11 @@ instance Control.DeepSeq.NFData Sample where
              (Control.DeepSeq.deepseq
                 (_Sample'stackIndex x__)
                 (Control.DeepSeq.deepseq
-                   (_Sample'values x__)
+                   (_Sample'attributeIndices x__)
                    (Control.DeepSeq.deepseq
-                      (_Sample'attributeIndices x__)
+                      (_Sample'linkIndex x__)
                       (Control.DeepSeq.deepseq
-                         (_Sample'linkIndex x__)
+                         (_Sample'values x__)
                          (Control.DeepSeq.deepseq (_Sample'timestampsUnixNano x__) ())))))
 {- | Fields :
      
@@ -4193,11 +4193,11 @@ packedFileDescriptor
     \\runit_strindex\CAN\STX \SOH(\ENQR\funitStrindex\"\191\SOH\n\
     \\ACKSample\DC2\US\n\
     \\vstack_index\CAN\SOH \SOH(\ENQR\n\
-    \stackIndex\DC2\SYN\n\
-    \\ACKvalues\CAN\STX \ETX(\ETXR\ACKvalues\DC2+\n\
-    \\DC1attribute_indices\CAN\ETX \ETX(\ENQR\DLEattributeIndices\DC2\GS\n\
+    \stackIndex\DC2+\n\
+    \\DC1attribute_indices\CAN\STX \ETX(\ENQR\DLEattributeIndices\DC2\GS\n\
     \\n\
-    \link_index\CAN\EOT \SOH(\ENQR\tlinkIndex\DC20\n\
+    \link_index\CAN\ETX \SOH(\ENQR\tlinkIndex\DC2\SYN\n\
+    \\ACKvalues\CAN\EOT \ETX(\ETXR\ACKvalues\DC20\n\
     \\DC4timestamps_unix_nano\CAN\ENQ \ETX(\ACKR\DC2timestampsUnixNano\"\202\SOH\n\
     \\aMapping\DC2!\n\
     \\fmemory_start\CAN\SOH \SOH(\EOTR\vmemoryStart\DC2!\n\
@@ -4227,8 +4227,8 @@ packedFileDescriptor
     \\fkey_strindex\CAN\SOH \SOH(\ENQR\vkeyStrindex\DC2=\n\
     \\ENQvalue\CAN\STX \SOH(\v2'.opentelemetry.proto.common.v1.AnyValueR\ENQvalue\DC2#\n\
     \\runit_strindex\CAN\ETX \SOH(\ENQR\funitStrindexB\164\SOH\n\
-    \-io.opentelemetry.proto.profiles.v1developmentB\rProfilesProtoP\SOHZ5go.opentelemetry.io/proto/otlp/profiles/v1development\170\STX*OpenTelemetry.Proto.Profiles.V1DevelopmentJ\147\177\SOH\n\
-    \\a\DC2\ENQ\RS\NUL\223\ETX\SOH\n\
+    \-io.opentelemetry.proto.profiles.v1developmentB\rProfilesProtoP\SOHZ5go.opentelemetry.io/proto/otlp/profiles/v1development\170\STX*OpenTelemetry.Proto.Profiles.V1DevelopmentJ\247\185\SOH\n\
+    \\a\DC2\ENQ\RS\NUL\242\ETX\SOH\n\
     \\229\t\n\
     \\SOH\f\DC2\ETX\RS\NUL\DC22\218\t Copyright 2023, OpenTelemetry Authors\n\
     \\n\
@@ -4621,7 +4621,7 @@ packedFileDescriptor
     \\r\n\
     \\ENQ\EOT\ETX\STX\STX\ETX\DC2\EOT\240\SOH\SYN\ETB\n\
     \\132\v\n\
-    \\STX\EOT\EOT\DC2\ACK\145\STX\NUL\207\STX\SOH\SUB\212\ETX Represents a complete profile, including sample types, samples, mappings to\n\
+    \\STX\EOT\EOT\DC2\ACK\145\STX\NUL\212\STX\SOH\SUB\212\ETX Represents a complete profile, including sample types, samples, mappings to\n\
     \ binaries, stacks, locations, functions, string table, and additional\n\
     \ metadata. It modifies and annotates pprof Profile with OpenTelemetry\n\
     \ specific fields.\n\
@@ -4678,48 +4678,53 @@ packedFileDescriptor
     \\ENQ\EOT\EOT\STX\SOH\SOH\DC2\EOT\153\STX\DC2\EM\n\
     \\r\n\
     \\ENQ\EOT\EOT\STX\SOH\ETX\DC2\EOT\153\STX\FS\GS\n\
-    \\173\SOH\n\
-    \\EOT\EOT\EOT\STX\STX\DC2\EOT\159\STX\STX\GS\SUBE Time of collection (UTC) represented as nanoseconds past the epoch.\n\
+    \\204\SOH\n\
+    \\EOT\EOT\EOT\STX\STX\DC2\EOT\160\STX\STX\GS\SUBd Time of collection. Value is UNIX Epoch time in nanoseconds since 00:00:00\n\
+    \ UTC on 1 January 1970.\n\
     \2X The following fields 3-12 are informational, do not affect\n\
     \ interpretation of results.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\STX\ENQ\DC2\EOT\159\STX\STX\t\n\
+    \\ENQ\EOT\EOT\STX\STX\ENQ\DC2\EOT\160\STX\STX\t\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\STX\SOH\DC2\EOT\159\STX\n\
+    \\ENQ\EOT\EOT\STX\STX\SOH\DC2\EOT\160\STX\n\
     \\CAN\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\STX\ETX\DC2\EOT\159\STX\ESC\FS\n\
-    \C\n\
-    \\EOT\EOT\EOT\STX\ETX\DC2\EOT\161\STX\STX\ESC\SUB5 Duration of the profile, if a duration makes sense.\n\
+    \\ENQ\EOT\EOT\STX\STX\ETX\DC2\EOT\160\STX\ESC\FS\n\
+    \\242\STX\n\
+    \\EOT\EOT\EOT\STX\ETX\DC2\EOT\166\STX\STX\ESC\SUB\227\STX Duration of the profile. For instant profiles like live heap snapshot, the\n\
+    \ duration can be zero but it may be preferable to set time_unix_nano to the\n\
+    \ process start time and duration_nano to the relative time when the profile\n\
+    \ was gathered. This ensures Sample.timestamps_unix_nano values such as\n\
+    \ allocation timestamp fall into the profile time range.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ETX\ENQ\DC2\EOT\161\STX\STX\b\n\
+    \\ENQ\EOT\EOT\STX\ETX\ENQ\DC2\EOT\166\STX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\EOT\161\STX\t\SYN\n\
+    \\ENQ\EOT\EOT\STX\ETX\SOH\DC2\EOT\166\STX\t\SYN\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\EOT\161\STX\EM\SUB\n\
+    \\ENQ\EOT\EOT\STX\ETX\ETX\DC2\EOT\166\STX\EM\SUB\n\
     \m\n\
-    \\EOT\EOT\EOT\STX\EOT\DC2\EOT\164\STX\STX\FS\SUB_ The kind of events between sampled occurrences.\n\
+    \\EOT\EOT\EOT\STX\EOT\DC2\EOT\169\STX\STX\FS\SUB_ The kind of events between sampled occurrences.\n\
     \ e.g [ \"cpu\",\"cycles\" ] or [ \"heap\",\"bytes\" ]\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\EOT\ACK\DC2\EOT\164\STX\STX\v\n\
+    \\ENQ\EOT\EOT\STX\EOT\ACK\DC2\EOT\169\STX\STX\v\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\EOT\SOH\DC2\EOT\164\STX\f\ETB\n\
+    \\ENQ\EOT\EOT\STX\EOT\SOH\DC2\EOT\169\STX\f\ETB\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\EOT\ETX\DC2\EOT\164\STX\SUB\ESC\n\
+    \\ENQ\EOT\EOT\STX\EOT\ETX\DC2\EOT\169\STX\SUB\ESC\n\
     \A\n\
-    \\EOT\EOT\EOT\STX\ENQ\DC2\EOT\166\STX\STX\DC3\SUB3 The number of events between sampled occurrences.\n\
+    \\EOT\EOT\EOT\STX\ENQ\DC2\EOT\171\STX\STX\DC3\SUB3 The number of events between sampled occurrences.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ENQ\ENQ\DC2\EOT\166\STX\STX\a\n\
+    \\ENQ\EOT\EOT\STX\ENQ\ENQ\DC2\EOT\171\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ENQ\SOH\DC2\EOT\166\STX\b\SO\n\
+    \\ENQ\EOT\EOT\STX\ENQ\SOH\DC2\EOT\171\STX\b\SO\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ENQ\ETX\DC2\EOT\166\STX\DC1\DC2\n\
+    \\ENQ\EOT\EOT\STX\ENQ\ETX\DC2\EOT\171\STX\DC1\DC2\n\
     \\182\ETX\n\
-    \\EOT\EOT\EOT\STX\ACK\DC2\EOT\174\STX\STX\ETB\SUB\167\ETX A globally unique identifier for a profile. The ID is a 16-byte array. An ID with\n\
+    \\EOT\EOT\EOT\STX\ACK\DC2\EOT\179\STX\STX\ETB\SUB\167\ETX A globally unique identifier for a profile. The ID is a 16-byte array. An ID with\n\
     \ all zeroes is considered invalid. It may be used for deduplication and signal\n\
     \ correlation purposes. It is acceptable to treat two profiles with different values\n\
     \ in this field as not equal, even if they represented the same object at an earlier\n\
@@ -4727,24 +4732,24 @@ packedFileDescriptor
     \ This field is optional; an ID may be assigned to an ID-less profile in a later step.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ACK\ENQ\DC2\EOT\174\STX\STX\a\n\
+    \\ENQ\EOT\EOT\STX\ACK\ENQ\DC2\EOT\179\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ACK\SOH\DC2\EOT\174\STX\b\DC2\n\
+    \\ENQ\EOT\EOT\STX\ACK\SOH\DC2\EOT\179\STX\b\DC2\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\ACK\ETX\DC2\EOT\174\STX\NAK\SYN\n\
+    \\ENQ\EOT\EOT\STX\ACK\ETX\DC2\EOT\179\STX\NAK\SYN\n\
     \\219\SOH\n\
-    \\EOT\EOT\EOT\STX\a\DC2\EOT\179\STX\STX&\SUB\204\SOH The number of attributes that were discarded. Attributes\n\
+    \\EOT\EOT\EOT\STX\a\DC2\EOT\184\STX\STX&\SUB\204\SOH The number of attributes that were discarded. Attributes\n\
     \ can be discarded because their keys are too long or because there are too many\n\
     \ attributes. If this value is 0, then no attributes were dropped.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\a\ENQ\DC2\EOT\179\STX\STX\b\n\
+    \\ENQ\EOT\EOT\STX\a\ENQ\DC2\EOT\184\STX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\a\SOH\DC2\EOT\179\STX\t!\n\
+    \\ENQ\EOT\EOT\STX\a\SOH\DC2\EOT\184\STX\t!\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\a\ETX\DC2\EOT\179\STX$%\n\
+    \\ENQ\EOT\EOT\STX\a\ETX\DC2\EOT\184\STX$%\n\
     \\166\b\n\
-    \\EOT\EOT\EOT\STX\b\DC2\EOT\200\STX\STX%\SUB\151\b The original payload format. See also original_payload. Optional, but the\n\
+    \\EOT\EOT\EOT\STX\b\DC2\EOT\205\STX\STX%\SUB\151\b The original payload format. See also original_payload. Optional, but the\n\
     \ format and the bytes must be set or unset together.\n\
     \\n\
     \ The allowed values for the format string are defined by the OpenTelemetry\n\
@@ -4765,88 +4770,88 @@ packedFileDescriptor
     \ default behavior should be to not include the original payload.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\b\ENQ\DC2\EOT\200\STX\STX\b\n\
+    \\ENQ\EOT\EOT\STX\b\ENQ\DC2\EOT\205\STX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\b\SOH\DC2\EOT\200\STX\t \n\
+    \\ENQ\EOT\EOT\STX\b\SOH\DC2\EOT\205\STX\t \n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\b\ETX\DC2\EOT\200\STX#$\n\
+    \\ENQ\EOT\EOT\STX\b\ETX\DC2\EOT\205\STX#$\n\
     \\145\SOH\n\
-    \\EOT\EOT\EOT\STX\t\DC2\EOT\203\STX\STX\RS\SUB\130\SOH The original payload bytes. See also original_payload_format. Optional, but\n\
+    \\EOT\EOT\EOT\STX\t\DC2\EOT\208\STX\STX\RS\SUB\130\SOH The original payload bytes. See also original_payload_format. Optional, but\n\
     \ format and the bytes must be set or unset together.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\t\ENQ\DC2\EOT\203\STX\STX\a\n\
+    \\ENQ\EOT\EOT\STX\t\ENQ\DC2\EOT\208\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\t\SOH\DC2\EOT\203\STX\b\CAN\n\
+    \\ENQ\EOT\EOT\STX\t\SOH\DC2\EOT\208\STX\b\CAN\n\
     \\r\n\
-    \\ENQ\EOT\EOT\STX\t\ETX\DC2\EOT\203\STX\ESC\GS\n\
+    \\ENQ\EOT\EOT\STX\t\ETX\DC2\EOT\208\STX\ESC\GS\n\
     \G\n\
     \\EOT\EOT\EOT\STX\n\
-    \\DC2\EOT\206\STX\STX(\SUB9 References to attributes in attribute_table. [optional]\n\
+    \\DC2\EOT\211\STX\STX(\SUB9 References to attributes in attribute_table. [optional]\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\EOT\STX\n\
-    \\EOT\DC2\EOT\206\STX\STX\n\
+    \\EOT\DC2\EOT\211\STX\STX\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\EOT\STX\n\
-    \\ENQ\DC2\EOT\206\STX\v\DLE\n\
+    \\ENQ\DC2\EOT\211\STX\v\DLE\n\
     \\r\n\
     \\ENQ\EOT\EOT\STX\n\
-    \\SOH\DC2\EOT\206\STX\DC1\"\n\
+    \\SOH\DC2\EOT\211\STX\DC1\"\n\
     \\r\n\
     \\ENQ\EOT\EOT\STX\n\
-    \\ETX\DC2\EOT\206\STX%'\n\
+    \\ETX\DC2\EOT\211\STX%'\n\
     \\150\SOH\n\
-    \\STX\EOT\ENQ\DC2\ACK\211\STX\NUL\218\STX\SOH\SUB\135\SOH A pointer from a profile Sample to a trace Span.\n\
+    \\STX\EOT\ENQ\DC2\ACK\216\STX\NUL\223\STX\SOH\SUB\135\SOH A pointer from a profile Sample to a trace Span.\n\
     \ Connects a profile sample to a trace span, identified by unique trace and span IDs.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\ENQ\SOH\DC2\EOT\211\STX\b\f\n\
+    \\ETX\EOT\ENQ\SOH\DC2\EOT\216\STX\b\f\n\
     \l\n\
-    \\EOT\EOT\ENQ\STX\NUL\DC2\EOT\214\STX\STX\NAK\SUB^ A unique identifier of a trace that this linked span is part of. The ID is a\n\
+    \\EOT\EOT\ENQ\STX\NUL\DC2\EOT\219\STX\STX\NAK\SUB^ A unique identifier of a trace that this linked span is part of. The ID is a\n\
     \ 16-byte array.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\EOT\214\STX\STX\a\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ENQ\DC2\EOT\219\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\EOT\214\STX\b\DLE\n\
+    \\ENQ\EOT\ENQ\STX\NUL\SOH\DC2\EOT\219\STX\b\DLE\n\
     \\r\n\
-    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\EOT\214\STX\DC3\DC4\n\
+    \\ENQ\EOT\ENQ\STX\NUL\ETX\DC2\EOT\219\STX\DC3\DC4\n\
     \S\n\
-    \\EOT\EOT\ENQ\STX\SOH\DC2\EOT\217\STX\STX\DC4\SUBE A unique identifier for the linked span. The ID is an 8-byte array.\n\
+    \\EOT\EOT\ENQ\STX\SOH\DC2\EOT\222\STX\STX\DC4\SUBE A unique identifier for the linked span. The ID is an 8-byte array.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\EOT\217\STX\STX\a\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ENQ\DC2\EOT\222\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\EOT\217\STX\b\SI\n\
+    \\ENQ\EOT\ENQ\STX\SOH\SOH\DC2\EOT\222\STX\b\SI\n\
     \\r\n\
-    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\EOT\217\STX\DC2\DC3\n\
+    \\ENQ\EOT\ENQ\STX\SOH\ETX\DC2\EOT\222\STX\DC2\DC3\n\
     \B\n\
-    \\STX\EOT\ACK\DC2\ACK\221\STX\NUL\227\STX\SOH\SUB4 ValueType describes the type and units of a value.\n\
+    \\STX\EOT\ACK\DC2\ACK\226\STX\NUL\232\STX\SOH\SUB4 ValueType describes the type and units of a value.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\ACK\SOH\DC2\EOT\221\STX\b\DC1\n\
+    \\ETX\EOT\ACK\SOH\DC2\EOT\226\STX\b\DC1\n\
     \;\n\
-    \\EOT\EOT\ACK\STX\NUL\DC2\EOT\223\STX\STX\SUB\SUB- Index into ProfilesDictionary.string_table.\n\
+    \\EOT\EOT\ACK\STX\NUL\DC2\EOT\228\STX\STX\SUB\SUB- Index into ProfilesDictionary.string_table.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ACK\STX\NUL\ENQ\DC2\EOT\223\STX\STX\a\n\
+    \\ENQ\EOT\ACK\STX\NUL\ENQ\DC2\EOT\228\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\ACK\STX\NUL\SOH\DC2\EOT\223\STX\b\NAK\n\
+    \\ENQ\EOT\ACK\STX\NUL\SOH\DC2\EOT\228\STX\b\NAK\n\
     \\r\n\
-    \\ENQ\EOT\ACK\STX\NUL\ETX\DC2\EOT\223\STX\CAN\EM\n\
+    \\ENQ\EOT\ACK\STX\NUL\ETX\DC2\EOT\228\STX\CAN\EM\n\
     \;\n\
-    \\EOT\EOT\ACK\STX\SOH\DC2\EOT\226\STX\STX\SUB\SUB- Index into ProfilesDictionary.string_table.\n\
+    \\EOT\EOT\ACK\STX\SOH\DC2\EOT\231\STX\STX\SUB\SUB- Index into ProfilesDictionary.string_table.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\ACK\STX\SOH\ENQ\DC2\EOT\226\STX\STX\a\n\
+    \\ENQ\EOT\ACK\STX\SOH\ENQ\DC2\EOT\231\STX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\ACK\STX\SOH\SOH\DC2\EOT\226\STX\b\NAK\n\
+    \\ENQ\EOT\ACK\STX\SOH\SOH\DC2\EOT\231\STX\b\NAK\n\
     \\r\n\
-    \\ENQ\EOT\ACK\STX\SOH\ETX\DC2\EOT\226\STX\CAN\EM\n\
-    \\224\a\n\
-    \\STX\EOT\a\DC2\ACK\251\STX\NUL\138\ETX\SOH\SUB\209\a Each Sample records values encountered in some program context. The program\n\
+    \\ENQ\EOT\ACK\STX\SOH\ETX\DC2\EOT\231\STX\CAN\EM\n\
+    \\167\v\n\
+    \\STX\EOT\a\DC2\ACK\136\ETX\NUL\157\ETX\SOH\SUB\152\v Each Sample records values encountered in some program context. The program\n\
     \ context is typically a stack trace, perhaps augmented with auxiliary\n\
     \ information like the thread-id, some indicator of a higher level request\n\
     \ being handled etc.\n\
@@ -4855,7 +4860,11 @@ packedFileDescriptor
     \ both fields are populated, they MUST contain the same number of elements, and\n\
     \ the elements at the same index MUST refer to the same event.\n\
     \\n\
-    \ Examples of different ways of representing a sample with the total value of 10:\n\
+    \ For the purposes of efficiently representing aggregated data observations, a Sample is regarded\n\
+    \ as having a shared identity and an associated collection of per-observation data points.\n\
+    \ Samples having the same identity SHOULD be combined by inserting timestamps and values to the data arrays.\n\
+    \\n\
+    \ Examples of different ways ('shapes') of representing a sample with the total value of 10:\n\
     \\n\
     \ Report of a stacktrace at 10 timestamps (consumers must assume the value is 1 for each point):\n\
     \    values: []\n\
@@ -4869,164 +4878,172 @@ packedFileDescriptor
     \    values: [2, 2, 3, 3]\n\
     \    timestamps_unix_nano: [1, 2, 3, 4]\n\
     \\n\
+    \ All Samples for a Profile SHOULD have the same shape, i.e. all data observation series should consistently\n\
+    \ adopt the same data recording style.\n\
+    \\n\
+    \\n\
     \\v\n\
-    \\ETX\EOT\a\SOH\DC2\EOT\251\STX\b\SO\n\
-    \E\n\
-    \\EOT\EOT\a\STX\NUL\DC2\EOT\253\STX\STX\CAN\SUB7 Reference to stack in ProfilesDictionary.stack_table.\n\
+    \\ETX\EOT\a\SOH\DC2\EOT\136\ETX\b\SO\n\
+    \\182\SOH\n\
+    \\EOT\EOT\a\STX\NUL\DC2\EOT\141\ETX\STX\CAN\SUB7 Reference to stack in ProfilesDictionary.stack_table.\n\
+    \2o A Sample's identity (i.e. 'primary key') is the tuple of {stack_index, set_of(attribute_indices), link_index}\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\NUL\ENQ\DC2\EOT\253\STX\STX\a\n\
+    \\ENQ\EOT\a\STX\NUL\ENQ\DC2\EOT\141\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\NUL\SOH\DC2\EOT\253\STX\b\DC3\n\
+    \\ENQ\EOT\a\STX\NUL\SOH\DC2\EOT\141\ETX\b\DC3\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\NUL\ETX\DC2\EOT\253\STX\SYN\ETB\n\
-    \R\n\
-    \\EOT\EOT\a\STX\SOH\DC2\EOT\255\STX\STX\FS\SUBD The type and unit of each value is defined by Profile.sample_type.\n\
-    \\n\
-    \\r\n\
-    \\ENQ\EOT\a\STX\SOH\EOT\DC2\EOT\255\STX\STX\n\
-    \\n\
-    \\r\n\
-    \\ENQ\EOT\a\STX\SOH\ENQ\DC2\EOT\255\STX\v\DLE\n\
-    \\r\n\
-    \\ENQ\EOT\a\STX\SOH\SOH\DC2\EOT\255\STX\DC1\ETB\n\
-    \\r\n\
-    \\ENQ\EOT\a\STX\SOH\ETX\DC2\EOT\255\STX\SUB\ESC\n\
+    \\ENQ\EOT\a\STX\NUL\ETX\DC2\EOT\141\ETX\SYN\ETB\n\
     \Z\n\
-    \\EOT\EOT\a\STX\STX\DC2\EOT\129\ETX\STX'\SUBL References to attributes in ProfilesDictionary.attribute_table. [optional]\n\
+    \\EOT\EOT\a\STX\SOH\DC2\EOT\143\ETX\STX'\SUBL References to attributes in ProfilesDictionary.attribute_table. [optional]\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\STX\EOT\DC2\EOT\129\ETX\STX\n\
+    \\ENQ\EOT\a\STX\SOH\EOT\DC2\EOT\143\ETX\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\STX\ENQ\DC2\EOT\129\ETX\v\DLE\n\
+    \\ENQ\EOT\a\STX\SOH\ENQ\DC2\EOT\143\ETX\v\DLE\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\STX\SOH\DC2\EOT\129\ETX\DC1\"\n\
+    \\ENQ\EOT\a\STX\SOH\SOH\DC2\EOT\143\ETX\DC1\"\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\STX\ETX\DC2\EOT\129\ETX%&\n\
+    \\ENQ\EOT\a\STX\SOH\ETX\DC2\EOT\143\ETX%&\n\
     \\177\SOH\n\
-    \\EOT\EOT\a\STX\ETX\DC2\EOT\133\ETX\STX\ETB\SUB\162\SOH Reference to link in ProfilesDictionary.link_table. [optional]\n\
+    \\EOT\EOT\a\STX\STX\DC2\EOT\146\ETX\STX\ETB\SUB\162\SOH Reference to link in ProfilesDictionary.link_table. [optional]\n\
     \ It can be unset / set to 0 if no link exists, as link_table[0] is always a 'null' default value.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\ETX\ENQ\DC2\EOT\133\ETX\STX\a\n\
+    \\ENQ\EOT\a\STX\STX\ENQ\DC2\EOT\146\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\ETX\SOH\DC2\EOT\133\ETX\b\DC2\n\
+    \\ENQ\EOT\a\STX\STX\SOH\DC2\EOT\146\ETX\b\DC2\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\ETX\ETX\DC2\EOT\133\ETX\NAK\SYN\n\
-    \\140\SOH\n\
-    \\EOT\EOT\a\STX\EOT\DC2\EOT\137\ETX\STX,\SUB~ Timestamps associated with Sample represented in nanoseconds. These\n\
-    \ timestamps should fall within the Profile's time range.\n\
+    \\ENQ\EOT\a\STX\STX\ETX\DC2\EOT\146\ETX\NAK\SYN\n\
+    \\186\SOH\n\
+    \\EOT\EOT\a\STX\ETX\DC2\EOT\151\ETX\STX\FS\SUBD The type and unit of each value is defined by Profile.sample_type.\n\
+    \2f The following fields may contain per-observation data and do not form part of the Sample's identity.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\EOT\EOT\DC2\EOT\137\ETX\STX\n\
+    \\ENQ\EOT\a\STX\ETX\EOT\DC2\EOT\151\ETX\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\EOT\ENQ\DC2\EOT\137\ETX\v\DC2\n\
+    \\ENQ\EOT\a\STX\ETX\ENQ\DC2\EOT\151\ETX\v\DLE\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\EOT\SOH\DC2\EOT\137\ETX\DC3'\n\
+    \\ENQ\EOT\a\STX\ETX\SOH\DC2\EOT\151\ETX\DC1\ETB\n\
     \\r\n\
-    \\ENQ\EOT\a\STX\EOT\ETX\DC2\EOT\137\ETX*+\n\
+    \\ENQ\EOT\a\STX\ETX\ETX\DC2\EOT\151\ETX\SUB\ESC\n\
+    \\255\SOH\n\
+    \\EOT\EOT\a\STX\EOT\DC2\EOT\156\ETX\STX,\SUB\240\SOH Timestamps associated with Sample. Value is UNIX Epoch time in nanoseconds\n\
+    \ since 00:00:00 UTC on 1 January 1970. The timestamps should fall within the\n\
+    \ [Profile.time_unix_nano, Profile.time_unix_nano + Profile.duration_nano)\n\
+    \ time range.\n\
+    \\n\
+    \\r\n\
+    \\ENQ\EOT\a\STX\EOT\EOT\DC2\EOT\156\ETX\STX\n\
+    \\n\
+    \\r\n\
+    \\ENQ\EOT\a\STX\EOT\ENQ\DC2\EOT\156\ETX\v\DC2\n\
+    \\r\n\
+    \\ENQ\EOT\a\STX\EOT\SOH\DC2\EOT\156\ETX\DC3'\n\
+    \\r\n\
+    \\ENQ\EOT\a\STX\EOT\ETX\DC2\EOT\156\ETX*+\n\
     \\130\SOH\n\
-    \\STX\EOT\b\DC2\ACK\142\ETX\NUL\155\ETX\SOH\SUBt Describes the mapping of a binary in memory, including its address range,\n\
+    \\STX\EOT\b\DC2\ACK\161\ETX\NUL\174\ETX\SOH\SUBt Describes the mapping of a binary in memory, including its address range,\n\
     \ file offset, and metadata like build ID\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\b\SOH\DC2\EOT\142\ETX\b\SI\n\
+    \\ETX\EOT\b\SOH\DC2\EOT\161\ETX\b\SI\n\
     \K\n\
-    \\EOT\EOT\b\STX\NUL\DC2\EOT\144\ETX\STX\SUB\SUB= Address at which the binary (or DLL) is loaded into memory.\n\
+    \\EOT\EOT\b\STX\NUL\DC2\EOT\163\ETX\STX\SUB\SUB= Address at which the binary (or DLL) is loaded into memory.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\NUL\ENQ\DC2\EOT\144\ETX\STX\b\n\
+    \\ENQ\EOT\b\STX\NUL\ENQ\DC2\EOT\163\ETX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\NUL\SOH\DC2\EOT\144\ETX\t\NAK\n\
+    \\ENQ\EOT\b\STX\NUL\SOH\DC2\EOT\163\ETX\t\NAK\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\NUL\ETX\DC2\EOT\144\ETX\CAN\EM\n\
+    \\ENQ\EOT\b\STX\NUL\ETX\DC2\EOT\163\ETX\CAN\EM\n\
     \H\n\
-    \\EOT\EOT\b\STX\SOH\DC2\EOT\146\ETX\STX\SUB\SUB: The limit of the address range occupied by this mapping.\n\
+    \\EOT\EOT\b\STX\SOH\DC2\EOT\165\ETX\STX\SUB\SUB: The limit of the address range occupied by this mapping.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\SOH\ENQ\DC2\EOT\146\ETX\STX\b\n\
+    \\ENQ\EOT\b\STX\SOH\ENQ\DC2\EOT\165\ETX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\SOH\SOH\DC2\EOT\146\ETX\t\NAK\n\
+    \\ENQ\EOT\b\STX\SOH\SOH\DC2\EOT\165\ETX\t\NAK\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\SOH\ETX\DC2\EOT\146\ETX\CAN\EM\n\
+    \\ENQ\EOT\b\STX\SOH\ETX\DC2\EOT\165\ETX\CAN\EM\n\
     \R\n\
-    \\EOT\EOT\b\STX\STX\DC2\EOT\148\ETX\STX\EM\SUBD Offset in the binary that corresponds to the first mapped address.\n\
+    \\EOT\EOT\b\STX\STX\DC2\EOT\167\ETX\STX\EM\SUBD Offset in the binary that corresponds to the first mapped address.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\STX\ENQ\DC2\EOT\148\ETX\STX\b\n\
+    \\ENQ\EOT\b\STX\STX\ENQ\DC2\EOT\167\ETX\STX\b\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\STX\SOH\DC2\EOT\148\ETX\t\DC4\n\
+    \\ENQ\EOT\b\STX\STX\SOH\DC2\EOT\167\ETX\t\DC4\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\STX\ETX\DC2\EOT\148\ETX\ETB\CAN\n\
+    \\ENQ\EOT\b\STX\STX\ETX\DC2\EOT\167\ETX\ETB\CAN\n\
     \\216\SOH\n\
-    \\EOT\EOT\b\STX\ETX\DC2\EOT\152\ETX\STX\RS\SUB\154\SOH The object this entry is loaded from.  This can be a filename on\n\
+    \\EOT\EOT\b\STX\ETX\DC2\EOT\171\ETX\STX\RS\SUB\154\SOH The object this entry is loaded from.  This can be a filename on\n\
     \ disk for the main binary and shared libraries, or virtual\n\
     \ abstractions like \"[vdso]\".\n\
     \\"- Index into ProfilesDictionary.string_table.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\ETX\ENQ\DC2\EOT\152\ETX\STX\a\n\
+    \\ENQ\EOT\b\STX\ETX\ENQ\DC2\EOT\171\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\ETX\SOH\DC2\EOT\152\ETX\b\EM\n\
+    \\ENQ\EOT\b\STX\ETX\SOH\DC2\EOT\171\ETX\b\EM\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\ETX\ETX\DC2\EOT\152\ETX\FS\GS\n\
+    \\ENQ\EOT\b\STX\ETX\ETX\DC2\EOT\171\ETX\FS\GS\n\
     \Z\n\
-    \\EOT\EOT\b\STX\EOT\DC2\EOT\154\ETX\STX'\SUBL References to attributes in ProfilesDictionary.attribute_table. [optional]\n\
+    \\EOT\EOT\b\STX\EOT\DC2\EOT\173\ETX\STX'\SUBL References to attributes in ProfilesDictionary.attribute_table. [optional]\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\EOT\EOT\DC2\EOT\154\ETX\STX\n\
+    \\ENQ\EOT\b\STX\EOT\EOT\DC2\EOT\173\ETX\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\EOT\ENQ\DC2\EOT\154\ETX\v\DLE\n\
+    \\ENQ\EOT\b\STX\EOT\ENQ\DC2\EOT\173\ETX\v\DLE\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\EOT\SOH\DC2\EOT\154\ETX\DC1\"\n\
+    \\ENQ\EOT\b\STX\EOT\SOH\DC2\EOT\173\ETX\DC1\"\n\
     \\r\n\
-    \\ENQ\EOT\b\STX\EOT\ETX\DC2\EOT\154\ETX%&\n\
+    \\ENQ\EOT\b\STX\EOT\ETX\DC2\EOT\173\ETX%&\n\
     \H\n\
-    \\STX\EOT\t\DC2\ACK\158\ETX\NUL\162\ETX\SOH\SUB: A Stack represents a stack trace as a list of locations.\n\
+    \\STX\EOT\t\DC2\ACK\177\ETX\NUL\181\ETX\SOH\SUB: A Stack represents a stack trace as a list of locations.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\t\SOH\DC2\EOT\158\ETX\b\r\n\
+    \\ETX\EOT\t\SOH\DC2\EOT\177\ETX\b\r\n\
     \t\n\
-    \\EOT\EOT\t\STX\NUL\DC2\EOT\161\ETX\STX&\SUBf References to locations in ProfilesDictionary.location_table.\n\
+    \\EOT\EOT\t\STX\NUL\DC2\EOT\180\ETX\STX&\SUBf References to locations in ProfilesDictionary.location_table.\n\
     \ The first location is the leaf frame.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\t\STX\NUL\EOT\DC2\EOT\161\ETX\STX\n\
+    \\ENQ\EOT\t\STX\NUL\EOT\DC2\EOT\180\ETX\STX\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\t\STX\NUL\ENQ\DC2\EOT\161\ETX\v\DLE\n\
+    \\ENQ\EOT\t\STX\NUL\ENQ\DC2\EOT\180\ETX\v\DLE\n\
     \\r\n\
-    \\ENQ\EOT\t\STX\NUL\SOH\DC2\EOT\161\ETX\DC1!\n\
+    \\ENQ\EOT\t\STX\NUL\SOH\DC2\EOT\180\ETX\DC1!\n\
     \\r\n\
-    \\ENQ\EOT\t\STX\NUL\ETX\DC2\EOT\161\ETX$%\n\
+    \\ENQ\EOT\t\STX\NUL\ETX\DC2\EOT\180\ETX$%\n\
     \D\n\
     \\STX\EOT\n\
-    \\DC2\ACK\165\ETX\NUL\186\ETX\SOH\SUB6 Describes function and line table debug information.\n\
+    \\DC2\ACK\184\ETX\NUL\205\ETX\SOH\SUB6 Describes function and line table debug information.\n\
     \\n\
     \\v\n\
     \\ETX\EOT\n\
-    \\SOH\DC2\EOT\165\ETX\b\DLE\n\
+    \\SOH\DC2\EOT\184\ETX\b\DLE\n\
     \\226\SOH\n\
     \\EOT\EOT\n\
-    \\STX\NUL\DC2\EOT\169\ETX\STX\SUB\SUB\211\SOH Reference to mapping in ProfilesDictionary.mapping_table.\n\
+    \\STX\NUL\DC2\EOT\188\ETX\STX\SUB\SUB\211\SOH Reference to mapping in ProfilesDictionary.mapping_table.\n\
     \ It can be unset / set to 0 if the mapping is unknown or not applicable for\n\
     \ this profile type, as mapping_table[0] is always a 'null' default mapping.\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\NUL\ENQ\DC2\EOT\169\ETX\STX\a\n\
+    \\STX\NUL\ENQ\DC2\EOT\188\ETX\STX\a\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\NUL\SOH\DC2\EOT\169\ETX\b\NAK\n\
+    \\STX\NUL\SOH\DC2\EOT\188\ETX\b\NAK\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\NUL\ETX\DC2\EOT\169\ETX\CAN\EM\n\
+    \\STX\NUL\ETX\DC2\EOT\188\ETX\CAN\EM\n\
     \\191\STX\n\
     \\EOT\EOT\n\
-    \\STX\SOH\DC2\EOT\175\ETX\STX\NAK\SUB\176\STX The instruction address for this location, if available.  It\n\
+    \\STX\SOH\DC2\EOT\194\ETX\STX\NAK\SUB\176\STX The instruction address for this location, if available.  It\n\
     \ should be within [Mapping.memory_start...Mapping.memory_limit]\n\
     \ for the corresponding mapping. A non-leaf address may be in the\n\
     \ middle of a call instruction. It is up to display tools to find\n\
@@ -5034,16 +5051,16 @@ packedFileDescriptor
     \\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\SOH\ENQ\DC2\EOT\175\ETX\STX\b\n\
+    \\STX\SOH\ENQ\DC2\EOT\194\ETX\STX\b\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\SOH\SOH\DC2\EOT\175\ETX\t\DLE\n\
+    \\STX\SOH\SOH\DC2\EOT\194\ETX\t\DLE\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\SOH\ETX\DC2\EOT\175\ETX\DC3\DC4\n\
+    \\STX\SOH\ETX\DC2\EOT\194\ETX\DC3\DC4\n\
     \\163\STX\n\
     \\EOT\EOT\n\
-    \\STX\STX\DC2\EOT\183\ETX\STX\SUB\SUB\148\STX Multiple line indicates this location has inlined functions,\n\
+    \\STX\STX\DC2\EOT\202\ETX\STX\SUB\SUB\148\STX Multiple line indicates this location has inlined functions,\n\
     \ where the last entry represents the caller into which the\n\
     \ preceding entries were inlined.\n\
     \\n\
@@ -5053,141 +5070,141 @@ packedFileDescriptor
     \\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\STX\EOT\DC2\EOT\183\ETX\STX\n\
+    \\STX\STX\EOT\DC2\EOT\202\ETX\STX\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\STX\ACK\DC2\EOT\183\ETX\v\SI\n\
+    \\STX\STX\ACK\DC2\EOT\202\ETX\v\SI\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\STX\SOH\DC2\EOT\183\ETX\DLE\NAK\n\
+    \\STX\STX\SOH\DC2\EOT\202\ETX\DLE\NAK\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\STX\ETX\DC2\EOT\183\ETX\CAN\EM\n\
+    \\STX\STX\ETX\DC2\EOT\202\ETX\CAN\EM\n\
     \Z\n\
     \\EOT\EOT\n\
-    \\STX\ETX\DC2\EOT\185\ETX\STX'\SUBL References to attributes in ProfilesDictionary.attribute_table. [optional]\n\
+    \\STX\ETX\DC2\EOT\204\ETX\STX'\SUBL References to attributes in ProfilesDictionary.attribute_table. [optional]\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\ETX\EOT\DC2\EOT\185\ETX\STX\n\
+    \\STX\ETX\EOT\DC2\EOT\204\ETX\STX\n\
     \\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\ETX\ENQ\DC2\EOT\185\ETX\v\DLE\n\
+    \\STX\ETX\ENQ\DC2\EOT\204\ETX\v\DLE\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\ETX\SOH\DC2\EOT\185\ETX\DC1\"\n\
+    \\STX\ETX\SOH\DC2\EOT\204\ETX\DC1\"\n\
     \\r\n\
     \\ENQ\EOT\n\
-    \\STX\ETX\ETX\DC2\EOT\185\ETX%&\n\
+    \\STX\ETX\ETX\DC2\EOT\204\ETX%&\n\
     \O\n\
-    \\STX\EOT\v\DC2\ACK\189\ETX\NUL\196\ETX\SOH\SUBA Details a specific line in a source code, linked to a function.\n\
+    \\STX\EOT\v\DC2\ACK\208\ETX\NUL\215\ETX\SOH\SUBA Details a specific line in a source code, linked to a function.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\v\SOH\DC2\EOT\189\ETX\b\f\n\
+    \\ETX\EOT\v\SOH\DC2\EOT\208\ETX\b\f\n\
     \K\n\
-    \\EOT\EOT\v\STX\NUL\DC2\EOT\191\ETX\STX\ESC\SUB= Reference to function in ProfilesDictionary.function_table.\n\
+    \\EOT\EOT\v\STX\NUL\DC2\EOT\210\ETX\STX\ESC\SUB= Reference to function in ProfilesDictionary.function_table.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\NUL\ENQ\DC2\EOT\191\ETX\STX\a\n\
+    \\ENQ\EOT\v\STX\NUL\ENQ\DC2\EOT\210\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\NUL\SOH\DC2\EOT\191\ETX\b\SYN\n\
+    \\ENQ\EOT\v\STX\NUL\SOH\DC2\EOT\210\ETX\b\SYN\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\NUL\ETX\DC2\EOT\191\ETX\EM\SUB\n\
+    \\ENQ\EOT\v\STX\NUL\ETX\DC2\EOT\210\ETX\EM\SUB\n\
     \:\n\
-    \\EOT\EOT\v\STX\SOH\DC2\EOT\193\ETX\STX\DC1\SUB, Line number in source code. 0 means unset.\n\
+    \\EOT\EOT\v\STX\SOH\DC2\EOT\212\ETX\STX\DC1\SUB, Line number in source code. 0 means unset.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\SOH\ENQ\DC2\EOT\193\ETX\STX\a\n\
+    \\ENQ\EOT\v\STX\SOH\ENQ\DC2\EOT\212\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\SOH\SOH\DC2\EOT\193\ETX\b\f\n\
+    \\ENQ\EOT\v\STX\SOH\SOH\DC2\EOT\212\ETX\b\f\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\SOH\ETX\DC2\EOT\193\ETX\SI\DLE\n\
+    \\ENQ\EOT\v\STX\SOH\ETX\DC2\EOT\212\ETX\SI\DLE\n\
     \<\n\
-    \\EOT\EOT\v\STX\STX\DC2\EOT\195\ETX\STX\DC3\SUB. Column number in source code. 0 means unset.\n\
+    \\EOT\EOT\v\STX\STX\DC2\EOT\214\ETX\STX\DC3\SUB. Column number in source code. 0 means unset.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\STX\ENQ\DC2\EOT\195\ETX\STX\a\n\
+    \\ENQ\EOT\v\STX\STX\ENQ\DC2\EOT\214\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\STX\SOH\DC2\EOT\195\ETX\b\SO\n\
+    \\ENQ\EOT\v\STX\STX\SOH\DC2\EOT\214\ETX\b\SO\n\
     \\r\n\
-    \\ENQ\EOT\v\STX\STX\ETX\DC2\EOT\195\ETX\DC1\DC2\n\
+    \\ENQ\EOT\v\STX\STX\ETX\DC2\EOT\214\ETX\DC1\DC2\n\
     \\139\SOH\n\
-    \\STX\EOT\f\DC2\ACK\200\ETX\NUL\210\ETX\SOH\SUB} Describes a function, including its human-readable name, system name,\n\
+    \\STX\EOT\f\DC2\ACK\219\ETX\NUL\229\ETX\SOH\SUB} Describes a function, including its human-readable name, system name,\n\
     \ source file, and starting line number in the source.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\f\SOH\DC2\EOT\200\ETX\b\DLE\n\
+    \\ETX\EOT\f\SOH\DC2\EOT\219\ETX\b\DLE\n\
     \A\n\
-    \\EOT\EOT\f\STX\NUL\DC2\EOT\202\ETX\STX\SUB\SUB3 The function name. Empty string if not available.\n\
+    \\EOT\EOT\f\STX\NUL\DC2\EOT\221\ETX\STX\SUB\SUB3 The function name. Empty string if not available.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\NUL\ENQ\DC2\EOT\202\ETX\STX\a\n\
+    \\ENQ\EOT\f\STX\NUL\ENQ\DC2\EOT\221\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\NUL\SOH\DC2\EOT\202\ETX\b\NAK\n\
+    \\ENQ\EOT\f\STX\NUL\SOH\DC2\EOT\221\ETX\b\NAK\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\NUL\ETX\DC2\EOT\202\ETX\CAN\EM\n\
+    \\ENQ\EOT\f\STX\NUL\ETX\DC2\EOT\221\ETX\CAN\EM\n\
     \\135\SOH\n\
-    \\EOT\EOT\f\STX\SOH\DC2\EOT\205\ETX\STX!\SUBy Function name, as identified by the system. For instance,\n\
+    \\EOT\EOT\f\STX\SOH\DC2\EOT\224\ETX\STX!\SUBy Function name, as identified by the system. For instance,\n\
     \ it can be a C++ mangled name. Empty string if not available.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\SOH\ENQ\DC2\EOT\205\ETX\STX\a\n\
+    \\ENQ\EOT\f\STX\SOH\ENQ\DC2\EOT\224\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\SOH\SOH\DC2\EOT\205\ETX\b\FS\n\
+    \\ENQ\EOT\f\STX\SOH\SOH\DC2\EOT\224\ETX\b\FS\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\SOH\ETX\DC2\EOT\205\ETX\US \n\
+    \\ENQ\EOT\f\STX\SOH\ETX\DC2\EOT\224\ETX\US \n\
     \S\n\
-    \\EOT\EOT\f\STX\STX\DC2\EOT\207\ETX\STX\RS\SUBE Source file containing the function. Empty string if not available.\n\
+    \\EOT\EOT\f\STX\STX\DC2\EOT\226\ETX\STX\RS\SUBE Source file containing the function. Empty string if not available.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\STX\ENQ\DC2\EOT\207\ETX\STX\a\n\
+    \\ENQ\EOT\f\STX\STX\ENQ\DC2\EOT\226\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\STX\SOH\DC2\EOT\207\ETX\b\EM\n\
+    \\ENQ\EOT\f\STX\STX\SOH\DC2\EOT\226\ETX\b\EM\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\STX\ETX\DC2\EOT\207\ETX\FS\GS\n\
+    \\ENQ\EOT\f\STX\STX\ETX\DC2\EOT\226\ETX\FS\GS\n\
     \:\n\
-    \\EOT\EOT\f\STX\ETX\DC2\EOT\209\ETX\STX\ETB\SUB, Line number in source file. 0 means unset.\n\
+    \\EOT\EOT\f\STX\ETX\DC2\EOT\228\ETX\STX\ETB\SUB, Line number in source file. 0 means unset.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\ETX\ENQ\DC2\EOT\209\ETX\STX\a\n\
+    \\ENQ\EOT\f\STX\ETX\ENQ\DC2\EOT\228\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\ETX\SOH\DC2\EOT\209\ETX\b\DC2\n\
+    \\ENQ\EOT\f\STX\ETX\SOH\DC2\EOT\228\ETX\b\DC2\n\
     \\r\n\
-    \\ENQ\EOT\f\STX\ETX\ETX\DC2\EOT\209\ETX\NAK\SYN\n\
+    \\ENQ\EOT\f\STX\ETX\ETX\DC2\EOT\228\ETX\NAK\SYN\n\
     \\241\SOH\n\
-    \\STX\EOT\r\DC2\ACK\215\ETX\NUL\223\ETX\SOH\SUB\226\SOH A custom 'dictionary native' style of encoding attributes which is more convenient\n\
+    \\STX\EOT\r\DC2\ACK\234\ETX\NUL\242\ETX\SOH\SUB\226\SOH A custom 'dictionary native' style of encoding attributes which is more convenient\n\
     \ for profiles than opentelemetry.proto.common.v1.KeyValue\n\
     \ Specifically, uses the string table for keys and allows optional unit information.\n\
     \\n\
     \\v\n\
-    \\ETX\EOT\r\SOH\DC2\EOT\215\ETX\b\ETB\n\
+    \\ETX\EOT\r\SOH\DC2\EOT\234\ETX\b\ETB\n\
     \H\n\
-    \\EOT\EOT\r\STX\NUL\DC2\EOT\217\ETX\STX\SUB\SUB: The index into the string table for the attribute's key.\n\
+    \\EOT\EOT\r\STX\NUL\DC2\EOT\236\ETX\STX\SUB\SUB: The index into the string table for the attribute's key.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\NUL\ENQ\DC2\EOT\217\ETX\STX\a\n\
+    \\ENQ\EOT\r\STX\NUL\ENQ\DC2\EOT\236\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\NUL\SOH\DC2\EOT\217\ETX\b\DC4\n\
+    \\ENQ\EOT\r\STX\NUL\SOH\DC2\EOT\236\ETX\b\DC4\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\NUL\ETX\DC2\EOT\217\ETX\CAN\EM\n\
+    \\ENQ\EOT\r\STX\NUL\ETX\DC2\EOT\236\ETX\CAN\EM\n\
     \+\n\
-    \\EOT\EOT\r\STX\SOH\DC2\EOT\219\ETX\STX3\SUB\GS The value of the attribute.\n\
+    \\EOT\EOT\r\STX\SOH\DC2\EOT\238\ETX\STX3\SUB\GS The value of the attribute.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\SOH\ACK\DC2\EOT\219\ETX\STX(\n\
+    \\ENQ\EOT\r\STX\SOH\ACK\DC2\EOT\238\ETX\STX(\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\SOH\SOH\DC2\EOT\219\ETX).\n\
+    \\ENQ\EOT\r\STX\SOH\SOH\DC2\EOT\238\ETX).\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\SOH\ETX\DC2\EOT\219\ETX12\n\
+    \\ENQ\EOT\r\STX\SOH\ETX\DC2\EOT\238\ETX12\n\
     \\132\SOH\n\
-    \\EOT\EOT\r\STX\STX\DC2\EOT\222\ETX\STX\SUB\SUBv The index into the string table for the attribute's unit.\n\
+    \\EOT\EOT\r\STX\STX\DC2\EOT\241\ETX\STX\SUB\SUBv The index into the string table for the attribute's unit.\n\
     \ zero indicates implicit (by semconv) or non-defined unit.\n\
     \\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\STX\ENQ\DC2\EOT\222\ETX\STX\a\n\
+    \\ENQ\EOT\r\STX\STX\ENQ\DC2\EOT\241\ETX\STX\a\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\STX\SOH\DC2\EOT\222\ETX\b\NAK\n\
+    \\ENQ\EOT\r\STX\STX\SOH\DC2\EOT\241\ETX\b\NAK\n\
     \\r\n\
-    \\ENQ\EOT\r\STX\STX\ETX\DC2\EOT\222\ETX\CAN\EMb\ACKproto3"
+    \\ENQ\EOT\r\STX\STX\ETX\DC2\EOT\241\ETX\CAN\EMb\ACKproto3"
