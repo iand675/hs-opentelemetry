@@ -38,7 +38,7 @@ in rec {
     hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb;
 
     hspec-example = ../examples/hspec;
-    hw-kafka-client-example = ../examples/hw-kafka-client-example;
+    hw-kafka-client-example = ../examples/hw-kafka-client;
     yesod-minimal = ../examples/yesod-minimal;
   };
 

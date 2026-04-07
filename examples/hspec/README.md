@@ -1,12 +1,11 @@
-# hspec instrumentation example
+# Instrumented [Hspec] Test Suite
 
-This directory contains a project demonstrating instrumenting a test suite with
-the hspec instrumentation.
+An example project demonstrating [Hspec] test suite instrumentation with [hs-opentelemetry-instrumentation-hspec].
 
-Note that this uses `cabal run`: `cabal test` doesn't allow owning the test
-entry point.
+> [!NOTE]
+> This must be invoked with `cabal run`, as `cabal test` doesn't allow owning the test entry point.
 
-Sample output:
+## Usage
 
 ```
 $ cabal run hspec-example:test
@@ -22,3 +21,6 @@ Trace link: (some service)/504136ca94f41ab5f9afda25612280ea
 "504136ca94f41ab5f9afda25612280ea" "8794b7b2dba28bbf" Timestamp (TimeSpec {sec = 1661367581, nsec = 198794000}) adds 2 to 2
 "504136ca94f41ab5f9afda25612280ea" "4e6d6ccd2ccd0369" Timestamp (TimeSpec {sec = 1661367581, nsec = 197769000}) Run tests
 ```
+
+[Hspec]: https://hackage.haskell.org/package/hspec
+[hspec-opentelemetry-instrumentation]: ../../instrumentation/hspec

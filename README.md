@@ -33,31 +33,42 @@ If you're instrumenting an application, use the [hs-opentelemetry-sdk](sdk/) pac
 
 Fully instrumented application examples are available in the [examples](examples/) folder.
 
-- [Yesod application](examples/yesod-minimal)
+- [Yesod Web Application](examples/yesod-minimal)
 
 ## Provided Instrumentation Libraries
 
-| Package           | OpenTelemetry Instrumentation                                                           |
-|-------------------|-----------------------------------------------------------------------------------------|
-| wai               | [hs-opentelemetry-instrumentation-wai](instrumentation/wai)                             |
-| yesod-core        | [hs-opentelemetry-instrumentation-yesod](instrumentation/yesod)                         |
-| persistent        | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent)               |
-| esqueleto         | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent)               |
-| persistent-mysql  | [hs-opentelemetry-instrumentation-persistent-mysql](instrumentation/persistent-mysql)   |
-| postgresql-simple | [hs-opentelemetry-instrumentation-postgresql-simple](instrumentation/postgresql-simple) |
-| http-client       | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
-| http-conduit      | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
-| conduit           | [hs-opentelemetry-instrumentation-conduit](instrumentation/conduit)                     |
-| hw-kafka-client   | [hs-opentelemetry-instrumentation-hw-kafka-client](instrumentation/hw-kafka-client)     |
+| Package             | OpenTelemetry Instrumentation                                                           |
+|---------------------|-----------------------------------------------------------------------------------------|
+| [wai]               | [hs-opentelemetry-instrumentation-wai](instrumentation/wai)                             |
+| [yesod-core]        | [hs-opentelemetry-instrumentation-yesod](instrumentation/yesod)                         |
+| [persistent]        | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent)               |
+| [esqueleto]         | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent)               |
+| [persistent-mysql]  | [hs-opentelemetry-instrumentation-persistent-mysql](instrumentation/persistent-mysql)   |
+| [postgresql-simple] | [hs-opentelemetry-instrumentation-postgresql-simple](instrumentation/postgresql-simple) |
+| [http-client]       | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
+| [http-conduit]      | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client)             |
+| [conduit]           | [hs-opentelemetry-instrumentation-conduit](instrumentation/conduit)                     |
+| [hw-kafka-client]   | [hs-opentelemetry-instrumentation-hw-kafka-client](instrumentation/hw-kafka-client)     |
+
+[wai]: https://hackage.haskell.org/package/wai
+[yesod-core]: https://hackage.haskell.org/package/yesod-core
+[persistent]: https://hackage.haskell.org/package/persistent
+[esqueleto]: https://hackage.haskell.org/package/esqueleto
+[persistent-mysql]: https://hackage.haskell.org/package/persistent-mysql
+[postgresql-simple]: https://hackage.haskell.org/package/postgresql-simple
+[http-client]: https://hackage.haskell.org/package/http-client
+[http-conduit]: https://hackage.haskell.org/package/http-conduit
+[conduit]: https://hackage.haskell.org/package/conduit
+[hw-kafka-client]: https://hackage.haskell.org/package/hw-kafka-client
 
 ## Provided Exporters
 
-| Exporter  | OpenTelemetry Package                            | Module                       | Support            |
-|-----------|--------------------------------------------------|------------------------------|--------------------|
-| OTLP      | [hs-opentelemetry-exporter-otlp](exporters/otlp) | OpenTelemetry.SpanExporter.OTLP  | :white_check_mark: |
-| Jaeger    |                                                  |                              | Not Implemented.   |
-| Zipkin    |                                                  |                              | Not Implemented    |
-| Honeycomb | (use hs-opentelemetry-exporter-otlp)             |                              | :white_check_mark: |
+| Exporter  | OpenTelemetry Package            | Module                          | Support            |
+|-----------|----------------------------------|---------------------------------|--------------------|
+| OTLP      | [hs-opentelemetry-exporter-otlp] | OpenTelemetry.SpanExporter.OTLP | :white_check_mark: |
+| Honeycomb | [hs-opentelemetry-exporter-otlp] | OpenTelemetry.SpanExporter.OTLP | :white_check_mark: |
+
+[hs-opentelemetry-exporter-otlp]: ./exporters/otlp
 
 ## Provided Propagators
 
@@ -66,7 +77,6 @@ Fully instrumented application examples are available in the [examples](examples
 | W3CBaggage      | [hs-opentelemetry-propagator-w3c](propagators/w3c)         | OpenTelemetry.Propagator.W3CBaggage      | :white_check_mark: |
 | W3CTraceContext | [hs-opentelemetry-propagator-w3c](propagators/w3c)         | OpenTelemetry.Propagator.W3CTraceContext | :white_check_mark: |
 | B3              | [hs-opentelemetry-propagator-b3](propagators/b3)           | OpenTelemetry.Propagator.B3              | :white_check_mark: |
-| Jaeger          | [hs-opentelemetry-propagator-jaeger](propagators/jaeger)   | OpenTelemetry.Propagator.Jaeger          | Not implemented.   |
 | Datadog         | [hs-opentelemetry-propagator-datadog](propagators/datadog) | OpenTelemetry.Propagator.Datadog         | :white_check_mark: |
 
 ## Contributing
