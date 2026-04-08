@@ -7,11 +7,8 @@ module OpenTelemetry.Exporter
   ExportResult (..),
 ) where
 
-import Data.HashMap.Strict (HashMap)
 import Data.Vector (Vector)
 import OpenTelemetry.Exporter.Span
-import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
-import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 
 
 {-# DEPRECATED Exporter "use SpanExporter instead" #-}
@@ -20,7 +17,7 @@ import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 type Exporter a = SpanExporter
 
 
-pattern Exporter :: (HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO ExportResult) -> IO () -> Exporter ImmutableSpan
+pattern Exporter :: (Vector MaterializedResourceSpans -> IO ExportResult) -> IO () -> Exporter MaterializedResourceSpans
 pattern Exporter {exporterExport, exporterShutdown} =
   SpanExporter
     { spanExporterExport = exporterExport
