@@ -2,6 +2,7 @@
 
 module OpenTelemetry.AttributesSpec where
 
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified OpenTelemetry.Attributes as A
 import qualified Test.Hspec as Hspec
@@ -17,6 +18,15 @@ spec = Hspec.describe "Attributes" $ do
             addAttr newValue (addAttr prevValue attrs) `Hspec.shouldBe` addAttr newValue attrs
 
     overwritesPrevious Example ("new value" :: T.Text) "prev value" A.emptyAttributes
+
+  Hspec.describe "addAttributes" $ do
+    Hspec.it "Overwrites previous values new values when keys collide" $ do
+      let initialAttrs = addAttributeDefault "language" ("english" :: T.Text) A.emptyAttributes
+          newAttrMap = HM.fromList [("language" :: T.Text, "morporkian" :: A.Attribute), ("currency", "AM$")]
+          updatedAttrs = A.addAttributes A.defaultAttributeLimits initialAttrs newAttrMap
+      A.getAttributeMap updatedAttrs
+        `Hspec.shouldBe` newAttrMap
+
   Hspec.describe "unsafeMergeAttributesIgnoringLimits" $ do
     Hspec.it "Is left-biased when keys conflict" $ do
       let left = addAttributeDefault Example (1 :: Int) A.emptyAttributes
