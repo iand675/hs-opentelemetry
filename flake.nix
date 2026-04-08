@@ -4,6 +4,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     devenv.url = "github:cachix/devenv/v1.0.5";
+    all-cabal-hashes.url = "github:commercialhaskell/all-cabal-hashes/hackage";
+    all-cabal-hashes.flake = false;
     # Hack to avoid needing to use impure when loading the devenv root.
     #
     # See .envrc for how we substitute this with the actual path.
@@ -20,6 +22,7 @@
     nixpkgs,
     devenv,
     flake-utils,
+    all-cabal-hashes,
     ...
   }: let
     inherit (nixpkgs) lib;
@@ -74,6 +77,7 @@
         inherit
           lib
           pkgs
+          all-cabal-hashes
           ;
       };
       inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
