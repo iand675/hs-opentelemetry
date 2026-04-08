@@ -54,7 +54,7 @@ getCurrentTimestamp = liftIO $ coerce @(IO TimeSpec) @(IO Timestamp) $ getTime R
 
 
 data LoggerProviderOptions = LoggerProviderOptions
-  { loggerProviderOptionsResource :: MaterializedResources
+  { loggerProviderOptionsResources :: MaterializedResources
   , loggerProviderOptionsAttributeLimits :: A.AttributeLimits
   }
 
@@ -66,7 +66,7 @@ data LoggerProviderOptions = LoggerProviderOptions
 emptyLoggerProviderOptions :: LoggerProviderOptions
 emptyLoggerProviderOptions =
   LoggerProviderOptions
-    { loggerProviderOptionsResource = emptyMaterializedResources
+    { loggerProviderOptionsResources = emptyMaterializedResources
     , loggerProviderOptionsAttributeLimits = A.defaultAttributeLimits
     }
 
@@ -79,7 +79,7 @@ createLoggerProvider :: [LogRecordProcessor] -> LoggerProviderOptions -> LoggerP
 createLoggerProvider ps LoggerProviderOptions {..} =
   LoggerProvider
     { loggerProviderProcessors = V.fromList ps
-    , loggerProviderResource = loggerProviderOptionsResource
+    , loggerProviderResource = loggerProviderOptionsResources
     , loggerProviderAttributeLimits = loggerProviderOptionsAttributeLimits
     }
 
@@ -187,6 +187,7 @@ createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
       , logRecordTracingDetails
       , logRecordSeverityNumber = severityNumber
       , logRecordSeverityText = severityText <|> (toShortName =<< severityNumber)
+      , logRecordEventName = eventName
       , logRecordBody = body
       , logRecordAttributes
       }

@@ -29,12 +29,16 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Environment.Detect
+      OpenTelemetry.Log
       OpenTelemetry.Processor.Batch
       OpenTelemetry.Processor.Batch.LogRecord
       OpenTelemetry.Processor.Batch.Span
+      OpenTelemetry.Processor.Batch.TimeoutConfig
       OpenTelemetry.Processor.Simple
       OpenTelemetry.Processor.Simple.LogRecord
       OpenTelemetry.Processor.Simple.Span
+      OpenTelemetry.Resource.Detector
       OpenTelemetry.Resource.Host.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
@@ -116,6 +120,7 @@ test-suite hs-opentelemetry-sdk-test
   other-modules:
       OpenTelemetry.BaggageSpec
       OpenTelemetry.ContextSpec
+      OpenTelemetry.LogSpec
       OpenTelemetry.ResourceSpec
       OpenTelemetry.TraceSpec
       Paths_hs_opentelemetry_sdk
@@ -127,6 +132,7 @@ test-suite hs-opentelemetry-sdk-test
     , clock
     , hs-opentelemetry-api
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-exporter-in-memory
     , hspec
     , text
     , unordered-containers

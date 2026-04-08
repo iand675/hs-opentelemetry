@@ -11,7 +11,6 @@ import Control.Concurrent.Async (Async)
 import Control.Monad.IO.Class
 import Data.Bits
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as H
 import Data.IORef (IORef, readIORef)
 import Data.Text (Text)
 import Data.Vector (Vector)

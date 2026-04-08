@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
 
 -----------------------------------------------------------------------------
 
@@ -135,7 +134,6 @@ module OpenTelemetry.Trace (
   createTracerProvider,
   TracerProviderOptions (..),
   emptyTracerProviderOptions,
-  detectBuiltInResources,
   detectSampler,
   createSpan,
   createSpanWithoutCallStack,
@@ -152,21 +150,18 @@ module OpenTelemetry.Trace (
   ImmutableSpan (..),
 ) where
 
-import qualified Data.ByteString.Char8 as B
 import Data.Either (partitionEithers)
-import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Types.Header
-import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
-import OpenTelemetry.Baggage (decodeBaggageHeader)
-import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (Context)
 import OpenTelemetry.Environment
-import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpExporter)
+import OpenTelemetry.Environment.Detect
+import OpenTelemetry.Exporter.OTLP.Config (loadExporterEnvironmentVariables)
+import OpenTelemetry.Exporter.OTLP.Span (otlpExporter)
 import OpenTelemetry.Exporter.Span (SpanExporter)
-import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
+import OpenTelemetry.Processor.Batch.Span (batchProcessor)
+import OpenTelemetry.Processor.Batch.TimeoutConfig (BatchTimeoutConfig (..), batchTimeoutConfig)
 import OpenTelemetry.Processor.Span (SpanProcessor)
 import OpenTelemetry.Propagator (Propagator)
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
@@ -174,11 +169,7 @@ import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
 import OpenTelemetry.Resource
-import OpenTelemetry.Resource.Host.Detector (detectHost)
-import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
-import OpenTelemetry.Resource.Process.Detector (detectProcess, detectProcessRuntime)
-import OpenTelemetry.Resource.Service.Detector (detectService)
-import OpenTelemetry.Resource.Telemetry.Detector (detectTelemetry)
+import OpenTelemetry.Resource.Detector (detectBuiltInResources)
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, parentBased, parentBasedOptions, traceIdRatioBased)
@@ -358,11 +349,7 @@ getTracerProviderInitializationOptions' rs = do
       let
         -- NB: Resource merge prioritizes the left value on attribute key conflict.
         allRs = mergeResources rs (envVarRs <> builtInRs)
-      processors <- case exporters of
-        [] -> do
-          pure []
-        e : _ -> do
-          pure <$> batchProcessor processorConf e
+      processors <- mapM (batchProcessor processorConf) exporters
       let providerOpts =
             emptyTracerProviderOptions
               { tracerProviderOptionsIdGenerator = defaultIdGenerator
@@ -441,13 +428,6 @@ detectBatchProcessorConfig =
     <*> readEnvDefault "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" (maxExportBatchSize batchTimeoutConfig)
 
 
-detectAttributeLimits :: IO AttributeLimits
-detectAttributeLimits =
-  AttributeLimits
-    <$> readEnvDefault "OTEL_ATTRIBUTE_COUNT_LIMIT" (attributeCountLimit defaultAttributeLimits)
-    <*> ((>>= readMaybe) <$> lookupEnv "OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT")
-
-
 detectSpanLimits :: IO SpanLimits
 detectSpanLimits =
   SpanLimits
@@ -461,12 +441,7 @@ detectSpanLimits =
 
 knownExporters :: [(T.Text, IO SpanExporter)]
 knownExporters =
-  [
-    ( "otlp"
-    , do
-        otlpConfig <- loadExporterEnvironmentVariables
-        otlpExporter otlpConfig
-    )
+  [ ("otlp", otlpExporter =<< loadExporterEnvironmentVariables)
   , ("jaeger", error "Jaeger exporter not implemented")
   , ("zipkin", error "Zipkin exporter not implemented")
   ]
@@ -485,62 +460,5 @@ detectExporters = do
       -- TODO, notFound logging
       sequence exporterIntializers
 
-
 -- -- detectMetricsExporterSelection :: _
 -- -- TODO other metrics stuff
-
-detectResourceAttributes :: IO [(T.Text, Attribute)]
-detectResourceAttributes = do
-  mEnv <- lookupEnv "OTEL_RESOURCE_ATTRIBUTES"
-  case mEnv of
-    Nothing -> pure []
-    Just envVar -> case decodeBaggageHeader $ B.pack envVar of
-      Left err -> do
-        -- TODO logError
-        putStrLn err
-        pure []
-      Right ok ->
-        pure $
-          map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v)) $
-            H.toList $
-              Baggage.values ok
-
-
-readEnvDefault :: forall a. (Read a) => String -> a -> IO a
-readEnvDefault k defaultValue =
-  fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
-
-
-readEnv :: forall a. (Read a) => String -> IO (Maybe a)
-readEnv k = (>>= readMaybe) <$> lookupEnv k
-
-
-{- | Use all built-in resource detectors to populate resource information.
-
- Currently used detectors include:
-
- - 'detectService'
- - 'detectProcess'
- - 'detectOperatingSystem'
- - 'detectHost'
- - 'detectTelemetry'
- - 'detectProcessRuntime'
-
- This list will grow in the future as more detectors are implemented.
-
- @since 0.0.1.0
--}
-detectBuiltInResources :: IO (Resource 'Nothing)
-detectBuiltInResources = do
-  svc <- detectService
-  processInfo <- detectProcess
-  osInfo <- detectOperatingSystem
-  host <- detectHost
-  let rs =
-        toResource svc
-          `mergeResources` toResource detectTelemetry
-          `mergeResources` toResource detectProcessRuntime
-          `mergeResources` toResource processInfo
-          `mergeResources` toResource osInfo
-          `mergeResources` toResource host
-  pure rs

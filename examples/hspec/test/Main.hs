@@ -7,6 +7,7 @@ import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Exporter.Handle.Span
 import OpenTelemetry.Instrumentation.Hspec (instrumentSpec)
 import OpenTelemetry.Processor.Batch.Span
+import OpenTelemetry.Processor.Batch.TimeoutConfig (batchTimeoutConfig)
 import OpenTelemetry.Trace hiding (inSpan)
 import qualified OpenTelemetry.Trace as Trace
 import OpenTelemetry.Trace.Core (getSpanContext)
