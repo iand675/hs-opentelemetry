@@ -166,7 +166,7 @@ data BoundedMap a = BoundedMap
   { itemBounds :: !Int
   , itemMaxExportBounds :: !Int
   , itemCount :: !Int
-  , itemMap :: HashMap InstrumentationLibrary (Builder.Builder a)
+  , itemMap :: !(HashMap InstrumentationLibrary (Builder.Builder a))
   }
 
 
