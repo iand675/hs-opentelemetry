@@ -236,7 +236,10 @@ createSpanWithoutCallStack t ctxt n args@SpanArguments {..} = liftIO $ do
   sId <- newSpanId $ tracerProviderIdGenerator $ tracerProvider t
   let parent = lookupSpan ctxt
   tId <- case parent of
-    Nothing -> newTraceId $ tracerProviderIdGenerator $ tracerProvider t
+    Nothing -> do
+      case lookupExternalTraceId ctxt of
+        Just etid -> pure etid
+        Nothing -> newTraceId $ tracerProviderIdGenerator $ tracerProvider t
     Just (Span s) ->
       traceId . Types.spanContext <$> readIORef s
     Just (FrozenSpan s) -> pure $ traceId s
