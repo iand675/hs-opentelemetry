@@ -61,7 +61,7 @@ addAttributes AttributeLimits {..} LogAttributes {..} attrs = case attributeCoun
       then LogAttributes attributes attributesCount (attributesDropped + H.size attrs)
       else LogAttributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.union attributes $ H.map toValue attrs
+    newAttrs = H.union (H.map toValue attrs) attributes
     newCount = H.size newAttrs
 {-# INLINE addAttributes #-}
 
