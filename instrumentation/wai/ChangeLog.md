@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-instrumentation-wai
 
+## 0.1.1.1
+
+- Update dependency bounds for hs-opentelemetry-api 0.3.0.0
+
 ## 0.1.1
 
 - Bracket WAI middleware spans with detachChontext (#116).
