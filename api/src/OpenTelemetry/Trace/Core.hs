@@ -441,9 +441,13 @@ inSpan'' t n args f = do
         pure (lookupSpan ctx, s)
     )
     ( \e (parent, s) -> liftIO $ do
-        forM_ e $ \(SomeException inner) -> do
-          setStatus s $ Error $ T.pack $ displayException inner
-          recordException s [("exception.escaped", toAttribute True)] Nothing inner
+        forM_ e $ \someExn@(SomeException inner) -> do
+          case fromException someExn of
+            Just ExitSuccess ->
+              pure ()
+            _ -> do
+              setStatus s $ Error $ T.pack $ displayException inner
+              recordException s [("exception.escaped", toAttribute True)] Nothing inner
         endSpan s Nothing
         adjustContext $ \ctx ->
           maybe (removeSpan ctx) (`insertSpan` ctx) parent
