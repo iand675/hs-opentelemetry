@@ -6,7 +6,7 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Maybe (isJust, isNothing)
 import OpenTelemetry.Exporter.Span (SpanExporter (..))
-import OpenTelemetry.Internal.Common.Types (ExportResult (..))
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..))
 import OpenTelemetry.Registry
 import Test.Hspec
 
@@ -17,8 +17,8 @@ noopExporter tag = do
   pure
     SpanExporter
       { spanExporterExport = \_ -> readIORef ref >> pure Success
-      , spanExporterShutdown = pure ()
-      , spanExporterForceFlush = pure ()
+      , spanExporterShutdown = pure ShutdownSuccess
+      , spanExporterForceFlush = pure FlushSuccess
       }
 
 
@@ -29,6 +29,7 @@ assertJust _ (Just a) = pure a
 
 spec :: Spec
 spec = do
+  -- Implementation-specific: SDK exporter registry for configuration wiring
   describe "OpenTelemetry.Registry" $ do
     describe "Span Exporter Registry" $ do
       it "stores a factory that can be looked up by name" $ do

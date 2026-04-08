@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:               hs-opentelemetry-instrumentation-persistent
 version:            0.1.0.1
+synopsis:           OpenTelemetry instrumentation for the Persistent database library
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent#readme>
+category:           OpenTelemetry, Database, Telemetry
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
@@ -55,6 +57,7 @@ test-suite hs-opentelemetry-persistent-test
       base >=4.7 && <5
     , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-instrumentation-persistent ==0.1.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , text
     , unordered-containers

@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -5,6 +6,60 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+{- |
+Module      : OpenTelemetry.Instrumentation.Persistent
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Automatic tracing for Persistent database operations
+Stability   : experimental
+
+= Overview
+
+Instruments database queries made through the @persistent@ library by
+hooking into Persistent's internal statement hooks. Every SQL query
+generates a span with the query text and connection metadata.
+
+= Quick example
+
+Wrap each 'SqlBackend' as it is handed out from the pool (here using
+extensible pool hooks; attribute maps often carry static connection info
+such as server address):
+
+@
+import Database.Persist.Postgresql (createPostgresqlPool)
+import Database.Persist.Sql
+  ( defaultSqlPoolHooks
+  , runSqlPoolWithExtensibleHooks
+  , setAlterBackend
+  )
+import OpenTelemetry.Instrumentation.Persistent (wrapSqlBackend)
+
+main :: IO ()
+main = do
+  pool <- createPostgresqlPool connStr poolSize
+  runSqlPoolWithExtensibleHooks myAction pool Nothing $
+    setAlterBackend defaultSqlPoolHooks $ \conn ->
+      wrapSqlBackend mempty conn
+@
+
+'wrapSqlBackend' uses the process-global tracer provider; initialize it from
+your application (for example 'OpenTelemetry.Trace.withTracerProvider' from
+@hs-opentelemetry-sdk@). Use 'wrapSqlBackend'' when you hold a specific
+'TracerProvider'.
+
+= What gets traced
+
+Each database operation creates a span with:
+
+* Span name: the SQL statement (truncated)
+* @db.system@, @db.statement@
+* @db.operation.name@ when detectable
+* Span kind: @Client@
+
+Note: source-location (@code.*@) attributes are intentionally not captured
+because the spans originate from Persistent's internal hooks, not from your
+application code.
+-}
 module OpenTelemetry.Instrumentation.Persistent (
   wrapSqlBackend,
   wrapSqlBackend',
@@ -23,10 +78,11 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Data.Word (Word64)
 import qualified Data.Text as T
 import qualified Data.Vault.Strict as Vault
-import Database.Persist.Sql (IsolationLevel (..), SqlReadBackend, SqlWriteBackend, Statement (..))
+import Data.Word (Word64)
+import Database.Persist.Sql (SqlReadBackend, SqlWriteBackend, Statement (..))
+import Database.Persist.SqlBackend.Internal.IsolationLevel (IsolationLevel (..))
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
 import OpenTelemetry.Attributes (Attribute (..), Attributes)
@@ -35,7 +91,6 @@ import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
-import OpenTelemetry.Resource
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
@@ -75,11 +130,6 @@ insertOriginalConnection conn original = modifyConnVault (Vault.insert originalC
 
 lookupOriginalConnection :: SqlBackend -> Maybe SqlBackend
 lookupOriginalConnection = Vault.lookup originalConnectionKey . getConnVault
-
-
-connectionLevelAttributesKey :: Vault.Key AttributeMap
-connectionLevelAttributesKey = unsafePerformIO Vault.newKey
-{-# NOINLINE connectionLevelAttributesKey #-}
 
 
 {- | Wrap a 'SqlBackend' with appropriate tracing context and attributes
@@ -140,6 +190,10 @@ wrapSqlBackend' tp attrs conn_ = do
             StableAndOld -> H.insert (unkey SC.db_query_text) v $ H.insert (unkey SC.db_statement) v attrs
             Old -> H.insert (unkey SC.db_statement) v attrs
       spanName sql = dbSpanName (extractSqlOperation sql) dbNamespace
+      -- We use createSpanWithoutCallStack/inSpan'' because these spans are created
+      -- from persistent's internal hooks, not from user code. Using the callstack
+      -- variants would capture this instrumentation library's source location,
+      -- not the user's application code callsite.
   let hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do
@@ -149,7 +203,7 @@ wrapSqlBackend' tp attrs conn_ = do
                       ctxt <- getContext
                       let spanCreator = do
                             s <-
-                              createSpan
+                              createSpanWithoutCallStack
                                 t
                                 ctxt
                                 (spanName sql)
@@ -174,7 +228,7 @@ wrapSqlBackend' tp attrs conn_ = do
                             )
                             (stmtQueryAcquireF f)
                   , stmtExecute = \ps -> do
-                      inSpan' t (spanName sql) (defaultSpanArguments {kind = Client, attributes = queryAttrs sql}) $ \s -> do
+                      inSpan'' t (spanName sql) (defaultSpanArguments {kind = Client, attributes = queryAttrs sql}) $ \s -> do
                         addAttributes s dbSystemAttrs
                         stmtExecute stmt ps
                   , stmtReset = stmtReset stmt
@@ -187,7 +241,7 @@ wrapSqlBackend' tp attrs conn_ = do
           { connHooks = hooks
           , connBegin = \f mIso -> do
               ctxt <- getContext
-              s <- createSpan t ctxt (dbSpanName (Just "TRANSACTION") dbNamespace) (defaultSpanArguments {kind = Client, attributes = attrs})
+              s <- createSpanWithoutCallStack t ctxt (dbSpanName (Just "TRANSACTION") dbNamespace) (defaultSpanArguments {kind = Client, attributes = attrs})
               let isoAttrs = case mIso of
                     Nothing -> H.empty
                     Just iso ->
@@ -253,7 +307,7 @@ wrapSqlBackend' tp attrs conn_ = do
             -- persistent's connection pool wraps the underlying connection,
             -- since the pool manages connection lifecycle independently.
             connClose = do
-              inSpan' t (dbSpanName (Just "CLOSE") dbNamespace) (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
+              inSpan'' t (dbSpanName (Just "CLOSE") dbNamespace) (defaultSpanArguments {kind = Client, attributes = attrs}) $ \s -> do
                 addAttributes s dbSystemAttrs
                 connClose conn
           }

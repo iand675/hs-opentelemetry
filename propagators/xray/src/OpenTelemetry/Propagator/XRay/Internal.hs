@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
 
@@ -31,8 +32,6 @@ module OpenTelemetry.Propagator.XRay.Internal (
   xrayTraceIdToOTel,
 ) where
 
-import Control.Monad (void, when)
-import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BB
@@ -97,67 +96,67 @@ xrayTraceIdToOTel bs
 
 -- | Parse a full @X-Amzn-Trace-Id@ header value.
 decodeXRayHeader :: ByteString -> Maybe XRayHeader
-decodeXRayHeader bs = case Atto.parseOnly parseXRayHeader bs of
-  Left _ -> Nothing
-  Right xh -> Just xh
+decodeXRayHeader = parseXRayKVs
 
 
--- Internal parsers -----------------------------------------------------------
-
-{- Parse semicolon-separated key=value pairs. The fields can appear in any
-   order. We only care about Root, Parent, and Sampled; extra fields
-   (Self, Lineage, etc.) are silently ignored.
+{- | Hand-rolled parser for semicolon-separated key=value pairs.
+Extracts Root, Parent, Sampled; ignores other fields.
 -}
-parseXRayHeader :: Atto.Parser XRayHeader
-parseXRayHeader = do
-  kvs <- parseKVPair `Atto.sepBy1` parseSemicolon
-  Atto.endOfInput
-  traceId <- lookupRequired "Root" kvs >>= parseTraceId
-  spanId <- lookupRequired "Parent" kvs >>= parseSpanId
-  sampled <- case lookup "Sampled" kvs of
-    Nothing -> pure False
-    Just v -> parseSampled v
-  pure $ XRayHeader traceId spanId sampled
+parseXRayKVs :: ByteString -> Maybe XRayHeader
+parseXRayKVs bs = go bs Nothing Nothing Nothing
   where
-    lookupRequired :: ByteString -> [(ByteString, ByteString)] -> Atto.Parser ByteString
-    lookupRequired key kvs = case lookup key kvs of
-      Nothing -> fail $ "missing required key: " ++ show key
-      Just v -> pure v
+    go !remaining mRoot mParent mSampled
+      | BS.null remaining =
+          case (mRoot, mParent) of
+            (Just tid, Just sid) -> Just $! XRayHeader tid sid (mSampled == Just True)
+            _ -> Nothing
+      | otherwise =
+          let !trimmed = BS.dropWhile (== charW8 ' ') remaining
+              (!key, !afterEq) = BS.break (== charW8 '=') trimmed
+          in if BS.null afterEq
+              then Nothing -- no '=' found
+              else
+                let !valAndRest = BS.drop 1 afterEq -- skip '='
+                    (!val, !rest) = breakSemicolon valAndRest
+                    !next = skipSpacesAfterSemicolon rest
+                in case () of
+                    _
+                      | key == "Root" ->
+                          case xrayTraceIdToOTel val of
+                            Nothing -> Nothing
+                            Just !tid -> go next (Just tid) mParent mSampled
+                      | key == "Parent" ->
+                          case parseSpanIdHex val of
+                            Nothing -> Nothing
+                            Just !sid -> go next mRoot (Just sid) mSampled
+                      | key == "Sampled" ->
+                          let !s = val == "1"
+                          in go next mRoot mParent (Just s)
+                      | otherwise ->
+                          go next mRoot mParent mSampled
+
+    breakSemicolon :: ByteString -> (ByteString, ByteString)
+    breakSemicolon bs' =
+      let (!v, !rest) = BS.break (== charW8 ';') bs'
+      in (stripTrailingSpaces v, rest)
+
+    stripTrailingSpaces :: ByteString -> ByteString
+    stripTrailingSpaces = fst . BS.spanEnd (== charW8 ' ')
+
+    skipSpacesAfterSemicolon :: ByteString -> ByteString
+    skipSpacesAfterSemicolon !rest
+      | BS.null rest = rest
+      | otherwise =
+          let !afterSemi = BS.drop 1 rest -- skip ';'
+          in BS.dropWhile (== charW8 ' ') afterSemi
 
 
-parseSemicolon :: Atto.Parser ()
-parseSemicolon = do
-  Atto.skipWhile (== ' ')
-  void $ Atto.char ';'
-  Atto.skipWhile (== ' ')
-
-
-parseKVPair :: Atto.Parser (ByteString, ByteString)
-parseKVPair = do
-  key <- Atto.takeWhile1 (\c -> c /= '=' && c /= ';' && c /= ' ')
-  void $ Atto.char '='
-  val <- Atto.takeWhile1 (\c -> c /= ';' && c /= ' ')
-  pure (key, val)
-
-
-parseTraceId :: ByteString -> Atto.Parser TraceId
-parseTraceId bs = case xrayTraceIdToOTel bs of
-  Nothing -> fail "invalid X-Ray trace ID"
-  Just tid -> pure tid
-
-
-parseSpanId :: ByteString -> Atto.Parser SpanId
-parseSpanId bs = do
-  when (BS.length bs /= 16) $ fail "invalid X-Ray span ID: expected 16 hex chars"
-  case baseEncodedToSpanId Base16 bs of
-    Left err -> fail err
-    Right sid -> pure sid
-
-
-parseSampled :: ByteString -> Atto.Parser Bool
-parseSampled "1" = pure True
-parseSampled "0" = pure False
-parseSampled v = fail $ "invalid Sampled value: " ++ show v
+parseSpanIdHex :: ByteString -> Maybe SpanId
+parseSpanIdHex bs
+  | BS.length bs /= 16 = Nothing
+  | otherwise = case baseEncodedToSpanId Base16 bs of
+      Left _ -> Nothing
+      Right sid -> Just sid
 
 
 charW8 :: Char -> Word8

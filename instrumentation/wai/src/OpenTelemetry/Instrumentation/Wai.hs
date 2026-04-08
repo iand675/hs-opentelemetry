@@ -4,10 +4,54 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+Module      : OpenTelemetry.Instrumentation.Wai
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : WAI middleware for automatic HTTP server tracing
+Stability   : experimental
+
+= Overview
+
+Middleware that automatically creates a span for every incoming HTTP request
+handled by a WAI application. Extracts trace context from request headers
+(via the global propagator) so that spans are properly linked to upstream
+callers.
+
+= Quick example
+
+@
+import Network.Wai.Handler.Warp (run)
+import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware)
+import OpenTelemetry.Trace (withTracerProvider)
+
+main :: IO ()
+main = withTracerProvider $ \_ -> do
+  otelMiddleware <- newOpenTelemetryWaiMiddleware
+  run 8080 $ otelMiddleware myApp
+@
+
+The example imports 'OpenTelemetry.Trace.withTracerProvider' from
+@hs-opentelemetry-sdk@ (this package depends only on the API).
+
+= What gets traced
+
+Each request creates a @Server@ span with:
+
+* Span name derived from the HTTP method and route
+* @http.request.method@, @url.path@, @url.scheme@, @http.response.status_code@
+* @server.address@, @server.port@ when available
+* @user_agent.original@ from the User-Agent header
+* Span status set to Error for 5xx responses
+
+= Configuration
+
+Use 'newOpenTelemetryWaiMiddleware'' with a specific 'TracerProvider' when
+you cannot rely on the process-global tracer provider.
+
+[HTTP semantic conventions migration:](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan)
+set @OTEL_SEMCONV_STABILITY_OPT_IN@ to @http@ for stable names only, @http/dup@
+for stable and legacy, or leave unset for legacy-only (until the next major
+release of this library).
 -}
 module OpenTelemetry.Instrumentation.Wai (
   newOpenTelemetryWaiMiddleware,
@@ -17,6 +61,7 @@ module OpenTelemetry.Instrumentation.Wai (
 
 import Control.Exception (bracket)
 import Control.Monad
+import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
 import Data.IP (fromHostAddress, fromHostAddress6)
 import qualified Data.Text as T
@@ -33,7 +78,6 @@ import OpenTelemetry.Attributes (lookupAttribute)
 import OpenTelemetry.Attributes.Key (unkey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
-import qualified Data.CaseInsensitive as CI
 import OpenTelemetry.Propagator (emptyTextMap, extract, getGlobalTextMapPropagator, inject, textMapFromList, textMapToList)
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
@@ -96,7 +140,7 @@ newOpenTelemetryWaiMiddleware' tp =
       -- context from being inherited by any subsequent requests served by the
       -- same thread. Warp supports HTTP keep-alive/persistent connections,
       -- which means a thread can handle multiple requests before exiting.
-      bracket parentContextM (const $ void detachContext) $ \_ -> inSpan'' tracer spanName_ args $ \requestSpan -> do
+      bracket parentContextM detachContext $ \_ -> inSpan'' tracer spanName_ args $ \requestSpan -> do
         ctxt <- getContext
 
         let addStableAttributes = do
@@ -194,19 +238,22 @@ newOpenTelemetryWaiMiddleware' tp =
                 | otherwise = []
           case httpOption semanticsOptions of
             Stable ->
-              addAttributes requestSpan $ H.fromList $
-                (unkey SC.http_response_statusCode, toAttribute sc)
-                  : errorAttrs
+              addAttributes requestSpan $
+                H.fromList $
+                  (unkey SC.http_response_statusCode, toAttribute sc)
+                    : errorAttrs
             StableAndOld ->
-              addAttributes requestSpan $ H.fromList $
-                [ (unkey SC.http_response_statusCode, toAttribute sc)
-                , (unkey SC.http_statusCode, toAttribute sc)
-                ]
-                  <> errorAttrs
+              addAttributes requestSpan $
+                H.fromList $
+                  [ (unkey SC.http_response_statusCode, toAttribute sc)
+                  , (unkey SC.http_statusCode, toAttribute sc)
+                  ]
+                    <> errorAttrs
             Old ->
-              addAttributes requestSpan $ H.fromList $
-                (unkey SC.http_statusCode, toAttribute sc)
-                  : errorAttrs
+              addAttributes requestSpan $
+                H.fromList $
+                  (unkey SC.http_statusCode, toAttribute sc)
+                    : errorAttrs
           when (sc >= 500) $
             setStatus requestSpan (Error "")
           respReceived <- sendResp resp'

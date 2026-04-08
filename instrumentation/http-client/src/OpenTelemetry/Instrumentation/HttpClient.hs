@@ -1,58 +1,54 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{- | OpenTelemetry instrumentation for @http-client@.
+{- |
+Module      : OpenTelemetry.Instrumentation.HttpClient
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Automatic tracing for http-client requests
+Stability   : experimental
 
-== Recommended: Manager-level instrumentation
+= Overview
 
-The easiest approach — instrument the 'Manager' once and all requests
-through it are automatically traced, including requests from third-party
-libraries:
+Instruments outbound HTTP requests made with the @http-client@ library.
+Creates a @Client@ span for each request and injects trace context into
+request headers so downstream services can continue the trace.
+
+= Quick example
+
+The usual approach is to build a 'Manager' with traced settings once; spans
+use the tracer from 'OpenTelemetry.Instrumentation.HttpClient.Raw.httpTracerProvider'
+(typically the global tracer provider):
 
 @
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import OpenTelemetry.Instrumentation.HttpClient.Raw
-  ('instrumentManagerSettings', 'httpClientInstrumentationConfig')
+import OpenTelemetry.Instrumentation.HttpClient
+  ( httpLbs
+  , httpClientInstrumentationConfig
+  , newTracedManager
+  )
 
-manager <- 'newTracedManager' 'httpClientInstrumentationConfig' tlsManagerSettings
--- Every request through this manager now creates a client span
--- with HTTP attributes and propagation headers.
-resp <- Client.httpLbs req manager
+main :: IO ()
+main = do
+  manager <- newTracedManager httpClientInstrumentationConfig tlsManagerSettings
+  response <- httpLbs request manager
+  ...
 @
 
-== Alternative: per-request combinator
+For custom manager settings, apply 'OpenTelemetry.Instrumentation.HttpClient.Raw.instrumentManagerSettings'
+before @newManager@. You can also use 'tracedHttpRequest' or the prime-suffixed
+variants (e.g. 'httpLbs'') for per-call configuration; see the export list below.
 
-If you can't control 'Manager' creation, wrap individual calls:
+= What gets traced
 
-@
-resp <- 'tracedHttpRequest' 'httpClientInstrumentationConfig' req $ \\req' ->
-  Client.httpLbs req' manager
-@
+Each outbound request creates a @Client@ span with:
 
-== Alternative: drop-in replacement functions
+* Span name: @METHOD host@ (e.g. @GET api.example.com@)
+* @http.request.method@, @url.full@, @server.address@, @server.port@
+* @http.response.status_code@, @http.response.body.size@
+* Trace context injected into request headers via the global propagator
 
-These create a span per call and are backward-compatible with the
-pre-0.2 API:
-
-@
-resp <- 'httpLbs' req manager              -- uses default config
-resp <- 'httpLbs'' myConfig req manager    -- custom config
-@
-
-== Propagation-only mode
-
-If you manage spans yourself (e.g., via @inSpan@) but want propagation
-headers injected automatically:
-
-@
-settings <- 'httpClientPropagateHeaders' tlsManagerSettings
-manager <- newManager settings
-@
-
-[HTTP semantic conventions are stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in via @OTEL_SEMCONV_STABILITY_OPT_IN@:
-
-- @\"http\"@ — stable conventions only
-- @\"http\/dup\"@ — emit both stable and old
-- (default) — old conventions only
+[HTTP semantic conventions migration:](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan)
+opt in via @OTEL_SEMCONV_STABILITY_OPT_IN@ (@http@, @http/dup@, or default legacy).
 -}
 module OpenTelemetry.Instrumentation.HttpClient (
   -- * Manager-level instrumentation (recommended)

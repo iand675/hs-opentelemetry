@@ -4,9 +4,10 @@
 module Main where
 
 import Control.Exception (IOException, throwIO, try)
+import Control.Monad (filterM)
 import Data.IORef
 import Data.Text (Text)
-import OpenTelemetry.Attributes (lookupAttribute)
+import OpenTelemetry.Attributes (Attributes, lookupAttribute)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
 import OpenTelemetry.Trace.Core
@@ -24,7 +25,7 @@ withTracer action = do
   tp <- createTracerProvider [processor] emptyTracerProviderOptions
   let tracer = makeTracer tp "test-exceptions" tracerOptions
   result <- action tracer
-  shutdownTracerProvider tp
+  _ <- shutdownTracerProvider tp Nothing
   spans <- readIORef ref
   pure (spans, result)
 
@@ -34,13 +35,26 @@ firstSpan (s : _) = s
 firstSpan [] = error "No spans recorded"
 
 
+getSpanName :: ImmutableSpan -> IO Text
+getSpanName s = hotName <$> readIORef (spanHot s)
+
+
+getSpanStatus :: ImmutableSpan -> IO SpanStatus
+getSpanStatus s = hotStatus <$> readIORef (spanHot s)
+
+
+getSpanAttrs :: ImmutableSpan -> IO Attributes
+getSpanAttrs s = hotAttributes <$> readIORef (spanHot s)
+
+
 spec :: Spec
 spec = describe "OpenTelemetry.Utils.Exceptions" $ do
   describe "inSpanM" $ do
     it "creates a span with the given name" $ do
       (spans, _) <- withTracer $ \t ->
         inSpanM t "test-operation" defaultSpanArguments (pure ())
-      spanName (firstSpan spans) `shouldBe` "test-operation"
+      name <- getSpanName (firstSpan spans)
+      name `shouldBe` "test-operation"
 
     it "returns the action's result" $ do
       (_, result) <- withTracer $ \t ->
@@ -58,13 +72,15 @@ spec = describe "OpenTelemetry.Utils.Exceptions" $ do
         Left _ -> pure ()
         Right _ -> expectationFailure "expected exception"
       let s = firstSpan spans
-      spanStatus s `shouldBe` Error "user error (boom)"
+      status <- getSpanStatus s
+      status `shouldBe` Error "user error (boom)"
 
     it "sets code.function attribute from callstack" $ do
       (spans, _) <- withTracer $ \t ->
         inSpanM t "traced" defaultSpanArguments (pure ())
       let s = firstSpan spans
-      lookupAttribute (spanAttributes s) "code.function"
+      attrs <- getSpanAttrs s
+      lookupAttribute attrs "code.function"
         `shouldSatisfy` (/= Nothing)
 
   describe "inSpanM'" $ do
@@ -75,7 +91,8 @@ spec = describe "OpenTelemetry.Utils.Exceptions" $ do
           writeIORef spanRef (Just s)
           addAttribute s ("custom.attr" :: Text) ("hello" :: Text)
       let s = firstSpan spans
-      lookupAttribute (spanAttributes s) "custom.attr"
+      attrs <- getSpanAttrs s
+      lookupAttribute attrs "custom.attr"
         `shouldBe` Just (AttributeValue (TextAttribute "hello"))
 
   describe "inSpanM''" $ do
@@ -84,7 +101,8 @@ spec = describe "OpenTelemetry.Utils.Exceptions" $ do
         inSpanM t "outer" defaultSpanArguments $ do
           inSpanM t "inner" defaultSpanArguments (pure ())
       length spans `shouldSatisfy` (>= 2)
-      case filter (\s -> spanName s == "inner") spans of
+      innerSpans <- filterM (\s -> (== "inner") <$> getSpanName s) spans
+      case innerSpans of
         [] -> expectationFailure "no span named 'inner'"
         (inner : _) -> case spanParent inner of
           Nothing -> expectationFailure "expected inner span to have a parent"

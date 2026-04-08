@@ -1,6 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : OpenTelemetry.Exporter.Handle.LogRecord
+-- Description : Handle-based log record exporter that writes log records to a file handle as text.
+-- Stability   : experimental
+--
 module OpenTelemetry.Exporter.Handle.LogRecord (
   makeHandleLogRecordExporter,
   stdoutLogRecordExporter,
@@ -15,8 +20,8 @@ import Data.Text.Lazy.Builder (Builder, fromString, fromText, toLazyText)
 import Data.Text.Lazy.Builder.Int (decimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types (ExportResult (..), InstrumentationLibrary (..))
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..))
+import OpenTelemetry.Internal.Log.Types
 import OpenTelemetry.LogAttributes (AnyValue (..), LogAttributes (..))
 import OpenTelemetry.Trace.Id (Base (..), spanIdBaseEncodedText, traceIdBaseEncodedText)
 import System.IO (Handle, hFlush, stderr, stdout)
@@ -29,7 +34,7 @@ makeHandleLogRecordExporter h formatter =
       { logRecordExporterArgumentsExport = \lrs -> do
           V.mapM_ (\lr -> formatter lr >>= T.hPutStrLn h >> hFlush h) lrs
           pure Success
-      , logRecordExporterArgumentsForceFlush = hFlush h
+      , logRecordExporterArgumentsForceFlush = hFlush h >> pure FlushSuccess
       , logRecordExporterArgumentsShutdown = hFlush h
       }
 
@@ -46,7 +51,7 @@ defaultLogRecordFormatter :: ReadableLogRecord -> IO T.Text
 defaultLogRecordFormatter lr = do
   ImmutableLogRecord {..} <- readLogRecord lr
   let scope_ = readLogRecordInstrumentationScope lr
-  let sevText = case logRecordSeverityText of
+  let sevText = case toBaseMaybe logRecordSeverityText of
         Just s -> fromText s
         Nothing -> "UNSET"
   let bodyText = case logRecordBody of
@@ -56,7 +61,7 @@ defaultLogRecordFormatter lr = do
         BoolValue b -> if b then "true" else "false"
         NullValue -> mempty
         _ -> fromString (show logRecordBody)
-  let traceInfo = case logRecordTracingDetails of
+  let traceInfo = case toBaseMaybe logRecordTracingDetails of
         Just (tid, sid, _flags) ->
           " trace="
             <> fromText (traceIdBaseEncodedText Base16 tid)
@@ -69,7 +74,7 @@ defaultLogRecordFormatter lr = do
         if attrCount > 0
           then " attrs=" <> decimal attrCount <> if droppedCount > 0 then " dropped=" <> decimal droppedCount else mempty
           else mempty
-  let eventInfo = case logRecordEventName of
+  let eventInfo = case toBaseMaybe logRecordEventName of
         Just en -> " event=" <> fromText en
         Nothing -> mempty
   pure $

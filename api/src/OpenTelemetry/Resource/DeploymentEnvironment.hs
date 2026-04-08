@@ -1,7 +1,3 @@
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.DeploymentEnvironment
  Copyright   :  (c) Ian Duncan, 2021
@@ -24,6 +20,8 @@ import qualified OpenTelemetry.SemanticConventions as SC
  This resource doesn't have a an automatic detector because
  deployment environments tend to have very different detection
  mechanisms for differing projects.
+
+ @since 0.0.1.0
 -}
 newtype DeploymentEnvironment = DeploymentEnvironment
   { deploymentEnvironment :: Maybe Text
@@ -34,7 +32,10 @@ newtype DeploymentEnvironment = DeploymentEnvironment
 
 
 instance ToResource DeploymentEnvironment where
+  -- 'deployment.environment' is deprecated in favor of 'deployment.environment.name';
+  -- we emit both for backward compatibility with older consumers.
   toResource DeploymentEnvironment {..} =
-    mkResource
-      [ unkey SC.deployment_environment .=? deploymentEnvironment
+    mkResourceWithSchema (Just semConvSchemaUrl)
+      [ unkey SC.deployment_environment_name .=? deploymentEnvironment
+      , unkey SC.deployment_environment .=? deploymentEnvironment
       ]

@@ -20,13 +20,14 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import qualified Data.HashMap.Strict as H
-import Data.Int (Int32, Int64)
+import Data.Int (Int32)
 import Data.List (sort)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import Data.Vector (Vector)
 import Data.Text.Lazy.Builder (Builder, fromText, singleton, toLazyText)
 import Data.Text.Lazy.Builder.Int (decimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
@@ -49,20 +50,29 @@ import OpenTelemetry.Resource (getMaterializedResourcesAttributes)
 
 
 -- | Render Prometheus text (lines separated by @\\n@, trailing newline).
-renderPrometheusText :: [ResourceMetricsExport] -> Text
-renderPrometheusText [] = ""
-renderPrometheusText batches = TL.toStrict $ toLazyText $ go batches
-  where
-    go [] = mempty
-    go [b] = renderResource b
-    go (b : bs) = renderResource b <> nl <> go bs
+renderPrometheusText :: Vector ResourceMetricsExport -> Text
+renderPrometheusText batches
+  | V.null batches = ""
+  | otherwise =
+      TL.toStrict $
+        toLazyText $
+          V.ifoldl'
+            ( \acc i r ->
+                acc <> (if i == 0 then mempty else nl) <> renderResource r
+            )
+            mempty
+            batches
 
 
 renderResource :: ResourceMetricsExport -> Builder
 renderResource ResourceMetricsExport {..} =
   let resMap = attributesToLabelMap (getMaterializedResourcesAttributes resourceMetricsResource)
-      scopes = V.toList resourceMetricsScopes
-  in mconcat $ intersperse nl $ fmap (renderScope resMap) scopes
+  in V.ifoldl'
+    ( \acc i s ->
+        acc <> (if i == 0 then mempty else nl) <> renderScope resMap s
+    )
+    mempty
+    resourceMetricsScopes
 
 
 renderScope :: Map.Map Text Text -> ScopeMetricsExport -> Builder
@@ -71,8 +81,12 @@ renderScope resMap ScopeMetricsExport {..} =
         if T.null (libraryName scopeMetricsScope)
           then resMap
           else Map.insert "job" (libraryName scopeMetricsScope) resMap
-      metrics = V.toList scopeMetricsExports
-  in mconcat $ intersperse nl $ fmap (renderMetric jobMap) metrics
+  in V.ifoldl'
+    ( \acc i m ->
+        acc <> (if i == 0 then mempty else nl) <> renderMetric jobMap m
+    )
+    mempty
+    scopeMetricsExports
 
 
 intersperse :: a -> [a] -> [a]

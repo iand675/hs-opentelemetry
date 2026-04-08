@@ -1,24 +1,56 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
--- | Instrumentation for Hspec test suites
+{- |
+Module      : OpenTelemetry.Instrumentation.Hspec
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Trace Hspec test suites as spans
+Stability   : experimental
+
+= Overview
+
+Adds tracing around Hspec examples. Useful for CI observability: see which
+tests ran, how long they took, and which ones failed.
+
+'wrapSpec' uses the global tracer provider; compose it with
+'OpenTelemetry.Trace.withTracerProvider' so the provider is initialized before
+@hspec@ runs. For full control over tracer and parent context, use
+'instrumentSpec' instead.
+
+= Quick example
+
+@
+import Test.Hspec
+import OpenTelemetry.Instrumentation.Hspec (wrapSpec)
+import OpenTelemetry.Trace (withTracerProvider)
+
+main :: IO ()
+main = withTracerProvider $ \_ -> do
+  runSpec <- wrapSpec
+  hspec $ runSpec mySpec
+@
+
+'OpenTelemetry.Trace.withTracerProvider' lives in @hs-opentelemetry-sdk@.
+
+= Nested structure
+
+'instrumentSpec' adds spans for @describe@ nesting; 'wrapSpec' produces a flat
+span per @it@ (see its Haddock for rationale).
+-}
 module OpenTelemetry.Instrumentation.Hspec (
   wrapSpec,
   wrapExampleInSpan,
   instrumentSpec,
 ) where
 
-import Control.Monad (void)
 import Control.Monad.IO.Class
-import Control.Monad.Reader
 import qualified Data.List as List
-import Data.Text (Text)
 import qualified Data.Text as T
-import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Context
-import OpenTelemetry.Context.ThreadLocal (adjustContext, attachContext, getContext)
+import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Trace.Core
-import Test.Hspec.Core.Spec (ActionWith, Item (..), Spec, SpecWith, Tree (..), mapSpecForest, mapSpecItem_)
+import Test.Hspec.Core.Spec (Item (..), SpecWith, Tree (..), mapSpecForest, mapSpecItem_)
 
 
 {- | Creates a wrapper function that you can pass a spec into.
@@ -50,7 +82,7 @@ wrapExampleInSpan tp traceContext item@Item {itemExample = ex, itemRequirement =
     { itemExample = \params aroundAction pcb -> do
         let aroundAction' a = do
               -- we need to reattach the context, since we are on a forked thread
-              void $ attachContext traceContext
+              _ <- attachContext traceContext
               inSpan tp (T.pack req) defaultSpanArguments (aroundAction a)
 
         ex params aroundAction' pcb
@@ -75,7 +107,7 @@ instrumentSpec tracer traceContext spec = do
             { itemExample = \params aroundAction pcb -> do
                 let aroundAction' a = do
                       -- we need to reattach the context, since we are on a forked thread
-                      void $ attachContext traceContext
+                      _ <- attachContext traceContext
                       addSpans spans $ inSpan tracer (T.pack (itemRequirement item)) defaultSpanArguments (aroundAction a)
 
                 itemExample item params aroundAction' pcb

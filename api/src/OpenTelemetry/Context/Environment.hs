@@ -27,7 +27,7 @@ __Extracting context in a child process__ (at startup):
 main :: IO ()
 main = do
   ctx <- 'extractContextFromEnvironment'
-  _ <- 'OpenTelemetry.Context.ThreadLocal.attachContext' ctx
+  _tok <- 'OpenTelemetry.Context.ThreadLocal.attachContext' ctx
   -- ... this process is now part of the parent's trace
 @
 
@@ -86,14 +86,17 @@ import OpenTelemetry.Propagator (TextMap, emptyTextMap, extract, getGlobalTextMa
 import System.Environment (getEnvironment)
 
 
+-- | @since 0.4.0.0
 envTraceparent :: String
 envTraceparent = "TRACEPARENT"
 
 
+-- | @since 0.4.0.0
 envTracestate :: String
 envTracestate = "TRACESTATE"
 
 
+-- | @since 0.4.0.0
 envBaggage :: String
 envBaggage = "BAGGAGE"
 
@@ -122,8 +125,8 @@ normalizeKeyToEnvVar :: T.Text -> String
 normalizeKeyToEnvVar name =
   let raw = map normalizeChar (T.unpack name)
   in case raw of
-    (c : _) | isDigit c -> '_' : map toUpper raw
-    _ -> map toUpper raw
+      (c : _) | isDigit c -> '_' : map toUpper raw
+      _ -> map toUpper raw
   where
     normalizeChar c
       | isAsciiUpper c || isAsciiLower c || isDigit c || c == '_' = c

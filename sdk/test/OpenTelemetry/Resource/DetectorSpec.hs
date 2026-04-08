@@ -7,6 +7,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes (lookupAttribute, toAttribute)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Registry (registerResourceDetector, registeredResourceDetectors)
 import OpenTelemetry.Resource (Resource, getMaterializedResourcesAttributes, getResourceAttributes, materializeResources, mkResource, (.=))
 import OpenTelemetry.Resource.Cloud (Cloud (..))
@@ -21,6 +22,7 @@ import qualified OpenTelemetry.Resource.Kubernetes as K8s
 import OpenTelemetry.Resource.Kubernetes.Detector (KubernetesResources (..), detectKubernetes, isRunningInKubernetes)
 import OpenTelemetry.Resource.OperatingSystem (OperatingSystem (..))
 import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace (detectBuiltInResources, registerBuiltinResourceDetectors)
 import System.Environment (lookupEnv, setEnv, unsetEnv)
 import System.Info (os)
@@ -29,6 +31,8 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "Resource Detectors" $ do
+  -- Resource SDK §Detecting Resource information from the environment
+  -- https://opentelemetry.io/docs/specs/otel/resource/sdk/#detecting-resource-information-from-the-environment
   containerSpec
   kubernetesSpec
   cloudSpec
@@ -43,6 +47,8 @@ spec = describe "Resource Detectors" $ do
 
 containerSpec :: Spec
 containerSpec = describe "Container" $ do
+  -- Semantic conventions: container.* resource attributes (when detectable)
+  -- https://opentelemetry.io/docs/specs/semconv/resource/container/
   it "returns all Nothing fields on macOS/non-Linux" $ do
     container <- detectContainer
     case os of
@@ -53,6 +59,8 @@ containerSpec = describe "Container" $ do
 
 kubernetesSpec :: Spec
 kubernetesSpec = describe "Kubernetes" $ do
+  -- Semantic conventions: Kubernetes resource (k8s.*)
+  -- https://opentelemetry.io/docs/specs/semconv/resource/kubernetes/
   around_ withCleanK8sEnv $ do
     it "returns Nothing when not in k8s" $ do
       result <- detectKubernetes
@@ -100,6 +108,8 @@ kubernetesSpec = describe "Kubernetes" $ do
 
 cloudSpec :: Spec
 cloudSpec = describe "Cloud" $ do
+  -- Semantic conventions: cloud.* resource attributes
+  -- https://opentelemetry.io/docs/specs/semconv/resource/cloud/
   around_ withCleanCloudEnv $ do
     it "returns empty cloud when no provider detected" $ do
       cloud <- detectCloud
@@ -200,31 +210,35 @@ cloudSpec = describe "Cloud" $ do
 
 eksSpec :: Spec
 eksSpec = describe "EKS" $ do
+  -- Semantic conventions: AWS EKS (cloud.platform aws_eks)
+  -- https://opentelemetry.io/docs/specs/semconv/resource/cloud/
   around_ withCleanEksEnv $ do
     it "returns empty when not in k8s" $ do
       r <- detectEKSSelf
-      lookupAttribute (getResourceAttributes r) "cloud.platform" `shouldBe` Nothing
+      lookupAttribute (getResourceAttributes r) (unkey SC.cloud_platform) `shouldBe` Nothing
 
     it "returns empty when ECS is detected (yields to more specific detector)" $ do
       setEnv "KUBERNETES_SERVICE_HOST" "10.96.0.1"
       setEnv "ECS_CONTAINER_METADATA_URI_V4" "http://169.254.170.2/v4/abc"
       r <- detectEKSSelf
-      lookupAttribute (getResourceAttributes r) "cloud.platform" `shouldBe` Nothing
+      lookupAttribute (getResourceAttributes r) (unkey SC.cloud_platform) `shouldBe` Nothing
 
     it "returns empty when Lambda is detected" $ do
       setEnv "KUBERNETES_SERVICE_HOST" "10.96.0.1"
       setEnv "AWS_LAMBDA_FUNCTION_NAME" "my-func"
       r <- detectEKSSelf
-      lookupAttribute (getResourceAttributes r) "cloud.platform" `shouldBe` Nothing
+      lookupAttribute (getResourceAttributes r) (unkey SC.cloud_platform) `shouldBe` Nothing
 
     it "returns empty when service account files are missing" $ do
       setEnv "KUBERNETES_SERVICE_HOST" "10.96.0.1"
       r <- detectEKSSelf
-      lookupAttribute (getResourceAttributes r) "cloud.platform" `shouldBe` Nothing
+      lookupAttribute (getResourceAttributes r) (unkey SC.cloud_platform) `shouldBe` Nothing
 
 
 faasSpec :: Spec
 faasSpec = describe "FaaS" $ do
+  -- Semantic conventions: faas.* resource attributes
+  -- https://opentelemetry.io/docs/specs/semconv/resource/faas/
   around_ withCleanFaaSEnv $ do
     it "returns Nothing when not in FaaS" $ do
       result <- detectFaaS
@@ -277,10 +291,12 @@ faasSpec = describe "FaaS" $ do
 
 herokuSpec :: Spec
 herokuSpec = describe "Heroku" $ do
+  -- Semantic conventions: Heroku (cloud.provider heroku, heroku.*)
+  -- https://opentelemetry.io/docs/specs/semconv/resource/heroku/
   around_ withCleanHerokuEnv $ do
     it "returns empty resource when not on Heroku" $ do
       r <- detectHeroku
-      lookupAttribute (getResourceAttributes r) "cloud.provider" `shouldBe` Nothing
+      lookupAttribute (getResourceAttributes r) (unkey SC.cloud_provider) `shouldBe` Nothing
 
     it "detects Heroku from HEROKU_APP_ID" $ do
       setEnv "HEROKU_APP_ID" "abc-123"
@@ -291,25 +307,27 @@ herokuSpec = describe "Heroku" $ do
       setEnv "HEROKU_RELEASE_CREATED_AT" "2026-04-06T12:00:00Z"
       r <- detectHeroku
       let attrs = getResourceAttributes r
-      lookupAttribute attrs "cloud.provider" `shouldBe` Just (toAttribute ("heroku" :: T.Text))
-      lookupAttribute attrs "heroku.app.id" `shouldBe` Just (toAttribute ("abc-123" :: T.Text))
-      lookupAttribute attrs "service.name" `shouldBe` Just (toAttribute ("my-haskell-app" :: T.Text))
-      lookupAttribute attrs "service.instance.id" `shouldBe` Just (toAttribute ("web.1" :: T.Text))
-      lookupAttribute attrs "service.version" `shouldBe` Just (toAttribute ("v42" :: T.Text))
-      lookupAttribute attrs "heroku.release.commit" `shouldBe` Just (toAttribute ("deadbeef" :: T.Text))
-      lookupAttribute attrs "heroku.release.creation_timestamp" `shouldBe` Just (toAttribute ("2026-04-06T12:00:00Z" :: T.Text))
+      lookupAttribute attrs (unkey SC.cloud_provider) `shouldBe` Just (toAttribute ("heroku" :: T.Text))
+      lookupAttribute attrs (unkey SC.heroku_app_id) `shouldBe` Just (toAttribute ("abc-123" :: T.Text))
+      lookupAttribute attrs (unkey SC.service_name) `shouldBe` Just (toAttribute ("my-haskell-app" :: T.Text))
+      lookupAttribute attrs (unkey SC.service_instance_id) `shouldBe` Just (toAttribute ("web.1" :: T.Text))
+      lookupAttribute attrs (unkey SC.service_version) `shouldBe` Just (toAttribute ("v42" :: T.Text))
+      lookupAttribute attrs (unkey SC.heroku_release_commit) `shouldBe` Just (toAttribute ("deadbeef" :: T.Text))
+      lookupAttribute attrs (unkey SC.heroku_release_creationTimestamp) `shouldBe` Just (toAttribute ("2026-04-06T12:00:00Z" :: T.Text))
 
     it "sets only cloud.provider and heroku.app.id when other vars are missing" $ do
       setEnv "HEROKU_APP_ID" "minimal-123"
       r <- detectHeroku
       let attrs = getResourceAttributes r
-      lookupAttribute attrs "cloud.provider" `shouldBe` Just (toAttribute ("heroku" :: T.Text))
-      lookupAttribute attrs "heroku.app.id" `shouldBe` Just (toAttribute ("minimal-123" :: T.Text))
-      lookupAttribute attrs "service.name" `shouldBe` Nothing
+      lookupAttribute attrs (unkey SC.cloud_provider) `shouldBe` Just (toAttribute ("heroku" :: T.Text))
+      lookupAttribute attrs (unkey SC.heroku_app_id) `shouldBe` Just (toAttribute ("minimal-123" :: T.Text))
+      lookupAttribute attrs (unkey SC.service_name) `shouldBe` Nothing
 
 
 osSpec :: Spec
 osSpec = describe "OperatingSystem" $ do
+  -- Semantic conventions: operating system (os.type)
+  -- https://opentelemetry.io/docs/specs/semconv/resource/os/
   it "detects os type" $ do
     osInfo <- detectOperatingSystem
     osType osInfo `shouldSatisfy` (not . T.null)
@@ -469,6 +487,7 @@ ecsNormalizeArn val arnParts suffix
 
 gcpParsingSpec :: Spec
 gcpParsingSpec = describe "GCP metadata parsing" $ do
+  -- Implementation-specific: pure helpers for GCP metadata path parsing
   describe "extractLastSegment" $ do
     it "extracts zone from full path" $ do
       gcpExtractLastSegment "projects/123456/zones/us-central1-a"
@@ -501,6 +520,7 @@ gcpParsingSpec = describe "GCP metadata parsing" $ do
 
 ecsArnSpec :: Spec
 ecsArnSpec = describe "ECS ARN normalization" $ do
+  -- Implementation-specific: ECS ARN string normalization for resource attributes
   it "passes through a full ARN unchanged" $ do
     let arn = "arn:aws:ecs:us-east-1:123456789:cluster/my-cluster"
     ecsNormalizeArn arn [] "cluster" `shouldBe` arn
@@ -529,6 +549,8 @@ ecsArnSpec = describe "ECS ARN normalization" $ do
 
 registrySpec :: Spec
 registrySpec = describe "Resource Detector Registry" $ do
+  -- Resource SDK: OTEL_RESOURCE_DETECTORS and detector registration
+  -- https://opentelemetry.io/docs/specs/otel/resource/sdk/#detecting-resource-information-from-the-environment
   around_ withCleanDetectorEnv $ do
     it "registerBuiltinResourceDetectors populates the registry" $ do
       registerBuiltinResourceDetectors

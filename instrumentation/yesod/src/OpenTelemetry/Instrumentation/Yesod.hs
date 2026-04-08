@@ -6,10 +6,35 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {- |
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+Module      : OpenTelemetry.Instrumentation.Yesod
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Automatic tracing for Yesod web applications
+Stability   : experimental
+
+= Overview
+
+Provides Yesod middleware that automatically creates spans for incoming
+HTTP requests. Uses Yesod's type-safe routing to produce meaningful span
+names (e.g. \"GET UserR\" instead of \"GET /users/123\").
+
+= Quick example
+
+@
+import OpenTelemetry.Instrumentation.Yesod (openTelemetryYesodMiddleware)
+
+instance Yesod App where
+  yesodMiddleware = openTelemetryYesodMiddleware . defaultYesodMiddleware
+@
+
+= What gets traced
+
+* A @Server@ span per request, named after the Yesod route type
+* Standard HTTP attributes: method, status code, path, scheme
+* Trace context extracted from incoming request headers
+
+[HTTP semantic conventions migration:](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan)
+set @OTEL_SEMCONV_STABILITY_OPT_IN@ to @http@, @http/dup@, or leave unset for legacy-only.
 -}
 module OpenTelemetry.Instrumentation.Yesod (
   -- * Middleware functionality

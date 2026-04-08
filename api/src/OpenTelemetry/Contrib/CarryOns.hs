@@ -1,3 +1,10 @@
+-- |
+-- Module      : OpenTelemetry.Contrib.CarryOns
+-- Description : Carry-on attributes that propagate from parent to child spans.
+-- Stability   : experimental
+--
+-- Carry-ons are extra attributes merged into spans completed within a thread's
+-- context, so values can flow down a trace without attaching them to every span.
 module OpenTelemetry.Contrib.CarryOns (
   alterCarryOns,
   withCarryOnProcessor,
@@ -21,6 +28,7 @@ carryOnKey = unsafePerformIO $ newKey "carryOn"
 {-# NOINLINE carryOnKey #-}
 
 
+-- | @since 0.4.0.0
 alterCarryOns :: (MonadIO m) => (AttributeMap -> AttributeMap) -> m ()
 alterCarryOns f = adjustContext $ \ctxt ->
   Context.insert carryOnKey (f $ fromMaybe mempty $ Context.lookup carryOnKey ctxt) ctxt
@@ -33,6 +41,8 @@ This helps us propagate attributes across a trace without having to manually add
 Be cautious about adding too many additional attributes via carry ons. The attributes are added to every span,
 and will be discarded if the span has attributes that exceed the configured attribute limits for the configured
 'TracerProvider'.
+
+ @since 0.4.0.0
 -}
 withCarryOnProcessor :: SpanProcessor -> SpanProcessor
 withCarryOnProcessor p =

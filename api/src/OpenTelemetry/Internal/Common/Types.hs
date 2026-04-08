@@ -8,15 +8,24 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+{- |
+Module      : OpenTelemetry.Internal.Common.Types
+Description : Internal types shared across API signals: InstrumentationLibrary, ShutdownResult, FlushResult.
+Stability   : experimental
+-}
 module OpenTelemetry.Internal.Common.Types (
   InstrumentationLibrary (..),
+  InstrumentationScope,
   instrumentationLibrary,
+  instrumentationScope,
   withSchemaUrl,
   withLibraryAttributes,
   AnyValue (..),
   ToValue (..),
   ShutdownResult (..),
+  worstShutdown,
   FlushResult (..),
+  worstFlush,
   ExportResult (..),
   parseInstrumentationLibrary,
   detectInstrumentationLibrary,
@@ -38,20 +47,15 @@ import qualified Language.Haskell.TH.Syntax as TH
 import OpenTelemetry.Attributes (Attributes, emptyAttributes)
 
 
-{- | An identifier for the library that provides the instrumentation for a given Instrumented Library.
- Instrumented Library and Instrumentation Library may be the same library if it has built-in OpenTelemetry instrumentation.
+{- | An instrumentation scope identifies the library or component providing
+instrumentation. The OpenTelemetry specification renamed this concept from
+\"Instrumentation Library\" to \"Instrumentation Scope\"; this type retains
+the old constructor name for backwards compatibility but 'InstrumentationScope'
+is the preferred type alias.
 
- The inspiration of the OpenTelemetry project is to make every library and application observable out of the box by having them call OpenTelemetry API directly.
- However, many libraries will not have such integration, and as such there is a need for a separate library which would inject such calls, using mechanisms such as wrapping interfaces,
- subscribing to library-specific callbacks, or translating existing telemetry into the OpenTelemetry model.
+Spec: <https://opentelemetry.io/docs/specs/otel/common/instrumentation-scope/>
 
- A library that enables OpenTelemetry observability for another library is called an Instrumentation Library.
-
- An instrumentation library should be named to follow any naming conventions of the instrumented library (e.g. 'middleware' for a web framework).
-
- If there is no established name, the recommendation is to prefix packages with "hs-opentelemetry-instrumentation", followed by the instrumented library name itself.
-
- In general, the simplest way to get the instrumentation library is to use 'detectInstrumentationLibrary', which uses the Haskell package name and version.
+@since 0.0.1.0
 -}
 data InstrumentationLibrary = InstrumentationLibrary
   { libraryName :: {-# UNPACK #-} !Text
@@ -72,19 +76,40 @@ instance IsString InstrumentationLibrary where
   fromString str = InstrumentationLibrary (fromString str) "" "" emptyAttributes
 
 
-{- | Create an 'InstrumentationLibrary' with a name and version.
+{- | Preferred alias matching the current OpenTelemetry specification terminology
+(\"Instrumentation Scope\"). Identical to 'InstrumentationLibrary'.
+
+Spec: <https://opentelemetry.io/docs/specs/otel/common/instrumentation-scope/>
+
+@since 0.4.0.0
+-}
+type InstrumentationScope = InstrumentationLibrary
+
+
+{- | Create an 'InstrumentationScope' with a name and version.
 Schema URL and attributes default to empty.
 
 @
-let scope = instrumentationLibrary "my-service" "1.2.0"
+let scope = instrumentationScope "my-service" "1.2.0"
 @
 
 For more fields, chain with 'withSchemaUrl' or 'withLibraryAttributes':
 
 @
-let scope = instrumentationLibrary "my-service" "1.2.0"
+let scope = instrumentationScope "my-service" "1.2.0"
           & withSchemaUrl "https:\/\/opentelemetry.io\/schemas\/1.25.0"
 @
+
+@since 0.4.0.0
+-}
+instrumentationScope :: Text -> Text -> InstrumentationScope
+instrumentationScope = instrumentationLibrary
+
+
+{- | Create an 'InstrumentationLibrary' with a name and version.
+Schema URL and attributes default to empty.
+
+Prefer 'instrumentationScope' for new code.
 
 @since 0.4.0.0
 -}
@@ -121,6 +146,8 @@ withLibraryAttributes attrs lib = lib {libraryAttributes = attrs}
 
  Telemetry tools may use this data to support high-cardinality querying, visualization
  in waterfall diagrams, trace sampling decisions, and more.
+
+@since 0.0.1.0
 -}
 data AnyValue
   = TextValue Text
@@ -151,6 +178,8 @@ instance IsString AnyValue where
    toValue Foo = TextValue "Foo"
 
  @
+
+@since 0.0.1.0
 -}
 class ToValue a where
   toValue :: a -> AnyValue
@@ -196,11 +225,28 @@ instance ToValue AnyValue where
   toValue = id
 
 
+-- | @since 0.0.1.0
 data ShutdownResult = ShutdownSuccess | ShutdownFailure | ShutdownTimeout
   deriving stock (Eq, Show)
 
 
--- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Logs.forceFlush@
+{- | Combine two shutdown results, preferring the "worst" outcome.
+Failure > Timeout > Success.
+
+@since 0.4.0.0
+-}
+worstShutdown :: ShutdownResult -> ShutdownResult -> ShutdownResult
+worstShutdown ShutdownFailure _ = ShutdownFailure
+worstShutdown _ ShutdownFailure = ShutdownFailure
+worstShutdown ShutdownTimeout _ = ShutdownTimeout
+worstShutdown _ ShutdownTimeout = ShutdownTimeout
+worstShutdown ShutdownSuccess ShutdownSuccess = ShutdownSuccess
+
+
+{- | The outcome of a call to @OpenTelemetry.Trace.forceFlush@ or @OpenTelemetry.Log.forceFlush@
+
+@since 0.0.1.0
+-}
 data FlushResult
   = -- | One or more spans or @LogRecord@s did not export from all associated exporters
     -- within the alotted timeframe.
@@ -213,6 +259,20 @@ data FlushResult
   deriving stock (Eq, Show)
 
 
+{- | Combine two flush results, preferring the "worst" outcome.
+Error > Timeout > Success.
+
+@since 0.0.1.0
+-}
+worstFlush :: FlushResult -> FlushResult -> FlushResult
+worstFlush FlushError _ = FlushError
+worstFlush _ FlushError = FlushError
+worstFlush FlushTimeout _ = FlushTimeout
+worstFlush _ FlushTimeout = FlushTimeout
+worstFlush FlushSuccess FlushSuccess = FlushSuccess
+
+
+-- | @since 0.0.1.0
 data ExportResult
   = Success
   | Failure (Maybe SomeException)
@@ -222,6 +282,8 @@ data ExportResult
  'InstrumentationLibrary'. Tries to split off a trailing version (digits and
  dots after the rightmost @-@). Falls back to treating the whole string as a
  package name with no version.
+
+@since 0.0.1.0
 -}
 parseInstrumentationLibrary :: (MonadFail m) => String -> m InstrumentationLibrary
 parseInstrumentationLibrary packageString =
@@ -280,7 +342,10 @@ isValidPackageName s = all isNameChar s && isAlphaNum (last s)
     isNameChar c = isAlphaNum c || c == '-'
 
 
--- | Works out the instrumentation library for your package.
+{- | Works out the instrumentation library for your package.
+
+@since 0.0.1.0
+-}
 detectInstrumentationLibrary :: forall m. (TH.Quasi m, TH.Quote m) => m TH.Exp
 detectInstrumentationLibrary = do
   TH.Loc {loc_package} <- TH.qLocation

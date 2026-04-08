@@ -36,8 +36,9 @@ library
       OpenTelemetry.Exporter.OTLP.LogRecord
       OpenTelemetry.Exporter.OTLP.Span
       OpenTelemetry.Exporter.OTLP.Metric
-  other-modules:
       OpenTelemetry.Exporter.OTLP.Internal.Config
+  other-modules:
+      Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
       src
   ghc-options: -Wall
@@ -53,7 +54,9 @@ library
     , http-types
     , microlens
     , proto-lens >=0.7.1.0
+    , random
     , text
+    , time
     , unordered-containers
     , vector
     , zlib
@@ -79,6 +82,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
     , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-otlp ==0.2.*
     , hspec
+    , http-types
     , microlens
     , proto-lens
     , text

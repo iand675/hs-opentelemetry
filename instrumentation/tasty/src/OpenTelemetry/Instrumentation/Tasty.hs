@@ -6,6 +6,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+-- |
+-- Module      : OpenTelemetry.Instrumentation.Tasty
+-- Description : OpenTelemetry instrumentation for the Tasty test framework.
+-- Stability   : experimental
+--
+-- Wraps test trees to emit spans for each test.
 module OpenTelemetry.Instrumentation.Tasty (instrumentTestTree, instrumentTestTreeWithTracer) where
 
 import Control.Exception (bracket)

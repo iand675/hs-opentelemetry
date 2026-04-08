@@ -1,6 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      : OpenTelemetry.SemanticsConfig
+-- Description : Configuration for semantic convention stability opt-in. Controls which attribute naming conventions are used.
+-- Stability   : experimental
+--
+-- Values are typically derived from @OTEL_SEMCONV_STABILITY_OPT_IN@ via
+-- 'getSemanticsOptions' and queried per signal area with 'lookupStability'.
 module OpenTelemetry.SemanticsConfig (
   SemanticsOptions,
   StabilityOpt (..),
@@ -10,6 +17,7 @@ module OpenTelemetry.SemanticsConfig (
   -- * Well-known stability keys
   httpOption,
   databaseOption,
+  codeOption,
 
   -- * Reading from the environment
   getSemanticsOptions,
@@ -26,20 +34,24 @@ import System.IO.Unsafe (unsafePerformIO)
 
 {- | Parsed representation of @OTEL_SEMCONV_STABILITY_OPT_IN@.
 
-This is opaque — use 'lookupStability' with any signal key (e.g. @"http"@,
+This is opaque: use 'lookupStability' with any signal key (e.g. @"http"@,
 @"database"@, @"messaging"@) to query whether stable, old, or both conventions
 should be emitted. Well-known accessors 'httpOption' and 'databaseOption' are
 provided for convenience; third-party instrumentation libraries can query
 arbitrary keys without modifying this module.
+
+@since 0.4.0.0
 -}
 newtype SemanticsOptions = SemanticsOptions (Set.HashSet T.Text)
 
 
 {- | Stability setting for a particular semantic convention area.
 
-* 'Stable' — emit only the new stable conventions.
-* 'StableAndOld' — emit both old and stable conventions (migration/dup mode).
-* 'Old' — emit only the legacy conventions (default when unset).
+* 'Stable': emit only the new stable conventions.
+* 'StableAndOld': emit both old and stable conventions (migration/dup mode).
+* 'Old': emit only the legacy conventions (default when unset).
+
+@since 0.4.0.0
 -}
 data StabilityOpt
   = Stable
@@ -49,6 +61,8 @@ data StabilityOpt
 
 
 -- | Backward-compatible alias.
+--
+-- @since 0.4.0.0
 type HttpOption = StabilityOpt
 
 
@@ -67,6 +81,7 @@ case lookupStability "messaging" opts of
   StableAndOld -> emitStableAttrs >> emitOldAttrs
   Old         -> emitOldAttrs
 @
+@since 0.4.0.0
 -}
 lookupStability :: T.Text -> SemanticsOptions -> StabilityOpt
 lookupStability key (SemanticsOptions vals)
@@ -76,13 +91,27 @@ lookupStability key (SemanticsOptions vals)
 
 
 -- | Stability setting for HTTP semantic conventions (@"http"@ / @"http\/dup"@).
+--
+-- @since 0.4.0.0
 httpOption :: SemanticsOptions -> StabilityOpt
 httpOption = lookupStability "http"
 
 
 -- | Stability setting for database semantic conventions (@"database"@ / @"database\/dup"@).
+--
+-- @since 0.4.0.0
 databaseOption :: SemanticsOptions -> StabilityOpt
 databaseOption = lookupStability "database"
+
+
+-- | Stability setting for code source-location conventions (@"code"@ / @"code\/dup"@).
+--
+-- Controls whether @code.function.name@, @code.file.path@, @code.line.number@ (stable)
+-- or @code.function@, @code.namespace@, @code.filepath@, @code.lineno@ (legacy) are emitted.
+--
+-- @since 0.5.0.0
+codeOption :: SemanticsOptions -> StabilityOpt
+codeOption = lookupStability "code"
 
 
 parseSemanticsOptions :: Maybe String -> SemanticsOptions
@@ -95,6 +124,8 @@ parseSemanticsOptions (Just env) =
 use 'getSemanticsOptions' for efficiency purposes unless it is necessary to
 retrieve the value of @OTEL_SEMCONV_STABILITY_OPT_IN@ every time
 'getSemanticsOptions'' is called.
+
+@since 0.4.0.0
 -}
 getSemanticsOptions' :: IO SemanticsOptions
 getSemanticsOptions' = parseSemanticsOptions <$> lookupEnv "OTEL_SEMCONV_STABILITY_OPT_IN"
@@ -122,6 +153,8 @@ to memoize the settings for efficiency. Note that 'getSemanticsOptions' stores
 and returns the value of the first time it was called and will not change when
 @OTEL_SEMCONV_STABILITY_OPT_IN@ is updated. Use 'getSemanticsOptions'' to read
 the env var every time the function is called.
+
+@since 0.4.0.0
 -}
 getSemanticsOptions :: IO SemanticsOptions
 getSemanticsOptions = unsafePerformIO $ memoize getSemanticsOptions'

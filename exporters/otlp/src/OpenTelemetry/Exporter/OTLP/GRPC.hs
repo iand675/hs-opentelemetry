@@ -19,14 +19,18 @@ module OpenTelemetry.Exporter.OTLP.GRPC (
   grpcOtlpSpanExporter,
   grpcOtlpMetricExporter,
   grpcOtlpLogRecordExporter,
+  grpcEndpoint,
+  grpcTracesEndpoint,
+  grpcMetricsEndpoint,
+  grpcLogsEndpoint,
 ) where
 
+import Control.Applicative ((<|>))
 import Control.Exception (SomeException (..), catch)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.HashMap.Strict (HashMap)
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
-import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
 import Network.GRPC.Client (
   Address (..),
@@ -43,33 +47,59 @@ import Network.GRPC.Common (
   ResponseTrailingMetadata,
   def,
  )
-import Network.GRPC.Common.Protobuf (Protobuf, Proto (..))
-import OpenTelemetry.Exporter.OTLP.Internal.Config (OTLPExporterConfig (..))
+import Network.GRPC.Common.Protobuf (Proto (..), Protobuf)
 import OpenTelemetry.Exporter.Metric (MetricExporter (..), ResourceMetricsExport)
+import OpenTelemetry.Exporter.OTLP.Internal.Config (
+  OTLPExporterConfig (..),
+  grpcEndpoint,
+  grpcLogsEndpoint,
+  grpcMetricsEndpoint,
+  grpcTracesEndpoint,
+ )
 import OpenTelemetry.Exporter.Span (SpanExporter (..))
-import OpenTelemetry.Internal.Common.Types (ExportResult (..), InstrumentationLibrary, ShutdownResult (..), FlushResult (..))
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary, ShutdownResult (..))
+import OpenTelemetry.Internal.Log.Types (LogRecordExporter, LogRecordExporterArguments (..), ReadableLogRecord, mkLogRecordExporter)
 import OpenTelemetry.Internal.Logging (otelLogWarning)
-import OpenTelemetry.Internal.Logs.Types (LogRecordExporter, LogRecordExporterArguments (..), ReadableLogRecord, mkLogRecordExporter)
 import qualified OpenTelemetry.Trace.Core as OT
 import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest, LogsService)
 import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest, MetricsService)
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest, TraceService)
+import System.Timeout (timeout)
 
 
 type ExportTracesRPC = Protobuf TraceService "export"
+
+
 type ExportMetricsRPC = Protobuf MetricsService "export"
+
+
 type ExportLogsRPC = Protobuf LogsService "export"
 
+
 type instance RequestMetadata (Protobuf TraceService meth) = NoMetadata
+
+
 type instance ResponseInitialMetadata (Protobuf TraceService meth) = NoMetadata
+
+
 type instance ResponseTrailingMetadata (Protobuf TraceService meth) = NoMetadata
 
+
 type instance RequestMetadata (Protobuf MetricsService meth) = NoMetadata
+
+
 type instance ResponseInitialMetadata (Protobuf MetricsService meth) = NoMetadata
+
+
 type instance ResponseTrailingMetadata (Protobuf MetricsService meth) = NoMetadata
 
+
 type instance RequestMetadata (Protobuf LogsService meth) = NoMetadata
+
+
 type instance ResponseInitialMetadata (Protobuf LogsService meth) = NoMetadata
+
+
 type instance ResponseTrailingMetadata (Protobuf LogsService meth) = NoMetadata
 
 
@@ -94,22 +124,18 @@ parseGrpcAddress url =
       _ -> s
 
 
-grpcEndpoint :: OTLPExporterConfig -> String
-grpcEndpoint conf =
-  fromMaybe "http://localhost:4317" (otlpEndpoint conf)
+{- | Create a gRPC-based span exporter.
 
-
--- | Create a gRPC-based span exporter.
---
--- The serialization function converts the SDK's span map into the OTLP
--- protobuf request. Pass 'OpenTelemetry.Exporter.OTLP.Span.immutableSpansToProtobuf'.
+The serialization function converts the SDK's span map into the OTLP
+protobuf request. Pass 'OpenTelemetry.Exporter.OTLP.Span.immutableSpansToProtobuf'.
+-}
 grpcOtlpSpanExporter
   :: (MonadIO m)
   => OTLPExporterConfig
   -> (HashMap InstrumentationLibrary (Vector OT.ImmutableSpan) -> IO ExportTraceServiceRequest)
   -> m SpanExporter
 grpcOtlpSpanExporter conf toProto = liftIO $ do
-  let addr = parseGrpcAddress (grpcEndpoint conf)
+  let addr = parseGrpcAddress (grpcTracesEndpoint conf)
       server = ServerInsecure addr
   conn <- openConnection def server
   shutdownRef <- newIORef False
@@ -121,30 +147,38 @@ grpcOtlpSpanExporter conf toProto = liftIO $ do
             then pure $ Failure Nothing
             else do
               req <- toProto spans_
-              (do
-                _ <- nonStreaming conn (rpc @ExportTracesRPC) (Proto req)
-                pure Success)
+              let timeoutUs = maybe 10_000_000 (* 1_000) (otlpTracesTimeout conf <|> otlpTimeout conf)
+              ( do
+                  result <- timeout timeoutUs $ nonStreaming conn (rpc @ExportTracesRPC) (Proto req)
+                  case result of
+                    Nothing -> do
+                      otelLogWarning "gRPC trace export timed out"
+                      pure $ Failure Nothing
+                    Just _ -> pure Success
+                )
                 `catch` \(e :: SomeException) -> do
                   otelLogWarning $ "gRPC trace export failed: " <> show e
                   pure $ Failure (Just e)
       , spanExporterShutdown = do
           void $ atomicModifyIORef' shutdownRef $ \s -> (True, s)
           closeConnection conn
-      , spanExporterForceFlush = pure ()
+          pure ShutdownSuccess
+      , spanExporterForceFlush = pure FlushSuccess
       }
 
 
--- | Create a gRPC-based metric exporter.
---
--- The serialization function converts metric batches into the OTLP
--- protobuf request. Pass 'OpenTelemetry.Exporter.OTLP.Metric.resourceMetricsToExportRequest'.
+{- | Create a gRPC-based metric exporter.
+
+The serialization function converts metric batches into the OTLP
+protobuf request. Pass 'OpenTelemetry.Exporter.OTLP.Metric.resourceMetricsToExportRequest'.
+-}
 grpcOtlpMetricExporter
   :: (MonadIO m)
   => OTLPExporterConfig
-  -> ([ResourceMetricsExport] -> ExportMetricsServiceRequest)
+  -> (Vector ResourceMetricsExport -> ExportMetricsServiceRequest)
   -> m MetricExporter
 grpcOtlpMetricExporter conf toProto = liftIO $ do
-  let addr = parseGrpcAddress (grpcEndpoint conf)
+  let addr = parseGrpcAddress (grpcMetricsEndpoint conf)
       server = ServerInsecure addr
   conn <- openConnection def server
   shutdownRef <- newIORef False
@@ -156,9 +190,15 @@ grpcOtlpMetricExporter conf toProto = liftIO $ do
             then pure $ Failure Nothing
             else do
               let req = toProto rmes
-              (do
-                _ <- nonStreaming conn (rpc @ExportMetricsRPC) (Proto req)
-                pure Success)
+                  timeoutUs = maybe 10_000_000 (* 1_000) (otlpMetricsTimeout conf <|> otlpTimeout conf)
+              ( do
+                  result <- timeout timeoutUs $ nonStreaming conn (rpc @ExportMetricsRPC) (Proto req)
+                  case result of
+                    Nothing -> do
+                      otelLogWarning "gRPC metric export timed out"
+                      pure $ Failure Nothing
+                    Just _ -> pure Success
+                )
                 `catch` \(e :: SomeException) -> do
                   otelLogWarning $ "gRPC metric export failed: " <> show e
                   pure $ Failure (Just e)
@@ -170,17 +210,18 @@ grpcOtlpMetricExporter conf toProto = liftIO $ do
       }
 
 
--- | Create a gRPC-based log record exporter.
---
--- The serialization function converts log records into the OTLP
--- protobuf request.
+{- | Create a gRPC-based log record exporter.
+
+The serialization function converts log records into the OTLP
+protobuf request.
+-}
 grpcOtlpLogRecordExporter
   :: (MonadIO m)
   => OTLPExporterConfig
-  -> (Vector ReadableLogRecord -> ExportLogsServiceRequest)
+  -> (Vector ReadableLogRecord -> IO ExportLogsServiceRequest)
   -> m LogRecordExporter
 grpcOtlpLogRecordExporter conf toProto = liftIO $ do
-  let addr = parseGrpcAddress (grpcEndpoint conf)
+  let addr = parseGrpcAddress (grpcLogsEndpoint conf)
       server = ServerInsecure addr
   conn <- openConnection def server
   shutdownRef <- newIORef False
@@ -191,14 +232,20 @@ grpcOtlpLogRecordExporter conf toProto = liftIO $ do
           if isShut
             then pure $ Failure Nothing
             else do
-              let req = toProto lrs
-              (do
-                _ <- nonStreaming conn (rpc @ExportLogsRPC) (Proto req)
-                pure Success)
+              req <- toProto lrs
+              let timeoutUs = maybe 10_000_000 (* 1_000) (otlpLogsTimeout conf <|> otlpTimeout conf)
+              ( do
+                  result <- timeout timeoutUs $ nonStreaming conn (rpc @ExportLogsRPC) (Proto req)
+                  case result of
+                    Nothing -> do
+                      otelLogWarning "gRPC log export timed out"
+                      pure $ Failure Nothing
+                    Just _ -> pure Success
+                )
                 `catch` \(e :: SomeException) -> do
                   otelLogWarning $ "gRPC log export failed: " <> show e
                   pure $ Failure (Just e)
-      , logRecordExporterArgumentsForceFlush = pure ()
+      , logRecordExporterArgumentsForceFlush = pure FlushSuccess
       , logRecordExporterArgumentsShutdown = do
           void $ atomicModifyIORef' shutdownRef $ \s -> (True, s)
           closeConnection conn

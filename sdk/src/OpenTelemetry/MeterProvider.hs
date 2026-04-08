@@ -5,19 +5,29 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
 
-{- | SDK 'OpenTelemetry.Metrics.MeterProvider' with in-process aggregation (specification/metrics/sdk.md).
+{- | SDK 'OpenTelemetry.Metric.MeterProvider' with in-process aggregation (specification/metrics/sdk.md).
 
  Synchronous: cumulative or delta sums, explicit or exponential histograms, last-value gauges;
  exemplars (optional trace context); cardinality limits; views (drop, aggregation, attribute keys).
  Observable callbacks run in registration order. Periodic export: "OpenTelemetry.MetricReader".
 -}
 module OpenTelemetry.MeterProvider (
+  -- * MetricReader
+  MetricReader (..),
+  cumulativeTemporality,
+  deltaTemporality,
+
+  -- * Provider options
   SdkMeterProviderOptions (..),
   defaultSdkMeterProviderOptions,
   SdkMeterExemplarOptions (..),
   defaultSdkMeterExemplarOptions,
+  MetricProducer,
+
+  -- * Provider lifecycle
   SdkMeterEnv (..),
   createMeterProvider,
   collectResourceMetrics,
@@ -25,25 +35,26 @@ module OpenTelemetry.MeterProvider (
 
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Exception (SomeException, catch)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (unsafeShiftR)
-import Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, atomicModifyIORef', atomicWriteIORef, newIORef, readIORef)
 import Data.Int (Int32, Int64)
 import qualified Data.IntMap.Strict as IM
 import qualified Data.List as L
 import Data.Maybe (fromMaybe)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, toLower)
+import qualified Data.Text as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import qualified Data.Vector.Unboxed.Mutable as UM
 import Data.Word (Word64)
 import GHC.Generics (Generic)
 import OpenTelemetry.Attributes (Attributes, addAttribute, defaultAttributeLimits, emptyAttributes)
+import OpenTelemetry.Common (Timestamp (..))
 import OpenTelemetry.Context (lookupSpan)
 import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Environment (MetricsExemplarFilter (..), lookupMetricsExemplarFilter)
@@ -64,9 +75,11 @@ import OpenTelemetry.Exporter.Metric (
   filterAttributesByKeys,
   toMaybeDouble,
  )
+import OpenTelemetry.Internal.AtomicBucketArray (AtomicBucketArray, atomicAddBucket, newAtomicBucketArray, readAndResetBucketArray, readBucketArray)
 import OpenTelemetry.Internal.AtomicCounter
-import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
-import OpenTelemetry.Metrics (
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..), worstFlush)
+import OpenTelemetry.Internal.Logging (otelLogWarning)
+import OpenTelemetry.Metric.Core (
   AdvisoryParameters (..),
   Counter (..),
   Gauge (..),
@@ -83,15 +96,15 @@ import OpenTelemetry.Metrics (
   UpDownCounter (..),
   noopMeter,
  )
-import qualified OpenTelemetry.Metrics.InstrumentName as VName
-import OpenTelemetry.Metrics.View (MeterScope, View (..), ViewAggregation (..), findAllMatchingViews)
+import qualified OpenTelemetry.Metric.InstrumentName as VName
+import OpenTelemetry.Metric.View (MeterScope, View (..), ViewAggregation (..), findAllMatchingViews)
 import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace.Core (SpanContext (..), getSpanContext, isSampled, isValid)
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
-import OpenTelemetry.Common (Timestamp (..))
 import System.Timeout (timeout)
 
 
+-- | @since 0.0.1.0
 data SdkMeterExemplarOptions = SdkMeterExemplarOptions
   { exemplarFilter :: !MetricsExemplarFilter
   -- ^ Spec default is TraceBased. Configured via OTEL_METRICS_EXEMPLAR_FILTER or explicit option.
@@ -99,6 +112,7 @@ data SdkMeterExemplarOptions = SdkMeterExemplarOptions
   }
 
 
+-- | @since 0.0.1.0
 defaultSdkMeterExemplarOptions :: SdkMeterExemplarOptions
 defaultSdkMeterExemplarOptions =
   SdkMeterExemplarOptions
@@ -107,30 +121,84 @@ defaultSdkMeterExemplarOptions =
     }
 
 
-data SdkMeterProviderOptions = SdkMeterProviderOptions
-  { cardinalityLimit :: !Int
-  , aggregationTemporality :: !AggregationTemporality
-  , views :: ![View]
-  , exemplarOptions :: !SdkMeterExemplarOptions
-  , metricExporter :: !(Maybe MetricExporter)
+{- | Spec-level metric reader: pairs an exporter with a temporality preference.
+
+Each reader independently collects metrics from the provider.  The temporality
+function maps instrument kind to the preferred 'AggregationTemporality'
+for that reader's export stream.
+
+@since 0.0.1.0
+-}
+data MetricReader = MetricReader
+  { metricReaderExporter :: !MetricExporter
+  , metricReaderTemporalityFor :: !(InstrumentKind -> AggregationTemporality)
   }
 
 
+{- | All instrument kinds use cumulative temporality.
+
+@since 0.0.1.0
+-}
+cumulativeTemporality :: InstrumentKind -> AggregationTemporality
+cumulativeTemporality _ = AggregationCumulative
+
+
+{- | Counters and histograms use delta; gauges and UpDownCounters stay cumulative.
+
+UpDownCounter (sync and async) MUST use cumulative temporality per the OTel spec,
+since delta values for bidirectional counters lose information about the absolute level.
+
+@since 0.0.1.0
+-}
+deltaTemporality :: InstrumentKind -> AggregationTemporality
+deltaTemporality KindGauge = AggregationCumulative
+deltaTemporality KindAsyncGauge = AggregationCumulative
+deltaTemporality KindUpDownCounter = AggregationCumulative
+deltaTemporality KindAsyncUpDownCounter = AggregationCumulative
+deltaTemporality _ = AggregationDelta
+
+
+{- | External metric source that the provider collects alongside its own
+instruments.  Registered producers are invoked during every 'collectResourceMetrics'
+call, and their results are appended to the export batch.
+
+Spec: @specification/metrics/sdk.md#metricproducer@
+
+@since 0.0.1.0
+-}
+type MetricProducer = IO (Vector ResourceMetricsExport)
+
+
+-- | @since 0.0.1.0
+data SdkMeterProviderOptions = SdkMeterProviderOptions
+  { cardinalityLimit :: !Int
+  , views :: ![View]
+  , exemplarOptions :: !SdkMeterExemplarOptions
+  , readers :: ![MetricReader]
+  , metricProducers :: ![MetricProducer]
+  -- ^ External metric sources collected alongside the provider's own instruments.
+  }
+
+
+-- | @since 0.0.1.0
 defaultSdkMeterProviderOptions :: SdkMeterProviderOptions
 defaultSdkMeterProviderOptions =
   SdkMeterProviderOptions
     { cardinalityLimit = 2000
-    , aggregationTemporality = AggregationCumulative
     , views = []
     , exemplarOptions = defaultSdkMeterExemplarOptions
-    , metricExporter = Nothing
+    , readers = []
+    , metricProducers = []
     }
 
 
--- | HashMap paired with a cached entry count so cardinality checks are O(1)
--- instead of O(n) via 'H.size' on every recording.
+{- | HashMap paired with a cached entry count so cardinality checks are O(1)
+instead of O(n) via 'H.size' on every recording.
+Each cell is behind its own IORef so recording threads with different
+attribute sets never contend on the same CAS.
+-}
 data CellMap = CellMap
-  { cmMap :: !(H.HashMap Attributes Cell)
+  { cmMap :: !(H.HashMap Attributes (IORef Cell))
   , cmSize :: {-# UNPACK #-} !Int
   }
 
@@ -140,23 +208,49 @@ emptyCellMap = CellMap H.empty 0
 {-# INLINE emptyCellMap #-}
 
 
-cmLookup :: Attributes -> CellMap -> Maybe Cell
+cmLookup :: Attributes -> CellMap -> Maybe (IORef Cell)
 cmLookup k = H.lookup k . cmMap
 {-# INLINE cmLookup #-}
 
 
-cmInsert :: Attributes -> Cell -> CellMap -> CellMap
-cmInsert k v (CellMap m sz) =
-  let !isNew = not (H.member k m)
-      !m' = H.insert k v m
-  in CellMap m' (if isNew then sz + 1 else sz)
-{-# INLINE cmInsert #-}
+-- | Insert a key known to be absent. Avoids the redundant 'H.member' check.
+cmInsertNew :: Attributes -> IORef Cell -> CellMap -> CellMap
+cmInsertNew k v (CellMap m sz) = CellMap (H.insert k v m) (sz + 1)
+{-# INLINE cmInsertNew #-}
 
 
--- | Insert without checking for existing key (caller knows it's an update).
-cmReplace :: Attributes -> Cell -> CellMap -> CellMap
-cmReplace k v (CellMap m sz) = CellMap (H.insert k v m) sz
-{-# INLINE cmReplace #-}
+{- | Find or create a per-cell IORef for the given attributes.
+
+Hot path (existing key): 'readIORef' + 'H.lookup'. No CAS, no contention
+with other attribute sets.
+
+Cold path (new key): allocates an IORef and CAS-inserts into the outer map.
+If cardinality exceeds the limit, redirects to the overflow cell.
+-}
+acquireCell :: IORef CellMap -> Attributes -> Int -> IO Cell -> IO (IORef Cell)
+acquireCell outerRef !attrs lim mkInitCell = do
+  cm <- readIORef outerRef
+  case cmLookup attrs cm of
+    Just cellRef -> pure cellRef
+    Nothing -> acquireCellCold outerRef attrs lim mkInitCell
+{-# INLINE acquireCell #-}
+
+
+acquireCellCold :: IORef CellMap -> Attributes -> Int -> IO Cell -> IO (IORef Cell)
+acquireCellCold outerRef !attrs lim mkInitCell = do
+  initCell <- mkInitCell
+  cellRef <- newIORef initCell
+  atomicModifyIORef' outerRef $ \cm ->
+    case cmLookup attrs cm of
+      Just existingRef -> (cm, existingRef)
+      Nothing
+        | lim > 0 && cmSize cm >= lim ->
+            case cmLookup overflowAttributes cm of
+              Just overflowRef -> (cm, overflowRef)
+              Nothing -> (cmInsertNew overflowAttributes cellRef cm, cellRef)
+        | otherwise ->
+            (cmInsertNew attrs cellRef cm, cellRef)
+{-# NOINLINE acquireCellCold #-}
 
 
 {- | Per-instrument aggregation storage. Each registered instrument owns its own
@@ -168,6 +262,7 @@ data InstrumentStorage = InstrumentStorage
   }
 
 
+-- | @since 0.0.1.0
 data SdkMeterEnv = SdkMeterEnv
   { sdkMeterInstruments :: !(IORef [InstrumentStorage])
   , sdkMeterCollectCallbacks :: !(IORef (IM.IntMap (IO ())))
@@ -178,10 +273,16 @@ data SdkMeterEnv = SdkMeterEnv
   -- ^ Serializes collection so observable callbacks don't double-fire
   -- when a periodic reader and manual flush overlap.
   , sdkMeterCardinalityLimit :: !Int
-  , sdkMeterAggregationTemporality :: !AggregationTemporality
+  , sdkMeterReaders :: ![MetricReader]
+  -- ^ Registered readers; used during shutdown and forceFlush.
+  , sdkMeterProducers :: ![MetricProducer]
+  -- ^ External metric sources invoked during collection.
   , sdkMeterViews :: ![View]
   , sdkMeterExemplarOptions :: !SdkMeterExemplarOptions
   , sdkMeterStartTimeNanos :: !Word64
+  , sdkMeterLastCollectTime :: !(IORef Word64)
+  -- ^ Tracks the end timestamp of the previous collection cycle.
+  -- Used as the start time for delta-temporality data points.
   }
 
 
@@ -192,7 +293,7 @@ data InstrumentDims = InstrumentDims
   , dimUnit :: !Text
   , dimDescription :: !Text
   , dimHistogramAggregation :: !(Maybe HistogramAggregation)
-  , dimExportAttributeKeys :: !(Maybe [Text])
+  , dimExportAttributeKeys :: !(Maybe (HS.HashSet Text))
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Hashable)
@@ -203,22 +304,33 @@ data SumCell
       { siValue :: {-# UNPACK #-} !Int64
       , siMonotonic :: !Bool
       , siExemplars :: !(Vector MetricExemplar)
+      , siPrevDelta :: {-# UNPACK #-} !Int64
+      -- ^ Last delta-exported value. Used only for async instruments during
+      -- delta collection: delta = siValue - siPrevDelta.
       }
   | SumDblCell
-      { sdValue :: !Double
+      { sdValue :: {-# UNPACK #-} !Double
       , sdMonotonic :: !Bool
       , sdExemplars :: !(Vector MetricExemplar)
+      , sdPrevDelta :: {-# UNPACK #-} !Double
       }
 
 
 data HistCell = HistCell
-  { hcBuckets :: !(U.Vector Word64)
+  { hcBucketArr :: !AtomicBucketArray
+  -- ^ Mutable atomic bucket counters; incremented in-place via hardware
+  -- fetch-and-add, avoiding the O(n) vector copy that U.modify requires.
+  , hcFrozenBuckets :: !(U.Vector Word64)
+  -- ^ Immutable snapshot populated during collection for export.
+  -- U.empty during recording (never read on the hot path).
   , hcBounds :: !(U.Vector Double)
   , hcSum :: {-# UNPACK #-} !Double
   , hcCount :: {-# UNPACK #-} !Word64
   , hcMin :: !OptionalDouble
   , hcMax :: !OptionalDouble
-  , hcExemplars :: !(Vector MetricExemplar)
+  , hcBucketExemplars :: !(Vector (Maybe MetricExemplar))
+  -- ^ Aligned histogram bucket reservoir: one exemplar slot per bucket.
+  -- Indexed by bucket number (same as hcBucketArr).
   }
 
 
@@ -231,7 +343,12 @@ data ExpHistCell = ExpHistCell
   , ehcCount :: {-# UNPACK #-} !Word64
   , ehcMin :: !OptionalDouble
   , ehcMax :: !OptionalDouble
-  , ehcExemplars :: !(Vector MetricExemplar)
+  , ehcPositiveExemplars :: !(IM.IntMap MetricExemplar)
+  -- ^ Per-bucket exemplar reservoir for positive buckets.
+  , ehcNegativeExemplars :: !(IM.IntMap MetricExemplar)
+  -- ^ Per-bucket exemplar reservoir for negative buckets.
+  , ehcZeroExemplar :: !(Maybe MetricExemplar)
+  -- ^ Exemplar for the zero bucket.
   }
 
 
@@ -253,6 +370,7 @@ nowNanos :: IO Word64
 nowNanos = do
   Timestamp ns <- getTimestampIO
   pure ns
+{-# INLINE nowNanos #-}
 
 
 foreign import ccall unsafe "hs_otel_gettime_ns"
@@ -282,17 +400,21 @@ bucketIndex bounds v = go 0 (U.length bounds)
 {-# INLINE bucketIndex #-}
 
 
-emptyHist :: U.Vector Double -> HistCell
-emptyHist bounds =
-  HistCell
-    { hcBuckets = U.replicate (U.length bounds + 1) 0
-    , hcBounds = bounds
-    , hcSum = 0
-    , hcCount = 0
-    , hcMin = NoDouble
-    , hcMax = NoDouble
-    , hcExemplars = V.empty
-    }
+emptyHistIO :: U.Vector Double -> IO HistCell
+emptyHistIO bounds = do
+  let !nBuckets = U.length bounds + 1
+  arr <- newAtomicBucketArray nBuckets
+  pure
+    HistCell
+      { hcBucketArr = arr
+      , hcFrozenBuckets = U.empty
+      , hcBounds = bounds
+      , hcSum = 0
+      , hcCount = 0
+      , hcMin = NoDouble
+      , hcMax = NoDouble
+      , hcBucketExemplars = V.replicate nBuckets Nothing
+      }
 
 
 emptyExpHist :: Int32 -> ExpHistCell
@@ -306,7 +428,9 @@ emptyExpHist sc =
     , ehcCount = 0
     , ehcMin = NoDouble
     , ehcMax = NoDouble
-    , ehcExemplars = V.empty
+    , ehcPositiveExemplars = IM.empty
+    , ehcNegativeExemplars = IM.empty
+    , ehcZeroExemplar = Nothing
     }
 
 
@@ -318,33 +442,48 @@ log2Recip = 1.4426950408889634
 
 positiveBucketIndex :: Double -> Int32 -> Int
 positiveBucketIndex x sc =
-  let !scaleFactor = 2 ** fromIntegral sc :: Double
+  let !scaleFactor = encodeFloat 1 (fromIntegral sc) :: Double
   in floor (log x * log2Recip * scaleFactor)
 {-# INLINE positiveBucketIndex #-}
 
 
 mergeExpHist :: ExpHistCell -> Double -> ExpHistCell
 mergeExpHist ehc v =
-  let sc = ehcScale ehc
-      upd =
-        if v == 0
-          then ehc {ehcZeroCount = ehcZeroCount ehc + 1}
-          else
-            if v > 0
-              then
-                let idx = positiveBucketIndex v sc
-                in ehc {ehcPositive = IM.insertWith (+) idx 1 (ehcPositive ehc)}
-              else
-                let idx = positiveBucketIndex (abs v) sc
-                in ehc {ehcNegative = IM.insertWith (+) idx 1 (ehcNegative ehc)}
-      sm = ehcSum ehc + v
-      ct = ehcCount ehc + 1
-  in upd
-      { ehcSum = sm
-      , ehcCount = ct
-      , ehcMin = minOptDouble (ehcMin ehc) v
-      , ehcMax = maxOptDouble (ehcMax ehc) v
-      }
+  let !sc = ehcScale ehc
+      !sm = ehcSum ehc + v
+      !ct = ehcCount ehc + 1
+      !mn = minOptDouble (ehcMin ehc) v
+      !mx = maxOptDouble (ehcMax ehc) v
+  in if v == 0
+      then
+        ehc
+          { ehcZeroCount = ehcZeroCount ehc + 1
+          , ehcSum = sm
+          , ehcCount = ct
+          , ehcMin = mn
+          , ehcMax = mx
+          }
+      else
+        let !absV = abs v
+            !idx = positiveBucketIndex absV sc
+        in if v > 0
+            then
+              ehc
+                { ehcPositive = IM.insertWith (+) idx 1 (ehcPositive ehc)
+                , ehcSum = sm
+                , ehcCount = ct
+                , ehcMin = mn
+                , ehcMax = mx
+                }
+            else
+              ehc
+                { ehcNegative = IM.insertWith (+) idx 1 (ehcNegative ehc)
+                , ehcSum = sm
+                , ehcCount = ct
+                , ehcMin = mn
+                , ehcMax = mx
+                }
+{-# INLINE mergeExpHist #-}
 
 
 intMapToOffsetCounts :: IM.IntMap Word64 -> (Int32, Vector Word64)
@@ -384,7 +523,11 @@ expHistToDataPoint startT t attrs ehc =
       , exponentialHistogramDataPointAttributes = attrs
       , exponentialHistogramDataPointMin = toMaybeDouble (ehcMin ehc)
       , exponentialHistogramDataPointMax = toMaybeDouble (ehcMax ehc)
-      , exponentialHistogramDataPointExemplars = ehcExemplars ehc
+      , exponentialHistogramDataPointExemplars =
+          V.fromList $
+            IM.elems (ehcPositiveExemplars ehc)
+              <> IM.elems (ehcNegativeExemplars ehc)
+              <> maybe [] (: []) (ehcZeroExemplar ehc)
       , exponentialHistogramDataPointZeroThreshold = 0
       }
 
@@ -401,14 +544,26 @@ maxOptDouble (SomeDouble a) v = SomeDouble (max a v)
 {-# INLINE maxOptDouble #-}
 
 
+-- | True when a NumberValue holds a non-finite Double (NaN or Inf).
+-- Int values are always finite.
+isNonFiniteDouble :: NumberValue -> Bool
+isNonFiniteDouble (DoubleNumber d) = isNaN d || isInfinite d
+isNonFiniteDouble (IntNumber _) = False
+{-# INLINE isNonFiniteDouble #-}
+
+
 validateOrNoop :: Text -> Maybe Text -> IO Bool
 validateOrNoop name mUnit =
   case VName.validateInstrumentName name of
-    Just _ -> pure False
+    Just err -> do
+      otelLogWarning ("Invalid instrument name " <> show name <> ": " <> show err <> "; instrument will be a no-op")
+      pure False
     Nothing -> case mUnit of
       Nothing -> pure True
       Just u -> case VName.validateInstrumentUnit u of
-        Just _ -> pure False
+        Just err -> do
+          otelLogWarning ("Invalid instrument unit " <> show u <> " for " <> show name <> ": " <> show err <> "; instrument will be a no-op")
+          pure False
         Nothing -> pure True
 
 
@@ -424,12 +579,12 @@ dimsFrom
 dimsFrom scope name kind mUnit mDesc mh mKeys =
   InstrumentDims
     { dimScope = scope
-    , dimName = name
+    , dimName = toLower name
     , dimKind = kind
     , dimUnit = fromMaybe mempty mUnit
     , dimDescription = fromMaybe mempty mDesc
     , dimHistogramAggregation = mh
-    , dimExportAttributeKeys = mKeys
+    , dimExportAttributeKeys = fmap HS.fromList mKeys
     }
 
 
@@ -447,7 +602,10 @@ shouldDropInstrument vs kind name mUnit scope =
 -- | Per-view stream target for multi-view fan-out on the recording path.
 data StreamTarget = StreamTarget
   { stRef :: !(IORef CellMap)
-  , stExportKeys :: !(Maybe [Text])
+  , stExportKeys :: !(Maybe (HS.HashSet Text))
+  , stExemplarOpts :: !SdkMeterExemplarOptions
+  -- ^ Effective exemplar options for this stream (may differ from the global
+  -- provider default when the matching view carries a filter override).
   }
 
 
@@ -470,12 +628,13 @@ resolveStreamTargets env sc kind name mUnit mDesc adv mHistAgg = do
       mScope = toMeterScope sc
       matched = findAllMatchingViews vs kind name mUnit mScope
       nonDrop = Prelude.filter (\v -> viewAggregation v /= ViewAggregationDrop) matched
+      globalExOpts = sdkMeterExemplarOptions env
   case matched of
     [] -> do
       let mEk = advisoryAttributeKeys adv
           dims = dimsFrom sc name kind mUnit mDesc mHistAgg mEk
       ref <- getOrCreateInstrumentStorage env dims
-      pure [StreamTarget ref mEk]
+      pure [StreamTarget ref (dimExportAttributeKeys dims) globalExOpts]
     _ -> mapM (mkStreamForView env sc kind name mUnit mDesc adv mHistAgg mScope) nonDrop
 
 
@@ -492,18 +651,26 @@ mkStreamForView
   -> View
   -> IO StreamTarget
 mkStreamForView env sc kind name mUnit mDesc adv mHistAgg _mScope v = do
-  let vName = case viewName v of
-        Just n -> n
-        Nothing -> name
-      vDesc = case viewDescription v of
+  vName <- case viewName v of
+    Just n -> case VName.validateInstrumentName n of
+      Just err -> do
+        otelLogWarning ("View name override " <> show n <> " is invalid: " <> show err <> "; using original name " <> show name)
+        pure name
+      Nothing -> pure n
+    Nothing -> pure name
+  let vDesc = case viewDescription v of
         Just d -> Just d
         Nothing -> mDesc
       mEk = case viewAttributeKeys v of
         Just ks -> Just ks
         Nothing -> advisoryAttributeKeys adv
       dims = dimsFrom sc vName kind mUnit vDesc mHistAgg mEk
+      globalExOpts = sdkMeterExemplarOptions env
+      effectiveExOpts = case viewExemplarFilter v of
+        Just f -> globalExOpts {exemplarFilter = f}
+        Nothing -> globalExOpts
   ref <- getOrCreateInstrumentStorage env dims
-  pure (StreamTarget ref mEk)
+  pure (StreamTarget ref (dimExportAttributeKeys dims) effectiveExOpts)
 
 
 fromAdvisoryHistogram :: AdvisoryParameters -> HistogramAggregation
@@ -517,8 +684,10 @@ fromAdvisoryHistogram a = case advisoryHistogramAggregation a of
 pushExemplar :: Int -> MetricExemplar -> Vector MetricExemplar -> Vector MetricExemplar
 pushExemplar cap e v
   | cap <= 0 = V.empty
+  | cap == 1 = V.singleton e
   | V.length v < cap = V.snoc v e
-  | otherwise = V.snoc (V.tail v) e
+  | otherwise = V.generate cap (\i -> if i < cap - 1 then V.unsafeIndex v (i + 1) else e)
+{-# INLINE pushExemplar #-}
 
 
 captureMetricExemplar
@@ -526,38 +695,37 @@ captureMetricExemplar
   -> Maybe NumberValue
   -> Attributes
   -- ^ Full measurement attributes (used to compute filtered attributes)
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -- ^ Export attribute keys from view; attributes NOT in this set are carried as filtered
   -> IO (Maybe MetricExemplar)
-captureMetricExemplar !opts mVal !measureAttrs mExportKeys =
-  case exemplarFilter opts of
-    MetricsExemplarFilterAlwaysOff -> pure Nothing
-    MetricsExemplarFilterAlwaysOn -> do
-      ctx <- getContext
-      case lookupSpan ctx of
-        Nothing -> makeExemplarNoTrace
-        Just sp -> do
-          scx <- getSpanContext sp
-          makeExemplarWithContext scx
-    MetricsExemplarFilterTraceBased -> do
-      ctx <- getContext
-      case lookupSpan ctx of
-        Nothing -> pure Nothing
-        Just sp -> do
-          scx <- getSpanContext sp
-          if isValid scx && isSampled (traceFlags scx)
-            then makeExemplarWithContext scx
-            else pure Nothing
+captureMetricExemplar !opts mVal !measureAttrs mExportKeys
+  | exemplarReservoirLimit opts <= 0 = pure Nothing
+  | otherwise = case exemplarFilter opts of
+      MetricsExemplarFilterAlwaysOff -> pure Nothing
+      MetricsExemplarFilterAlwaysOn -> do
+        ctx <- getContext
+        case lookupSpan ctx of
+          Nothing -> makeExemplarNoTrace
+          Just sp -> do
+            scx <- getSpanContext sp
+            makeExemplarWithContext scx
+      MetricsExemplarFilterTraceBased -> do
+        ctx <- getContext
+        case lookupSpan ctx of
+          Nothing -> pure Nothing
+          Just sp -> do
+            scx <- getSpanContext sp
+            if isValid scx && isSampled (traceFlags scx)
+              then makeExemplarWithContext scx
+              else pure Nothing
   where
     filteredAttrs = complementAttributesByKeys mExportKeys measureAttrs
     makeExemplarWithContext scx = do
       t <- nowNanos
-      let tid :: ByteString
-          tid = traceIdBytes (traceId scx)
-          sid :: ByteString
-          sid = spanIdBytes (spanId scx)
-      pure $
-        Just $
+      let !tid = traceIdBytes (traceId scx)
+          !sid = spanIdBytes (spanId scx)
+      pure $!
+        Just $!
           MetricExemplar
             { metricExemplarTraceId = tid
             , metricExemplarSpanId = sid
@@ -567,8 +735,8 @@ captureMetricExemplar !opts mVal !measureAttrs mExportKeys =
             }
     makeExemplarNoTrace = do
       t <- nowNanos
-      pure $
-        Just $
+      pure $!
+        Just $!
           MetricExemplar
             { metricExemplarTraceId = mempty
             , metricExemplarSpanId = mempty
@@ -576,6 +744,7 @@ captureMetricExemplar !opts mVal !measureAttrs mExportKeys =
             , metricExemplarFilteredAttributes = filteredAttrs
             , metricExemplarValue = mVal
             }
+{-# INLINE captureMetricExemplar #-}
 
 
 addSumI64
@@ -586,42 +755,29 @@ addSumI64
   -> IORef CellMap
   -> Int
   -> SdkMeterExemplarOptions
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -> IO ()
-addSumI64 !delta isMonotonic mExVal !attrs ref lim exOpts mExportKeys =
+addSumI64 !delta !isMonotonic mExVal !attrs ref lim exOpts mExportKeys =
   unless (isMonotonic && delta < 0) $ do
     mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
     let !cap = exemplarReservoirLimit exOpts
-    atomicModifyIORef' ref $ \cm ->
-      let !mExisting = cmLookup attrs cm
-          !redirected = case mExisting of
-            Just _ -> False
-            Nothing -> lim > 0 && cmSize cm >= lim
-          !effectiveK = if redirected then overflowAttributes else attrs
-          !existing = if redirected then cmLookup effectiveK cm else mExisting
-          !newCell = case existing of
-            Nothing ->
+    cellRef <- acquireCell ref attrs lim (pure $! CsSum $! SumIntCell 0 isMonotonic V.empty 0)
+    atomicModifyIORef' cellRef $ \cell ->
+      let !cell' = case cell of
+            CsSum (SumIntCell v mon exs prev) ->
               CsSum $!
                 SumIntCell
-                  { siValue = delta
-                  , siMonotonic = isMonotonic
-                  , siExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                  { siValue = v + delta
+                  , siMonotonic = mon
+                  , siExemplars = case mex of
+                      Nothing -> exs
+                      Just e -> pushExemplar cap e exs
+                  , siPrevDelta = prev
                   }
-            Just (CsSum (SumIntCell v mon exs)) ->
-              let !v' = v + delta
-              in CsSum $!
-                  SumIntCell
-                    { siValue = v'
-                    , siMonotonic = mon
-                    , siExemplars = case mex of
-                        Nothing -> exs
-                        Just e -> pushExemplar cap e exs
-                    }
-            Just _ ->
+            _ ->
               CsSum $!
-                SumIntCell delta isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
-          !cm' = cmInsert effectiveK newCell cm
-      in (cm', ())
+                SumIntCell delta isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex) 0
+      in (cell', ())
 {-# INLINE addSumI64 #-}
 
 
@@ -633,59 +789,91 @@ addSumDbl
   -> IORef CellMap
   -> Int
   -> SdkMeterExemplarOptions
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -> IO ()
-addSumDbl !delta isMonotonic mExVal !attrs ref lim exOpts mExportKeys =
-  unless (isMonotonic && delta < 0) $ do
+addSumDbl !delta !isMonotonic mExVal !attrs ref lim exOpts mExportKeys =
+  -- Spec: NaN and Inf measurements MUST be silently dropped.
+  -- https://opentelemetry.io/docs/specs/otel/metrics/sdk/
+  unless (isNaN delta || isInfinite delta || (isMonotonic && delta < 0)) $ do
     mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
     let !cap = exemplarReservoirLimit exOpts
-    atomicModifyIORef' ref $ \cm ->
-      let !mExisting = cmLookup attrs cm
-          !redirected = case mExisting of
-            Just _ -> False
-            Nothing -> lim > 0 && cmSize cm >= lim
-          !effectiveK = if redirected then overflowAttributes else attrs
-          !existing = if redirected then cmLookup effectiveK cm else mExisting
-          !newCell = case existing of
-            Nothing ->
+    cellRef <- acquireCell ref attrs lim (pure $! CsSum $! SumDblCell 0 isMonotonic V.empty 0)
+    atomicModifyIORef' cellRef $ \cell ->
+      let !cell' = case cell of
+            CsSum (SumDblCell v mon exs prev) ->
               CsSum $!
                 SumDblCell
-                  { sdValue = delta
-                  , sdMonotonic = isMonotonic
-                  , sdExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                  { sdValue = v + delta
+                  , sdMonotonic = mon
+                  , sdExemplars = case mex of
+                      Nothing -> exs
+                      Just e -> pushExemplar cap e exs
+                  , sdPrevDelta = prev
                   }
-            Just (CsSum (SumDblCell v mon exs)) ->
-              let !v' = v + delta
-              in CsSum $!
-                  SumDblCell
-                    { sdValue = v'
-                    , sdMonotonic = mon
-                    , sdExemplars = case mex of
-                        Nothing -> exs
-                        Just e -> pushExemplar cap e exs
-                    }
-            Just _ ->
+            _ ->
               CsSum $!
-                SumDblCell delta isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
-          !cm' = cmInsert effectiveK newCell cm
-      in (cm', ())
+                SumDblCell delta isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex) 0
+      in (cell', ())
 {-# INLINE addSumDbl #-}
 
 
-mergeHist :: HistCell -> Double -> HistCell
-mergeHist hc v =
-  let !idx = bucketIndex (hcBounds hc) v
-      !b' = U.modify (\mv -> UM.unsafeModify mv (+ 1) idx) (hcBuckets hc)
-      !sm = hcSum hc + v
-      !ct = hcCount hc + 1
-  in hc
-      { hcBuckets = b'
-      , hcSum = sm
-      , hcCount = ct
-      , hcMin = minOptDouble (hcMin hc) v
-      , hcMax = maxOptDouble (hcMax hc) v
-      }
-{-# INLINE mergeHist #-}
+{- | Set (replace) the cumulative value for an async counter/updowncounter.
+Unlike 'addSumI64' which accumulates, this stores the absolute total
+reported by the observable callback.
+-}
+setSumI64
+  :: Int64
+  -> Bool
+  -> Maybe NumberValue
+  -> Attributes
+  -> IORef CellMap
+  -> Int
+  -> SdkMeterExemplarOptions
+  -> Maybe (HS.HashSet Text)
+  -> IO ()
+setSumI64 !val !isMonotonic mExVal !attrs ref lim exOpts mExportKeys = do
+  mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
+  let !cap = exemplarReservoirLimit exOpts
+  cellRef <- acquireCell ref attrs lim (pure $! CsSum $! SumIntCell val isMonotonic V.empty 0)
+  atomicModifyIORef' cellRef $ \cell ->
+    let !cell' = case cell of
+          CsSum (SumIntCell _ mon exs prev) ->
+            CsSum $!
+              SumIntCell val mon (case mex of Nothing -> exs; Just e -> pushExemplar cap e exs) prev
+          _ ->
+            CsSum $!
+              SumIntCell val isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex) 0
+    in (cell', ())
+{-# INLINE setSumI64 #-}
+
+
+setSumDbl
+  :: Double
+  -> Bool
+  -> Maybe NumberValue
+  -> Attributes
+  -> IORef CellMap
+  -> Int
+  -> SdkMeterExemplarOptions
+  -> Maybe (HS.HashSet Text)
+  -> IO ()
+setSumDbl !val !isMonotonic mExVal !attrs ref lim exOpts mExportKeys =
+  -- Spec: NaN and Inf measurements MUST be silently dropped.
+  -- https://opentelemetry.io/docs/specs/otel/metrics/sdk/
+  unless (isNaN val || isInfinite val) $ do
+  mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
+  let !cap = exemplarReservoirLimit exOpts
+  cellRef <- acquireCell ref attrs lim (pure $! CsSum $! SumDblCell val isMonotonic V.empty 0)
+  atomicModifyIORef' cellRef $ \cell ->
+    let !cell' = case cell of
+          CsSum (SumDblCell _ mon exs prev) ->
+            CsSum $!
+              SumDblCell val mon (case mex of Nothing -> exs; Just e -> pushExemplar cap e exs) prev
+          _ ->
+            CsSum $!
+              SumDblCell val isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex) 0
+    in (cell', ())
+{-# INLINE setSumDbl #-}
 
 
 recordHist
@@ -696,28 +884,34 @@ recordHist
   -> IORef CellMap
   -> Int
   -> SdkMeterExemplarOptions
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -> IO ()
 recordHist !bounds !v mExVal !attrs ref lim exOpts mExportKeys = do
-  unless (isNaN v || isInfinite v) $ do
+  unless (isNaN v || isInfinite v || v < 0) $ do
     mex <- captureMetricExemplar exOpts (DoubleNumber <$> mExVal) attrs mExportKeys
-    let !cap = exemplarReservoirLimit exOpts
-    atomicModifyIORef' ref $ \cm ->
-      let !mExisting = cmLookup attrs cm
-          !redirected = case mExisting of
-            Just _ -> False
-            Nothing -> lim > 0 && cmSize cm >= lim
-          !effectiveK = if redirected then overflowAttributes else attrs
-          !existing = if redirected then cmLookup effectiveK cm else mExisting
-          mergeE hc = case mex of
-            Nothing -> hc
-            Just e -> hc {hcExemplars = pushExemplar cap e (hcExemplars hc)}
-          !newCell = case existing of
-            Nothing -> CsHist $! mergeE (mergeHist (emptyHist bounds) v)
-            Just (CsHist hc) -> CsHist $! mergeE (mergeHist hc v)
-            Just _ -> CsHist $! mergeE (mergeHist (emptyHist bounds) v)
-          !cm' = cmInsert effectiveK newCell cm
-      in (cm', ())
+    let !idx = bucketIndex bounds v
+    cellRef <- acquireCell ref attrs lim (CsHist <$> emptyHistIO bounds)
+    -- Atomic in-place bucket increment: single ldadd/lock-xadd, zero allocation
+    cell <- readIORef cellRef
+    case cell of
+      CsHist hc -> atomicAddBucket (hcBucketArr hc) idx
+      _ -> pure ()
+    -- CAS update scalars + aligned bucket exemplar (no bucket vector copy)
+    atomicModifyIORef' cellRef $ \cell' ->
+      let !cell'' = case cell' of
+            CsHist hc ->
+              CsHist $!
+                ( case mex of
+                    Nothing -> hc
+                    Just e -> hc {hcBucketExemplars = hcBucketExemplars hc V.// [(idx, Just e)]}
+                )
+                  { hcSum = hcSum hc + v
+                  , hcCount = hcCount hc + 1
+                  , hcMin = minOptDouble (hcMin hc) v
+                  , hcMax = maxOptDouble (hcMax hc) v
+                  }
+            _ -> cell'
+      in (cell'', ())
 {-# INLINE recordHist #-}
 
 
@@ -729,30 +923,25 @@ recordExpHist
   -> IORef CellMap
   -> Int
   -> SdkMeterExemplarOptions
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -> IO ()
-recordExpHist sc v mExVal attrs ref lim exOpts mExportKeys = do
-  if isNaN v || isInfinite v
-    then pure ()
-    else do
-      mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal) attrs mExportKeys
-      let cap = exemplarReservoirLimit exOpts
-      atomicModifyIORef' ref $ \cm ->
-        let mExisting = cmLookup attrs cm
-            redirected = case mExisting of
-              Just _ -> False
-              Nothing -> lim > 0 && cmSize cm >= lim
-            effectiveK = if redirected then overflowAttributes else attrs
-            existing = if redirected then cmLookup effectiveK cm else mExisting
-            mergeE ehc = case mex of
-              Nothing -> ehc
-              Just e -> ehc {ehcExemplars = pushExemplar cap e (ehcExemplars ehc)}
-            newCell = case existing of
-              Nothing -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
-              Just (CsExpHist ehc) -> CsExpHist (mergeE (mergeExpHist ehc v))
-              Just _ -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
-            cm' = cmInsert effectiveK newCell cm
-        in (cm', ())
+recordExpHist !sc !v mExVal !attrs ref lim exOpts mExportKeys =
+  unless (isNaN v || isInfinite v || v < 0) $ do
+    mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal) attrs mExportKeys
+    cellRef <- acquireCell ref attrs lim (pure $! CsExpHist (emptyExpHist sc))
+    atomicModifyIORef' cellRef $ \cell ->
+      let placeExemplar ehc = case mex of
+            Nothing -> ehc
+            Just e
+              | v == 0 -> ehc {ehcZeroExemplar = Just e}
+              | v > 0 ->
+                  let !idx = positiveBucketIndex v (ehcScale ehc)
+                  in ehc {ehcPositiveExemplars = IM.insert idx e (ehcPositiveExemplars ehc)}
+              | otherwise -> ehc
+          !cell' = case cell of
+            CsExpHist ehc -> CsExpHist $! placeExemplar (mergeExpHist ehc v)
+            _ -> CsExpHist $! placeExemplar (mergeExpHist (emptyExpHist sc) v)
+      in (cell', ())
 
 
 recordGauge
@@ -763,59 +952,100 @@ recordGauge
   -> IORef CellMap
   -> Int
   -> SdkMeterExemplarOptions
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -> IO ()
-recordGauge val t mExVal attrs ref lim exOpts mExportKeys = do
+recordGauge !val !t mExVal !attrs ref lim exOpts mExportKeys =
+  -- Spec: NaN and Inf double measurements MUST be silently dropped.
+  -- https://opentelemetry.io/docs/specs/otel/metrics/sdk/
+  unless (isNonFiniteDouble val) $ do
   mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
-  let cap = exemplarReservoirLimit exOpts
-  atomicModifyIORef' ref $ \cm ->
-    let mExisting = cmLookup attrs cm
-        redirected = case mExisting of
-          Just _ -> False
-          Nothing -> lim > 0 && cmSize cm >= lim
-        effectiveK = if redirected then overflowAttributes else attrs
-        existing = if redirected then cmLookup effectiveK cm else mExisting
-        newGauge gc =
-          case mex of
-            Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
-            Just e ->
-              gc
-                { gcValue = val
-                , gcTimeUnixNano = t
-                , gcExemplars = pushExemplar cap e (gcExemplars gc)
-                }
-        newCell = case existing of
-          Nothing ->
+  let !cap = exemplarReservoirLimit exOpts
+      initGauge =
+        pure $!
+          CsGauge
+            GaugeCell
+              { gcValue = val
+              , gcTimeUnixNano = t
+              , gcExemplars = V.empty
+              }
+  cellRef <- acquireCell ref attrs lim initGauge
+  atomicModifyIORef' cellRef $ \cell ->
+    let !cell' = case cell of
+          CsGauge gc ->
+            CsGauge $! case mex of
+              Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
+              Just e ->
+                gc
+                  { gcValue = val
+                  , gcTimeUnixNano = t
+                  , gcExemplars = pushExemplar cap e (gcExemplars gc)
+                  }
+          _ ->
             CsGauge
               GaugeCell
                 { gcValue = val
                 , gcTimeUnixNano = t
                 , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
                 }
-          Just (CsGauge gc) -> CsGauge (newGauge gc)
-          Just _ ->
-            CsGauge
-              GaugeCell
-                { gcValue = val
-                , gcTimeUnixNano = t
-                , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                }
-        cm' = cmInsert effectiveK newCell cm
-    in (cm', ())
+    in (cell', ())
 
 
+{- | Compute delta for an async instrument's cell.
+
+Returns (updated cell with new prev, export cell with delta value).
+The stored cell retains the cumulative value (never reset) with prev advanced.
+The export cell has the delta (current - prev) as its value.
+-}
+snapshotAsyncForDelta :: Cell -> (Cell, Cell)
+snapshotAsyncForDelta = \case
+  CsSum (SumIntCell v mon exs prev) ->
+    let !d = v - prev
+    in (CsSum (SumIntCell v mon V.empty v), CsSum (SumIntCell d mon exs prev))
+  CsSum (SumDblCell v mon exs prev) ->
+    let !d = v - prev
+    in (CsSum (SumDblCell v mon V.empty v), CsSum (SumDblCell d mon exs prev))
+  other ->
+    (resetCellForDelta other, other)
+
+
+{- | Reset a sync instrument's cell for delta export.
+Zeros the value and clears exemplars; prev is unused for sync cells.
+-}
 resetCellForDelta :: Cell -> Cell
 resetCellForDelta = \case
-  CsSum (SumIntCell _ mon _) ->
-    CsSum (SumIntCell 0 mon V.empty)
-  CsSum (SumDblCell _ mon _) ->
-    CsSum (SumDblCell 0 mon V.empty)
+  CsSum (SumIntCell _ mon _ _) ->
+    CsSum (SumIntCell 0 mon V.empty 0)
+  CsSum (SumDblCell _ mon _ _) ->
+    CsSum (SumDblCell 0 mon V.empty 0)
   CsHist hc ->
-    CsHist (emptyHist (hcBounds hc))
+    CsHist $!
+      hc
+        { hcFrozenBuckets = U.empty
+        , hcSum = 0
+        , hcCount = 0
+        , hcMin = NoDouble
+        , hcMax = NoDouble
+        , hcBucketExemplars = V.replicate (V.length (hcBucketExemplars hc)) Nothing
+        }
   CsExpHist ehc ->
     CsExpHist (emptyExpHist (ehcScale ehc))
   CsGauge gc ->
     CsGauge gc
+
+
+{- | Read mutable histogram bucket array into the frozen snapshot field.
+For delta, also atomically resets each bucket to zero.
+Non-histogram cells pass through unchanged.
+-}
+freezeHistBuckets :: Bool -> Cell -> IO Cell
+freezeHistBuckets isDelta (CsHist hc) = do
+  buckets <-
+    if isDelta
+      then readAndResetBucketArray (hcBucketArr hc)
+      else readBucketArray (hcBucketArr hc)
+  pure $! CsHist $! hc {hcFrozenBuckets = buckets}
+freezeHistBuckets _ c = pure c
+{-# INLINE freezeHistBuckets #-}
 
 
 {- | Look up existing storage for the given InstrumentDims, or create a new one.
@@ -829,6 +1059,26 @@ getOrCreateInstrumentStorage env dims = do
   case findByDims dims xs of
     Just s -> pure (instrCells s)
     Nothing -> do
+      case findConflict dims xs of
+        Just existing ->
+          otelLogWarning $
+            "Instrument '"
+              <> T.unpack (dimName dims)
+              <> "' registered with conflicting metadata"
+              <> " (existing: kind="
+              <> show (dimKind existing)
+              <> " unit="
+              <> T.unpack (dimUnit existing)
+              <> " desc="
+              <> T.unpack (dimDescription existing)
+              <> ", new: kind="
+              <> show (dimKind dims)
+              <> " unit="
+              <> T.unpack (dimUnit dims)
+              <> " desc="
+              <> T.unpack (dimDescription dims)
+              <> ")"
+        Nothing -> pure ()
       ref <- newIORef emptyCellMap
       let storage = InstrumentStorage {instrDims = dims, instrCells = ref}
       atomicModifyIORef' (sdkMeterInstruments env) $ \xs' ->
@@ -841,6 +1091,17 @@ getOrCreateInstrumentStorage env dims = do
         go [] = Nothing
         go (s : rest)
           | instrDims s == d = Just s
+          | otherwise = go rest
+
+    findConflict d = go
+      where
+        go [] = Nothing
+        go (s : rest)
+          | let sd = instrDims s
+          , dimName sd == dimName d
+          , dimScope sd == dimScope d
+          , sd /= d =
+              Just sd
           | otherwise = go rest
 
 
@@ -880,7 +1141,7 @@ mkMeter env scope =
               pure $
                 Counter
                   { counterAdd = \n attrs ->
-                      mapM_ (\st -> addSumI64 n mono (Just (IntNumber n)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
+                      mapM_ (\st -> addSumI64 n mono (Just (IntNumber n)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
                   , counterEnabled = pure True
                   }
             else pure $ Counter (\_ _ -> pure ()) (pure False)
@@ -899,7 +1160,7 @@ mkMeter env scope =
               pure $
                 Counter
                   { counterAdd = \v attrs ->
-                      mapM_ (\st -> addSumDbl v mono (Just (DoubleNumber v)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
+                      mapM_ (\st -> addSumDbl v mono (Just (DoubleNumber v)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
                   , counterEnabled = pure True
                   }
             else pure $ Counter (\_ _ -> pure ()) (pure False)
@@ -918,7 +1179,7 @@ mkMeter env scope =
               pure $
                 UpDownCounter
                   { upDownCounterAdd = \n attrs ->
-                      mapM_ (\st -> addSumI64 n False (Just (IntNumber n)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
+                      mapM_ (\st -> addSumI64 n False (Just (IntNumber n)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
                   , upDownCounterEnabled = pure True
                   }
             else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
@@ -937,7 +1198,7 @@ mkMeter env scope =
               pure $
                 UpDownCounter
                   { upDownCounterAdd = \v attrs ->
-                      mapM_ (\st -> addSumDbl v False (Just (DoubleNumber v)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
+                      mapM_ (\st -> addSumDbl v False (Just (DoubleNumber v)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
                   , upDownCounterEnabled = pure True
                   }
             else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
@@ -961,7 +1222,7 @@ mkMeter env scope =
                       mEk = advisoryAttributeKeys adv
                       dims = dimsFrom sc name KindHistogram mUnit mDesc (Just agg) mEk
                   ref <- getOrCreateInstrumentStorage e dims
-                  pure [mkHistRecorder agg ref lim mEk]
+                  pure [mkHistRecorder agg ref lim exOpts (dimExportAttributeKeys dims)]
                 _ -> fmap concat $ mapM (mkHistRecorderForView e sc name mUnit mDesc adv mScope lim) nonDrop
               case recorders of
                 [] -> pure $ Histogram (\_ _ -> pure ()) (pure False)
@@ -973,37 +1234,46 @@ mkMeter env scope =
                       , histogramEnabled = pure True
                       }
 
-    mkHistRecorder :: HistogramAggregation -> IORef CellMap -> Int -> Maybe [Text] -> (Double -> Attributes -> IO ())
-    mkHistRecorder (HistogramAggregationExplicit bounds) ref lim mEk =
+    mkHistRecorder :: HistogramAggregation -> IORef CellMap -> Int -> SdkMeterExemplarOptions -> Maybe (HS.HashSet Text) -> (Double -> Attributes -> IO ())
+    mkHistRecorder (HistogramAggregationExplicit bounds) ref lim' eOpts mEk =
       let !ubounds = U.convert bounds
-      in \v attrs -> recordHist ubounds v (Just v) attrs ref lim exOpts mEk
-    mkHistRecorder (HistogramAggregationExponential scale) ref lim mEk =
-      \v attrs -> recordExpHist scale v (Just v) attrs ref lim exOpts mEk
+      in \v attrs -> recordHist ubounds v (Just v) attrs ref lim' eOpts mEk
+    mkHistRecorder (HistogramAggregationExponential scale) ref lim' eOpts mEk =
+      \v attrs -> recordExpHist scale v (Just v) attrs ref lim' eOpts mEk
 
     mkHistRecorderForView
       :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> MeterScope -> Int -> View -> IO [Double -> Attributes -> IO ()]
-    mkHistRecorderForView e sc name mUnit mDesc adv _mScope lim v = do
+    mkHistRecorderForView e sc name mUnit mDesc adv _mScope lim' v = do
       let vAgg = viewAggregation v
           agg = case vAgg of
             ViewAggregationExplicitBucketHistogram bs -> Right (HistogramAggregationExplicit (V.fromList (L.sort bs)))
             ViewAggregationExponentialHistogram sc' -> Right (HistogramAggregationExponential sc')
             ViewAggregationDefault -> Right (fromAdvisoryHistogram adv)
+            ViewAggregationSum -> Right (fromAdvisoryHistogram adv)
+            ViewAggregationLastValue -> Right (fromAdvisoryHistogram adv)
             ViewAggregationDrop -> Left ()
+          effectiveExOpts = case viewExemplarFilter v of
+            Just f -> exOpts {exemplarFilter = f}
+            Nothing -> exOpts
       case agg of
         Left () -> pure []
         Right a -> do
+          vName <- case viewName v of
+            Just n -> case VName.validateInstrumentName n of
+              Just err -> do
+                otelLogWarning ("View name override " <> show n <> " is invalid: " <> show err <> "; using original name " <> show name)
+                pure name
+              Nothing -> pure n
+            Nothing -> pure name
           let mEk = case viewAttributeKeys v of
                 Just ks -> Just ks
                 Nothing -> advisoryAttributeKeys adv
-              vName = case viewName v of
-                Just n -> n
-                Nothing -> name
               vDesc = case viewDescription v of
                 Just d -> Just d
                 Nothing -> mDesc
               dims = dimsFrom sc vName KindHistogram mUnit vDesc (Just a) mEk
           ref <- getOrCreateInstrumentStorage e dims
-          pure [mkHistRecorder a ref lim mEk]
+          pure [mkHistRecorder a ref lim' effectiveExOpts (dimExportAttributeKeys dims)]
 
     mkGaugeI64 :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Int64)
     mkGaugeI64 e sc name mUnit mDesc adv = do
@@ -1019,8 +1289,9 @@ mkMeter env scope =
               pure $
                 Gauge
                   { gaugeRecord = \n attrs -> do
-                      t <- nowNanos
-                      mapM_ (\st -> recordGauge (IntNumber n) t (Just (IntNumber n)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
+                      !t <- nowNanos
+                      let !nv = IntNumber n
+                      mapM_ (\st -> recordGauge nv t (Just nv) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
                   , gaugeEnabled = pure True
                   }
             else pure $ Gauge (\_ _ -> pure ()) (pure False)
@@ -1039,8 +1310,9 @@ mkMeter env scope =
               pure $
                 Gauge
                   { gaugeRecord = \v attrs -> do
-                      t <- nowNanos
-                      mapM_ (\st -> recordGauge (DoubleNumber v) t (Just (DoubleNumber v)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
+                      !t <- nowNanos
+                      let !nv = DoubleNumber v
+                      mapM_ (\st -> recordGauge nv t (Just nv) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
                   , gaugeEnabled = pure True
                   }
             else pure $ Gauge (\_ _ -> pure ()) (pure False)
@@ -1049,7 +1321,7 @@ mkMeter env scope =
     ignoreCallbackException a = a `catch` handler
       where
         handler :: SomeException -> IO ()
-        handler _ = pure ()
+        handler ex = otelLogWarning ("Observable callback failed: " <> show ex)
 
     registerCollect :: IO () -> IO (IO ())
     registerCollect act = do
@@ -1069,15 +1341,21 @@ mkMeter env scope =
           let mScope = toMeterScope sc
               lim = sdkMeterCardinalityLimit e
           streams <- resolveStreamTargets e sc KindAsyncCounter name mUnit mDesc adv Nothing
-          let res = ObservableResult $ \n attrs ->
-                mapM_ (\st -> addSumI64 n True (Just (IntNumber n)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
-              run = mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
+          let mkRes _ = ObservableResult $ \n attrs ->
+                unless (n < 0) $
+                  mapM_ (\st -> setSumI64 n True (Just (IntNumber n)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
+              run = do
+                t <- nowNanos
+                let res = mkRes t
+                mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
           _ <- registerCollect run
           en <- obsEnabled KindAsyncCounter name mUnit mScope
           pure $
             ObservableCounter
               { observableCounterRegisterCallback = \cb -> do
-                  unregister <- registerCollect (cb res)
+                  unregister <- registerCollect $ do
+                    t <- nowNanos
+                    cb (mkRes t)
                   pure (ObservableCallbackHandle unregister)
               , observableCounterInstrumentScope = sc
               , observableCounterInstrumentName = name
@@ -1093,15 +1371,21 @@ mkMeter env scope =
           let mScope = toMeterScope sc
               lim = sdkMeterCardinalityLimit e
           streams <- resolveStreamTargets e sc KindAsyncCounter name mUnit mDesc adv Nothing
-          let res = ObservableResult $ \v attrs ->
-                mapM_ (\st -> addSumDbl v True (Just (DoubleNumber v)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
-              run = mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
+          let mkRes _ = ObservableResult $ \v attrs ->
+                unless (v < 0) $
+                  mapM_ (\st -> setSumDbl v True (Just (DoubleNumber v)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
+              run = do
+                t <- nowNanos
+                let res = mkRes t
+                mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
           _ <- registerCollect run
           en <- obsEnabled KindAsyncCounter name mUnit mScope
           pure $
             ObservableCounter
               { observableCounterRegisterCallback = \cb -> do
-                  unregister <- registerCollect (cb res)
+                  unregister <- registerCollect $ do
+                    t <- nowNanos
+                    cb (mkRes t)
                   pure (ObservableCallbackHandle unregister)
               , observableCounterInstrumentScope = sc
               , observableCounterInstrumentName = name
@@ -1117,15 +1401,20 @@ mkMeter env scope =
           let mScope = toMeterScope sc
               lim = sdkMeterCardinalityLimit e
           streams <- resolveStreamTargets e sc KindAsyncUpDownCounter name mUnit mDesc adv Nothing
-          let res = ObservableResult $ \n attrs ->
-                mapM_ (\st -> addSumI64 n False (Just (IntNumber n)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
-              run = mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
+          let mkRes _ = ObservableResult $ \n attrs ->
+                mapM_ (\st -> setSumI64 n False (Just (IntNumber n)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
+              run = do
+                t <- nowNanos
+                let res = mkRes t
+                mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
           _ <- registerCollect run
           en <- obsEnabled KindAsyncUpDownCounter name mUnit mScope
           pure $
             ObservableUpDownCounter
               { observableUpDownCounterRegisterCallback = \cb -> do
-                  unregister <- registerCollect (cb res)
+                  unregister <- registerCollect $ do
+                    t <- nowNanos
+                    cb (mkRes t)
                   pure (ObservableCallbackHandle unregister)
               , observableUpDownCounterInstrumentScope = sc
               , observableUpDownCounterInstrumentName = name
@@ -1141,15 +1430,20 @@ mkMeter env scope =
           let mScope = toMeterScope sc
               lim = sdkMeterCardinalityLimit e
           streams <- resolveStreamTargets e sc KindAsyncUpDownCounter name mUnit mDesc adv Nothing
-          let res = ObservableResult $ \v attrs ->
-                mapM_ (\st -> addSumDbl v False (Just (DoubleNumber v)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
-              run = mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
+          let mkRes _ = ObservableResult $ \v attrs ->
+                mapM_ (\st -> setSumDbl v False (Just (DoubleNumber v)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
+              run = do
+                t <- nowNanos
+                let res = mkRes t
+                mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
           _ <- registerCollect run
           en <- obsEnabled KindAsyncUpDownCounter name mUnit mScope
           pure $
             ObservableUpDownCounter
               { observableUpDownCounterRegisterCallback = \cb -> do
-                  unregister <- registerCollect (cb res)
+                  unregister <- registerCollect $ do
+                    t <- nowNanos
+                    cb (mkRes t)
                   pure (ObservableCallbackHandle unregister)
               , observableUpDownCounterInstrumentScope = sc
               , observableUpDownCounterInstrumentName = name
@@ -1165,16 +1459,20 @@ mkMeter env scope =
           let mScope = toMeterScope sc
               lim = sdkMeterCardinalityLimit e
           streams <- resolveStreamTargets e sc KindAsyncGauge name mUnit mDesc adv Nothing
-          let res = ObservableResult $ \n attrs -> do
+          let mkRes t = ObservableResult $ \n attrs ->
+                mapM_ (\st -> recordGauge (IntNumber n) t (Just (IntNumber n)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
+              run = do
                 t <- nowNanos
-                mapM_ (\st -> recordGauge (IntNumber n) t (Just (IntNumber n)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
-              run = mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
+                let res = mkRes t
+                mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
           _ <- registerCollect run
           en <- obsEnabled KindAsyncGauge name mUnit mScope
           pure $
             ObservableGauge
               { observableGaugeRegisterCallback = \cb -> do
-                  unregister <- registerCollect (cb res)
+                  unregister <- registerCollect $ do
+                    t <- nowNanos
+                    cb (mkRes t)
                   pure (ObservableCallbackHandle unregister)
               , observableGaugeInstrumentScope = sc
               , observableGaugeInstrumentName = name
@@ -1190,16 +1488,20 @@ mkMeter env scope =
           let mScope = toMeterScope sc
               lim = sdkMeterCardinalityLimit e
           streams <- resolveStreamTargets e sc KindAsyncGauge name mUnit mDesc adv Nothing
-          let res = ObservableResult $ \v attrs -> do
+          let mkRes t = ObservableResult $ \v attrs ->
+                mapM_ (\st -> recordGauge (DoubleNumber v) t (Just (DoubleNumber v)) attrs (stRef st) lim (stExemplarOpts st) (stExportKeys st)) streams
+              run = do
                 t <- nowNanos
-                mapM_ (\st -> recordGauge (DoubleNumber v) t (Just (DoubleNumber v)) attrs (stRef st) lim exOpts (stExportKeys st)) streams
-              run = mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
+                let res = mkRes t
+                mapM_ (\cb -> ignoreCallbackException (cb res)) cbs
           _ <- registerCollect run
           en <- obsEnabled KindAsyncGauge name mUnit mScope
           pure $
             ObservableGauge
               { observableGaugeRegisterCallback = \cb -> do
-                  unregister <- registerCollect (cb res)
+                  unregister <- registerCollect $ do
+                    t <- nowNanos
+                    cb (mkRes t)
                   pure (ObservableCallbackHandle unregister)
               , observableGaugeInstrumentScope = sc
               , observableGaugeInstrumentName = name
@@ -1210,82 +1512,113 @@ mkMeter env scope =
 {- | Build export batches from current in-memory aggregates (invoke observable callbacks first).
 
 Each batch has exactly the resource given at 'createMeterProvider'. If you run multiple
-meter providers, do not merge their exports into one 'ResourceMetricsExport' — keep one
+meter providers, do not merge their exports into one 'ResourceMetricsExport'; keep one
 top-level entry per resource when forwarding to an exporter.
 
 Collection is serialized via an internal lock so that concurrent callers (e.g. a periodic
 reader and a manual 'forceFlushMeterProvider') do not run observable callbacks twice in
 parallel, which would double-count data under delta temporality.
 -}
-collectResourceMetrics :: (MonadIO m) => SdkMeterEnv -> m [ResourceMetricsExport]
-collectResourceMetrics env = liftIO $ withMVar (sdkMeterCollectLock env) $ \_ -> do
+
+{- | Collect metrics using the given temporality preference.
+
+For backward compatibility and single-reader use, call with @const AggregationCumulative@
+or @const AggregationDelta@.  For multi-reader setups, each reader passes its own
+'metricReaderTemporalityFor'.
+
+@since 0.0.1.0
+-}
+collectResourceMetrics :: (MonadIO m) => SdkMeterEnv -> (InstrumentKind -> AggregationTemporality) -> m (Vector ResourceMetricsExport)
+collectResourceMetrics env tempFor = liftIO $ withMVar (sdkMeterCollectLock env) $ \_ -> do
   shut <- readIORef (sdkMeterShutdown env)
   if shut
-    then pure [ResourceMetricsExport (sdkMeterResource env) V.empty]
+    then pure (V.singleton (ResourceMetricsExport (sdkMeterResource env) V.empty))
     else do
       cbs <- readIORef (sdkMeterCollectCallbacks env)
-      mapM_ id (IM.elems cbs)
+      IM.foldr' (\cb rest -> cb >> rest) (pure ()) cbs
       instruments <- readIORef (sdkMeterInstruments env)
       t <- nowNanos
-      let temp = sdkMeterAggregationTemporality env
-          startT = sdkMeterStartTimeNanos env
-          isDelta = temp == AggregationDelta
-      snapshots <- mapM (snapshotInstrument isDelta) instruments
-      let rme = buildResourceExport (sdkMeterResource env) startT t temp snapshots
-      pure [rme]
+      prevCollect <- readIORef (sdkMeterLastCollectTime env)
+      atomicWriteIORef (sdkMeterLastCollectTime env) t
+      let processStart = sdkMeterStartTimeNanos env
+      snapshots <- mapM (snapshotInstrument tempFor) instruments
+      let rme = buildResourceExport (sdkMeterResource env) processStart prevCollect t tempFor snapshots
+      producerVecs <- mapM (\p -> p `catch` (\(ex :: SomeException) -> otelLogWarning ("MetricProducer failed: " <> show ex) >> pure V.empty)) (sdkMeterProducers env)
+      pure (V.cons rme (V.concat producerVecs))
   where
-    snapshotInstrument isDelta s
-      | isDelta =
-          atomicModifyIORef' (instrCells s) $ \cm ->
-            let m = cmMap cm
-                cm' = CellMap (H.map resetCellForDelta m) (cmSize cm)
-            in (cm', (instrDims s, m))
-      | otherwise = do
-          cells <- readIORef (instrCells s)
-          pure (instrDims s, cmMap cells)
+    snapshotInstrument tf s = do
+      let kind = dimKind (instrDims s)
+          isDelta = tf kind == AggregationDelta
+          isAsync = case kind of
+            KindAsyncCounter -> True
+            KindAsyncUpDownCounter -> True
+            KindAsyncGauge -> True
+            _ -> False
+      cm <- readIORef (instrCells s)
+      rawSnap <-
+        if isDelta
+          then
+            if isAsync
+              then traverse (\cellRef -> atomicModifyIORef' cellRef snapshotAsyncForDelta) (cmMap cm)
+              else traverse (\cellRef -> atomicModifyIORef' cellRef $ \c -> (resetCellForDelta c, c)) (cmMap cm)
+          else traverse readIORef (cmMap cm)
+      snapped <- traverse (freezeHistBuckets isDelta) rawSnap
+      pure (instrDims s, snapped)
 
 
 buildResourceExport
   :: MaterializedResources
   -> Word64
+  -- ^ Process start time (for cumulative)
   -> Word64
-  -> AggregationTemporality
+  -- ^ Previous collection time (for delta start)
+  -> Word64
+  -- ^ Current collection time
+  -> (InstrumentKind -> AggregationTemporality)
   -> [(InstrumentDims, H.HashMap Attributes Cell)]
   -> ResourceMetricsExport
-buildResourceExport res startT t temp snapshots =
-  let scopeGroups :: H.HashMap InstrumentationLibrary [(InstrumentDims, H.HashMap Attributes Cell)]
+buildResourceExport res processStart deltaStart t tempFor snapshots =
+  let scopeGroups :: H.HashMap InstrumentationLibrary (Vector (InstrumentDims, H.HashMap Attributes Cell))
       scopeGroups =
-        foldl'
-          ( \acc (dims, cells) ->
-              H.insertWith (++) (dimScope dims) [(dims, cells)] acc
-          )
-          H.empty
-          snapshots
-      scopes = V.fromList $ fmap (buildScopeExport startT t temp) $ H.toList scopeGroups
+        fmap V.fromList $
+          foldl'
+            ( \acc (dims, cells) ->
+                H.insertWith (++) (dimScope dims) [(dims, cells)] acc
+            )
+            H.empty
+            snapshots
+      scopes =
+        V.fromListN (H.size scopeGroups) $
+          fmap (buildScopeExport processStart deltaStart t tempFor) $
+            H.toList scopeGroups
   in ResourceMetricsExport res scopes
 
 
-buildScopeExport :: Word64 -> Word64 -> AggregationTemporality -> (InstrumentationLibrary, [(InstrumentDims, H.HashMap Attributes Cell)]) -> ScopeMetricsExport
-buildScopeExport startT t temp (scope, instruments) =
-  let exports = concatMap buildOne instruments
-      buildOne (dims, cells) =
-        let series = H.foldrWithKey' (\attrs cell acc -> (attrs, cell, dims) : acc) [] cells
-        in buildMetricExports startT t temp dims series
-  in ScopeMetricsExport scope (V.fromList exports)
+buildScopeExport :: Word64 -> Word64 -> Word64 -> (InstrumentKind -> AggregationTemporality) -> (InstrumentationLibrary, Vector (InstrumentDims, H.HashMap Attributes Cell)) -> ScopeMetricsExport
+buildScopeExport processStart deltaStart t tempFor (scope, instruments) =
+  let exports =
+        V.map
+          ( \(dims, cells) ->
+              let temp = tempFor (dimKind dims)
+                  startT = if temp == AggregationDelta then deltaStart else processStart
+              in buildMetricExport startT t temp dims cells
+          )
+          instruments
+  in ScopeMetricsExport scope exports
 
 
 applyDimAttrs :: InstrumentDims -> Attributes -> Attributes
 applyDimAttrs dims attrs = filterAttributesByKeys (dimExportAttributeKeys dims) attrs
 
 
-buildMetricExports
+buildMetricExport
   :: Word64
   -> Word64
   -> AggregationTemporality
   -> InstrumentDims
-  -> [(Attributes, Cell, InstrumentDims)]
-  -> [MetricExport]
-buildMetricExports startT t temp dims series =
+  -> H.HashMap Attributes Cell
+  -> MetricExport
+buildMetricExport startT t temp dims cells =
   case dimKind dims of
     KindCounter -> sumExport True
     KindAsyncCounter -> sumExport True
@@ -1298,112 +1631,105 @@ buildMetricExports startT t temp dims series =
     KindGauge -> gaugeExport False
     KindAsyncGauge -> gaugeExport True
   where
+    !n = H.size cells
+
     sumExport mon =
-      let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsSum (SumIntCell v _ exs) ->
-                      SumDataPoint
+      let (isInt, points) =
+            H.foldlWithKey'
+              ( \(!iI, !acc) attrs cell -> case cell of
+                  CsSum (SumIntCell v _ exs _) ->
+                    ( True
+                    , SumDataPoint
                         { sumDataPointStartTimeUnixNano = startT
                         , sumDataPointTimeUnixNano = t
                         , sumDataPointValue = IntNumber v
-                        , sumDataPointAttributes = applyDimAttrs d attrs
+                        , sumDataPointAttributes = applyDimAttrs dims attrs
                         , sumDataPointExemplars = exs
                         }
                         : acc
-                    CsSum (SumDblCell v _ exs) ->
-                      SumDataPoint
+                    )
+                  CsSum (SumDblCell v _ exs _) ->
+                    ( iI
+                    , SumDataPoint
                         { sumDataPointStartTimeUnixNano = startT
                         , sumDataPointTimeUnixNano = t
                         , sumDataPointValue = DoubleNumber v
-                        , sumDataPointAttributes = applyDimAttrs d attrs
+                        , sumDataPointAttributes = applyDimAttrs dims attrs
                         , sumDataPointExemplars = exs
                         }
                         : acc
-                    _ -> acc
-                )
-                []
-                series
-          isInt =
-            any
-              ( \(_, cell, _) ->
-                  case cell of
-                    CsSum SumIntCell {} -> True
-                    _ -> False
+                    )
+                  _ -> (iI, acc)
               )
-              series
-      in [ MetricExportSum (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) mon isInt temp points
-         ]
+              (False, [])
+              cells
+      in MetricExportSum (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) mon isInt temp (V.fromListN n points)
 
     histExport =
       let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsHist hc ->
-                      HistogramDataPoint
-                        { histogramDataPointStartTimeUnixNano = startT
-                        , histogramDataPointTimeUnixNano = t
-                        , histogramDataPointCount = hcCount hc
-                        , histogramDataPointSum = hcSum hc
-                        , histogramDataPointBucketCounts = V.convert (hcBuckets hc)
-                        , histogramDataPointExplicitBounds = V.convert (hcBounds hc)
-                        , histogramDataPointAttributes = applyDimAttrs d attrs
-                        , histogramDataPointMin = toMaybeDouble (hcMin hc)
-                        , histogramDataPointMax = toMaybeDouble (hcMax hc)
-                        , histogramDataPointExemplars = hcExemplars hc
-                        }
-                        : acc
-                    _ -> acc
-                )
-                []
-                series
-      in [ MetricExportHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp points
-         ]
+            H.foldlWithKey'
+              ( \acc attrs cell -> case cell of
+                  CsHist hc ->
+                    HistogramDataPoint
+                      { histogramDataPointStartTimeUnixNano = startT
+                      , histogramDataPointTimeUnixNano = t
+                      , histogramDataPointCount = hcCount hc
+                      , histogramDataPointSum = hcSum hc
+                      , histogramDataPointBucketCounts = V.convert (hcFrozenBuckets hc)
+                      , histogramDataPointExplicitBounds = V.convert (hcBounds hc)
+                      , histogramDataPointAttributes = applyDimAttrs dims attrs
+                      , histogramDataPointMin = toMaybeDouble (hcMin hc)
+                      , histogramDataPointMax = toMaybeDouble (hcMax hc)
+                      , histogramDataPointExemplars = V.mapMaybe id (hcBucketExemplars hc)
+                      }
+                      : acc
+                  _ -> acc
+              )
+              []
+              cells
+      in MetricExportHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp (V.fromListN n points)
 
     expHistExport =
       let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsExpHist ehc ->
-                      expHistToDataPoint startT t (applyDimAttrs d attrs) ehc : acc
-                    _ -> acc
-                )
-                []
-                series
-      in [ MetricExportExponentialHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp points
-         ]
+            H.foldlWithKey'
+              ( \acc attrs cell -> case cell of
+                  CsExpHist ehc ->
+                    expHistToDataPoint startT t (applyDimAttrs dims attrs) ehc : acc
+                  _ -> acc
+              )
+              []
+              cells
+      in MetricExportExponentialHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp (V.fromListN n points)
 
     gaugeExport _isAsync =
-      let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsGauge gc ->
-                      GaugeDataPoint
-                        { gaugeDataPointStartTimeUnixNano = startT
-                        , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
-                        , gaugeDataPointValue = gcValue gc
-                        , gaugeDataPointAttributes = applyDimAttrs d attrs
-                        , gaugeDataPointExemplars = gcExemplars gc
-                        }
-                        : acc
-                    _ -> acc
-                )
-                []
-                series
-          isInt = case series of
-            (_, CsGauge gc, _) : _ -> case gcValue gc of
-              IntNumber _ -> True
-              DoubleNumber _ -> False
-            _ -> False
-      in [ MetricExportGauge (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) isInt points
-         ]
+      let (isInt, points) =
+            H.foldlWithKey'
+              ( \(!iI, !acc) attrs cell -> case cell of
+                  CsGauge gc ->
+                    let intCheck = case gcValue gc of
+                          IntNumber _ -> True
+                          DoubleNumber _ -> iI
+                    in ( intCheck
+                       , GaugeDataPoint
+                          { gaugeDataPointStartTimeUnixNano = startT
+                          , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
+                          , gaugeDataPointValue = gcValue gc
+                          , gaugeDataPointAttributes = applyDimAttrs dims attrs
+                          , gaugeDataPointExemplars = gcExemplars gc
+                          }
+                          : acc
+                       )
+                  _ -> (iI, acc)
+              )
+              (False, [])
+              cells
+      in MetricExportGauge (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) isInt (V.fromListN n points)
 
 
--- | Create an SDK-backed 'MeterProvider' and handle for collection.
+{- | Create an SDK-backed 'MeterProvider' and handle for collection.
+
+@since 0.0.1.0
+-}
 createMeterProvider
   :: MaterializedResources
   -> SdkMeterProviderOptions
@@ -1415,9 +1741,12 @@ createMeterProvider res opts = do
   sd <- newIORef False
   collectLk <- newMVar ()
   startT <- nowNanos
+  lastCollect <- newIORef startT
+  meterCache <- newIORef (H.empty :: H.HashMap InstrumentationLibrary Meter)
   envFilter <- lookupMetricsExemplarFilter
   let lim = cardinalityLimit opts
-      temp = aggregationTemporality opts
+      rdrs = readers opts
+      prods = metricProducers opts
       viewsList = views opts
       baseExOpts = exemplarOptions opts
       exOpts = case envFilter of
@@ -1432,64 +1761,108 @@ createMeterProvider res opts = do
           , sdkMeterShutdown = sd
           , sdkMeterCollectLock = collectLk
           , sdkMeterCardinalityLimit = lim
-          , sdkMeterAggregationTemporality = temp
+          , sdkMeterReaders = rdrs
+          , sdkMeterProducers = prods
           , sdkMeterViews = viewsList
           , sdkMeterExemplarOptions = exOpts
           , sdkMeterStartTimeNanos = startT
+          , sdkMeterLastCollectTime = lastCollect
           }
-      mExporter = metricExporter opts
       provider =
         MeterProvider
           { meterProviderGetMeter = \scope -> do
               shut <- readIORef sd
-              if shut then pure (noopMeter scope) else pure (mkMeter env scope)
+              if shut
+                then pure (noopMeter scope)
+                else do
+                  cache <- readIORef meterCache
+                  case H.lookup scope cache of
+                    Just m -> pure m
+                    Nothing -> do
+                      when (T.null (libraryName scope)) $
+                        otelLogWarning "Meter created with empty name; returning working Meter with empty name per spec"
+                      let !m = mkMeter env scope
+                      atomicModifyIORef' meterCache $ \c ->
+                        case H.lookup scope c of
+                          Just existing -> (c, existing)
+                          Nothing -> (H.insert scope m c, m)
           , meterProviderShutdown = do
               alreadyShut <- atomicModifyIORef' sd $ \s -> (True, s)
               if alreadyShut
-                then pure ShutdownSuccess
+                then pure ShutdownFailure
                 else do
-                  -- Final collection + export under the lock so no concurrent
-                  -- collect can interleave between the last export and the
-                  -- clearing of instruments/callbacks.
-                  withMVar collectLk $ \_ -> do
-                    cbs' <- readIORef cbs
-                    mapM_ id (IM.elems cbs')
-                    instruments <- readIORef instrReg
-                    t <- nowNanos
-                    let isDelta = temp == AggregationDelta
-                    snapshots <- mapM (snapshotForShutdown isDelta) instruments
-                    let rme = buildResourceExport res startT t temp snapshots
-                    case mExporter of
-                      Just ex -> do
-                        _ <- metricExporterExport ex [rme]
-                        _ <- metricExporterShutdown ex
-                        pure ()
-                      Nothing -> pure ()
-                    atomicWriteIORef instrReg []
-                    atomicWriteIORef cbs IM.empty
-                  pure ShutdownSuccess
+                  results <-
+                    withMVar collectLk $ \_ -> do
+                      cbs' <- readIORef cbs
+                      mapM_ id (IM.elems cbs')
+                      instruments <- readIORef instrReg
+                      t <- nowNanos
+                      prevCollect <- readIORef lastCollect
+                      rs <- mapM (shutdownReader startT prevCollect instruments t) rdrs
+                      atomicWriteIORef instrReg []
+                      atomicWriteIORef cbs IM.empty
+                      pure rs
+                  pure (foldl worstShutdown ShutdownSuccess results)
           , meterProviderForceFlush = \mtimeout -> do
-              let timeoutUs = maybe 5000000 id mtimeout
-              mResult <- timeout timeoutUs $ do
-                batches <- collectResourceMetrics env
-                case mExporter of
-                  Just ex -> do
-                    _ <- metricExporterExport ex batches
-                    _ <- metricExporterForceFlush ex
-                    pure ()
-                  Nothing -> pure ()
-              case mResult of
-                Nothing -> pure FlushTimeout
-                Just () -> pure FlushSuccess
+              shut <- readIORef sd
+              if shut
+                then pure FlushSuccess
+                else do
+                  let timeoutUs = maybe 5000000 id mtimeout
+                  mResult <-
+                    timeout timeoutUs $ do
+                      frs <- mapM (flushReader env) rdrs
+                      pure (foldl worstFlush FlushSuccess frs)
+                  case mResult of
+                    Nothing -> pure FlushTimeout
+                    Just fr -> pure fr
           }
   pure (provider, env)
   where
-    snapshotForShutdown isDelta s
-      | isDelta =
-          atomicModifyIORef' (instrCells s) $ \cm ->
-            let m = cmMap cm
-                cm' = CellMap (H.map resetCellForDelta m) (cmSize cm)
-            in (cm', (instrDims s, m))
-      | otherwise = do
-          cells <- readIORef (instrCells s)
-          pure (instrDims s, cmMap cells)
+    worstShutdown :: ShutdownResult -> ShutdownResult -> ShutdownResult
+    worstShutdown ShutdownFailure _ = ShutdownFailure
+    worstShutdown _ ShutdownFailure = ShutdownFailure
+    worstShutdown ShutdownTimeout _ = ShutdownTimeout
+    worstShutdown _ ShutdownTimeout = ShutdownTimeout
+    worstShutdown ShutdownSuccess ShutdownSuccess = ShutdownSuccess
+
+    exportResultToShutdown :: ExportResult -> ShutdownResult
+    exportResultToShutdown Success = ShutdownSuccess
+    exportResultToShutdown (Failure _) = ShutdownFailure
+
+    exportResultToFlush :: ExportResult -> FlushResult
+    exportResultToFlush Success = FlushSuccess
+    exportResultToFlush (Failure _) = FlushError
+
+    shutdownReader sT prevCollect instruments t rdr = do
+      let tempFor = metricReaderTemporalityFor rdr
+      snapshots <- mapM (snapshotForShutdown tempFor) instruments
+      let rme = buildResourceExport res sT prevCollect t tempFor snapshots
+      exportRes <- metricExporterExport (metricReaderExporter rdr) (V.singleton rme)
+      shutRes <- metricExporterShutdown (metricReaderExporter rdr)
+      pure (worstShutdown (exportResultToShutdown exportRes) shutRes)
+
+    snapshotForShutdown tempFor s = do
+      let kind = dimKind (instrDims s)
+          isDelta = tempFor kind == AggregationDelta
+          isAsync = case kind of
+            KindAsyncCounter -> True
+            KindAsyncUpDownCounter -> True
+            KindAsyncGauge -> True
+            _ -> False
+      cm <- readIORef (instrCells s)
+      rawSnap <-
+        if isDelta
+          then
+            if isAsync
+              then traverse (\cellRef -> atomicModifyIORef' cellRef snapshotAsyncForDelta) (cmMap cm)
+              else traverse (\cellRef -> atomicModifyIORef' cellRef $ \c -> (resetCellForDelta c, c)) (cmMap cm)
+          else traverse readIORef (cmMap cm)
+      snapped <- traverse (freezeHistBuckets isDelta) rawSnap
+      pure (instrDims s, snapped)
+
+    flushReader env' rdr = do
+      batches <- collectResourceMetrics env' (metricReaderTemporalityFor rdr)
+      exportRes <- metricExporterExport (metricReaderExporter rdr) batches
+      flushRes <- metricExporterForceFlush (metricReaderExporter rdr)
+      pure (worstFlush (exportResultToFlush exportRes) flushRes)

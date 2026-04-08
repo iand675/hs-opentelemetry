@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -29,10 +30,10 @@ import OpenTelemetry.Exporter.OTLP.LogRecord (otlpLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.Metric (otlpMetricExporter)
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..), otlpExporter)
 import OpenTelemetry.Exporter.Span (SpanExporter)
-import OpenTelemetry.Logs.Core (LoggerProvider, LoggerProviderOptions (..), createLoggerProvider, emptyLoggerProviderOptions, shutdownLoggerProvider)
+import OpenTelemetry.Log.Core (LoggerProvider, LoggerProviderOptions (..), createLoggerProvider, emptyLoggerProviderOptions, shutdownLoggerProvider)
 import OpenTelemetry.MeterProvider
 import OpenTelemetry.MetricReader
-import OpenTelemetry.Metrics (MeterProvider (..))
+import OpenTelemetry.Metric.Core (MeterProvider (..))
 import OpenTelemetry.Processor.Batch.LogRecord (batchLogRecordProcessor)
 import qualified OpenTelemetry.Processor.Batch.LogRecord as BlogProc
 import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
@@ -50,6 +51,7 @@ import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 import OpenTelemetry.Trace.Sampler
 
 
+-- | @since 0.1.0.0
 data OTelComponents = OTelComponents
   { otelTracerProvider :: !TracerProvider
   , otelMeterProvider :: !MeterProvider
@@ -61,6 +63,8 @@ data OTelComponents = OTelComponents
 
 {- | Create SDK components from a parsed configuration model.
 Returns all three providers and the composite propagator.
+
+@since 0.1.0.0
 -}
 createFromConfig :: OTelConfiguration -> IO OTelComponents
 createFromConfig cfg = do
@@ -108,9 +112,9 @@ createFromConfig cfg = do
       (lp, logShutdowns) <- buildLoggerProvider cfg globalAttrLimits res
 
       let shutdown = do
-            _ <- shutdownTracerProvider tp
+            _ <- shutdownTracerProvider tp Nothing
             _ <- meterProviderShutdown mp
-            _ <- shutdownLoggerProvider lp
+            _ <- shutdownLoggerProvider lp Nothing
             sequence_ spanShutdowns
             meterShutdown
             sequence_ logShutdowns
@@ -219,7 +223,7 @@ buildOneSpanProcessor (SpanProcessorBatch bsp) = do
   pure (processor, pure ())
 buildOneSpanProcessor (SpanProcessorSimple ssp) = do
   exporter <- buildSpanExporter (sspExporter ssp)
-  processor <- simpleProcessor (SimpleProcessorConfig exporter)
+  processor <- simpleProcessor SimpleProcessorConfig {spanExporter = exporter, simpleSpanExportTimeoutMicros = 30_000_000}
   pure (processor, pure ())
 
 
@@ -244,15 +248,18 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
         pure (mp, pure ())
       (MetricReaderPeriodic pmc : _) -> do
         mExporter <- buildMetricExporter (pmrExporter pmc)
-        let opts = defaultSdkMeterProviderOptions {metricExporter = mExporter}
-        (mp, env) <- createMeterProvider res opts
         case mExporter of
           Just ex -> do
+            let rdr = MetricReader {metricReaderExporter = ex, metricReaderTemporalityFor = cumulativeTemporality}
+                opts = defaultSdkMeterProviderOptions {readers = [rdr]}
+            (mp, env) <- createMeterProvider res opts
             let interval = fromMaybe 60000 (pmrInterval pmc)
-                readerOpts = PeriodicMetricReaderOptions {periodicIntervalMicros = interval * 1000}
-            handle <- forkPeriodicMetricReader env ex readerOpts
+                readerOpts = PeriodicMetricReaderOptions {periodicIntervalMicros = interval * 1000, periodicExportTimeoutMicros = 30_000_000}
+            handle <- forkPeriodicMetricReader env rdr readerOpts
             pure (mp, stopPeriodicMetricReader handle)
-          Nothing -> pure (mp, pure ())
+          Nothing -> do
+            (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
+            pure (mp, pure ())
 
 
 buildMetricExporter :: PushMetricExporterConfig -> IO (Maybe MetricExporter)
@@ -269,12 +276,12 @@ buildMetricExporter PushMetricExporterNone = pure Nothing
 buildLoggerProvider :: OTelConfiguration -> AttributeLimits -> MaterializedResources -> IO (LoggerProvider, [IO ()])
 buildLoggerProvider cfg attrLimits res = case configLoggerProvider cfg >>= lpProcessors of
   Nothing -> do
-    lp <- createLoggerProvider [] (LoggerProviderOptions res attrLimits)
+    lp <- createLoggerProvider [] (LoggerProviderOptions res attrLimits Nothing)
     pure (lp, [])
   Just procs -> do
     results <- mapM buildOneLogProcessor procs
     let (lps, shutdowns) = unzip results
-        lpOpts = LoggerProviderOptions res attrLimits
+        lpOpts = LoggerProviderOptions res attrLimits Nothing
     lp <- createLoggerProvider lps lpOpts
     pure (lp, shutdowns)
 
@@ -294,7 +301,7 @@ buildOneLogProcessor (LogRecordProcessorBatch blp) = do
   pure (processor, pure ())
 buildOneLogProcessor (LogRecordProcessorSimple slp) = do
   exporter <- buildLogExporter (slpExporter slp)
-  let conf = SlogProc.SimpleLogRecordProcessorConfig {SlogProc.simpleLogRecordExporter = exporter}
+  let conf = SlogProc.SimpleLogRecordProcessorConfig {SlogProc.simpleLogRecordExporter = exporter, SlogProc.simpleLogRecordExportTimeoutMicros = 30_000_000}
   processor <- SlogProc.simpleLogRecordProcessor conf
   pure (processor, pure ())
 
@@ -338,6 +345,7 @@ otlpHttpToExporterConfig cfg' =
     , otlpTracesProtocol = Nothing
     , otlpMetricsProtocol = Nothing
     , otlpLogsProtocol = Nothing
+    , otlpConcurrentExports = 1
     }
 
 

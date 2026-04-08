@@ -37,6 +37,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 
+-- | @since 0.1.0.0
 data OTelConfiguration = OTelConfiguration
   { configFileFormat :: !Text
   , configDisabled :: !(Maybe Bool)
@@ -50,6 +51,7 @@ data OTelConfiguration = OTelConfiguration
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data AttributeLimitsConfig = AttributeLimitsConfig
   { alAttributeValueLengthLimit :: !(Maybe Int)
   , alAttributeCountLimit :: !(Maybe Int)
@@ -57,6 +59,7 @@ data AttributeLimitsConfig = AttributeLimitsConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data ResourceConfig = ResourceConfig
   { resourceAttributes :: !(Maybe (Map.Map Text Text))
   , resourceDetectors :: !(Maybe [Text])
@@ -65,12 +68,14 @@ data ResourceConfig = ResourceConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 newtype PropagatorConfig = PropagatorConfig
   { propagatorComposite :: Maybe [Text]
   }
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data TracerProviderConfig = TracerProviderConfig
   { tpProcessors :: !(Maybe [SpanProcessorConfig])
   , tpSampler :: !(Maybe SamplerConfig)
@@ -79,12 +84,14 @@ data TracerProviderConfig = TracerProviderConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data SpanProcessorConfig
   = SpanProcessorBatch !BatchSpanProcessorConfig
   | SpanProcessorSimple !SimpleSpanProcessorConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data BatchSpanProcessorConfig = BatchSpanProcessorConfig
   { bspScheduleDelay :: !(Maybe Int)
   , bspExportTimeout :: !(Maybe Int)
@@ -95,12 +102,14 @@ data BatchSpanProcessorConfig = BatchSpanProcessorConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 newtype SimpleSpanProcessorConfig = SimpleSpanProcessorConfig
   { sspExporter :: SpanExporterConfig
   }
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data SpanExporterConfig
   = SpanExporterOtlpHttp !OtlpHttpExporterConfig
   | SpanExporterConsole !ConsoleExporterConfig
@@ -108,6 +117,7 @@ data SpanExporterConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data OtlpHttpExporterConfig = OtlpHttpExporterConfig
   { otlpCfgEndpoint :: !(Maybe Text)
   , otlpSignalEndpoint :: !(Maybe Text)
@@ -118,10 +128,12 @@ data OtlpHttpExporterConfig = OtlpHttpExporterConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data ConsoleExporterConfig = ConsoleExporterConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data SamplerConfig
   = SamplerAlwaysOn
   | SamplerAlwaysOff
@@ -130,6 +142,7 @@ data SamplerConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data ParentBasedSamplerConfig = ParentBasedSamplerConfig
   { pbRoot :: !(Maybe SamplerConfig)
   , pbRemoteParentSampled :: !(Maybe SamplerConfig)
@@ -140,12 +153,14 @@ data ParentBasedSamplerConfig = ParentBasedSamplerConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 newtype TraceIdRatioSamplerConfig = TraceIdRatioSamplerConfig
   { ratioValue :: Double
   }
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data SpanLimitsConfig = SpanLimitsConfig
   { slAttributeValueLengthLimit :: !(Maybe Int)
   , slAttributeCountLimit :: !(Maybe Int)
@@ -157,17 +172,20 @@ data SpanLimitsConfig = SpanLimitsConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data MeterProviderConfig = MeterProviderConfig
   { mpReaders :: !(Maybe [MetricReaderConfig])
   }
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 newtype MetricReaderConfig
   = MetricReaderPeriodic PeriodicMetricReaderConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data PeriodicMetricReaderConfig = PeriodicMetricReaderConfig
   { pmrInterval :: !(Maybe Int)
   , pmrTimeout :: !(Maybe Int)
@@ -176,6 +194,7 @@ data PeriodicMetricReaderConfig = PeriodicMetricReaderConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data PushMetricExporterConfig
   = PushMetricExporterOtlpHttp !OtlpHttpExporterConfig
   | PushMetricExporterConsole !ConsoleExporterConfig
@@ -183,18 +202,21 @@ data PushMetricExporterConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data LoggerProviderConfig = LoggerProviderConfig
   { lpProcessors :: !(Maybe [LogRecordProcessorConfig])
   }
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data LogRecordProcessorConfig
   = LogRecordProcessorBatch !BatchLogRecordProcessorConfig
   | LogRecordProcessorSimple !SimpleLogRecordProcessorConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data BatchLogRecordProcessorConfig = BatchLogRecordProcessorConfig
   { blpScheduleDelay :: !(Maybe Int)
   , blpExportTimeout :: !(Maybe Int)
@@ -205,12 +227,14 @@ data BatchLogRecordProcessorConfig = BatchLogRecordProcessorConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 newtype SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
   { slpExporter :: LogRecordExporterConfig
   }
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 data LogRecordExporterConfig
   = LogRecordExporterOtlpHttp !OtlpHttpExporterConfig
   | LogRecordExporterConsole !ConsoleExporterConfig
@@ -218,6 +242,7 @@ data LogRecordExporterConfig
   deriving (Show, Eq, Generic)
 
 
+-- | @since 0.1.0.0
 emptyConfiguration :: OTelConfiguration
 emptyConfiguration =
   OTelConfiguration

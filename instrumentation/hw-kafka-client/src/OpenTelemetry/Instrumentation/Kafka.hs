@@ -23,7 +23,6 @@ module OpenTelemetry.Instrumentation.Kafka (
   consumerAttributes,
 ) where
 
-import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.ByteString (ByteString)
@@ -32,8 +31,8 @@ import Data.Int (Int64)
 import qualified Data.Map as M
 import Data.String (IsString)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
 import Data.Text.Encoding (decodeUtf8')
+import qualified Data.Text.Encoding as TE
 import GHC.Stack.Types (HasCallStack)
 import Kafka.Consumer (
   ConsumerProperties (cpProps),
@@ -288,6 +287,6 @@ pollMessage consumerProperties consumer timeout =
             ctxt <- getContext
             propagator <- liftIO getGlobalTextMapPropagator
             ctx <- extract propagator (kafkaHeadersToTextMap $ crHeaders cr) ctxt
-            void $ attachContext ctx
+            _ <- attachContext ctx
             inSpan'' tracer spanName (addAttributesToSpanArguments attributes consumerSpanArgs) $ \_span -> do
               return $ Right cr

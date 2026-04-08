@@ -1,18 +1,23 @@
 module OpenTelemetry.BaggageSpec where
 
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Char8 as B8
+import qualified Data.ByteString.Lazy as L
 import Data.Either (isLeft, isRight)
 import qualified Data.HashMap.Strict as HashMap
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import qualified Data.Text as T
 import OpenTelemetry.Baggage (
+  Baggage,
   Element (..),
   InvalidBaggage (..),
   decodeBaggageHeader,
   delete,
   empty,
   encodeBaggageHeader,
+  encodeBaggageHeaderB,
+  fromHashMap,
   insert,
   insertChecked,
   maxBaggageBytes,
@@ -28,9 +33,13 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "Baggage" $ do
+  -- Baggage API §Baggage header format: key=value list-members
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
   it "decodes simple header" $ do
     let baggage = values <$> decodeBaggageHeader "x-api-key=asdf"
     HashMap.mapKeys tokenValue <$> baggage `shouldBe` Right (HashMap.fromList [("x-api-key", Element {value = "asdf", properties = []})])
+  -- Baggage API §Baggage header format: percent-encoding in values
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
   it "decodes percent encoded header" $ do
     let baggage = values <$> decodeBaggageHeader "Authorization=Basic%20asdf"
     HashMap.mapKeys tokenValue <$> baggage `shouldBe` Right (HashMap.fromList [("Authorization", Element {value = "Basic asdf", properties = []})])
@@ -71,6 +80,8 @@ spec = describe "Baggage" $ do
   it "empty baggage encodes to empty" $ do
     encodeBaggageHeader empty `shouldBe` ""
 
+  -- Baggage API §Baggage header format: properties after semicolon
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
   it "decodes header with properties" $ do
     let expected =
           HashMap.fromList
@@ -100,6 +111,8 @@ spec = describe "Baggage" $ do
   it "rejects empty input" $ do
     decodeBaggageHeader "" `shouldSatisfy` isLeft
 
+  -- Baggage API §Baggage header: W3C baggage limits (8192 bytes, 180 members, 4096 bytes per member)
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
   describe "W3C Baggage size limits" $ do
     it "decode rejects header exceeding 8192 bytes" $ do
       let longVal = B8.replicate (maxBaggageBytes + 1 - 2) 'x'
@@ -149,6 +162,8 @@ spec = describe "Baggage" $ do
             Just k -> insert k (Element (T.replicate 50 "x") []) b
       BS.length (encodeBaggageHeader bigBaggage) `shouldSatisfy` (<= maxBaggageBytes)
 
+  -- Baggage API §Baggage operations: baggage must enforce header limits
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
   describe "insertChecked" $ do
     it "accepts normal entries" $ do
       let k = fromJust (mkToken "key1")
@@ -174,3 +189,56 @@ spec = describe "Baggage" $ do
       let k = fromJust (mkToken "key")
           b0 = insert k (Element "old" []) empty
       insertChecked k (Element "new" []) b0 `shouldSatisfy` isRight
+
+  describe "fromHashMap" $ do
+    it "creates Baggage from a HashMap" $ do
+      let k = fromJust (mkToken "hm-key")
+          hm = HashMap.singleton k (Element "hm-val" [])
+          bag = fromHashMap hm
+      HashMap.mapKeys tokenValue (values bag)
+        `shouldBe` HashMap.fromList [("hm-key", Element "hm-val" [])]
+
+    it "roundtrips with values" $ do
+      let k = fromJust (mkToken "rt")
+          bag = insert k (Element "v" []) empty
+      fromHashMap (values bag) `shouldBe` bag
+
+  -- Implementation-specific: Builder-based encoding matches strict encoding
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
+  describe "encodeBaggageHeaderB" $ do
+    it "produces same output as encodeBaggageHeader" $ do
+      let k = fromJust (mkToken "b-key")
+          bag = insert k (Element "b-val" []) empty
+          strict = encodeBaggageHeader bag
+          viaBuilder = L.toStrict (B.toLazyByteString (encodeBaggageHeaderB bag))
+      viaBuilder `shouldBe` strict
+
+  -- Baggage API §Token: baggage key token constraints
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/
+  describe "mkToken edge cases" $ do
+    it "rejects empty string" $ do
+      mkToken "" `shouldBe` Nothing
+
+    it "rejects token with spaces" $ do
+      mkToken "has space" `shouldBe` Nothing
+
+    it "rejects token exceeding 4096 chars" $ do
+      mkToken (T.replicate 4097 "a") `shouldBe` Nothing
+
+    it "accepts token at exactly 4096 chars" $ do
+      mkToken (T.replicate 4096 "a") `shouldSatisfy` isJust
+
+    it "rejects control characters" $ do
+      mkToken "bad\x00key" `shouldBe` Nothing
+
+  describe "decode error paths" $ do
+    it "rejects key with invalid characters" $ do
+      decodeBaggageHeader "bad key=val" `shouldSatisfy` isLeft
+
+    it "rejects missing equals sign" $ do
+      decodeBaggageHeader "keyonly" `shouldSatisfy` isLeft
+
+    -- Implementation-specific: invalid percent-sequences treated as literal (decoder behavior)
+    -- https://opentelemetry.io/docs/specs/otel/baggage/api/
+    it "passes through invalid percent encoding literally" $ do
+      decodeBaggageHeader "k=%ZZ" `shouldSatisfy` isRight

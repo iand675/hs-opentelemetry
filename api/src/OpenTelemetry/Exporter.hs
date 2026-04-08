@@ -1,5 +1,12 @@
 {-# LANGUAGE PatternSynonyms #-}
 
+{- |
+Module      : OpenTelemetry.Exporter
+Description : Re-exports of span exporter types.
+Stability   : experimental
+
+This module is deprecated; prefer 'OpenTelemetry.Exporter.Span'.
+-}
 module OpenTelemetry.Exporter
   {-# DEPRECATED "use OpenTelemetry.Exporter.Span instead" #-} (
   Exporter,
@@ -11,7 +18,7 @@ module OpenTelemetry.Exporter
 import Data.HashMap.Strict (HashMap)
 import Data.Vector (Vector)
 import OpenTelemetry.Exporter.Span
-import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
+import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary, ShutdownResult (..))
 import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 
 
@@ -26,6 +33,6 @@ mkExporter :: (HashMap InstrumentationLibrary (Vector ImmutableSpan) -> IO Expor
 mkExporter export shutdown =
   SpanExporter
     { spanExporterExport = export
-    , spanExporterShutdown = shutdown
-    , spanExporterForceFlush = pure ()
+    , spanExporterShutdown = shutdown >> pure ShutdownSuccess
+    , spanExporterForceFlush = pure FlushSuccess
     }

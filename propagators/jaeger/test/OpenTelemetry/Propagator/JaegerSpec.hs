@@ -26,215 +26,225 @@ import Test.Hspec
 
 
 spec :: Spec
-spec = describe "OpenTelemetry.Propagator.Jaeger" $ do
-  describe "Internal codec" $ do
-    it "parses a 128-bit trace context header" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1"
-      case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
-        Nothing -> expectationFailure "expected parse"
-        Just jh -> do
-          JI.jhTraceId jh `shouldBe` expectedTraceId
-          JI.jhSpanId jh `shouldBe` expectedSpanId
-          JI.jhParentSpanId jh `shouldBe` Nothing
-          JI.flagsSampled (JI.jhFlags jh) `shouldBe` True
-          JI.flagsDebug (JI.jhFlags jh) `shouldBe` False
+spec =
+  -- Jaeger uber-trace-id and uberctx-* propagation
+  -- https://www.jaegertracing.io/docs/1.21/client-libraries/#propagation-format
+  describe "OpenTelemetry.Propagator.Jaeger" $ do
+    describe "Internal codec" $ do
+      -- {trace-id}:{span-id}:{parent-span-id}:{flags} (hex)
+      -- https://www.jaegertracing.io/docs/1.21/client-libraries/#propagation-format
+      it "parses a 128-bit trace context header" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1"
+        case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
+          Nothing -> expectationFailure "expected parse"
+          Just jh -> do
+            JI.jhTraceId jh `shouldBe` expectedTraceId
+            JI.jhSpanId jh `shouldBe` expectedSpanId
+            JI.jhParentSpanId jh `shouldBe` Nothing
+            JI.flagsSampled (JI.jhFlags jh) `shouldBe` True
+            JI.flagsDebug (JI.jhFlags jh) `shouldBe` False
 
-    it "parses a 64-bit trace ID (left-padded to 128-bit)" $ do
-      let hdr = "64fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1"
-      case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
-        Nothing -> expectationFailure "expected parse"
-        Just jh -> do
-          JI.jhTraceId jh `shouldBe` expectedTraceId64
-          JI.flagsSampled (JI.jhFlags jh) `shouldBe` True
+      it "parses a 64-bit trace ID (left-padded to 128-bit)" $ do
+        let hdr = "64fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1"
+        case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
+          Nothing -> expectationFailure "expected parse"
+          Just jh -> do
+            JI.jhTraceId jh `shouldBe` expectedTraceId64
+            JI.flagsSampled (JI.jhFlags jh) `shouldBe` True
 
-    it "parses debug flag (flags=03 means sampled+debug)" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:03"
-      case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
-        Nothing -> expectationFailure "expected parse"
-        Just jh -> do
-          JI.flagsSampled (JI.jhFlags jh) `shouldBe` True
-          JI.flagsDebug (JI.jhFlags jh) `shouldBe` True
+      -- flags: sampled + debug bits
+      -- https://www.jaegertracing.io/docs/1.21/client-libraries/#propagation-format
+      it "parses debug flag (flags=03 means sampled+debug)" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:03"
+        case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
+          Nothing -> expectationFailure "expected parse"
+          Just jh -> do
+            JI.flagsSampled (JI.jhFlags jh) `shouldBe` True
+            JI.flagsDebug (JI.jhFlags jh) `shouldBe` True
 
-    it "parses unsampled flag (flags=0)" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:0"
-      case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
-        Nothing -> expectationFailure "expected parse"
-        Just jh -> do
-          JI.flagsSampled (JI.jhFlags jh) `shouldBe` False
-          JI.flagsDebug (JI.jhFlags jh) `shouldBe` False
+      it "parses unsampled flag (flags=0)" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:0"
+        case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
+          Nothing -> expectationFailure "expected parse"
+          Just jh -> do
+            JI.flagsSampled (JI.jhFlags jh) `shouldBe` False
+            JI.flagsDebug (JI.jhFlags jh) `shouldBe` False
 
-    it "parses debug-only flag (flags=2)" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:2"
-      case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
-        Nothing -> expectationFailure "expected parse"
-        Just jh -> do
-          JI.flagsSampled (JI.jhFlags jh) `shouldBe` False
-          JI.flagsDebug (JI.jhFlags jh) `shouldBe` True
+      it "parses debug-only flag (flags=2)" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:2"
+        case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
+          Nothing -> expectationFailure "expected parse"
+          Just jh -> do
+            JI.flagsSampled (JI.jhFlags jh) `shouldBe` False
+            JI.flagsDebug (JI.jhFlags jh) `shouldBe` True
 
-    it "parses non-zero parent span ID" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:05e3ac9a4f6e3b90:1"
-      case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
-        Nothing -> expectationFailure "expected parse"
-        Just jh -> case JI.jhParentSpanId jh of
-          Nothing -> expectationFailure "expected parent span ID"
-          Just _ -> pure ()
+      it "parses non-zero parent span ID" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:05e3ac9a4f6e3b90:1"
+        case JI.decodeUberTraceId (TE.encodeUtf8 hdr) of
+          Nothing -> expectationFailure "expected parse"
+          Just jh -> case JI.jhParentSpanId jh of
+            Nothing -> expectationFailure "expected parent span ID"
+            Just _ -> pure ()
 
-    it "rejects empty input" $ do
-      JI.decodeUberTraceId "" `shouldBe` Nothing
+      it "rejects empty input" $ do
+        JI.decodeUberTraceId "" `shouldBe` Nothing
 
-    it "rejects missing fields" $ do
-      JI.decodeUberTraceId "abc:def:0" `shouldBe` Nothing
+      it "rejects missing fields" $ do
+        JI.decodeUberTraceId "abc:def:0" `shouldBe` Nothing
 
-    it "rejects non-hex characters in trace ID" $ do
-      JI.decodeUberTraceId "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz:e457b5a2e4d86bd1:0:1"
-        `shouldBe` Nothing
+      it "rejects non-hex characters in trace ID" $ do
+        JI.decodeUberTraceId "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz:e457b5a2e4d86bd1:0:1"
+          `shouldBe` Nothing
 
-    it "rejects trailing garbage" $ do
-      JI.decodeUberTraceId "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1:extra"
-        `shouldBe` Nothing
+      it "rejects trailing garbage" $ do
+        JI.decodeUberTraceId "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1:extra"
+          `shouldBe` Nothing
 
-  describe "trace context extraction" $ do
-    it "extracts SpanContext from uber-trace-id (sampled)" $ do
-      let headers =
-            textMapFromList
-              [("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1")]
-      ctx' <- extractor jaegerTraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span' -> do
-          sc <- getSpanContext span'
-          traceId sc `shouldBe` expectedTraceId
-          spanId sc `shouldBe` expectedSpanId
-          isRemote sc `shouldBe` True
-          isSampled (traceFlags sc) `shouldBe` True
+    describe "trace context extraction" $ do
+      it "extracts SpanContext from uber-trace-id (sampled)" $ do
+        let headers =
+              textMapFromList
+                [("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1")]
+        ctx' <- extractor jaegerTraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span' -> do
+            sc <- getSpanContext span'
+            traceId sc `shouldBe` expectedTraceId
+            spanId sc `shouldBe` expectedSpanId
+            isRemote sc `shouldBe` True
+            isSampled (traceFlags sc) `shouldBe` True
 
-    it "extracts SpanContext from uber-trace-id (unsampled)" $ do
-      let headers =
-            textMapFromList
-              [("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:0")]
-      ctx' <- extractor jaegerTraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span' -> do
-          sc <- getSpanContext span'
-          isSampled (traceFlags sc) `shouldBe` False
+      it "extracts SpanContext from uber-trace-id (unsampled)" $ do
+        let headers =
+              textMapFromList
+                [("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:0")]
+        ctx' <- extractor jaegerTraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span' -> do
+            sc <- getSpanContext span'
+            isSampled (traceFlags sc) `shouldBe` False
 
-    it "debug flag implies sampled" $ do
-      let headers =
-            textMapFromList
-              [("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:2")]
-      ctx' <- extractor jaegerTraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span' -> do
-          sc <- getSpanContext span'
-          isSampled (traceFlags sc) `shouldBe` True
+      it "debug flag implies sampled" $ do
+        let headers =
+              textMapFromList
+                [("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:2")]
+        ctx' <- extractor jaegerTraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span' -> do
+            sc <- getSpanContext span'
+            isSampled (traceFlags sc) `shouldBe` True
 
-    it "leaves context unchanged when header is missing" $ do
-      ctx' <- extractor jaegerTraceContextPropagator emptyTextMap empty
-      lookupSpan ctx' `shouldSatisfy` isNothing
+      it "leaves context unchanged when header is missing" $ do
+        ctx' <- extractor jaegerTraceContextPropagator emptyTextMap empty
+        lookupSpan ctx' `shouldSatisfy` isNothing
 
-    it "leaves context unchanged for malformed header" $ do
-      let headers = textMapFromList [("uber-trace-id", "not-a-valid-header")]
-      ctx' <- extractor jaegerTraceContextPropagator headers empty
-      lookupSpan ctx' `shouldSatisfy` isNothing
+      it "leaves context unchanged for malformed header" $ do
+        let headers = textMapFromList [("uber-trace-id", "not-a-valid-header")]
+        ctx' <- extractor jaegerTraceContextPropagator headers empty
+        lookupSpan ctx' `shouldSatisfy` isNothing
 
-    it "header name is case-insensitive" $ do
-      let headers =
-            textMapFromList
-              [("Uber-Trace-Id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1")]
-      ctx' <- extractor jaegerTraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span' -> do
-          sc <- getSpanContext span'
-          traceId sc `shouldBe` expectedTraceId
+      -- HTTP header names are case-insensitive (RFC 9110)
+      it "header name is case-insensitive" $ do
+        let headers =
+              textMapFromList
+                [("Uber-Trace-Id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1")]
+        ctx' <- extractor jaegerTraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span' -> do
+            sc <- getSpanContext span'
+            traceId sc `shouldBe` expectedTraceId
 
-  describe "trace context injection" $ do
-    it "injects uber-trace-id with sampled flag" $ do
-      let ctx = insertSpan (wrapSpanContext sampledSpanContext) empty
-      hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
-      case textMapLookup "uber-trace-id" hs of
-        Nothing -> expectationFailure "expected uber-trace-id header"
-        Just v -> do
-          let parts = T.splitOn ":" v
-          length parts `shouldBe` 4
-          parts !! 0 `shouldBe` traceIdHex
-          parts !! 1 `shouldBe` spanIdHex
-          parts !! 2 `shouldBe` "0"
-          parts !! 3 `shouldBe` "1"
+    describe "trace context injection" $ do
+      it "injects uber-trace-id with sampled flag" $ do
+        let ctx = insertSpan (wrapSpanContext sampledSpanContext) empty
+        hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
+        case textMapLookup "uber-trace-id" hs of
+          Nothing -> expectationFailure "expected uber-trace-id header"
+          Just v -> do
+            let parts = T.splitOn ":" v
+            length parts `shouldBe` 4
+            parts !! 0 `shouldBe` traceIdHex
+            parts !! 1 `shouldBe` spanIdHex
+            parts !! 2 `shouldBe` "0"
+            parts !! 3 `shouldBe` "1"
 
-    it "injects uber-trace-id with unsampled flag" $ do
-      let ctx = insertSpan (wrapSpanContext unsampledSpanContext) empty
-      hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
-      case textMapLookup "uber-trace-id" hs of
-        Nothing -> expectationFailure "expected uber-trace-id header"
-        Just v -> do
-          let parts = T.splitOn ":" v
-          parts !! 3 `shouldBe` "0"
+      it "injects uber-trace-id with unsampled flag" $ do
+        let ctx = insertSpan (wrapSpanContext unsampledSpanContext) empty
+        hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
+        case textMapLookup "uber-trace-id" hs of
+          Nothing -> expectationFailure "expected uber-trace-id header"
+          Just v -> do
+            let parts = T.splitOn ":" v
+            parts !! 3 `shouldBe` "0"
 
-    it "does not inject when no span in context" $ do
-      hs <- injector jaegerTraceContextPropagator empty emptyTextMap
-      textMapLookup "uber-trace-id" hs `shouldSatisfy` isNothing
+      it "does not inject when no span in context" $ do
+        hs <- injector jaegerTraceContextPropagator empty emptyTextMap
+        textMapLookup "uber-trace-id" hs `shouldSatisfy` isNothing
 
-  describe "round-trip" $ do
-    it "extract after inject preserves trace and span IDs" $ do
-      let ctx = insertSpan (wrapSpanContext sampledSpanContext) empty
-      hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
-      ctx' <- extractor jaegerTraceContextPropagator hs empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context after round-trip"
-        Just span' -> do
-          sc <- getSpanContext span'
-          traceId sc `shouldBe` expectedTraceId
-          spanId sc `shouldBe` expectedSpanId
-          isSampled (traceFlags sc) `shouldBe` True
+    describe "round-trip" $ do
+      it "extract after inject preserves trace and span IDs" $ do
+        let ctx = insertSpan (wrapSpanContext sampledSpanContext) empty
+        hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
+        ctx' <- extractor jaegerTraceContextPropagator hs empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context after round-trip"
+          Just span' -> do
+            sc <- getSpanContext span'
+            traceId sc `shouldBe` expectedTraceId
+            spanId sc `shouldBe` expectedSpanId
+            isSampled (traceFlags sc) `shouldBe` True
 
-    it "round-trip preserves unsampled flag" $ do
-      let ctx = insertSpan (wrapSpanContext unsampledSpanContext) empty
-      hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
-      ctx' <- extractor jaegerTraceContextPropagator hs empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span' -> do
-          sc <- getSpanContext span'
-          isSampled (traceFlags sc) `shouldBe` False
+      it "round-trip preserves unsampled flag" $ do
+        let ctx = insertSpan (wrapSpanContext unsampledSpanContext) empty
+        hs <- injector jaegerTraceContextPropagator ctx emptyTextMap
+        ctx' <- extractor jaegerTraceContextPropagator hs empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span' -> do
+            sc <- getSpanContext span'
+            isSampled (traceFlags sc) `shouldBe` False
 
-  describe "baggage propagation" $ do
-    it "extracts baggage from uberctx-* headers" $ do
-      let headers =
-            textMapFromList
-              [ ("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1")
-              , ("uberctx-user-id", "42")
-              , ("uberctx-session", "abc123")
-              ]
-      ctx' <- extractor jaegerPropagator headers empty
-      case lookupBaggage ctx' of
-        Nothing -> expectationFailure "expected baggage in context"
-        Just bag -> do
-          let vals = H.toList (Baggage.values bag)
-          length vals `shouldSatisfy` (>= 2)
+    -- Jaeger baggage as uberctx-{key} headers
+    -- https://www.jaegertracing.io/docs/1.21/client-libraries/#propagation-format
+    describe "baggage propagation" $ do
+      it "extracts baggage from uberctx-* headers" $ do
+        let headers =
+              textMapFromList
+                [ ("uber-trace-id", "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1")
+                , ("uberctx-user-id", "42")
+                , ("uberctx-session", "abc123")
+                ]
+        ctx' <- extractor jaegerPropagator headers empty
+        case lookupBaggage ctx' of
+          Nothing -> expectationFailure "expected baggage in context"
+          Just bag -> do
+            let vals = H.toList (Baggage.values bag)
+            length vals `shouldSatisfy` (>= 2)
 
-    it "injects baggage as uberctx-* headers" $ do
-      case Baggage.decodeBaggageHeader "user-id=42,session=abc123" of
-        Left err -> expectationFailure $ "baggage setup failed: " ++ err
-        Right bag -> do
-          let ctx =
-                insertSpan (wrapSpanContext sampledSpanContext) $
-                  insertBaggage bag empty
-          hs <- injector jaegerPropagator ctx emptyTextMap
-          textMapLookup "uberctx-user-id" hs `shouldBe` Just "42"
-          textMapLookup "uberctx-session" hs `shouldBe` Just "abc123"
+      it "injects baggage as uberctx-* headers" $ do
+        case Baggage.decodeBaggageHeader "user-id=42,session=abc123" of
+          Left err -> expectationFailure $ "baggage setup failed: " ++ err
+          Right bag -> do
+            let ctx =
+                  insertSpan (wrapSpanContext sampledSpanContext) $
+                    insertBaggage bag empty
+            hs <- injector jaegerPropagator ctx emptyTextMap
+            textMapLookup "uberctx-user-id" hs `shouldBe` Just "42"
+            textMapLookup "uberctx-session" hs `shouldBe` Just "abc123"
 
-    it "does not inject baggage headers when no baggage in context" $ do
-      let ctx = insertSpan (wrapSpanContext sampledSpanContext) empty
-      hs <- injector jaegerPropagator ctx emptyTextMap
-      let baggageHeaders = filter (T.isPrefixOf "uberctx-") $ map fst $ textMapToListImpl hs
-      baggageHeaders `shouldBe` []
+      it "does not inject baggage headers when no baggage in context" $ do
+        let ctx = insertSpan (wrapSpanContext sampledSpanContext) empty
+        hs <- injector jaegerPropagator ctx emptyTextMap
+        let baggageHeaders = filter (T.isPrefixOf "uberctx-") $ map fst $ textMapToListImpl hs
+        baggageHeaders `shouldBe` []
 
-  describe "propagatorFields" $ do
-    it "trace context propagator declares uber-trace-id" $ do
-      propagatorFields jaegerTraceContextPropagator `shouldBe` ["uber-trace-id"]
+    describe "propagatorFields" $ do
+      it "trace context propagator declares uber-trace-id" $ do
+        propagatorFields jaegerTraceContextPropagator `shouldBe` ["uber-trace-id"]
 
 
 -- Helpers --------------------------------------------------------------------

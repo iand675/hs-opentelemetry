@@ -26,156 +26,178 @@ main = hspec spec
 
 
 spec :: Spec
-spec = describe "OpenTelemetry.Propagator.B3" $ do
-  describe "extraction" $ do
-    it "extracts SpanContext from the single b3 header (sampled)" $ do
-      let headers =
-            textMapFromList
-              [
-                ( "b3"
-                , "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-1"
-                )
-              ]
-      ctx' <- extractor b3TraceContextPropagator headers empty
-      assertExpectedRemoteSampled ctx'
+spec =
+  -- B3 single-header and multi-header propagation
+  -- https://github.com/openzipkin/b3-propagation
+  describe "OpenTelemetry.Propagator.B3" $ do
+    describe "extraction" $ do
+      -- B3 single header: TraceId-SpanId-1 (sampled)
+      -- https://github.com/openzipkin/b3-propagation#single-header
+      it "extracts SpanContext from the single b3 header (sampled)" $ do
+        let headers =
+              textMapFromList
+                [
+                  ( "b3"
+                  , "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-1"
+                  )
+                ]
+        ctx' <- extractor b3TraceContextPropagator headers empty
+        assertExpectedRemoteSampled ctx'
 
-    it "extracts the same SpanContext from multi-header B3 (sampled)" $ do
-      let headers =
-            textMapFromList
-              [ ("x-b3-traceid", "80f198ee56343ba864fe8b2a57d3eff7")
-              , ("x-b3-spanid", "e457b5a2e4d86bd1")
-              , ("x-b3-sampled", "1")
-              ]
-      ctx' <- extractor b3MultiTraceContextPropagator headers empty
-      assertExpectedRemoteSampled ctx'
+      -- B3 multiple headers: X-B3-TraceId, X-B3-SpanId, X-B3-Sampled
+      -- https://github.com/openzipkin/b3-propagation#multiple-headers
+      it "extracts the same SpanContext from multi-header B3 (sampled)" $ do
+        let headers =
+              textMapFromList
+                [ ("x-b3-traceid", "80f198ee56343ba864fe8b2a57d3eff7")
+                , ("x-b3-spanid", "e457b5a2e4d86bd1")
+                , ("x-b3-sampled", "1")
+                ]
+        ctx' <- extractor b3MultiTraceContextPropagator headers empty
+        assertExpectedRemoteSampled ctx'
 
-    it "leaves the context unchanged when headers are missing" $ do
-      ctx1 <- extractor b3TraceContextPropagator emptyTextMap empty
-      ctx2 <- extractor b3MultiTraceContextPropagator emptyTextMap empty
-      lookupSpan ctx1 `shouldSatisfy` isNothing
-      lookupSpan ctx2 `shouldSatisfy` isNothing
+      it "leaves the context unchanged when headers are missing" $ do
+        ctx1 <- extractor b3TraceContextPropagator emptyTextMap empty
+        ctx2 <- extractor b3MultiTraceContextPropagator emptyTextMap empty
+        lookupSpan ctx1 `shouldSatisfy` isNothing
+        lookupSpan ctx2 `shouldSatisfy` isNothing
 
-    it "extracts SpanContext with sampled bit unset when b3 ends in -0" $ do
-      let headers =
-            textMapFromList
-              [
-                ( "b3"
-                , "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-0"
-                )
-              ]
-      ctx' <- extractor b3TraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span -> do
-          sc <- getSpanContext span
-          traceId sc `shouldBe` expectedTraceId
-          spanId sc `shouldBe` expectedSpanId
-          isRemote sc `shouldBe` True
-          isSampled (traceFlags sc) `shouldBe` False
+      -- Single header: trailing -0 means unsampled
+      -- https://github.com/openzipkin/b3-propagation#single-header
+      it "extracts SpanContext with sampled bit unset when b3 ends in -0" $ do
+        let headers =
+              textMapFromList
+                [
+                  ( "b3"
+                  , "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-0"
+                  )
+                ]
+        ctx' <- extractor b3TraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span -> do
+            sc <- getSpanContext span
+            traceId sc `shouldBe` expectedTraceId
+            spanId sc `shouldBe` expectedSpanId
+            isRemote sc `shouldBe` True
+            isSampled (traceFlags sc) `shouldBe` False
 
-    it "debug flag takes precedence over X-B3-Sampled: 0 in multi-header" $ do
-      let headers =
-            textMapFromList
-              [ ("x-b3-traceid", "80f198ee56343ba864fe8b2a57d3eff7")
-              , ("x-b3-spanid", "e457b5a2e4d86bd1")
-              , ("x-b3-sampled", "0")
-              , ("x-b3-flags", "1")
-              ]
-      ctx' <- extractor b3MultiTraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span -> do
-          sc <- getSpanContext span
-          traceId sc `shouldBe` expectedTraceId
-          spanId sc `shouldBe` expectedSpanId
-          isRemote sc `shouldBe` True
-          isSampled (traceFlags sc) `shouldBe` True
+      -- X-B3-Flags: 1 (debug) forces trace on; overrides X-B3-Sampled: 0
+      -- https://github.com/openzipkin/b3-propagation#debug-flag
+      it "debug flag takes precedence over X-B3-Sampled: 0 in multi-header" $ do
+        let headers =
+              textMapFromList
+                [ ("x-b3-traceid", "80f198ee56343ba864fe8b2a57d3eff7")
+                , ("x-b3-spanid", "e457b5a2e4d86bd1")
+                , ("x-b3-sampled", "0")
+                , ("x-b3-flags", "1")
+                ]
+        ctx' <- extractor b3MultiTraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span -> do
+            sc <- getSpanContext span
+            traceId sc `shouldBe` expectedTraceId
+            spanId sc `shouldBe` expectedSpanId
+            isRemote sc `shouldBe` True
+            isSampled (traceFlags sc) `shouldBe` True
 
-    it "X-B3-Sampled: 0 alone means unsampled in multi-header" $ do
-      let headers =
-            textMapFromList
-              [ ("x-b3-traceid", "80f198ee56343ba864fe8b2a57d3eff7")
-              , ("x-b3-spanid", "e457b5a2e4d86bd1")
-              , ("x-b3-sampled", "0")
-              ]
-      ctx' <- extractor b3MultiTraceContextPropagator headers empty
-      case lookupSpan ctx' of
-        Nothing -> expectationFailure "expected span in context"
-        Just span -> do
-          sc <- getSpanContext span
-          isSampled (traceFlags sc) `shouldBe` False
+      it "X-B3-Sampled: 0 alone means unsampled in multi-header" $ do
+        let headers =
+              textMapFromList
+                [ ("x-b3-traceid", "80f198ee56343ba864fe8b2a57d3eff7")
+                , ("x-b3-spanid", "e457b5a2e4d86bd1")
+                , ("x-b3-sampled", "0")
+                ]
+        ctx' <- extractor b3MultiTraceContextPropagator headers empty
+        case lookupSpan ctx' of
+          Nothing -> expectationFailure "expected span in context"
+          Just span -> do
+            sc <- getSpanContext span
+            isSampled (traceFlags sc) `shouldBe` False
 
-  describe "injection" $ do
-    it "injects the b3 single header with traceId-spanId" $ do
-      let ctx = insertSpan (wrapSpanContext sampleSpanContext) empty
-      hs <- injector b3TraceContextPropagator ctx emptyTextMap
-      case textMapLookup B3I.b3Header hs of
-        Nothing -> expectationFailure "expected b3 header"
-        Just v -> case T.splitOn "-" v of
-          [tid, sid] -> do
-            tid `shouldBe` traceIdHex
-            sid `shouldBe` spanIdHex
-          _ ->
-            expectationFailure $
-              "expected traceId-spanId in b3 header, got: " ++ show v
+    describe "injection" $ do
+      -- Single header format TraceId-SpanId-SamplingState
+      -- https://github.com/openzipkin/b3-propagation#single-header
+      it "injects the b3 single header with traceId-spanId-sampling" $ do
+        let ctx = insertSpan (wrapSpanContext sampleSpanContext) empty
+        hs <- injector b3TraceContextPropagator ctx emptyTextMap
+        case textMapLookup B3I.b3Header hs of
+          Nothing -> expectationFailure "expected b3 header"
+          Just v -> case T.splitOn "-" v of
+            [tid, sid, samp] -> do
+              tid `shouldBe` traceIdHex
+              sid `shouldBe` spanIdHex
+              samp `shouldBe` "1"
+            _ ->
+              expectationFailure $
+                "expected traceId-spanId-sampling in b3 header, got: " ++ show v
 
-    it "injects X-B3-TraceId and X-B3-SpanId for multi-header propagation" $ do
-      let ctx = insertSpan (wrapSpanContext sampleSpanContext) empty
-      hs <- injector b3MultiTraceContextPropagator ctx emptyTextMap
-      textMapLookup B3I.xb3TraceIdHeader hs `shouldBe` Just traceIdHex
-      textMapLookup B3I.xb3SpanIdHeader hs `shouldBe` Just spanIdHex
+      -- https://github.com/openzipkin/b3-propagation#multiple-headers
+      it "injects X-B3-TraceId, X-B3-SpanId, and X-B3-Sampled for multi-header propagation" $ do
+        let ctx = insertSpan (wrapSpanContext sampleSpanContext) empty
+        hs <- injector b3MultiTraceContextPropagator ctx emptyTextMap
+        textMapLookup B3I.xb3TraceIdHeader hs `shouldBe` Just traceIdHex
+        textMapLookup B3I.xb3SpanIdHeader hs `shouldBe` Just spanIdHex
+        textMapLookup B3I.xb3SampledHeader hs `shouldBe` Just "1"
 
-  describe "B3 Internal" $ do
-    it "decodeXb3TraceIdHeader parses 128-bit trace ID" $ do
-      B3I.decodeXb3TraceIdHeader "80f198ee56343ba864fe8b2a57d3eff7" `shouldSatisfy` isJust
+    describe "B3 Internal" $ do
+      -- 128-bit or 64-bit (padded) trace id hex
+      -- https://github.com/openzipkin/b3-propagation#trace-identifiers
+      it "decodeXb3TraceIdHeader parses 128-bit trace ID" $ do
+        B3I.decodeXb3TraceIdHeader "80f198ee56343ba864fe8b2a57d3eff7" `shouldSatisfy` isJust
 
-    it "decodeXb3TraceIdHeader parses 64-bit trace ID (zero-padded)" $ do
-      B3I.decodeXb3TraceIdHeader "e457b5a2e4d86bd1" `shouldSatisfy` isJust
+      it "decodeXb3TraceIdHeader parses 64-bit trace ID (zero-padded)" $ do
+        B3I.decodeXb3TraceIdHeader "e457b5a2e4d86bd1" `shouldSatisfy` isJust
 
-    it "decodeXb3TraceIdHeader rejects invalid hex" $ do
-      B3I.decodeXb3TraceIdHeader "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" `shouldBe` Nothing
+      it "decodeXb3TraceIdHeader rejects invalid hex" $ do
+        B3I.decodeXb3TraceIdHeader "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" `shouldBe` Nothing
 
-    it "decodeXb3TraceIdHeader rejects empty" $ do
-      B3I.decodeXb3TraceIdHeader "" `shouldBe` Nothing
+      it "decodeXb3TraceIdHeader rejects empty" $ do
+        B3I.decodeXb3TraceIdHeader "" `shouldBe` Nothing
 
-    it "decodeXb3SpanIdHeader parses valid span ID" $ do
-      B3I.decodeXb3SpanIdHeader "e457b5a2e4d86bd1" `shouldSatisfy` isJust
+      it "decodeXb3SpanIdHeader parses valid span ID" $ do
+        B3I.decodeXb3SpanIdHeader "e457b5a2e4d86bd1" `shouldSatisfy` isJust
 
-    it "decodeXb3SpanIdHeader rejects too-short hex" $ do
-      B3I.decodeXb3SpanIdHeader "e457" `shouldBe` Nothing
+      it "decodeXb3SpanIdHeader rejects too-short hex" $ do
+        B3I.decodeXb3SpanIdHeader "e457" `shouldBe` Nothing
 
-    it "decodeB3SingleHeader parses full header with parent" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-1-05e3ac9a4f6e3b90"
-      case B3I.decodeB3SingleHeader hdr of
-        Nothing -> expectationFailure "expected parse"
-        Just b3 -> do
-          B3I.parentSpanId b3 `shouldSatisfy` isJust
-          B3I.spanId b3 `shouldBe` expectedSpanId
-          B3I.traceId b3 `shouldBe` expectedTraceId
+      -- Single header with optional parent span id segment
+      -- https://github.com/openzipkin/b3-propagation#single-header
+      it "decodeB3SingleHeader parses full header with parent" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-1-05e3ac9a4f6e3b90"
+        case B3I.decodeB3SingleHeader hdr of
+          Nothing -> expectationFailure "expected parse"
+          Just b3 -> do
+            B3I.parentSpanId b3 `shouldSatisfy` isJust
+            B3I.spanId b3 `shouldBe` expectedSpanId
+            B3I.traceId b3 `shouldBe` expectedTraceId
 
-    it "decodeB3SingleHeader parses header with sampling=d (debug)" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-d"
-      case B3I.decodeB3SingleHeader hdr of
-        Nothing -> expectationFailure "expected parse"
-        Just b3 -> (B3I.samplingState b3 == B3I.Debug) `shouldBe` True
+      -- Sampling state "d" (debug)
+      -- https://github.com/openzipkin/b3-propagation#sampling-state
+      it "decodeB3SingleHeader parses header with sampling=d (debug)" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1-d"
+        case B3I.decodeB3SingleHeader hdr of
+          Nothing -> expectationFailure "expected parse"
+          Just b3 -> (B3I.samplingState b3 == B3I.Debug) `shouldBe` True
 
-    it "decodeB3SingleHeader parses header without sampling" $ do
-      let hdr = "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1"
-      case B3I.decodeB3SingleHeader hdr of
-        Nothing -> expectationFailure "expected parse"
-        Just b3 -> (B3I.samplingState b3 == B3I.Defer) `shouldBe` True
+      it "decodeB3SingleHeader parses header without sampling" $ do
+        let hdr = "80f198ee56343ba864fe8b2a57d3eff7-e457b5a2e4d86bd1"
+        case B3I.decodeB3SingleHeader hdr of
+          Nothing -> expectationFailure "expected parse"
+          Just b3 -> (B3I.samplingState b3 == B3I.Defer) `shouldBe` True
 
-    it "decodeXb3SampledHeader parses 1 as Accept" $ do
-      (B3I.decodeXb3SampledHeader "1" == Just B3I.Accept) `shouldBe` True
+      it "decodeXb3SampledHeader parses 1 as Accept" $ do
+        (B3I.decodeXb3SampledHeader "1" == Just B3I.Accept) `shouldBe` True
 
-    it "decodeXb3SampledHeader parses 0 as Deny" $ do
-      (B3I.decodeXb3SampledHeader "0" == Just B3I.Deny) `shouldBe` True
+      it "decodeXb3SampledHeader parses 0 as Deny" $ do
+        (B3I.decodeXb3SampledHeader "0" == Just B3I.Deny) `shouldBe` True
 
-    it "decodeXb3FlagsHeader parses 1 as Debug" $ do
-      (B3I.decodeXb3FlagsHeader "1" == Just B3I.Debug) `shouldBe` True
+      it "decodeXb3FlagsHeader parses 1 as Debug" $ do
+        (B3I.decodeXb3FlagsHeader "1" == Just B3I.Debug) `shouldBe` True
 
-    it "decodeXb3FlagsHeader rejects 0" $ do
-      isNothing (B3I.decodeXb3FlagsHeader "0") `shouldBe` True
+      it "decodeXb3FlagsHeader rejects 0" $ do
+        isNothing (B3I.decodeXb3FlagsHeader "0") `shouldBe` True
 
 
 traceIdHex :: T.Text

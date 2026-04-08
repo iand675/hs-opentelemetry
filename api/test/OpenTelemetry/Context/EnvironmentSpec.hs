@@ -8,6 +8,8 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "Context.Environment" $ do
+  -- Propagators API §Environment-based propagation: map header names to env vars (W3C, B3, vendor)
+  -- https://opentelemetry.io/docs/specs/otel/context/api-propagators/
   describe "normalizeKeyToEnvVar" $ do
     it "uppercases W3C traceparent" $
       normalizeKeyToEnvVar "traceparent" `shouldBe` "TRACEPARENT"

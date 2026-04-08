@@ -1,6 +1,35 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+Module      : OpenTelemetry.Instrumentation.Conduit
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Trace conduit pipeline stages as spans
+Stability   : experimental
+
+= Overview
+
+Wraps individual conduit pipeline stages in trace spans so you can see
+how time is spent across your streaming pipeline. Use 'inSpan' to run a
+sub-pipeline under a span; exceptions are recorded on the span and rethrown.
+
+= Quick example
+
+@
+import Conduit
+import Data.ByteString (ByteString)
+import OpenTelemetry.Instrumentation.Conduit (inSpan)
+import OpenTelemetry.Trace.Core (defaultSpanArguments)
+
+myPipeline :: Tracer -> ConduitT ByteString Void IO ()
+myPipeline tracer =
+  sourceFile "input.csv"
+    .| inSpan tracer "parse" defaultSpanArguments (\_ -> mapC parseRow)
+    .| inSpan tracer "transform" defaultSpanArguments (\_ -> mapC transformRow)
+    .| sinkFile "output.json"
+@
+-}
 module OpenTelemetry.Instrumentation.Conduit where
 
 import Conduit

@@ -30,7 +30,7 @@ spec = describe "Hspec instrumentation" $ do
 
     _summary <- hspecResult innerSpec
 
-    shutdownTracerProvider tp
+    _ <- shutdownTracerProvider tp Nothing
     spans <- readIORef ref
     names <- traverse (\s -> hotName <$> readIORef (spanHot s)) spans
     names `shouldContain` ["alpha"]
@@ -51,7 +51,7 @@ spec = describe "Hspec instrumentation" $ do
 
     _summary <- hspecResult innerSpec
 
-    shutdownTracerProvider tp
+    _ <- shutdownTracerProvider tp Nothing
     spans <- readIORef ref
     names <- traverse (\s -> hotName <$> readIORef (spanHot s)) spans
     names `shouldContain` ["nested test"]

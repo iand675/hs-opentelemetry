@@ -63,6 +63,7 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
     , hs-opentelemetry-instrumentation-wai ==0.1.*
     , hs-opentelemetry-instrumentation-yesod ==0.1.*
     , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , http-types
     , network

@@ -7,30 +7,61 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
- Module      :  OpenTelemetry.Exporter.OTLP.Span
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  OTLP Exporter
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      : OpenTelemetry.Exporter.OTLP.Span
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : OTLP span exporter (HTTP/protobuf)
+Stability   : experimental
 
- The OTLP Exporter is the recommend exporter format to use where possible.
+= Overview
 
- A number of vendors offer support for exporting traces, logs, and metrics using the vendor-agnostic OTLP protocol.
+Exports spans to any OTLP-compatible endpoint (OpenTelemetry Collector,
+Jaeger, Grafana Tempo, Honeycomb, Datadog, etc.) using HTTP with protobuf
+encoding.
 
- Additionally, the OTLP format is supported by the <https://opentelemetry.io/docs/collector/ OpenTelemetry Collector>.
+= Quick example
 
- The OpenTelemetry Collector offers a vendor-agnostic implementation of how to receive, process and export telemetry data.
- It removes the need to run, operate, and maintain multiple agents/collectors.
- This works with improved scalability and supports open-source observability data formats (e.g. Jaeger, Prometheus, Fluent Bit, etc.) sending to
- one or more open-source or commercial back-ends. The local Collector agent is the default location to which instrumentation libraries export
- their telemetry data.
+Normally you do not create this exporter directly; the SDK creates it
+automatically when @OTEL_TRACES_EXPORTER=otlp@ (the default). To customize:
+
+@
+import OpenTelemetry.Exporter.OTLP.Span
+
+config <- loadExporterEnvironmentVariables
+exporter <- otlpExporter config
+@
+
+= Configuration
+
+All configuration is via environment variables. Per-signal variables override
+the generic ones. See
+<https://opentelemetry.io/docs/specs/otel/protocol/exporter/>.
+
+=== Endpoint
+
+* @OTEL_EXPORTER_OTLP_ENDPOINT@ — base URL (default: @http:\/\/localhost:4318@
+  for HTTP, @http:\/\/localhost:4317@ for gRPC). HTTP appends @\/v1\/traces@.
+* @OTEL_EXPORTER_OTLP_TRACES_ENDPOINT@ — overrides the above for traces
+  (used as-is, no path appended).
+
+=== Headers, auth, TLS
+
+* @OTEL_EXPORTER_OTLP_HEADERS@ / @OTEL_EXPORTER_OTLP_TRACES_HEADERS@ —
+  comma-separated @key=value@ pairs appended to every export request.
+* @OTEL_EXPORTER_OTLP_CERTIFICATE@ / @OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE@ —
+  path to a custom CA certificate (PEM).
+* @OTEL_EXPORTER_OTLP_INSECURE@ / @OTEL_EXPORTER_OTLP_TRACES_INSECURE@ —
+  disable TLS verification (default: @false@).
+
+=== Encoding and transport
+
+* @OTEL_EXPORTER_OTLP_PROTOCOL@ / @OTEL_EXPORTER_OTLP_TRACES_PROTOCOL@ —
+  @http\/protobuf@ (default) or @grpc@.
+* @OTEL_EXPORTER_OTLP_COMPRESSION@ / @OTEL_EXPORTER_OTLP_TRACES_COMPRESSION@ —
+  @gzip@ or @none@ (default: @none@).
+* @OTEL_EXPORTER_OTLP_TIMEOUT@ / @OTEL_EXPORTER_OTLP_TRACES_TIMEOUT@ —
+  export timeout in milliseconds (default: @10000@).
 -}
 module OpenTelemetry.Exporter.OTLP.Span (
   -- * Initializing the exporter
@@ -57,8 +88,9 @@ import Codec.Compression.GZip
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Monad (when)
 import Control.Monad.IO.Class
-import Data.Bits (shiftL)
+import Data.Bits (shiftL, (.|.))
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import Data.HashMap.Strict (HashMap)
@@ -67,13 +99,13 @@ import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Maybe
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
-import Data.IORef (readIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding as TE
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector as Vector
+import Data.Word (Word32)
 import Lens.Micro
 import Network.HTTP.Client
 import qualified Network.HTTP.Client as HTTPClient
@@ -81,30 +113,35 @@ import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
+import OpenTelemetry.Common (optionalTimestampToMaybe)
 import OpenTelemetry.Exporter.OTLP.Internal.Config
 import OpenTelemetry.Exporter.Span
+import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
 import OpenTelemetry.Registry (registerSpanExporterFactory)
 import OpenTelemetry.Resource
-import OpenTelemetry.Common (optionalTimestampToMaybe)
 import OpenTelemetry.Trace.Core (timestampNanoseconds, traceFlagsValue)
 import qualified OpenTelemetry.Trace.Core as OT
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.Util
-import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
+import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest, ExportTraceServiceResponse)
+import qualified Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService_Fields as TSF
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
 import Proto.Opentelemetry.Proto.Trace.V1.Trace
 import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Trace_Fields
-import Text.Read (readMaybe)
+import System.Random (randomRIO)
+
 
 #ifdef GRPC_ENABLED
 import qualified OpenTelemetry.Exporter.OTLP.GRPC
 #endif
 
 
--- | Initialise the OTLP span exporter, choosing transport based on the
--- configured protocol (default: @http\/protobuf@).
+{- | Initialise the OTLP span exporter, choosing transport based on the
+configured protocol (default: @http\/protobuf@).
+-}
 otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
 otlpExporter conf = case resolvedProtocol conf of
   HttpProtobuf -> httpOtlpExporter conf
@@ -140,7 +177,7 @@ registerOtlpSpanExporter =
 
 httpOtlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
 httpOtlpExporter conf = do
-  req <- liftIO $ parseRequest (httpHost conf <> "/v1/traces")
+  req <- liftIO $ parseRequest (httpSignalEndpointUrl (otlpTracesEndpoint conf) conf "/v1/traces")
   shutdownRef <- liftIO $ newIORef False
   let (encodingHeaders, encoder) = httpCompression conf
   let baseReq =
@@ -171,14 +208,12 @@ httpOtlpExporter conf = do
                 else pure Success
       , spanExporterShutdown = do
           _ <- atomicModifyIORef' shutdownRef $ \s -> (True, s)
-          pure ()
-      , spanExporterForceFlush = pure ()
+          pure ShutdownSuccess
+      , spanExporterForceFlush = pure FlushSuccess
       }
   where
     retryDelay = 100_000 -- 100ms
     maxRetryCount = 5
-    isRetryableStatusCode status_ =
-      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
     isRetryableException = \case
       ResponseTimeout -> True
       ConnectionTimeout -> True
@@ -201,7 +236,9 @@ httpOtlpExporter conf = do
             if backoffCount == maxRetryCount
               then pure $ Failure Nothing
               else do
-                threadDelay (retryDelay `shiftL` backoffCount)
+                let !baseDelay = retryDelay `shiftL` backoffCount
+                jitterUs <- randomRIO (0, baseDelay)
+                threadDelay (baseDelay + jitterUs)
                 sendReq req (backoffCount + 1)
 
       case eResp of
@@ -218,14 +255,17 @@ httpOtlpExporter conf = do
         Left err -> do
           pure $ Failure $ Just $ SomeException err
         Right resp ->
-          if isRetryableStatusCode (responseStatus resp)
+          if isRetryableHttpStatus (responseStatus resp)
             then case lookup hRetryAfter $ responseHeaders resp of
               Nothing -> exponentialBackoff
               Just retryAfter -> do
-                case readMaybe $ C.unpack retryAfter of
+                -- Spec: honor Retry-After as delay-seconds or HTTP-date
+                -- https://opentelemetry.io/docs/specs/otlp/#failures
+                mMicros <- parseRetryAfterMicros retryAfter
+                case mMicros of
                   Nothing -> exponentialBackoff
-                  Just seconds -> do
-                    threadDelay (seconds * 1_000_000)
+                  Just micros -> do
+                    threadDelay micros
                     sendReq req (backoffCount + 1)
             else
               if statusCode (responseStatus resp) >= 300
@@ -236,24 +276,30 @@ httpOtlpExporter conf = do
                       <> ": "
                       <> C.unpack (statusMessage (responseStatus resp))
                   pure $ Failure Nothing
-                else pure Success
+                else do
+                  let body = responseBody resp
+                  case decodeMessage body of
+                    Right (tsResp :: ExportTraceServiceResponse) -> do
+                      let ps = tsResp ^. TSF.partialSuccess
+                          rejected = ps ^. TSF.rejectedSpans
+                          errMsg = ps ^. TSF.errorMessage
+                      when (rejected > 0) $
+                        otelLogWarning $
+                          "OTLP partial success: "
+                            <> show rejected
+                            <> " spans rejected"
+                            <> if T.null errMsg then "" else ": " <> T.unpack errMsg
+                      pure Success
+                    Left _ -> pure Success
 
 
 httpTracesResponseTimeout :: OTLPExporterConfig -> ResponseTimeout
 httpTracesResponseTimeout conf = case otlpTracesTimeout conf <|> otlpTimeout conf of
   Just timeoutMilli
-    | timeoutMilli == 0 -> responseTimeoutNone
-    | timeoutMilli >= 1 -> responseTimeoutMilli timeoutMilli
-  _otherwise -> responseTimeoutMilli defaultExporterTimeout
-  where
-    responseTimeoutMilli :: Int -> ResponseTimeout
-    responseTimeoutMilli = responseTimeoutMicro . (* 1_000)
-
-
-httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost $ otlpEndpoint conf
-  where
-    defaultHost = "http://localhost:4318"
+    | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
+  -- Spec: "Export MUST NOT block indefinitely." Treat 0, negative, or
+  -- unset as "use default" rather than disabling the timeout.
+  _otherwise -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
 
 
 type Encoder = L.ByteString -> L.ByteString
@@ -266,15 +312,12 @@ httpCompression conf =
     _otherwise -> ([], id)
 
 
-httpProtobufMimeType :: C.ByteString
-httpProtobufMimeType = "application/x-protobuf"
-
-
 httpBaseHeaders :: OTLPExporterConfig -> Request -> [(HeaderName, C.ByteString)]
 httpBaseHeaders conf req =
   concat
-    [ [(hContentType, httpProtobufMimeType)]
-    , [(hAccept, httpProtobufMimeType)]
+    [ [(hContentType, httpProtobufContentType)]
+    , [(hAccept, httpProtobufContentType)]
+    , [("User-Agent", otlpUserAgent)]
     , fromMaybe [] (otlpHeaders conf)
     , fromMaybe [] (otlpTracesHeaders conf)
     , requestHeaders req
@@ -342,12 +385,22 @@ makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m Span
 makeSpan completedSpan = do
   hot <- liftIO $ readIORef (OT.spanHot completedSpan)
   let startTime = timestampNanoseconds (OT.spanStart completedSpan)
-  parentSpanF <- do
+  (parentSpanF, parentRemoteBits) <- do
     case OT.spanParent completedSpan of
-      Nothing -> pure id
+      Nothing -> pure (id, 0 :: Word32)
       Just s -> do
-        spanCtxt <- OT.spanId <$> OT.getSpanContext s
-        pure (\otlpSpan -> otlpSpan & Trace_Fields.parentSpanId .~ spanIdBytes spanCtxt)
+        scx <- OT.getSpanContext s
+        let remoteBits
+              | OT.isRemote scx = 0x300
+              | otherwise = 0x100
+        pure
+          ( \otlpSpan -> otlpSpan & Trace_Fields.parentSpanId .~ spanIdBytes (OT.spanId scx)
+          , remoteBits
+          )
+
+  let !spanFlags =
+        fromIntegral (traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
+          .|. parentRemoteBits
 
   pure $
     defMessage
@@ -356,9 +409,9 @@ makeSpan completedSpan = do
       & Trace_Fields.spanId
         .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
       & Trace_Fields.traceState
-        .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
+        .~ TE.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
       & Trace_Fields.flags
-        .~ fromIntegral (traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
+        .~ spanFlags
       & Trace_Fields.name
         .~ OT.hotName hot
       & Trace_Fields.kind
@@ -420,27 +473,34 @@ makeEvent e =
 
 makeLink :: OT.Link -> Span'Link
 makeLink l =
-  defMessage
-    & Trace_Fields.traceId
-      .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
-    & Trace_Fields.spanId
-      .~ spanIdBytes (OT.spanId $ OT.frozenLinkContext l)
-    & Trace_Fields.traceState
-      .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.frozenLinkContext l)
-    & Trace_Fields.flags
-      .~ fromIntegral (traceFlagsValue $ OT.traceFlags $ OT.frozenLinkContext l)
-    & Trace_Fields.vec'attributes
-      .~ attributesToProto (OT.frozenLinkAttributes l)
-    & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (getDropped $ OT.frozenLinkAttributes l)
+  let lctx = OT.frozenLinkContext l
+      remoteBits :: Word32
+      remoteBits
+        | OT.isRemote lctx = 0x300
+        | otherwise = 0x100
+      !linkFlags =
+        fromIntegral (traceFlagsValue $ OT.traceFlags lctx) .|. remoteBits
+  in defMessage
+      & Trace_Fields.traceId
+        .~ traceIdBytes (OT.traceId lctx)
+      & Trace_Fields.spanId
+        .~ spanIdBytes (OT.spanId lctx)
+      & Trace_Fields.traceState
+        .~ TE.decodeUtf8 (encodeTraceStateFull $ OT.traceState lctx)
+      & Trace_Fields.flags
+        .~ linkFlags
+      & Trace_Fields.vec'attributes
+        .~ attributesToProto (OT.frozenLinkAttributes l)
+      & Trace_Fields.droppedAttributesCount
+        .~ fromIntegral (getDropped $ OT.frozenLinkAttributes l)
 
 
 attributesToProto :: Attributes -> Vector KeyValue
 attributesToProto attrs =
-  let !m = getAttributeMap attrs
-  in V.fromListN (H.size m) $
-      H.foldrWithKey' (\k v acc -> attributeToKeyValue k v : acc) [] m
+  V.map (uncurry attributeToKeyValue) $
+    V.fromListN (H.size m) (H.toList m)
   where
+    m = getAttributeMap attrs
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
       BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b

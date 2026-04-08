@@ -88,5 +88,5 @@ withCloudflareMiddleware headers = do
           , vault = Vault.empty
           }
   _ <- waiMw (cfMw app) req $ \_ -> pure ResponseReceived
-  shutdownTracerProvider tp
+  _ <- shutdownTracerProvider tp Nothing
   readIORef ref

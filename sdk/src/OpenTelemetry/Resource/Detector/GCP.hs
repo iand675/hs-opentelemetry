@@ -28,7 +28,9 @@ module OpenTelemetry.Resource.Detector.GCP (
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
 import System.Environment (lookupEnv)
 
@@ -94,15 +96,15 @@ detectGCPCompute client = do
 
       pure $
         mkResource
-          [ "cloud.provider" .= ("gcp" :: Text)
-          , "cloud.platform" .= platform
-          , "cloud.region" .=? mRegion
-          , "cloud.availability_zone" .=? mAz
-          , "cloud.account.id" .= projectId
-          , "host.id" .=? mInstanceId
-          , "host.name" .=? mInstanceName
-          , "host.type" .=? mHostType
-          , "k8s.cluster.name" .=? mClusterName
+          [ unkey SC.cloud_provider .= ("gcp" :: Text)
+          , unkey SC.cloud_platform .= platform
+          , unkey SC.cloud_region .=? mRegion
+          , unkey SC.cloud_availabilityZone .=? mAz
+          , unkey SC.cloud_account_id .= projectId
+          , unkey SC.host_id .=? mInstanceId
+          , unkey SC.host_name .=? mInstanceName
+          , unkey SC.host_type .=? mHostType
+          , unkey SC.k8s_cluster_name .=? mClusterName
           ]
 
 

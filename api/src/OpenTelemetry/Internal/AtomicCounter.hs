@@ -2,7 +2,12 @@
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
 
-{- | Machine-word atomic counter using hardware fetch-and-add.
+{- |
+Module      :  OpenTelemetry.Internal.AtomicCounter
+Copyright   :  (c) Ian Duncan, 2024-2026
+License     :  BSD-3
+Description :  Machine-word atomic counter using hardware fetch-and-add.
+Stability   :  experimental
 
 Unlike @atomicModifyIORef'@ which does a CAS retry loop on the boxed
 @IORef@ closure, these operations compile down to a single

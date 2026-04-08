@@ -40,7 +40,9 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
 import System.Environment (lookupEnv)
 import System.IO.Error (tryIOError)
@@ -119,9 +121,9 @@ detectEKS client host port = do
           let mClusterName = mClusterInfo >>= cmLookupData "cluster.name"
           pure $
             mkResource
-              [ "cloud.provider" .= ("aws" :: Text)
-              , "cloud.platform" .= ("aws_eks" :: Text)
-              , "k8s.cluster.name" .=? mClusterName
+              [ unkey SC.cloud_provider .= ("aws" :: Text)
+              , unkey SC.cloud_platform .= ("aws_eks" :: Text)
+              , unkey SC.k8s_cluster_name .=? mClusterName
               ]
 
 

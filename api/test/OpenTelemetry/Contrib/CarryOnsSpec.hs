@@ -2,20 +2,18 @@
 
 module OpenTelemetry.Contrib.CarryOnsSpec where
 
-import Control.Concurrent.Async (async)
-import Control.Exception (bracket_)
-import Control.Monad (void)
+import Control.Exception (bracket)
 import qualified Data.HashMap.Strict as HM
 import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import OpenTelemetry.Attributes (lookupAttribute, toAttribute)
 import qualified OpenTelemetry.Attributes as A
+import OpenTelemetry.Common (OptionalTimestamp (..))
 import qualified OpenTelemetry.Context as Ctxt
 import OpenTelemetry.Context.ThreadLocal (attachContext, detachContext)
 import OpenTelemetry.Contrib.CarryOns (alterCarryOns, withCarryOnProcessor)
-import OpenTelemetry.Processor.Span (ShutdownResult (..), SpanProcessor (..))
-import OpenTelemetry.Common (OptionalTimestamp (..))
+import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.TraceState as TraceState
@@ -23,13 +21,15 @@ import OpenTelemetry.Util (emptyAppendOnlyBoundedCollection)
 import Test.Hspec
 
 
+withEmptyContext :: IO a -> IO a
+withEmptyContext = bracket (attachContext Ctxt.empty) detachContext . const
+
+
 spec :: Spec
 spec = describe "Contrib.CarryOns" $ do
+  -- Implementation-specific: carry-on attribute bag for span processors
   it "alterCarryOns with id does not throw" $
-    bracket_
-      (void $ attachContext Ctxt.empty)
-      (void detachContext)
-      (alterCarryOns id)
+    withEmptyContext (alterCarryOns id)
 
   it "withCarryOnProcessor delegates onStart to the inner processor" $ do
     started <- newIORef False
@@ -37,19 +37,16 @@ spec = describe "Contrib.CarryOns" $ do
           SpanProcessor
             { spanProcessorOnStart = \_ _ -> writeIORef started True
             , spanProcessorOnEnd = \_ -> pure ()
-            , spanProcessorShutdown = async (pure ShutdownSuccess)
-            , spanProcessorForceFlush = pure ()
+            , spanProcessorShutdown = pure ShutdownSuccess
+            , spanProcessorForceFlush = pure FlushSuccess
             }
         wrapped = withCarryOnProcessor inner
     imm <- newMinimalSpan
     spanProcessorOnStart wrapped imm Ctxt.empty
     readIORef started `shouldReturn` True
 
-  it "withCarryOnProcessor adds carry-on attributes when onEnd runs"
-    $ bracket_
-      (void $ attachContext Ctxt.empty)
-      (void detachContext)
-    $ do
+  it "withCarryOnProcessor adds carry-on attributes when onEnd runs" $
+    withEmptyContext $ do
       captured <- newIORef Nothing
       let inner =
             SpanProcessor
@@ -57,8 +54,8 @@ spec = describe "Contrib.CarryOns" $ do
               , spanProcessorOnEnd = \imm -> do
                   hot <- readIORef (spanHot imm)
                   writeIORef captured (Just $ hotAttributes hot)
-              , spanProcessorShutdown = async (pure ShutdownSuccess)
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
           wrapped = withCarryOnProcessor inner
       alterCarryOns (HM.insert "carry.on.key" (toAttribute @Text "carry-on-value"))
@@ -76,16 +73,13 @@ spec = describe "Contrib.CarryOns" $ do
           SpanProcessor
             { spanProcessorOnStart = \_ _ -> pure ()
             , spanProcessorOnEnd = \_ -> modifyIORef' ends (+ 1)
-            , spanProcessorShutdown = async (pure ShutdownSuccess)
-            , spanProcessorForceFlush = pure ()
+            , spanProcessorShutdown = pure ShutdownSuccess
+            , spanProcessorForceFlush = pure FlushSuccess
             }
         wrapped = withCarryOnProcessor inner
-    bracket_
-      (void $ attachContext Ctxt.empty)
-      (void detachContext)
-      $ do
-        imm <- newMinimalSpan
-        spanProcessorOnEnd wrapped imm
+    withEmptyContext $ do
+      imm <- newMinimalSpan
+      spanProcessorOnEnd wrapped imm
     readIORef ends `shouldReturn` 1
 
 
@@ -98,8 +92,8 @@ newMinimalSpan = do
         SpanProcessor
           { spanProcessorOnStart = \_ _ -> pure ()
           , spanProcessorOnEnd = \_ -> pure ()
-          , spanProcessorShutdown = async (pure ShutdownSuccess)
-          , spanProcessorForceFlush = pure ()
+          , spanProcessorShutdown = pure ShutdownSuccess
+          , spanProcessorForceFlush = pure FlushSuccess
           }
   tp <- createTracerProvider [dummyProcessor] emptyTracerProviderOptions
   let instrLib = InstrumentationLibrary "test" "1.0.0" "" A.emptyAttributes
@@ -118,19 +112,22 @@ newMinimalSpan = do
           , traceId = tid
           }
   st <- getTimestamp
-  hotRef <- newIORef $ SpanHot
-    { hotName = "carry-on-test"
-    , hotEnd = NoTimestamp
-    , hotAttributes = A.emptyAttributes
-    , hotLinks = emptyLinks
-    , hotEvents = emptyEv
-    , hotStatus = Unset
-    }
-  pure $ ImmutableSpan
-    { spanContext = sc
-    , spanKind = Internal
-    , spanStart = st
-    , spanParent = Nothing
-    , spanTracer = tracer
-    , spanHot = hotRef
-    }
+  hotRef <-
+    newIORef $
+      SpanHot
+        { hotName = "carry-on-test"
+        , hotEnd = NoTimestamp
+        , hotAttributes = A.emptyAttributes
+        , hotLinks = emptyLinks
+        , hotEvents = emptyEv
+        , hotStatus = Unset
+        }
+  pure $
+    ImmutableSpan
+      { spanContext = sc
+      , spanKind = Internal
+      , spanStart = st
+      , spanParent = Nothing
+      , spanTracer = tracer
+      , spanHot = hotRef
+      }

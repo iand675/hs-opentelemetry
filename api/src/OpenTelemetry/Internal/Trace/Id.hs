@@ -1,11 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE UnboxedTuples #-}
 
+-- |
+-- Module      : OpenTelemetry.Internal.Trace.Id
+-- Description : Internal representation of trace and span identifiers with hex encoding via C FFI.
+-- Stability   : experimental
+--
 module OpenTelemetry.Internal.Trace.Id (
   TraceId (..),
   newTraceId,
@@ -18,6 +19,7 @@ module OpenTelemetry.Internal.Trace.Id (
   traceIdBaseEncodedText,
   SpanId (..),
   newSpanId,
+  newTraceAndSpanId,
   isEmptySpanId,
   spanIdBytes,
   bytesToSpanId,
@@ -26,87 +28,85 @@ module OpenTelemetry.Internal.Trace.Id (
   spanIdBaseEncodedBuilder,
   spanIdBaseEncodedByteString,
   spanIdBaseEncodedText,
-  -- * Fast C-based ID generation
-  generateTraceIdDirect,
-  generateSpanIdDirect,
-  generateTraceIdSBS,
-  generateSpanIdSBS,
-  generateTraceIdBS,
-  generateSpanIdBS,
+
+  -- * Nil (all-zero) IDs
+  nilTraceId,
+  nilSpanId,
+
+  -- * Traceparent codec (C FFI)
+  decodeTraceparent,
+  encodeTraceparent,
 ) where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Data.Bits (shiftR, (.&.), (.|.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Internal as BI
-import Data.ByteString.Short.Internal (
-  ShortByteString (SBS),
-  fromShort,
-  toShort,
- )
+import Data.ByteString.Short (ShortByteString, fromShort)
 import qualified Data.ByteString.Unsafe as BU
-import Data.Hashable (Hashable)
+import Data.Hashable (Hashable (..))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Word (Word8)
 import Foreign.C.Types (CInt (..), CSize (..))
 import Foreign.Marshal.Alloc (allocaBytes)
-import Foreign.Ptr (Ptr, castPtr)
-import GHC.Exts (
-  Ptr (Ptr),
-  IsString (fromString),
-  eqWord#,
-  indexWord64Array#,
-  int2Word#,
-  isTrue#,
-  or#,
-  newPinnedByteArray#,
-  unsafeFreezeByteArray#,
-  mutableByteArrayContents#,
- )
-import GHC.IO (IO (IO))
-import GHC.Int (Int (I#))
-
-
-#if MIN_VERSION_base(4,17,0)
-import GHC.Exts (word64ToWord#)
-#endif
-
+import Foreign.Ptr (Ptr, castPtr, plusPtr)
+import Foreign.Storable (peek, peekElemOff, poke)
+import GHC.Exts (IsString (fromString))
+import Data.Word (Word64)
 import GHC.Generics (Generic)
-import OpenTelemetry.Trace.Id.Generator (
-  IdGenerator (genSpanIdSBS, genTraceIdSBS),
- )
+import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
+import System.IO.Unsafe (unsafeDupablePerformIO)
 import Prelude hiding (length)
-import System.IO.Unsafe (unsafePerformIO)
 
 
--- | Base encoding scheme. Only 'Base16' (hexadecimal) is supported.
-data Base = Base16
-  deriving (Show, Eq)
-
+-- ---------------------------------------------------------------------------
+-- C FFI
+-- ---------------------------------------------------------------------------
 
 foreign import ccall unsafe "hs_otel_encode_trace_id"
   c_encodeTraceId :: Ptr Word8 -> Ptr Word8 -> IO ()
 
+
 foreign import ccall unsafe "hs_otel_encode_span_id"
   c_encodeSpanId :: Ptr Word8 -> Ptr Word8 -> IO ()
+
 
 foreign import ccall unsafe "hs_otel_decode_hex"
   c_decodeHex :: Ptr Word8 -> Ptr Word8 -> CSize -> IO CInt
 
 
--- | A valid trace identifier is a 16-byte array with at least one non-zero byte.
-newtype TraceId = TraceId ShortByteString
-  deriving stock (Ord, Eq, Generic)
-  deriving newtype (Hashable)
+foreign import ccall unsafe "hs_otel_xoshiro_next"
+  c_xoshiroNext :: IO Word64
 
 
--- | A valid span identifier is an 8-byte array with at least one non-zero byte.
-newtype SpanId = SpanId ShortByteString
-  deriving stock (Ord, Eq)
-  deriving newtype (Hashable)
+
+
+-- ---------------------------------------------------------------------------
+-- TraceId
+-- ---------------------------------------------------------------------------
+
+{- | A valid trace identifier is a 16-byte array with at least one non-zero byte.
+
+Stored as two machine-word @Word64@ values in native byte order.
+When @UNPACK@ed into a containing record (e.g. 'SpanContext'), both
+words are stored inline. No separate heap object, no pointer chase.
+
+ @since 0.0.1.0
+-}
+data TraceId
+  = TraceId
+      {-# UNPACK #-} !Word64
+      {-# UNPACK #-} !Word64
+  deriving stock (Eq, Ord, Generic)
+
+
+instance Hashable TraceId where
+  hashWithSalt s (TraceId hi lo) = s `hashWithSalt` hi `hashWithSalt` lo
+  {-# INLINE hashWithSalt #-}
 
 
 instance Show TraceId where
@@ -119,6 +119,118 @@ instance IsString TraceId where
     Right ok -> ok
 
 
+-- | All-zero 'TraceId'.
+--
+-- @since 0.0.1.0
+nilTraceId :: TraceId
+nilTraceId = TraceId 0 0
+{-# INLINE nilTraceId #-}
+
+
+{- | Generate a 'TraceId' using the provided 'IdGenerator'.
+
+ @since 0.1.0.0
+-}
+newTraceId :: (MonadIO m) => IdGenerator -> m TraceId
+newTraceId DefaultIdGenerator = liftIO generateTraceId
+newTraceId (CustomIdGenerator _ genTrace) = liftIO $ sbsToTraceId <$> genTrace
+{-# INLINE newTraceId #-}
+
+
+-- | @since 0.1.0.0
+isEmptyTraceId :: TraceId -> Bool
+isEmptyTraceId (TraceId hi lo) = (hi .|. lo) == 0
+{-# INLINE isEmptyTraceId #-}
+
+
+-- | @since 0.1.0.0
+traceIdBytes :: TraceId -> ByteString
+traceIdBytes (TraceId hi lo) =
+  BI.unsafeCreate 16 $ \ptr -> do
+    poke (castPtr ptr) hi
+    poke (castPtr (ptr `plusPtr` 8)) lo
+
+
+{- | Convert a 'ByteString' to a 'TraceId'. Will fail if the 'ByteString'
+ is not exactly 16 bytes long.
+
+ @since 0.1.0.0
+-}
+bytesToTraceId :: ByteString -> Either String TraceId
+bytesToTraceId bs
+  | BS.length bs /= 16 = Left "bytesToTraceId: TraceId must be 16 bytes long"
+  | otherwise = unsafeDupablePerformIO $
+      BU.unsafeUseAsCString bs $ \src -> do
+        let !p = castPtr src :: Ptr Word64
+        !hi <- peekElemOff p 0
+        !lo <- peekElemOff p 1
+        pure $! Right $! TraceId hi lo
+
+
+{- | Convert a hex-encoded 'ByteString' into a 'TraceId'.
+
+ @since 0.1.0.0
+-}
+baseEncodedToTraceId :: Base -> ByteString -> Either String TraceId
+baseEncodedToTraceId Base16 bs
+  | BS.length bs /= 32 = Left "baseEncodedToTraceId: expected 32 hex chars"
+  | otherwise = unsafeDupablePerformIO $
+      BU.unsafeUseAsCStringLen bs $ \(src, _) ->
+        allocaBytes 16 $ \dst -> do
+          rc <- c_decodeHex (castPtr src) dst 16
+          if rc == 0
+            then do
+              let !p = castPtr dst :: Ptr Word64
+              !hi <- peekElemOff p 0
+              !lo <- peekElemOff p 1
+              pure $! Right $! TraceId hi lo
+            else pure $ Left "invalid hex character"
+
+
+-- | @since 0.1.0.0
+traceIdBaseEncodedBuilder :: Base -> TraceId -> Builder
+traceIdBaseEncodedBuilder Base16 = B.byteString . traceIdBaseEncodedByteString Base16
+
+
+{- | SIMD-accelerated hex encoding (SSSE3 on x86_64, NEON on aarch64).
+
+ @since 0.1.0.0
+-}
+traceIdBaseEncodedByteString :: Base -> TraceId -> ByteString
+traceIdBaseEncodedByteString Base16 (TraceId hi lo) =
+  BI.unsafeCreate 32 $ \dst ->
+    allocaBytes 16 $ \src -> do
+      poke (castPtr src :: Ptr Word64) hi
+      poke (castPtr (src `plusPtr` 8) :: Ptr Word64) lo
+      c_encodeTraceId src dst
+
+
+-- | @since 0.1.0.0
+traceIdBaseEncodedText :: Base -> TraceId -> Text
+traceIdBaseEncodedText b = decodeUtf8 . traceIdBaseEncodedByteString b
+
+
+-- ---------------------------------------------------------------------------
+-- SpanId
+-- ---------------------------------------------------------------------------
+
+{- | A valid span identifier is an 8-byte array with at least one non-zero byte.
+
+Stored as a single machine-word @Word64@ in native byte order.
+
+ @since 0.0.1.0
+-}
+data SpanId
+  = SpanId
+      {-# UNPACK #-} !Word64
+  deriving stock (Eq, Ord, Generic)
+
+
+instance Hashable SpanId where
+  hashWithSalt s (SpanId w) = hashWithSalt s w
+  {-# INLINE hashWithSalt #-}
+
+
 instance Show SpanId where
   showsPrec d i = showParen (d > 10) $ showString "SpanId " . showsPrec 11 (spanIdBaseEncodedText Base16 i)
 
@@ -129,273 +241,208 @@ instance IsString SpanId where
     Right ok -> ok
 
 
-{- | Generate a 'TraceId' using the provided 'IdGenerator'
-
- This function is generally called by the @hs-opentelemetry-sdk@,
- but may be useful in some testing situations.
-
- @since 0.1.0.0
--}
-newTraceId :: (MonadIO m) => IdGenerator -> m TraceId
-newTraceId gen = liftIO (TraceId <$> genTraceIdSBS gen)
-{-# INLINE newTraceId #-}
+-- | All-zero 'SpanId'.
+--
+-- @since 0.0.1.0
+nilSpanId :: SpanId
+nilSpanId = SpanId 0
+{-# INLINE nilSpanId #-}
 
 
-{- | Check whether all bytes in the 'TraceId' are zero.
-
- @since 0.1.0.0
--}
-isEmptyTraceId :: TraceId -> Bool
-#if MIN_VERSION_base(4,17,0)
-isEmptyTraceId (TraceId (SBS arr)) =
-  isTrue#
-    (eqWord#
-      (or#
-        (word64ToWord# (indexWord64Array# arr 0#))
-        (word64ToWord# (indexWord64Array# arr 1#)))
-      (int2Word# 0#))
-#else
-isEmptyTraceId (TraceId (SBS arr)) =
-  isTrue#
-    (eqWord#
-      (or#
-        (indexWord64Array# arr 0#)
-        (indexWord64Array# arr 1#))
-      (int2Word# 0#))
-#endif
-{-# INLINE isEmptyTraceId #-}
-
-
-{- | Access the byte-level representation of the provided 'TraceId'
-
- @since 0.1.0.0
--}
-traceIdBytes :: TraceId -> ByteString
-traceIdBytes (TraceId bytes) = fromShort bytes
-
-
-{- | Convert a 'ByteString' to a 'TraceId'. Will fail if the 'ByteString'
- is not exactly 16 bytes long.
-
- @since 0.1.0.0
--}
-bytesToTraceId :: ByteString -> Either String TraceId
-bytesToTraceId bs =
-  if BS.length bs == 16
-    then Right $ TraceId $ toShort bs
-    else Left "bytesToTraceId: TraceId must be 16 bytes long"
-
-
-{- | Convert a 'ByteString' of a specified base-encoding into a 'TraceId'.
- Will fail if the decoded value is not exactly 16 bytes long.
-
- @since 0.1.0.0
--}
-baseEncodedToTraceId :: Base -> ByteString -> Either String TraceId
-baseEncodedToTraceId Base16 bs = do
-  r <- decodeHex bs
-  bytesToTraceId r
-
-
-{- | Output a 'TraceId' into a base-encoded bytestring 'Builder'.
-
- @since 0.1.0.0
--}
-traceIdBaseEncodedBuilder :: Base -> TraceId -> Builder
-traceIdBaseEncodedBuilder Base16 = B.byteString . traceIdBaseEncodedByteString Base16
-
-
-{- | Output a 'TraceId' into a base-encoded 'ByteString'.
-
- Uses SIMD-accelerated encoding (SSSE3 on x86_64, NEON on aarch64).
-
- @since 0.1.0.0
--}
-traceIdBaseEncodedByteString :: Base -> TraceId -> ByteString
-traceIdBaseEncodedByteString Base16 tid =
-  BI.unsafeCreate 32 $ \dst ->
-    BU.unsafeUseAsCStringLen (traceIdBytes tid) $ \(src, _) ->
-      c_encodeTraceId (castPtr src) dst
-
-
-{- | Output a 'TraceId' into a base-encoded 'Text'.
-
- @since 0.1.0.0
--}
-traceIdBaseEncodedText :: Base -> TraceId -> Text
-traceIdBaseEncodedText b = decodeUtf8 . traceIdBaseEncodedByteString b
-
-
-{- | Generate a 'SpanId' using the provided 'IdGenerator'
-
- This function is generally called by the @hs-opentelemetry-sdk@,
- but may be useful in some testing situations.
+{- | Generate a 'SpanId' using the provided 'IdGenerator'.
 
  @since 0.1.0.0
 -}
 newSpanId :: (MonadIO m) => IdGenerator -> m SpanId
-newSpanId gen = liftIO (SpanId <$> genSpanIdSBS gen)
+newSpanId DefaultIdGenerator = liftIO generateSpanId
+newSpanId (CustomIdGenerator genSpan _) = liftIO $ sbsToSpanId <$> genSpan
 {-# INLINE newSpanId #-}
 
 
-{- | Check whether all bytes in the 'SpanId' are zero.
-
- @since 0.1.0.0
+{- | Generate both a TraceId and SpanId. For 'DefaultIdGenerator', this is a
+single FFI call (3 xoshiro steps) instead of 3 separate calls. Used for
+root spans where both IDs need generating.
 -}
+newTraceAndSpanId :: (MonadIO m) => IdGenerator -> m (TraceId, SpanId)
+newTraceAndSpanId DefaultIdGenerator = liftIO generateTraceAndSpanId
+newTraceAndSpanId gen = liftIO $ do
+  !tid <- newTraceId gen
+  !sid <- newSpanId gen
+  pure (tid, sid)
+{-# INLINE newTraceAndSpanId #-}
+
+
+-- | @since 0.1.0.0
 isEmptySpanId :: SpanId -> Bool
-#if MIN_VERSION_base(4,17,0)
-isEmptySpanId (SpanId (SBS arr)) = isTrue#
-  (eqWord#
-    (word64ToWord# (indexWord64Array# arr 0#))
-    (int2Word# 0#))
-#else
-isEmptySpanId (SpanId (SBS arr)) = isTrue#
-  (eqWord#
-    (indexWord64Array# arr 0#)
-    (int2Word# 0#))
-#endif
+isEmptySpanId (SpanId w) = w == 0
 {-# INLINE isEmptySpanId #-}
 
 
-{- | Access the byte-level representation of the provided 'SpanId'
-
- @since 0.1.0.0
--}
+-- | @since 0.1.0.0
 spanIdBytes :: SpanId -> ByteString
-spanIdBytes (SpanId bytes) = fromShort bytes
+spanIdBytes (SpanId w) =
+  BI.unsafeCreate 8 $ \ptr -> poke (castPtr ptr) w
 
 
-{- | Convert a 'ByteString' of a specified base-encoding into a 'SpanId'.
- Will fail if the decoded value is not exactly 8 bytes long.
-
- @since 0.1.0.0
--}
+-- | @since 0.1.0.0
 bytesToSpanId :: ByteString -> Either String SpanId
-bytesToSpanId bs =
-  if BS.length bs == 8
-    then Right $ SpanId $ toShort bs
-    else Left "bytesToSpanId: SpanId must be 8 bytes long"
+bytesToSpanId bs
+  | BS.length bs /= 8 = Left "bytesToSpanId: SpanId must be 8 bytes long"
+  | otherwise = unsafeDupablePerformIO $
+      BU.unsafeUseAsCString bs $ \src -> do
+        !w <- peek (castPtr src :: Ptr Word64)
+        pure $! Right $! SpanId w
 
 
-{- | Convert a 'ByteString' of a specified base-encoding into a 'SpanId'.
- Will fail if the decoded value is not exactly 8 bytes long.
-
- @since 0.1.0.0
--}
+-- | @since 0.1.0.0
 baseEncodedToSpanId :: Base -> ByteString -> Either String SpanId
-baseEncodedToSpanId Base16 bs = do
-  r <- decodeHex bs
-  bytesToSpanId r
+baseEncodedToSpanId Base16 bs
+  | BS.length bs /= 16 = Left "baseEncodedToSpanId: expected 16 hex chars"
+  | otherwise = unsafeDupablePerformIO $
+      BU.unsafeUseAsCStringLen bs $ \(src, _) ->
+        allocaBytes 8 $ \dst -> do
+          rc <- c_decodeHex (castPtr src) dst 8
+          if rc == 0
+            then do
+              !w <- peek (castPtr dst :: Ptr Word64)
+              pure $! Right $! SpanId w
+            else pure $ Left "invalid hex character"
 
 
-{- | Output a 'SpanId' into a base-encoded bytestring 'Builder'.
-
- @since 0.1.0.0
--}
+-- | @since 0.1.0.0
 spanIdBaseEncodedBuilder :: Base -> SpanId -> Builder
 spanIdBaseEncodedBuilder Base16 = B.byteString . spanIdBaseEncodedByteString Base16
 
 
-{- | Output a 'SpanId' into a base-encoded 'ByteString'.
-
- Uses SIMD-accelerated encoding (SSSE3 on x86_64, NEON on aarch64).
-
- @since 0.1.0.0
--}
+-- | @since 0.1.0.0
 spanIdBaseEncodedByteString :: Base -> SpanId -> ByteString
-spanIdBaseEncodedByteString Base16 sid =
+spanIdBaseEncodedByteString Base16 (SpanId w) =
   BI.unsafeCreate 16 $ \dst ->
-    BU.unsafeUseAsCStringLen (spanIdBytes sid) $ \(src, _) ->
-      c_encodeSpanId (castPtr src) dst
+    allocaBytes 8 $ \src -> do
+      poke (castPtr src :: Ptr Word64) w
+      c_encodeSpanId src dst
 
 
-{- | Output a 'SpanId' into a base-encoded 'Text'.
-
- @since 0.1.0.0
--}
+-- | @since 0.1.0.0
 spanIdBaseEncodedText :: Base -> SpanId -> Text
 spanIdBaseEncodedText b = decodeUtf8 . spanIdBaseEncodedByteString b
 
 
-foreign import ccall unsafe "hs_otel_gen_trace_id"
-  c_genTraceId :: Ptr Word8 -> IO CInt
+-- ---------------------------------------------------------------------------
+-- Generation: xoshiro256++ (DefaultIdGenerator)
+-- ---------------------------------------------------------------------------
 
-foreign import ccall unsafe "hs_otel_gen_span_id"
-  c_genSpanId :: Ptr Word8 -> IO CInt
-
-
--- | Generate a 'TraceId' using the platform's native CSPRNG
--- (arc4random_buf on macOS, getrandom on Linux).
-generateTraceIdDirect :: IO TraceId
-generateTraceIdDirect = do
-  sbs <- generateRandomSBS 16 c_genTraceId
-  pure $! TraceId sbs
-{-# INLINE generateTraceIdDirect #-}
-
-
--- | Generate a 'SpanId' using the platform's native CSPRNG
--- (arc4random_buf on macOS, getrandom on Linux).
-generateSpanIdDirect :: IO SpanId
-generateSpanIdDirect = do
-  sbs <- generateRandomSBS 8 c_genSpanId
-  pure $! SpanId sbs
-{-# INLINE generateSpanIdDirect #-}
+{- | Generate a 'TraceId' via thread-local xoshiro256++.
+Two FFI calls returning Word64 directly. No buffer, no ByteArray#.
+-}
+generateTraceId :: IO TraceId
+generateTraceId = do
+  !hi <- c_xoshiroNext
+  !lo <- c_xoshiroNext
+  pure $! TraceId hi lo
+{-# INLINE generateTraceId #-}
 
 
--- | Generate 16 random bytes as a 'ShortByteString' via the platform CSPRNG.
-generateTraceIdSBS :: IO ShortByteString
-generateTraceIdSBS = generateRandomSBS 16 c_genTraceId
-{-# INLINE generateTraceIdSBS #-}
+-- | Generate a 'SpanId' via thread-local xoshiro256++.
+generateSpanId :: IO SpanId
+generateSpanId = do
+  !w <- c_xoshiroNext
+  pure $! SpanId w
+{-# INLINE generateSpanId #-}
 
 
--- | Generate 8 random bytes as a 'ShortByteString' via the platform CSPRNG.
-generateSpanIdSBS :: IO ShortByteString
-generateSpanIdSBS = generateRandomSBS 8 c_genSpanId
-{-# INLINE generateSpanIdSBS #-}
+{- | Generate a TraceId + SpanId for root spans.
+
+Three sequential @unsafe@ FFI calls to xoshiro256++ (~9 ns total).
+A Cmm primop returning an unboxed triple via Sp-allocated out-pointers
+was benchmarked at the same cost (~9.7 ns) because the per-call FFI
+overhead (~3 ns) is already lower than the Cmm stack manipulation.
+-}
+generateTraceAndSpanId :: IO (TraceId, SpanId)
+generateTraceAndSpanId = do
+  !hi <- c_xoshiroNext
+  !lo <- c_xoshiroNext
+  !sid <- c_xoshiroNext
+  pure (TraceId hi lo, SpanId sid)
+{-# INLINE generateTraceAndSpanId #-}
 
 
--- | Generate 16 random bytes as a strict 'ByteString' via the platform CSPRNG.
-generateTraceIdBS :: IO ByteString
-generateTraceIdBS = BI.create 16 $ \ptr -> do
-  _ <- c_genTraceId ptr
-  pure ()
-{-# INLINE generateTraceIdBS #-}
+-- ---------------------------------------------------------------------------
+-- CustomIdGenerator SBS -> Word64 conversion
+-- ---------------------------------------------------------------------------
+
+sbsToTraceId :: ShortByteString -> TraceId
+sbsToTraceId sbs =
+  let !bs = fromShort sbs
+  in case bytesToTraceId bs of
+      Right tid -> tid
+      Left _ -> nilTraceId
 
 
--- | Generate 8 random bytes as a strict 'ByteString' via the platform CSPRNG.
-generateSpanIdBS :: IO ByteString
-generateSpanIdBS = BI.create 8 $ \ptr -> do
-  _ <- c_genSpanId ptr
-  pure ()
-{-# INLINE generateSpanIdBS #-}
+sbsToSpanId :: ShortByteString -> SpanId
+sbsToSpanId sbs =
+  let !bs = fromShort sbs
+  in case bytesToSpanId bs of
+      Right sid -> sid
+      Left _ -> nilSpanId
 
 
-generateRandomSBS :: Int -> (Ptr Word8 -> IO CInt) -> IO ShortByteString
-generateRandomSBS (I# n) cffi = IO $ \s0 ->
-  case newPinnedByteArray# n s0 of
-    (# s1, mba #) ->
-      let !ptr = Ptr (mutableByteArrayContents# mba)
-      in case unIO (cffi ptr) s1 of
-        (# s2, _ #) ->
-          case unsafeFreezeByteArray# mba s2 of
-            (# s3, ba #) -> (# s3, SBS ba #)
-  where
-    unIO (IO f) = f
-{-# INLINE generateRandomSBS #-}
+-- | Base encoding scheme. Only 'Base16' (hexadecimal) is supported.
+--
+-- @since 0.0.1.0
+data Base = Base16
+  deriving (Show, Eq)
 
 
--- | Decode a hex-encoded ByteString into raw bytes via C FFI.
-decodeHex :: ByteString -> Either String ByteString
-decodeHex hexBs
-  | odd (BS.length hexBs) = Left "invalid hex: odd length"
-  | BS.null hexBs = Right BS.empty
-  | otherwise = unsafePerformIO $
-      BU.unsafeUseAsCStringLen hexBs $ \(src, srcLen) -> do
-        let outLen = srcLen `div` 2
-        allocaBytes outLen $ \dst -> do
-          rc <- c_decodeHex (castPtr src) dst (fromIntegral outLen)
-          if rc == 0
-            then do
-              bs <- BS.packCStringLen (castPtr dst, outLen)
-              pure (Right bs)
-            else pure (Left "invalid hex character")
+-- ---------------------------------------------------------------------------
+-- Traceparent codec (C FFI)
+-- ---------------------------------------------------------------------------
+
+foreign import ccall unsafe "hs_otel_parse_traceparent"
+  c_parseTraceparent :: Ptr Word8 -> CSize -> Ptr Word64 -> IO CInt
+
+
+foreign import ccall unsafe "hs_otel_encode_traceparent"
+  c_encodeTraceparent
+    :: Word64
+    -> Word64
+    -> Word64
+    -> Word8
+    -> Word8
+    -> Ptr Word8
+    -> IO ()
+
+
+{- | Parse a W3C traceparent header in a single SIMD-accelerated C call.
+
+ Returns the version, trace ID, span ID, and flags byte, or 'Nothing'
+ on any format error (bad hex, wrong length, missing dashes, all-zero IDs).
+
+ @since 0.4.0.0
+-}
+decodeTraceparent :: ByteString -> Maybe (Word8, TraceId, SpanId, Word8)
+decodeTraceparent bs = unsafeDupablePerformIO $
+  BU.unsafeUseAsCStringLen bs $ \(src, len) ->
+    allocaBytes 32 $ \buf -> do
+      let !p = castPtr buf :: Ptr Word64
+      rc <- c_parseTraceparent (castPtr src) (fromIntegral len) p
+      if rc == 0
+        then do
+          !hi <- peekElemOff p 0
+          !lo <- peekElemOff p 1
+          !sid <- peekElemOff p 2
+          !meta <- peekElemOff p 3
+          let !ver = fromIntegral (meta `shiftR` 8) :: Word8
+              !fl = fromIntegral (meta .&. 0xFF) :: Word8
+          pure $! Just (ver, TraceId hi lo, SpanId sid, fl)
+        else pure Nothing
+
+
+{- | Encode a traceparent header (55 bytes) in a single SIMD-accelerated C call.
+
+ @since 0.4.0.0
+-}
+encodeTraceparent :: Word8 -> TraceId -> SpanId -> Word8 -> ByteString
+encodeTraceparent ver (TraceId hi lo) (SpanId sid) fl =
+  BI.unsafeCreate 55 $ \dst ->
+    c_encodeTraceparent hi lo sid ver fl dst

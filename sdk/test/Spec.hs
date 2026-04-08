@@ -7,10 +7,13 @@ import qualified OpenTelemetry.BaggageSpec as BaggageSpec
 import qualified OpenTelemetry.ConfigurationSpec as ConfigurationSpec
 import qualified OpenTelemetry.ContextInSpanSpec as ContextInSpanSpec
 import qualified OpenTelemetry.ContextSpec as ContextSpec
+import qualified OpenTelemetry.LogSpec as LogSpec
 import qualified OpenTelemetry.MeterProviderSpec as MeterProviderSpec
+import qualified OpenTelemetry.MetricReaderSpec as MetricReaderSpec
 import qualified OpenTelemetry.Resource.DetectorSpec as DetectorSpec
 import qualified OpenTelemetry.ResourceSpec as ResourceSpec
 import OpenTelemetry.Trace (initializeGlobalTracerProvider, withTracerProvider)
+import qualified OpenTelemetry.Trace.CallStackSpec as CallStackSpec
 import qualified OpenTelemetry.TraceSpec as TraceSpec
 import System.Environment (getArgs, setEnv, unsetEnv)
 import System.Exit (ExitCode (..), exitWith)
@@ -36,9 +39,12 @@ runTests = do
     ContextSpec.spec
     ContextInSpanSpec.spec
     TraceSpec.spec
+    CallStackSpec.spec
     ResourceSpec.spec
     DetectorSpec.spec
+    LogSpec.spec
     MeterProviderSpec.spec
+    MetricReaderSpec.spec
     ConfigurationSpec.spec
 
 

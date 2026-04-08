@@ -1,7 +1,3 @@
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.OperatingSystem
  Copyright   :  (c) Ian Duncan, 2021
@@ -22,6 +18,8 @@ import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- | The operating system (OS) on which the process represented by this resource is running.
+--
+-- @since 0.0.1.0
 data OperatingSystem = OperatingSystem
   { osType :: Text
   -- ^ The operating system type.
@@ -59,14 +57,17 @@ data OperatingSystem = OperatingSystem
   -- ^ Human readable operating system name.
   , osVersion :: Maybe Text
   -- ^ The version string of the operating system as defined in
+  , osBuildId :: Maybe Text
+  -- ^ Unique identifier for a particular build or compilation of the operating system.
   }
 
 
 instance ToResource OperatingSystem where
   toResource OperatingSystem {..} =
-    mkResource
+    mkResourceWithSchema (Just semConvSchemaUrl)
       [ unkey SC.os_type .= osType
       , unkey SC.os_description .=? osDescription
       , unkey SC.os_name .=? osName
       , unkey SC.os_version .=? osVersion
+      , unkey SC.os_buildId .=? osBuildId
       ]

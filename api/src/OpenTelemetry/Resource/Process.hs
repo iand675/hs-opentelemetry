@@ -1,9 +1,5 @@
 {-# LANGUAGE CPP #-}
 
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.Process
  Copyright   :  (c) Ian Duncan, 2021
@@ -22,6 +18,8 @@ import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- |  An operating system process.
+--
+-- @since 0.0.1.0
 data Process = Process
   { processPid :: Maybe Int
   -- ^ Process identifier (PID).
@@ -56,7 +54,7 @@ data Process = Process
 
 instance ToResource Process where
   toResource Process {..} =
-    mkResource
+    mkResourceWithSchema (Just semConvSchemaUrl)
       [ unkey SC.process_pid .=? processPid
       , unkey SC.process_executable_name .=? processExecutableName
       , unkey SC.process_executable_path .=? processExecutablePath
@@ -68,6 +66,8 @@ instance ToResource Process where
 
 
 -- | The single (language) runtime instance which is monitored.
+--
+-- @since 0.0.1.0
 data ProcessRuntime = ProcessRuntime
   { processRuntimeName :: Maybe Text
   -- ^ The name of the runtime of this process. For compiled native binaries, this SHOULD be the name of the compiler.
@@ -86,7 +86,7 @@ data ProcessRuntime = ProcessRuntime
 
 instance ToResource ProcessRuntime where
   toResource ProcessRuntime {..} =
-    mkResource
+    mkResourceWithSchema (Just semConvSchemaUrl)
       [ unkey SC.process_runtime_name .=? processRuntimeName
       , unkey SC.process_runtime_version .=? processRuntimeVersion
       , unkey SC.process_runtime_description .=? processRuntimeDescription

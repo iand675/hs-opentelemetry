@@ -28,7 +28,7 @@ module OpenTelemetry.Attributes.Map (
   module H,
 ) where
 
-import Data.HashMap.Strict as H
+import Data.HashMap.Lazy as H
 import Data.Text (Text)
 import OpenTelemetry.Attributes.Attribute (
   Attribute,
@@ -45,11 +45,11 @@ type AttributeMap = H.HashMap Text Attribute
 
 
 insertByKey :: ToAttribute a => AttributeKey a -> a -> AttributeMap -> AttributeMap
-insertByKey (AttributeKey !k) !v = H.insert k $ toAttribute v
+insertByKey (AttributeKey !k) v = H.insert k (toAttribute v)
 
 
 insertAttributeByKey :: AttributeKey a -> Attribute -> AttributeMap -> AttributeMap
-insertAttributeByKey (AttributeKey !k) !v = H.insert k v
+insertAttributeByKey (AttributeKey !k) v = H.insert k v
 
 
 lookupByKey :: FromAttribute a => AttributeKey a -> AttributeMap -> Maybe a

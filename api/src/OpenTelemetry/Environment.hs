@@ -1,8 +1,20 @@
+{- |
+Module      : OpenTelemetry.Environment
+Copyright   : (c) Ian Duncan, 2024-2026
+License     : BSD-3
+Description : Read standard OTEL_* environment variables for SDK configuration.
+Stability   : experimental
+
+Helpers for reading OpenTelemetry environment variables that control exporter
+selection, metric export intervals, exemplar filters, and log exporter choice.
+Used by the SDK during provider initialization.
+-}
 module OpenTelemetry.Environment (
   lookupBooleanEnv,
   MetricsExporterSelection (..),
   lookupMetricsExporterSelection,
   lookupMetricExportIntervalMillis,
+  lookupMetricExportTimeoutMillis,
   MetricsExemplarFilter (..),
   lookupMetricsExemplarFilter,
   LogsExporterSelection (..),
@@ -34,6 +46,8 @@ data MetricsExporterSelection
   | MetricsExporterOtlp
   | MetricsExporterPrometheus
   | MetricsExporterConsole
+  | MetricsExporterCustom !String
+  -- ^ A name not in the built-in set; looked up via the exporter registry.
   deriving (Eq, Show)
 
 
@@ -57,7 +71,7 @@ lookupMetricsExporterSelection = do
           "otlp" -> Just MetricsExporterOtlp
           "prometheus" -> Just MetricsExporterPrometheus
           "console" -> Just MetricsExporterConsole
-          _ -> Nothing
+          other -> Just (MetricsExporterCustom other)
 
 
 {- | Read @OTEL_METRIC_EXPORT_INTERVAL@ (milliseconds between periodic export cycles).
@@ -66,6 +80,17 @@ See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-vari
 lookupMetricExportIntervalMillis :: IO (Maybe Int)
 lookupMetricExportIntervalMillis = do
   me <- lookupEnv "OTEL_METRIC_EXPORT_INTERVAL"
+  pure $ case me >>= readMaybe . trimSpaces of
+    Just n | n > 0 -> Just n
+    _ -> Nothing
+
+
+{- | Read @OTEL_METRIC_EXPORT_TIMEOUT@ (milliseconds allowed per export call).
+See <https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/>.
+-}
+lookupMetricExportTimeoutMillis :: IO (Maybe Int)
+lookupMetricExportTimeoutMillis = do
+  me <- lookupEnv "OTEL_METRIC_EXPORT_TIMEOUT"
   pure $ case me >>= readMaybe . trimSpaces of
     Just n | n > 0 -> Just n
     _ -> Nothing
@@ -80,10 +105,13 @@ data LogsExporterSelection
   = LogsExporterNone
   | LogsExporterOtlp
   | LogsExporterConsole
+  | LogsExporterCustom !String
+  -- ^ A name not in the built-in set; looked up via the exporter registry.
   deriving (Eq, Show)
 
 
--- | Read @OTEL_LOGS_EXPORTER@. Unknown or empty values return 'Nothing' (caller may default to OTLP).
+-- | Read @OTEL_LOGS_EXPORTER@. Empty values return 'Nothing' (caller defaults to OTLP).
+-- Unknown names are returned as 'LogsExporterCustom' for registry lookup.
 lookupLogsExporterSelection :: IO (Maybe LogsExporterSelection)
 lookupLogsExporterSelection = do
   me <- lookupEnv "OTEL_LOGS_EXPORTER"
@@ -98,7 +126,7 @@ lookupLogsExporterSelection = do
           "none" -> Just LogsExporterNone
           "otlp" -> Just LogsExporterOtlp
           "console" -> Just LogsExporterConsole
-          _ -> Nothing
+          other -> Just (LogsExporterCustom other)
 
 
 -- | Parsed @OTEL_METRICS_EXEMPLAR_FILTER@ (when present).

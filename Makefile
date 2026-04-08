@@ -63,5 +63,30 @@ format.check:
 	fourmolu --mode check $$(git ls-files '*.hs' ':!:otlp/' ':!:semantic-conventions/src/OpenTelemetry/SemanticConventions.hs')
 
 
+# ── Benchmark regression detection ──────────────────────────────────────
+# Save a baseline on your machine, then check after changes.
+# Baselines are machine-specific and stored in benchmarks/.
+
+.PHONY: bench.save
+bench.save:
+	scripts/bench-regression save
+
+.PHONY: bench.check
+bench.check:
+	scripts/bench-regression check
+
+# Strict mode: 10% threshold (use for focused perf work)
+.PHONY: bench.check.strict
+bench.check.strict:
+	scripts/bench-regression check 10
+
+.PHONY: bench.compare
+bench.compare:
+	scripts/bench-regression compare
+
+.PHONY: bench.normalize
+bench.normalize:
+	scripts/bench-regression normalize
+
 # Hack https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
 FORCE:

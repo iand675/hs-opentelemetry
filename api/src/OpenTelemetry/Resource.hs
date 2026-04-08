@@ -1,28 +1,65 @@
 {-# LANGUAGE DefaultSignatures #-}
 
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
- Module      :  OpenTelemetry.Resource
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Facilities for attaching metadata attributes to all spans in a trace
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Resource
+Copyright   :  (c) Ian Duncan, 2021-2026
+License     :  BSD-3
+Description :  Metadata describing the entity producing telemetry
+Stability   :  experimental
 
- A Resource is an immutable representation of the entity producing
- telemetry. For example, a process producing telemetry that is running in
- a container on Kubernetes has a Pod name, it is in a namespace and
- possibly is part of a Deployment which also has a name. All three of
- these attributes can be included in the Resource.
+= Overview
+
+A 'Resource' is an immutable set of attributes describing the entity that
+produces telemetry: the service name, host, container, cloud environment, etc.
+Every span, metric, and log record is associated with a resource.
+
+= Quick example
+
+@
+import OpenTelemetry.Resource
+
+-- Build a resource from key-value pairs:
+myResource :: Resource
+myResource = mkResource
+  [ "service.name" .= ("my-service" :: Text)
+  , "service.version" .= ("1.2.0" :: Text)
+  ]
+
+-- Build from a typed data structure:
+import OpenTelemetry.Resource.Service
+myService :: Resource
+myService = toResource Service
+  { serviceName = "my-service"
+  , serviceNamespace = Just "production"
+  , serviceInstanceId = Nothing
+  , serviceVersion = Just "1.2.0"
+  , serviceCriticality = Nothing
+  }
+@
+
+= Automatic detection
+
+The SDK automatically detects resources from the environment (hostname, OS,
+process info, container ID, cloud metadata). You can add your own on top:
+
+@
+(processors, opts) <- getTracerProviderInitializationOptions' myResource
+@
+
+= Merging
+
+Resources can be combined with '<>' or 'mergeResources'. When keys conflict,
+the first argument (the /updating/ resource) wins. Schema URLs are merged per the OTel spec.
+
+= Spec reference
+
+<https://opentelemetry.io/docs/specs/otel/resource/sdk/>
 -}
 module OpenTelemetry.Resource (
   -- * Creating resources directly
   mkResource,
   mkResourceWithSchema,
+  semConvSchemaUrl,
   Resource,
   (.=),
   (.=?),
@@ -51,6 +88,18 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes
+import OpenTelemetry.Internal.Logging (otelLogWarning)
+import System.IO.Unsafe (unsafePerformIO)
+
+
+{- | The OpenTelemetry semantic conventions schema URL for version 1.40.0.
+Resources that use semantic convention attributes SHOULD carry this URL
+so backends can perform automatic attribute migration across versions.
+
+@since 0.4.0.0
+-}
+semConvSchemaUrl :: Text
+semConvSchemaUrl = "https://opentelemetry.io/schemas/1.40.0"
 
 
 {- | A set of attributes with an optional schema URL.
@@ -113,6 +162,8 @@ mkResourceWithSchema schema = Resource schema . unsafeAttributesFromListIgnoring
 
 {- | Utility function to convert a required resource attribute
  into the format needed for 'mkResource'.
+
+ @since 0.0.1.0
 -}
 (.=) :: (ToAttribute a) => Text -> a -> Maybe (Text, Attribute)
 k .= v = Just (k, toAttribute v)
@@ -120,6 +171,8 @@ k .= v = Just (k, toAttribute v)
 
 {- | Utility function to convert an optional resource attribute
  into the format needed for 'mkResource'.
+
+ @since 0.0.1.0
 -}
 (.=?) :: (ToAttribute a) => Text -> Maybe a -> Maybe (Text, Attribute)
 k .=? mv = (\k' v -> (k', toAttribute v)) k <$> mv
@@ -145,7 +198,8 @@ instance Monoid Resource where
  * If one resource's Schema URL is empty, the other's is used.
  * If both are the same, that URL is used.
  * If both are non-empty and different, the first resource's URL is kept
-   (the spec says this case is \"implementation-specific\").
+   (the spec says this case is \"implementation-specific\"); a warning is also
+   emitted to the OTel diagnostic logger.
 
  @since 0.0.1.0
 -}
@@ -164,26 +218,41 @@ mergeSchemaUrls Nothing b = b
 mergeSchemaUrls a Nothing = a
 mergeSchemaUrls a@(Just s1) (Just s2)
   | s1 == s2 = a
-  | otherwise = a
+  | otherwise =
+      unsafePerformIO $ do
+        otelLogWarning ("Resource schema URL conflict: '" <> T.unpack s1 <> "' vs '" <> T.unpack s2 <> "'")
+        pure a
 
 
--- | A convenience class for converting arbitrary data into resources.
+{- | A convenience class for converting arbitrary data into resources.
+
+@since 0.0.1.0
+-}
 class ToResource a where
   -- | Convert the input value to a 'Resource'
   toResource :: a -> Resource
 
 
--- | Access the attributes of a resource.
+{- | Access the attributes of a resource.
+
+@since 0.0.1.0
+-}
 getResourceAttributes :: Resource -> Attributes
 getResourceAttributes = resourceAttributes
 
 
--- | Access the schema URL of a resource.
+{- | Access the schema URL of a resource.
+
+@since 0.0.1.0
+-}
 getResourceSchemaUrl :: Resource -> Maybe Text
 getResourceSchemaUrl = resourceSchemaUrl
 
 
--- | A read-only resource attribute collection with an associated schema.
+{- | A read-only resource attribute collection with an associated schema.
+
+@since 0.0.1.0
+-}
 data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
   , materializedResourcesAttributes :: Attributes

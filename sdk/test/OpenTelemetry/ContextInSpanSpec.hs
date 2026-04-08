@@ -13,6 +13,8 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "Nested context restoration" $ do
+  -- Trace API §Context interaction: active span / Context stack when nesting scopes
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#context-interaction
   it "outer context is restored after inner scope" $ do
     p <- getGlobalTracerProvider
     let t = makeTracer p "ctx-test" tracerOptions
@@ -27,6 +29,8 @@ spec = describe "Nested context restoration" $ do
           rsc <- getSpanContext restored
           rsc `shouldBe` outerSc
 
+  -- Trace API §Context interaction: restore prior Context on scope exit (including errors)
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#context-interaction
   it "context is restored after exception in inSpan" $ do
     p <- getGlobalTracerProvider
     let t = makeTracer p "ctx-exception" tracerOptions

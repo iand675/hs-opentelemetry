@@ -8,8 +8,8 @@ Stability   :  experimental
 Portability :  non-portable (GHC extensions)
 
 Haskell's green threads do not inherit thread-local state. Any time you
-fork a thread — directly with 'Control.Concurrent.forkIO', or indirectly
-through @async@, @mapConcurrently@, etc. — the child starts with an
+fork a thread, directly with 'Control.Concurrent.forkIO', or indirectly
+through @async@, @mapConcurrently@, etc., the child starts with an
 empty 'Context'. This silently breaks trace propagation and baggage
 flow.
 
@@ -58,7 +58,7 @@ module OpenTelemetry.Context.ThreadLocal.Propagation (
 ) where
 
 import Control.Concurrent (ThreadId, forkIO)
-import Control.Concurrent.Async (Async, async, concurrently, mapConcurrently, forConcurrently, withAsync)
+import Control.Concurrent.Async (Async, async, concurrently, forConcurrently, mapConcurrently, withAsync)
 import OpenTelemetry.Context (Context)
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 
@@ -67,7 +67,7 @@ import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 when run in /any/ thread, installs that context before executing the
 wrapped computation.
 
-This is the fundamental building block — the other combinators in this
+This is the fundamental building block. The other combinators in this
 module are thin wrappers around it.
 
 @since 0.4.0.0
@@ -153,3 +153,4 @@ installContext ctx = do
   _ <- attachContext ctx
   pure ()
 {-# INLINE installContext #-}
+

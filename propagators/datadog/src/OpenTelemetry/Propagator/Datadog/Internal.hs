@@ -1,13 +1,14 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Strict #-}
 
-{- | Conversion of the hs-opentelemetry internal representation of the trace ID and the span ID and the Datadog header representation of them each other.
+{- | Conversion between OTel trace/span IDs (Word64-based) and Datadog
+header format (decimal ASCII of a 64-bit integer, big-endian byte order).
 
 +----------+-----------------+----------------+
 |          | Trace ID        | Span ID        |
 +----------+-----------------+----------------+
-| Internal | 128-bit integer | 64-bit integer |
+| Internal | 2 × Word64 (LE)| 1 × Word64 (LE)|
 +----------+-----------------+----------------+
 | Datadog  | ASCII text of   | ASCII text of  |
 | Header   | 64-bit integer  | 64-bit integer |
@@ -18,126 +19,83 @@ module OpenTelemetry.Propagator.Datadog.Internal (
   newSpanIdFromHeader,
   newHeaderFromTraceId,
   newHeaderFromSpanId,
-  indexByteArrayNbo,
 ) where
 
-import Data.Bits (Bits (shift))
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Internal as BI
-import qualified Data.ByteString.Lazy as BL
-import Data.ByteString.Short (ShortByteString)
-import qualified Data.ByteString.Short as SB
-import qualified Data.ByteString.Short.Internal as SBI
-import qualified Data.Char as C
-import Data.Primitive.ByteArray (ByteArray (ByteArray), indexByteArray)
 import Data.Primitive.Ptr (writeOffPtr)
-import Data.Word (Word64, Word8)
+import Data.Word (Word64, Word8, byteSwap64)
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Storable (peekElemOff)
+import OpenTelemetry.Internal.Trace.Id (SpanId (..), TraceId (..))
 import System.IO.Unsafe (unsafeDupablePerformIO)
 
 
-newTraceIdFromHeader
-  :: ByteString
-  -- ^ ASCII text of 64-bit integer
-  -> ShortByteString
-  -- ^ 128-bit integer
+{- | Parse a decimal ASCII header value into a 'TraceId'.
+Datadog uses the low 64 bits of the 128-bit trace ID, in big-endian.
+The high 64 bits are set to zero.
+-}
+newTraceIdFromHeader :: ByteString -> TraceId
 newTraceIdFromHeader bs =
-  let w64 = readWord64BS bs
-      builder = BB.word64BE 0 <> BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+  let !w64 = readWord64BS bs
+  in TraceId 0 (byteSwap64 w64)
 
 
-newSpanIdFromHeader
-  :: ByteString
-  -- ^ ASCII text of 64-bit integer
-  -> ShortByteString
-  -- ^ 64-bit integer
-newSpanIdFromHeader bs =
-  let w64 = readWord64BS bs
-      builder = BB.word64BE w64
-  in SB.toShort $ BL.toStrict $ BB.toLazyByteString builder
+-- | Parse a decimal ASCII header value into a 'SpanId'.
+newSpanIdFromHeader :: ByteString -> SpanId
+newSpanIdFromHeader bs = SpanId (byteSwap64 (readWord64BS bs))
 
+
+{- | Render the low 64 bits of a 'TraceId' as a decimal ASCII string
+(Datadog header format).
+-}
+newHeaderFromTraceId :: TraceId -> ByteString
+newHeaderFromTraceId (TraceId _hi lo) = showWord64BS (byteSwap64 lo)
+
+
+-- | Render a 'SpanId' as a decimal ASCII string (Datadog header format).
+newHeaderFromSpanId :: SpanId -> ByteString
+newHeaderFromSpanId (SpanId w) = showWord64BS (byteSwap64 w)
+
+
+-- ---------------------------------------------------------------------------
+-- Internal helpers
+-- ---------------------------------------------------------------------------
 
 readWord64BS :: ByteString -> Word64
 readWord64BS (BI.PS fptr _ len) =
-  -- Safe.
   unsafeDupablePerformIO $
-    withForeignPtr fptr readWord64Ptr
-  where
-    readWord64Ptr ptr =
-      readWord64PtrOffset 0 0
-      where
-        readWord64PtrOffset offset acc
-          | offset < len = do
-              b <- peekElemOff ptr offset
-              let n = fromIntegral $ asciiWord8ToWord8 b :: Word64
-              readWord64PtrOffset (offset + 1) $ n + acc * 10
-          | otherwise = pure acc
+    withForeignPtr fptr $ \ptr ->
+      let go !offset !acc
+            | offset < len = do
+                b <- peekElemOff ptr offset
+                let !n = fromIntegral (asciiDigit b) :: Word64
+                go (offset + 1) (acc * 10 + n)
+            | otherwise = pure acc
+      in go 0 0
 
 
-asciiWord8ToWord8 :: Word8 -> Word8
-asciiWord8ToWord8 b = b - fromIntegral (C.ord '0')
-
-
-newHeaderFromTraceId
-  :: ShortByteString
-  -- ^ 128-bit integer
-  -> ByteString
-  -- ^ ASCII text of 64-bit integer
-newHeaderFromTraceId (SBI.SBS ba) =
-  let w64 = indexByteArrayNbo (ByteArray ba) 1
-  in showWord64BS w64
-
-
-newHeaderFromSpanId
-  :: ShortByteString
-  -- ^ 64-bit integer
-  -> ByteString
-  -- ^ ASCII text of 64-bit integer
-newHeaderFromSpanId (SBI.SBS ba) =
-  let w64 = indexByteArrayNbo (ByteArray ba) 0
-  in showWord64BS w64
-
-
--- | Read 'ByteArray' to 'Word64' with network-byte-order.
-indexByteArrayNbo
-  :: ByteArray
-  -> Int
-  -- ^ Offset in 'Word64'-size unit
-  -> Word64
-indexByteArrayNbo ba offset =
-  loop 0 0
-  where
-    loop 8 acc = acc
-    loop n acc = loop (n + 1) $ shift acc 8 + word8ToWord64 (indexByteArray ba $ 8 * offset + n)
+asciiDigit :: Word8 -> Word8
+asciiDigit b = b - 0x30
 
 
 showWord64BS :: Word64 -> ByteString
 showWord64BS v =
-  -- Safe.
   unsafeDupablePerformIO $
-    BI.createUptoN 20 writeWord64Ptr -- 20 = length (show (maxBound :: Word64))
-  where
-    writeWord64Ptr ptr =
-      loop (19 :: Int) v 0 False
-      where
-        loop 0 v offset _ = do
-          writeOffPtr ptr offset (word8ToAsciiWord8 $ fromIntegral v)
-          pure $ offset + 1
-        loop n v offset upper = do
-          let (p, q) = v `divMod` (10 ^ n)
-          if p == 0 && not upper
-            then loop (n - 1) q offset upper
-            else do
-              writeOffPtr ptr offset (word8ToAsciiWord8 $ fromIntegral p)
-              loop (n - 1) q (offset + 1) True
+    BI.createUptoN 20 $ \ptr ->
+      let go :: Int -> Word64 -> Int -> Bool -> IO Int
+          go 0 v' offset _ = do
+            writeOffPtr ptr offset (toAsciiDigit $ fromIntegral v')
+            pure $ offset + 1
+          go n v' offset upper = do
+            let (!p, !q) = v' `divMod` (10 ^ n)
+            if p == 0 && not upper
+              then go (n - 1) q offset upper
+              else do
+                writeOffPtr ptr offset (toAsciiDigit $ fromIntegral p)
+                go (n - 1) q (offset + 1) True
+      in go (19 :: Int) v 0 False
 
 
-word8ToAsciiWord8 :: Word8 -> Word8
-word8ToAsciiWord8 b = b + fromIntegral (C.ord '0')
-
-
-word8ToWord64 :: Word8 -> Word64
-word8ToWord64 = fromIntegral
+toAsciiDigit :: Word8 -> Word8
+toAsciiDigit b = b + 0x30

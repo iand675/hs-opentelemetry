@@ -27,7 +27,7 @@ withTracer action = do
   tp <- createTracerProvider [processor] emptyTracerProviderOptions
   let tracer = makeTracer tp "test-conduit" tracerOptions
   result <- action tracer
-  shutdownTracerProvider tp
+  _ <- shutdownTracerProvider tp Nothing
   spans <- readIORef ref
   pure (spans, result)
 

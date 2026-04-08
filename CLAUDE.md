@@ -20,7 +20,7 @@ The project uses both Cabal and Stack as build tools, with Nix for environment m
 
 ### Development Environment
 - `nix develop` - Enter default development environment (GHC 9.10)
-- `nix develop .#ghc94` - Enter specific GHC version environment (9.4, 9.6, 9.8, 9.10 available)
+- `nix develop .#ghc94` - Enter specific GHC version environment (9.4, 9.6, 9.8, 9.10, 9.12 available)
 - `direnv allow` - Allow direnv to load `.envrc` for automatic environment setup
 
 ### GHC Version Matrix
@@ -31,7 +31,7 @@ Stack files exist for each supported GHC version:
 | 9.6 | `stack-ghc-9.6.yaml` | lts-22.44 | No gogol |
 | 9.8 | `stack-ghc-9.8.yaml` | lts-23.28 | No gogol |
 | 9.10 | `stack-ghc-9.10.yaml` | lts-24.35 | Full support |
-| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-02-15 | No persistent-mysql; proto-lens via allow-newer |
+| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-04-04 | No persistent-mysql; proto-lens via allow-newer |
 
 Key compat notes:
 - `foldl'` moved to Prelude in GHC 9.10; older versions need `import Data.List (foldl')`
@@ -42,6 +42,24 @@ Key compat notes:
 ### Testing
 - Run tests via the build commands above (`--test` flag for Stack, `cabal test` for Cabal)
 - Tests are located in `test/` directories within each package
+
+### Benchmark Regression Detection
+- `make bench.save` - Save a baseline on your machine (takes ~4 minutes)
+- `make bench.check` - Compare against baseline, fail if >20% regression
+- `make bench.check.strict` - Stricter 10% threshold for focused perf work
+- `make bench.compare` - Side-by-side comparison of baseline vs current
+- `make bench.normalize` - Show benchmarks as multiples of IORef read (hardware-portable)
+
+Baselines are machine-specific (keyed by CPU fingerprint) and stored in `benchmarks/`.
+The `normalize` mode expresses costs as "N× IORef read" which is roughly stable across
+hardware, useful for comparing numbers from different machines.
+
+The benchmark harness uses:
+- `tasty-bench --baseline` for regression detection
+- `-fproc-alignment=64` for stable cache-line alignment
+- `-N1 -A32m` RTS settings for low-noise single-threaded measurement
+- `+RTS -T` for GC allocation tracking
+- Calibration benchmarks (noop IO, IORef read/write, atomicModifyIORef', clock, FFI) as reference points
 
 ## Code Architecture
 
@@ -56,13 +74,23 @@ This is a multi-package Haskell project implementing OpenTelemetry for Haskell. 
 
 ### Instrumentation Libraries
 Located in `instrumentation/`:
-- `wai/` - WAI middleware instrumentation
+- `wai/` - WAI middleware instrumentation (traces + metrics)
 - `yesod/` - Yesod web framework instrumentation
 - `persistent/` - Persistent database library instrumentation
-- `http-client/` - HTTP client instrumentation
+- `persistent-mysql/` - MySQL-specific persistent instrumentation
+- `postgresql-simple/` - postgresql-simple instrumentation
+- `http-client/` - HTTP client instrumentation (traces + metrics)
 - `conduit/` - Conduit streaming library instrumentation
-- `gogol/` - Google Cloud (gogol) instrumentation (GHC 9.10+ only)
 - `hw-kafka-client/` - Kafka instrumentation (GHC 9.6+ only, requires headers API)
+- `amazonka/` - AWS (amazonka) instrumentation
+- `gogol/` - Google Cloud (gogol) instrumentation (GHC 9.10+ only)
+- `ghc-metrics/` - GHC runtime statistics as OpenTelemetry metrics
+- `hspec/` - Hspec test framework instrumentation
+- `tasty/` - Tasty test framework instrumentation
+- `katip/` - Katip logging bridge to OTel logs
+- `co-log/` - co-log logging bridge to OTel logs
+- `monad-logger/` - monad-logger bridge to OTel logs
+- `cloudflare/` - Cloudflare Workers instrumentation
 
 ### Exporters
 Located in `exporters/`:
@@ -76,18 +104,25 @@ Located in `propagators/`:
 - `w3c/` - W3C trace context and baggage propagation
 - `b3/` - B3 propagation format
 - `datadog/` - Datadog propagation format
+- `jaeger/` - Jaeger propagation format
+- `xray/` - AWS X-Ray propagation format
 
 ### Key Concepts
-- **TracerProvider**: Factory for creating Tracer instances
+- **TracerProvider**: Factory for creating Tracer instances (traces)
 - **Tracer**: Creates and manages Spans
 - **Span**: Represents a unit of work in a trace
+- **MeterProvider**: Factory for creating Meter instances (metrics)
+- **Meter**: Creates instruments (Counter, Histogram, Gauge, etc.)
+- **LoggerProvider**: Factory for creating Logger instances (logs)
+- **Logger**: Emits log records (bridge API for logging libraries)
 - **Context**: Carries trace context and baggage across process boundaries
 - **Resource**: Describes the service/process generating telemetry
+- **InstrumentationScope**: Identifies the library providing instrumentation
 
 ### Important Implementation Notes
 - The API package should be used for library instrumentation
 - The SDK package should be used for application-level configuration
-- Traces are the primary focus; metrics and logs are not yet fully implemented
+- Traces, metrics, and logs are all fully implemented
 - The project supports multiple GHC versions (9.4, 9.6, 9.8, 9.10, 9.12)
 
 ### Code Style

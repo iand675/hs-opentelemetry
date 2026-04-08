@@ -4,18 +4,28 @@
 
 module Main (main) where
 
-import Control.Concurrent.MVar
 import Control.Monad (void)
 import qualified Data.HashMap.Strict as H
+import Data.IORef
 import qualified Data.Text as T
+import GHC.Clock (getMonotonicTimeNSec)
 import OpenTelemetry.Attributes (defaultAttributeLimits, emptyAttributes)
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Context (empty, insertSpan, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext, attachContext, getContext)
 import OpenTelemetry.Internal.AtomicCounter
-import OpenTelemetry.Processor.Span (SpanProcessor (..))
+import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core
+import OpenTelemetry.Trace.Id (newSpanId, newTraceId, newTraceAndSpanId)
+import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
 import Test.Tasty.Bench
+
+
+realOptions :: TracerProviderOptions
+realOptions =
+  emptyTracerProviderOptions
+    { tracerProviderOptionsIdGenerator = DefaultIdGenerator
+    }
 
 
 main :: IO ()
@@ -24,11 +34,21 @@ main = do
   let noopTracer = makeTracer noopTp (InstrumentationLibrary "bench" "1.0" "" emptyAttributes) tracerOptions
 
   dummyProcessor <- mkCountingProcessor
-  activeTp <- createTracerProvider [dummyProcessor] emptyTracerProviderOptions
+  activeTp <- createTracerProvider [dummyProcessor] realOptions
   let activeTracer = makeTracer activeTp (InstrumentationLibrary "bench" "1.0" "" emptyAttributes) tracerOptions
+
+  calibRef <- newIORef ()
 
   defaultMain
     [ bgroup
+        "calibration"
+        [ bench "noop IO" $ whnfIO (pure ())
+        , bench "IORef read" $ whnfIO (readIORef calibRef)
+        , bench "IORef write" $ whnfIO (writeIORef calibRef ())
+        , bench "atomicModifyIORef'" $ whnfIO (atomicModifyIORef' calibRef (\x -> (x, ())))
+        , bench "getMonotonicTimeNSec" $ whnfIO getMonotonicTimeNSec
+        ]
+    , bgroup
         "createSpan"
         [ bench "no-op (no processors)" $
             whnfIO $
@@ -179,7 +199,7 @@ main = do
         "context"
         [ bench "getContext" $ whnfIO getContext
         , bench "attachContext + getContext" $ whnfIO $ do
-            void $ attachContext empty
+            _ <- attachContext empty
             getContext
         , bench "adjustContext (insertSpan)" $ whnfIO $ do
             s <- createSpan noopTracer empty "s" defaultSpanArguments
@@ -273,6 +293,16 @@ main = do
               s <- createSpan activeTracer empty "s" defaultSpanArguments
               getSpanContext s
            ]
+    , bgroup
+        "rng"
+        [ bench "SpanId (xoshiro)" $ whnfIO $ newSpanId DefaultIdGenerator
+        , bench "TraceId (xoshiro)" $ whnfIO $ newTraceId DefaultIdGenerator
+        , bench "SpanId+TraceId (3 separate)" $ whnfIO $ do
+            !_ <- newTraceId DefaultIdGenerator
+            newSpanId DefaultIdGenerator
+        , bench "TraceId+SpanId (cmm primop)" $ whnfIO $
+            newTraceAndSpanId DefaultIdGenerator
+        ]
     ]
 
 
@@ -283,6 +313,6 @@ mkCountingProcessor = do
     SpanProcessor
       { spanProcessorOnStart = \_ _ -> pure ()
       , spanProcessorOnEnd = \_ -> void $ incrAtomicCounter ref
-      , spanProcessorShutdown = newEmptyMVar >>= readMVar
-      , spanProcessorForceFlush = pure ()
+      , spanProcessorShutdown = pure ShutdownSuccess
+      , spanProcessorForceFlush = pure FlushSuccess
       }

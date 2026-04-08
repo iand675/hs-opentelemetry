@@ -16,6 +16,8 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "Baggage" $ do
+  -- Baggage API §Baggage Operations
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/#operations
   specify "Basic support" $ do
     let Just k1 = mkToken "key1"
         Just k2 = mkToken "key2"
@@ -26,6 +28,8 @@ spec = describe "Baggage" $ do
     HM.lookup k1 (values b) `shouldBe` Just (element "one")
     HM.lookup k2 (values b) `shouldBe` Just (element "two")
 
+  -- Baggage API §Propagating baggage (W3C Baggage header name)
+  -- https://opentelemetry.io/docs/specs/otel/baggage/api/#propagating-baggage
   specify "User official header name `baggage`" $ do
     propagatorFields w3cBaggagePropagator `shouldBe` ["baggage"]
     let Just k = mkToken "userid"

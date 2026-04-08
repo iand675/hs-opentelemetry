@@ -5,6 +5,8 @@ module Main where
 import qualified Data.HashMap.Strict as H
 import OpenTelemetry.Attributes (Attribute (..))
 import OpenTelemetry.Attributes.Attribute (PrimitiveAttribute (..))
+import OpenTelemetry.Attributes.Key (unkey)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.SemanticsConfig (StabilityOpt (..))
 import Test.Hspec
@@ -67,12 +69,12 @@ spec = do
       dbSpanName Nothing Nothing `shouldBe` "DB"
 
   describe "lookupDbNamespace" $ do
-    let stableAttrs = H.fromList [("db.namespace", AttributeValue (TextAttribute "stabledb"))]
-        oldAttrs = H.fromList [("db.name", AttributeValue (TextAttribute "olddb"))]
+    let stableAttrs = H.fromList [(unkey SC.db_namespace, AttributeValue (TextAttribute "stabledb"))]
+        oldAttrs = H.fromList [(unkey SC.db_name, AttributeValue (TextAttribute "olddb"))]
         bothAttrs =
           H.fromList
-            [ ("db.namespace", AttributeValue (TextAttribute "stabledb"))
-            , ("db.name", AttributeValue (TextAttribute "olddb"))
+            [ (unkey SC.db_namespace, AttributeValue (TextAttribute "stabledb"))
+            , (unkey SC.db_name, AttributeValue (TextAttribute "olddb"))
             ]
         emptyAttrs = H.empty
 

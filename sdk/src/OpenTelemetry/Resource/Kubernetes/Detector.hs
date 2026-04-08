@@ -15,10 +15,10 @@ when not running in a Kubernetes cluster.
 
 Detection sources:
 
-* @KUBERNETES_SERVICE_HOST@ — presence indicates k8s
-* @HOSTNAME@ — typically the pod name
-* @\/var\/run\/secrets\/kubernetes.io\/serviceaccount\/namespace@ — pod namespace
-* @OTEL_RESOURCE_ATTRIBUTES@ — may contain @k8s.cluster.name@, @k8s.node.name@, etc.
+* @KUBERNETES_SERVICE_HOST@: presence indicates k8s
+* @HOSTNAME@: typically the pod name
+* @\/var\/run\/secrets\/kubernetes.io\/serviceaccount\/namespace@: pod namespace
+* @OTEL_RESOURCE_ATTRIBUTES@: may contain @k8s.cluster.name@, @k8s.node.name@, etc.
 
 @since 0.1.0.2
 -}
@@ -36,6 +36,7 @@ import System.Environment (lookupEnv)
 import System.IO.Error (tryIOError)
 
 
+-- | @since 0.0.1.0
 isRunningInKubernetes :: IO Bool
 isRunningInKubernetes = do
   mHost <- lookupEnv "KUBERNETES_SERVICE_HOST"
@@ -44,6 +45,7 @@ isRunningInKubernetes = do
     Nothing -> False
 
 
+-- | @since 0.0.1.0
 data KubernetesResources = KubernetesResources
   { k8sCluster :: Cluster
   , k8sNamespace :: Namespace
@@ -53,6 +55,7 @@ data KubernetesResources = KubernetesResources
   deriving (Show)
 
 
+-- | @since 0.0.1.0
 detectKubernetes :: IO (Maybe KubernetesResources)
 detectKubernetes = do
   inK8s <- isRunningInKubernetes
@@ -76,7 +79,7 @@ detectKubernetes = do
 detectCluster :: IO Cluster
 detectCluster = do
   mName <- lookupEnvText "K8S_CLUSTER_NAME"
-  pure Cluster {clusterName = mName}
+  pure Cluster {clusterName = mName, clusterUid = Nothing}
 
 
 detectNamespace :: IO Namespace

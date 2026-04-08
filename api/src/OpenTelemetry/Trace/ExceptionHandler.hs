@@ -16,7 +16,7 @@ exceptions interact with span status and events.
 
 By default, every exception caught by 'inSpan' sets the span status to
 'Error' and records an exception event. This module provides combinators to
-override that behavior for specific exception types — for example, treating
+override that behavior for specific exception types. For example, treating
 'System.Exit.ExitSuccess' or 'Control.Exception.AsyncCancelled' as
 non-errors.
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -88,11 +89,9 @@ jaegerTraceContextPropagator =
           Nothing -> pure tm
           Just span' -> do
             sc <- Core.getSpanContext span'
-            let tid = TE.decodeUtf8 $ encodeTraceId (Core.traceId sc)
-                sid = TE.decodeUtf8 $ encodeSpanId (Core.spanId sc)
-                flags :: Text
-                flags = if Core.isSampled (Core.traceFlags sc) then "1" else "0"
-                headerValue = tid <> ":" <> sid <> ":0:" <> flags
+            let !sampled = Core.isSampled (Core.traceFlags sc)
+                !headerBs = encodeUberTraceId (Core.traceId sc) (Core.spanId sc) sampled
+                !headerValue = TE.decodeUtf8 headerBs
             pure $ textMapInsert uberTraceIdHeader headerValue tm
     }
 

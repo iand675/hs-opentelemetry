@@ -60,7 +60,6 @@ import Data.IP
 import Data.Int (Int64)
 import Data.List
 import Data.Maybe (catMaybes)
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Database.PostgreSQL.LibPQ as LibPQ
@@ -99,7 +98,6 @@ import OpenTelemetry.Resource ((.=), (.=?))
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core as TC
-import OpenTelemetry.Trace.Monad
 import Text.Read (readMaybe)
 import UnliftIO
 

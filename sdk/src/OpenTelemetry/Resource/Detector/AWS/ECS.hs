@@ -31,7 +31,9 @@ import Data.Aeson (FromJSON (..), withObject, (.:), (.:?))
 import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes (Attribute)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
 import System.Environment (lookupEnv)
 
@@ -71,24 +73,24 @@ detectECS client = do
               containerAttrs = case mContainer of
                 Nothing -> []
                 Just c ->
-                  [ "container.name" .= containerName c
-                  , "container.id" .=? containerDockerId c
-                  , "aws.ecs.container.arn" .=? containerArn c
+                  [ unkey SC.container_name .= containerName c
+                  , unkey SC.container_id .=? containerDockerId c
+                  , unkey SC.aws_ecs_container_arn .=? containerArn c
                   ]
                     ++ logAttrs c
 
           pure $
             mkResource $
-              [ "cloud.provider" .= ("aws" :: Text)
-              , "cloud.platform" .= ("aws_ecs" :: Text)
-              , "cloud.region" .=? mRegion
-              , "cloud.account.id" .=? mAcctId
-              , "cloud.availability_zone" .=? mAz
-              , "aws.ecs.task.arn" .= taskArn task
-              , "aws.ecs.task.family" .= taskFamily task
-              , "aws.ecs.task.revision" .= taskRevision task
-              , "aws.ecs.cluster.arn" .= cluster
-              , "aws.ecs.launchtype" .=? launchType
+              [ unkey SC.cloud_provider .= ("aws" :: Text)
+              , unkey SC.cloud_platform .= ("aws_ecs" :: Text)
+              , unkey SC.cloud_region .=? mRegion
+              , unkey SC.cloud_account_id .=? mAcctId
+              , unkey SC.cloud_availabilityZone .=? mAz
+              , unkey SC.aws_ecs_task_arn .= taskArn task
+              , unkey SC.aws_ecs_task_family .= taskFamily task
+              , unkey SC.aws_ecs_task_revision .= taskRevision task
+              , unkey SC.aws_ecs_cluster_arn .= cluster
+              , unkey SC.aws_ecs_launchtype .=? launchType
               ]
                 ++ containerAttrs
 
@@ -97,8 +99,8 @@ logAttrs :: ContainerMetadata -> [Maybe (Text, Attribute)]
 logAttrs c = case containerLogDriver c of
   Just "awslogs" -> case containerLogOptions c of
     Just opts ->
-      [ "aws.log.group.names" .=? logGroup opts
-      , "aws.log.stream.names" .=? logStream opts
+      [ unkey SC.aws_log_group_names .=? logGroup opts
+      , unkey SC.aws_log_stream_names .=? logStream opts
       ]
     Nothing -> []
   _ -> []

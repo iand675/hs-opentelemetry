@@ -3,6 +3,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+-- |
+-- Module      : OpenTelemetry.Instrumentation.HttpClient.Raw
+-- Description : Low-level HTTP client instrumentation.
+-- Stability   : experimental
+--
+-- Provides raw request/response hooks for creating spans around HTTP calls.
 module OpenTelemetry.Instrumentation.HttpClient.Raw (
   -- * Manager-level instrumentation
   instrumentManagerSettings,
@@ -31,8 +37,8 @@ import Control.Exception (SomeException, catch, throwIO)
 import Control.Monad (forM_, void, when)
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
-import qualified Data.CaseInsensitive as CI
 import Data.CaseInsensitive (foldedCase)
+import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
 import Data.Maybe
 import qualified Data.Text as T
@@ -43,7 +49,7 @@ import Data.Text.Lazy.Builder.Int (decimal)
 import Network.HTTP.Client
 import Network.HTTP.Types
 import OpenTelemetry.Attributes.Key (unkey)
-import OpenTelemetry.Context (Context, Key, insertSpan, lookupSpan)
+import OpenTelemetry.Context (insertSpan, lookupSpan)
 import qualified OpenTelemetry.Context as Ctx
 import OpenTelemetry.Context.ThreadLocal
 import OpenTelemetry.Propagator (TextMap, TextMapPropagator, extract, getGlobalTextMapPropagator, inject, textMapFromList, textMapToList)
@@ -85,16 +91,16 @@ httpClientInstrumentationConfig = mempty
 -- Context key for the span created by Manager-level hooks, so we can
 -- retrieve "our" span in managerModifyResponse without confusing it with
 -- a caller's span.
-managedSpanKey :: Key Span
+managedSpanKey :: Ctx.Key Span
 managedSpanKey = unsafePerformIO $ Ctx.newKey "http-client.managed-span"
 {-# NOINLINE managedSpanKey #-}
 
 
--- Context key to stash the pre-request context so we can restore it
+-- Context key to stash the attach token so we can restore context
 -- after managerModifyResponse completes.
-parentContextKey :: Key Context
-parentContextKey = unsafePerformIO $ Ctx.newKey "http-client.parent-context"
-{-# NOINLINE parentContextKey #-}
+parentTokenKey :: Ctx.Key Token
+parentTokenKey = unsafePerformIO $ Ctx.newKey "http-client.parent-token"
+{-# NOINLINE parentTokenKey #-}
 
 
 httpTracerProvider :: (MonadIO m) => m Tracer
@@ -150,11 +156,11 @@ instrumentManagerSettings conf settings = do
 
           let newCtx =
                 Ctx.insert managedSpanKey s
-                  . Ctx.insert parentContextKey parentCtx
                   . insertSpan s
                   $ parentCtx
 
-          void $ attachContext newCtx
+          tok <- attachContext newCtx
+          adjustContext (Ctx.insert parentTokenKey tok)
 
           addRequestAttributes conf s req'
 
@@ -168,9 +174,7 @@ instrumentManagerSettings conf settings = do
           forM_ (Ctx.lookup managedSpanKey ctx) $ \s -> do
             instrumentResponseOnSpan conf s resp'
             endSpan s Nothing
-          case Ctx.lookup parentContextKey ctx of
-            Just prevCtx -> void $ attachContext prevCtx
-            Nothing -> pure ()
+          forM_ (Ctx.lookup parentTokenKey ctx) detachContext
           pure resp'
       , managerWrapException = \req action ->
           managerWrapException settings req action `catch` \(e :: SomeException) -> do
@@ -180,9 +184,7 @@ instrumentManagerSettings conf settings = do
               addAttributes s [(unkey SC.error_type, toAttribute errText)]
               setStatus s (Error errText)
               endSpan s Nothing
-            case Ctx.lookup parentContextKey ctx of
-              Just prevCtx -> void $ attachContext prevCtx
-              Nothing -> pure ()
+            forM_ (Ctx.lookup parentTokenKey ctx) detachContext
             throwIO e
       }
 
@@ -257,7 +259,7 @@ tracedHttpRequest conf req action = do
       reqSpanName
       defaultSpanArguments {kind = Client}
   let ctx' = insertSpan s ctx
-  void $ attachContext ctx'
+  tok <- attachContext ctx'
 
   addRequestAttributes conf s req
 
@@ -265,22 +267,20 @@ tracedHttpRequest conf req action = do
   hdrs <- injectToHeaders propagator ctx' (requestHeaders req)
   let req' = req {requestHeaders = hdrs}
 
-  let cleanup prevCtx = do
-        void $ attachContext prevCtx
-  let onError prevCtx (e :: SomeException) = do
+  let onError (e :: SomeException) = do
         let errText = T.pack (show e)
         addAttributes s [(unkey SC.error_type, toAttribute errText)]
         setStatus s (Error errText)
         endSpan s Nothing
-        cleanup prevCtx
+        detachContext tok
         throwIO e
 
   resp <-
-    action req' `catch` onError ctx
+    action req' `catch` onError
 
   instrumentResponseOnSpan conf s resp
   endSpan s Nothing
-  void $ attachContext ctx
+  detachContext tok
   pure resp
 
 
@@ -361,10 +361,10 @@ instrumentResponseOnSpan conf s resp = do
         | sc >= 400 = [(unkey SC.error_type, toAttribute (T.pack $ show sc))]
         | otherwise = []
       headerAttrs =
-        H.fromList $
-          mapMaybe
+        H.fromList
+          $ mapMaybe
             (\h -> (\v -> ("http.response.header." <> T.decodeUtf8 (foldedCase h), toAttribute (T.decodeUtf8 v))) <$> lookup h (responseHeaders resp))
-            $ responseHeadersToRecord conf
+          $ responseHeadersToRecord conf
 
   semanticsOptions <- liftIO getSemanticsOptions
   case httpOption semanticsOptions of
@@ -400,7 +400,7 @@ This is the original low-level function. For most use cases, prefer
 instrumentRequest
   :: (MonadIO m)
   => HttpClientInstrumentationConfig
-  -> Context
+  -> Ctx.Context
   -> Request
   -> m Request
 instrumentRequest conf ctxt req = do
@@ -425,13 +425,13 @@ This is the original low-level function. For most use cases, prefer
 instrumentResponse
   :: (MonadIO m)
   => HttpClientInstrumentationConfig
-  -> Context
+  -> Ctx.Context
   -> Response a
   -> m ()
 instrumentResponse conf ctxt resp = do
   propagator <- liftIO getGlobalTextMapPropagator
   ctxt' <- extractFromHeaders propagator (responseHeaders resp) ctxt
-  void $ attachContext ctxt'
+  _ <- attachContext ctxt'
   forM_ (lookupSpan ctxt') $ \s ->
     instrumentResponseOnSpan conf s resp
 
@@ -445,11 +445,11 @@ headersToTextMap :: RequestHeaders -> TextMap
 headersToTextMap = textMapFromList . map (\(k, v) -> (T.decodeUtf8 (foldedCase k), T.decodeUtf8 v))
 
 
-injectToHeaders :: (MonadIO m) => TextMapPropagator -> Context -> RequestHeaders -> m RequestHeaders
+injectToHeaders :: (MonadIO m) => TextMapPropagator -> Ctx.Context -> RequestHeaders -> m RequestHeaders
 injectToHeaders propagator ctx existingHeaders = do
   tm <- inject propagator ctx (headersToTextMap existingHeaders)
   pure $ map (\(k, v) -> (CI.mk (T.encodeUtf8 k), T.encodeUtf8 v)) (textMapToList tm)
 
 
-extractFromHeaders :: (MonadIO m) => TextMapPropagator -> ResponseHeaders -> Context -> m Context
+extractFromHeaders :: (MonadIO m) => TextMapPropagator -> ResponseHeaders -> Ctx.Context -> m Ctx.Context
 extractFromHeaders propagator hdrs = extract propagator (headersToTextMap hdrs)

@@ -4,17 +4,20 @@
 
 module Main (main) where
 
-import Control.Concurrent.Async (async)
 import Control.Monad (void)
+import qualified Data.HashMap.Strict as H
 import Data.IORef
 import qualified Data.Text as T
 import OpenTelemetry.Attributes (defaultAttributeLimits, emptyAttributes)
 import qualified OpenTelemetry.Attributes as A
-import OpenTelemetry.Context (empty)
+import OpenTelemetry.Context (empty, insertSpan)
+import OpenTelemetry.Context.ThreadLocal (adjustContext)
 import OpenTelemetry.Internal.AtomicCounter
-import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..), ShutdownResult (..), instrumentationLibrary)
+import OpenTelemetry.Internal.Common.Types (AnyValue (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..), instrumentationLibrary)
+import OpenTelemetry.Internal.Log.Core
+import OpenTelemetry.Internal.Log.Types
 import OpenTelemetry.MeterProvider (createMeterProvider, defaultSdkMeterProviderOptions)
-import OpenTelemetry.Metrics
+import OpenTelemetry.Metric.Core
 import OpenTelemetry.Processor.Span (SpanProcessor (..))
 import OpenTelemetry.Resource (emptyMaterializedResources)
 import OpenTelemetry.Trace.Core
@@ -42,6 +45,15 @@ main = do
   dummyProcessor <- mkCountingProcessor
   activeTp <- createTracerProvider [dummyProcessor] emptyTracerProviderOptions
   let activeTracer = makeTracer activeTp scope tracerOptions
+
+  noopLogProvider <- createLoggerProvider [] emptyLoggerProviderOptions
+  let noopLogger = makeLogger noopLogProvider scope
+
+  countingLogProcessor <- mkCountingLogProcessor
+  activeLogProvider <- createLoggerProvider [countingLogProcessor] emptyLoggerProviderOptions
+  let activeLogger = makeLogger activeLogProvider scope
+
+  adjustContext (\_ -> empty)
 
   defaultMain
     [ bgroup
@@ -84,6 +96,57 @@ main = do
               histogramRecord hist 42.0 fiveAttrs
         ]
     , bgroup
+        "emitLogRecord"
+        [ bench "no-op (no processors)" $
+            whnfIO $
+              emitLogRecord noopLogger emptyLogRecordArguments
+        , bench "no-op (no processors, body)" $
+            whnfIO $
+              emitLogRecord noopLogger emptyLogRecordArguments {body = TextValue "hello"}
+        , bench "active (with processor)" $
+            whnfIO $
+              emitLogRecord activeLogger emptyLogRecordArguments
+        , bench "active (body + severity)" $
+            whnfIO $
+              emitLogRecord
+                activeLogger
+                emptyLogRecordArguments
+                  { body = TextValue "user logged in"
+                  , severityNumber = Just Info
+                  }
+        , bench "active (body + 3 attrs)" $
+            whnfIO $
+              emitLogRecord
+                activeLogger
+                emptyLogRecordArguments
+                  { body = TextValue "request handled"
+                  , severityNumber = Just Info
+                  , attributes =
+                      H.fromList
+                        [ ("method", TextValue "GET")
+                        , ("path", TextValue "/api/users")
+                        , ("status", IntValue 200)
+                        ]
+                  }
+        , bench "active (with active span)" $ whnfIO $ do
+            s <- createSpan activeTracer empty "parent" defaultSpanArguments
+            adjustContext (insertSpan s)
+            void $
+              emitLogRecord
+                activeLogger
+                emptyLogRecordArguments
+                  { body = TextValue "in-span log"
+                  , severityNumber = Just Info
+                  }
+            adjustContext (\_ -> empty)
+        , bench "loggerIsEnabled (no processors)" $
+            whnfIO $
+              loggerIsEnabled noopLogger Nothing Nothing
+        , bench "loggerIsEnabled (with processors)" $
+            whnfIO $
+              loggerIsEnabled activeLogger Nothing Nothing
+        ]
+    , bgroup
         "combined"
         [ bench "inSpan + counter" $
             whnfIO $
@@ -99,6 +162,13 @@ main = do
                 "op"
                 defaultSpanArguments
                 (histogramRecord hist 42.0 emptyAttributes)
+        , bench "inSpan + log" $
+            whnfIO $
+              inSpan
+                activeTracer
+                "op"
+                defaultSpanArguments
+                (void $ emitLogRecord activeLogger emptyLogRecordArguments {body = TextValue "msg"})
         ]
     ]
 
@@ -110,6 +180,17 @@ mkCountingProcessor = do
     SpanProcessor
       { spanProcessorOnStart = \_ _ -> pure ()
       , spanProcessorOnEnd = \_ -> void $ incrAtomicCounter ref
-      , spanProcessorShutdown = async (pure ShutdownSuccess)
-      , spanProcessorForceFlush = pure ()
+      , spanProcessorShutdown = pure ShutdownSuccess
+      , spanProcessorForceFlush = pure FlushSuccess
+      }
+
+
+mkCountingLogProcessor :: IO LogRecordProcessor
+mkCountingLogProcessor = do
+  ref <- newAtomicCounter 0
+  pure
+    LogRecordProcessor
+      { logRecordProcessorOnEmit = \_ _ -> void $ incrAtomicCounter ref
+      , logRecordProcessorShutdown = pure ShutdownSuccess
+      , logRecordProcessorForceFlush = pure FlushSuccess
       }

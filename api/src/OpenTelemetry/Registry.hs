@@ -28,7 +28,7 @@
  * Third-party packages that call the plain @register@ variants
    /before/ SDK init will therefore take precedence over built-in
    defaults.
- * After SDK init, the registry is no longer consulted — changes have
+ * After SDK init, the registry is no longer consulted; changes have
    no retroactive effect on an already-initialized 'TracerProvider'.
 
  == Usage example
@@ -91,8 +91,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
 import Data.Text (Text)
-import OpenTelemetry.Internal.Logs.Types (LogRecordExporter)
-import OpenTelemetry.Internal.Metrics.Export (MetricExporter)
+import OpenTelemetry.Internal.Log.Types (LogRecordExporter)
+import OpenTelemetry.Internal.Metric.Export (MetricExporter)
 import OpenTelemetry.Internal.Trace.Types (SpanExporter)
 import OpenTelemetry.Propagator (TextMapPropagator)
 import OpenTelemetry.Resource (Resource)
@@ -299,6 +299,8 @@ registeredTextMapPropagators = readRegistry propagatorRegistry
 {- | A resource detector is an IO action that produces a 'Resource'.
 Detectors that do not apply to the current environment should return
 @'mkResource' []@ (an empty resource).
+
+@since 0.4.0.0
 -}
 type ResourceDetector = IO Resource
 

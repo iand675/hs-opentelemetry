@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- **Spec: `Retry-After` now supports HTTP-date format in addition to delay-seconds.**
+  Previous implementation only parsed integer seconds. Now handles both RFC 7231
+  Section 7.1.3 formats. Applied to all three signal exporters (Span, Metric, LogRecord).
+  Spec: <https://opentelemetry.io/docs/specs/otlp/#failures>
+- **`LogRecordExporter.forceFlush` now returns `FlushSuccess` instead of `()`.**
+  Aligns with the updated `LogRecordExporter` type in `hs-opentelemetry-api`.
+- **gRPC transport wired for metrics and logs.**
+  When the `grpc` Cabal flag is enabled and `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`,
+  all three signals (traces, metrics, logs) now use gRPC transport.
+  Previously only traces supported gRPC.
+- **Concurrent export configuration.**
+  New `OTEL_EXPORTER_OTLP_CONCURRENT_EXPORTS` env var and
+  `otlpConcurrentExports` config field (default 1).
 - **Fix: `droppedAttributesCount` was reporting stored count, not dropped count.**
   All three OTLP exporters (Span, Metric, LogRecord) used `getCount` instead of
   `getDropped` for span attributes, event attributes, link attributes, resource
@@ -16,7 +29,7 @@
   both `Span` and `Span.Link` messages (matching the existing log exporter).
 - OTLP span exporter: set `schema_url` on `ResourceSpans` and `ScopeSpans`, set scope `attributes` and `droppedAttributesCount`
 - `OpenTelemetry.Exporter.OTLP` barrel module now re-exports all three signals (Span, Metric, LogRecord)
-- Implement `OpenTelemetry.Exporter.OTLP.LogRecord` — full OTLP HTTP/Protobuf log exporter with retry, compression, and severity/AnyValue/tracing-context serialization
+- Implement `OpenTelemetry.Exporter.OTLP.LogRecord`: full OTLP HTTP/Protobuf log exporter with retry, compression, and severity/AnyValue/tracing-context serialization
 - Use `startTimeUnixNano` from data points instead of hardcoded 0
 - Comprehensive protobuf round-trip tests for all metric types
 - OTLP metrics: exemplars on number and histogram data points; exponential histogram messages; aggregation temporality from export model.

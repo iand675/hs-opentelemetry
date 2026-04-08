@@ -1,6 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : OpenTelemetry.Propagator.W3CBaggage
+-- Description : W3C Baggage propagation (https://www.w3.org/TR/baggage/). Extracts and injects the baggage header.
+-- Stability   : experimental
+--
 module OpenTelemetry.Propagator.W3CBaggage (
   w3cBaggagePropagator,
   decodeBaggage,

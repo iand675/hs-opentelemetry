@@ -17,7 +17,7 @@ homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan
 maintainer:         ian@iankduncan.com
-copyright:          2024 Ian Duncan
+copyright:          2024 Ian Duncan, Mercury Technologies
 license:            BSD-3-Clause
 license-file:       LICENSE
 build-type:         Simple
@@ -41,8 +41,7 @@ library
       src
   ghc-options: -Wall
   build-depends:
-      attoparsec
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , bytestring
     , hs-opentelemetry-api ^>=0.4
     , text

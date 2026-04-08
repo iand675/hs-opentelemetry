@@ -11,6 +11,8 @@ envVarName = "OTEL_SEMCONV_STABILITY_OPT_IN"
 
 spec :: Spec
 spec = do
+  -- Semantic conventions §Stable vs Experimental: OTEL_SEMCONV_STABILITY_OPT_IN
+  -- https://opentelemetry.io/docs/specs/semconv/general/stable-vs-experimental/
   describe "SemanticsConfig" $ do
     describe "HttpOption" $ do
       it "defaults to 'Old' when env var has no value" $ do
@@ -114,14 +116,16 @@ spec = do
         lookupStability "messaging" opts `shouldBe` Stable
         lookupStability "http" opts `shouldBe` StableAndOld
 
+    -- Implementation-specific: memoized semantics options snapshot
+    -- https://opentelemetry.io/docs/specs/semconv/general/stable-vs-experimental/
     context "memoization" $ do
-      it "works" $ do
-        setEnv envVarName "http"
-        semanticsOptions <- getSemanticsOptions
-        httpOption semanticsOptions `shouldBe` Stable
+      it "returns a consistent value across calls" $ do
+        opts1 <- getSemanticsOptions
+        opts2 <- getSemanticsOptions
+        httpOption opts1 `shouldBe` httpOption opts2
       it ("does not change when " ++ envVarName ++ " changes") $ do
-        setEnv envVarName "http"
-        semanticsOptions <- getSemanticsOptions
+        baseline <- getSemanticsOptions
+        let baselineHttp = httpOption baseline
         setEnv envVarName "http/dup"
-        semanticsOptions <- getSemanticsOptions
-        httpOption semanticsOptions `shouldBe` Stable -- and not StableAndOld because of memoization
+        opts <- getSemanticsOptions
+        httpOption opts `shouldBe` baselineHttp

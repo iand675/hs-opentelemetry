@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:               hs-opentelemetry-instrumentation-http-client
 version:            0.1.0.1
+synopsis:           OpenTelemetry instrumentation for http-client
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client#readme>
+category:           OpenTelemetry, Telemetry, HTTP, Web
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
@@ -26,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.HttpClient
+      OpenTelemetry.Instrumentation.HttpClient.Metrics
       OpenTelemetry.Instrumentation.HttpClient.Raw
       OpenTelemetry.Instrumentation.HttpClient.Simple
   other-modules:
@@ -64,6 +67,7 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
     , hs-opentelemetry-exporter-in-memory ==0.0.*
     , hs-opentelemetry-instrumentation-http-client ==0.1.*
     , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , http-client
     , http-types

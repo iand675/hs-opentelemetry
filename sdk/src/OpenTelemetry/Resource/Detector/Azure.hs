@@ -27,7 +27,9 @@ module OpenTelemetry.Resource.Detector.Azure (
 
 import Data.Aeson (FromJSON (..), withObject, (.:?))
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
 import System.Environment (lookupEnv)
 
@@ -70,15 +72,15 @@ detectAzureVM client = do
             Nothing -> "azure_vm"
       pure $
         mkResource
-          [ "cloud.provider" .= ("azure" :: Text)
-          , "cloud.platform" .= platform
-          , "cloud.region" .=? vmLocation meta
-          , "cloud.resource_id" .=? vmResourceId meta
-          , "host.id" .=? vmId meta
-          , "host.name" .=? vmName meta
-          , "host.type" .=? vmSize meta
-          , "os.type" .=? vmOsType meta
-          , "os.version" .=? vmOsVersion meta
+          [ unkey SC.cloud_provider .= ("azure" :: Text)
+          , unkey SC.cloud_platform .= platform
+          , unkey SC.cloud_region .=? vmLocation meta
+          , unkey SC.cloud_resourceId .=? vmResourceId meta
+          , unkey SC.host_id .=? vmId meta
+          , unkey SC.host_name .=? vmName meta
+          , unkey SC.host_type .=? vmSize meta
+          , unkey SC.os_type .=? vmOsType meta
+          , unkey SC.os_version .=? vmOsVersion meta
           ]
 
 

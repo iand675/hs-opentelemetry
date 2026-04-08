@@ -3,7 +3,7 @@
 module Main where
 
 import Control.Exception (bracket)
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Data.ByteString (ByteString)
 import Kafka.Producer (
   KafkaError,
@@ -58,7 +58,7 @@ withTracer f =
     -- Install the SDK, pulling configuration from the environment
     initializeGlobalTracerProvider
     -- Ensure that any spans that haven't been exported yet are flushed
-    shutdownTracerProvider
+    (\tp -> void $ shutdownTracerProvider tp Nothing)
     -- Get a tracer so you can create spans
     (\tracerProvider -> f $ makeTracer tracerProvider "haskell-producer")
 

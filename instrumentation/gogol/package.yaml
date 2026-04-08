@@ -24,6 +24,7 @@ library:
   - gogol-core ^>= 1.0
   - bytestring
   - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - http-types
   - resourcet
   - text

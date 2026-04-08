@@ -1,6 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{- | Testing assertion helpers built on top of in-memory exporters.
+{- |
+Module      :  OpenTelemetry.Exporter.InMemory.Assertions
+Copyright   :  (c) Ian Duncan, 2024-2026
+License     :  BSD-3
+Description :  Testing assertion helpers built on top of in-memory exporters.
+Stability   :  experimental
 
 Import this module in your test suite alongside 'OpenTelemetry.Exporter.InMemory'
 to get ergonomic span/metric/log assertions without writing manual IORef reads and
@@ -48,7 +53,7 @@ import OpenTelemetry.Exporter.Metric (
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
  )
-import OpenTelemetry.Logs.Core (ReadableLogRecord)
+import OpenTelemetry.Log.Core (ReadableLogRecord)
 import OpenTelemetry.Trace.Core (
   ImmutableSpan (..),
   SpanHot (..),

@@ -1,0 +1,54 @@
+cabal-version: 1.12
+name:               hs-opentelemetry-instrumentation-monad-logger
+version:            0.1.0.0
+synopsis:           Bridge monad-logger to OpenTelemetry Logs
+description:
+  Provides a logging callback for @runLoggingT@ that forwards monad-logger
+  messages to the OpenTelemetry Logs pipeline with automatic trace
+  correlation and source location attributes.
+category:           OpenTelemetry, Logging
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan
+maintainer:         ian@iankduncan.com
+copyright:          2024-2026 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Instrumentation.MonadLogger
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , fast-logger
+    , hs-opentelemetry-api >=0.4 && <0.5
+    , monad-logger >=0.3 && <0.4
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite hs-opentelemetry-instrumentation-monad-logger-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , hs-opentelemetry-api >=0.4 && <0.5
+    , hs-opentelemetry-exporter-in-memory >=0.0 && <0.1
+    , hs-opentelemetry-instrumentation-monad-logger
+    , hs-opentelemetry-sdk >=0.1 && <0.2
+    , hspec
+    , monad-logger >=0.3 && <0.4
+    , text
+    , vector
+  default-language: Haskell2010

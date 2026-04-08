@@ -2,22 +2,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- |
+-- Module      : OpenTelemetry.Utils.Exceptions
+-- Description : Utility for recording exceptions as span events following the OpenTelemetry semantic conventions.
+-- Stability   : experimental
+--
 module OpenTelemetry.Utils.Exceptions (inSpanM, inSpanM', inSpanM'') where
 
 import Control.Monad (forM_)
 import Control.Monad.Catch (MonadMask, SomeException)
 import qualified Control.Monad.Catch as MonadMask
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Exception (SrcLoc (..), getCallStack)
+import GHC.Exception (getCallStack)
 import GHC.Stack (CallStack, callStack)
 import GHC.Stack.Types (HasCallStack)
 import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext)
 import qualified OpenTelemetry.Context.ThreadLocal as TraceCore.SpanContext
+import OpenTelemetry.SemanticsConfig (codeOption, getSemanticsOptions)
 import qualified OpenTelemetry.Trace as Trace
-import OpenTelemetry.Trace.Core (ToAttribute (..), endSpan, recordException, setStatus, whenSpanIsRecording)
+import OpenTelemetry.Trace.Core (ToAttribute (..), codeAttributes, endSpan, recordException, setStatus, whenSpanIsRecording)
 import qualified OpenTelemetry.Trace.Core as TraceCore
 
 
@@ -89,14 +95,8 @@ inSpanM'' t cs n args f = bracketError' before after (f . snd)
         case getCallStack cs of
           [] -> pure ()
           (fn, loc) : _ -> do
-            TraceCore.addAttributes
-              s
-              [ ("code.function", toAttribute $ T.pack fn)
-              , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-              , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-              , ("code.lineno", toAttribute $ srcLocStartLine loc)
-              , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-              ]
+            opt <- liftIO $ codeOption <$> getSemanticsOptions
+            TraceCore.addAttributes s (codeAttributes opt fn loc)
       pure (lookupSpan ctx, s)
 
     after e (parent, s) = do

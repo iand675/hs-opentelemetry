@@ -1,9 +1,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-{- | Human-readable rendering of 'ResourceMetricsExport' batches for tests and debugging.
+{- |
+Module      :  OpenTelemetry.Debug.MetricExport
+Copyright   :  (c) Ian Duncan, 2024-2026
+License     :  BSD-3
+Description :  Human-readable rendering of 'ResourceMetricsExport' batches for tests and debugging.
+Stability   :  experimental
 
- This is not a stable interchange format.
+This is not a stable interchange format.
 -}
 module OpenTelemetry.Debug.MetricExport (
   renderResourceMetricsExportDebug,
@@ -23,6 +28,8 @@ import OpenTelemetry.Exporter.Metric (
 
 
 -- | Multi-line text summary (not Prometheus or OTLP format).
+--
+-- @since 0.0.1.0
 renderResourceMetricsExportDebug :: [ResourceMetricsExport] -> Text
 renderResourceMetricsExportDebug rs =
   T.intercalate "\n---\n" (fmap renderResource rs)

@@ -9,25 +9,64 @@
 {-# LANGUAGE StrictData #-}
 
 {- |
- Module      :  OpenTelemetry.Attributes
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Key-value pair metadata used in 'OpenTelemetry.Trace.Span's, 'OpenTelemetry.Trace.Link's, and 'OpenTelemetry.Trace.Event's
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Attributes
+Copyright   :  (c) Ian Duncan, 2021-2026
+License     :  BSD-3
+Description :  Key-value pair metadata for spans, events, links, and resources
+Stability   :  experimental
 
- An Attribute is a key-value pair, which MUST have the following properties:
+= Overview
 
- - The attribute key MUST be a non-null and non-empty string.
- - The attribute value is either:
- - A primitive type: string, boolean, double precision floating point (IEEE 754-1985) or signed 64 bit integer.
- - An array of primitive type values. The array MUST be homogeneous, i.e., it MUST NOT contain values of different types. For protocols that do not natively support array values such values SHOULD be represented as JSON strings.
- - Attribute values expressing a numerical value of zero, an empty string, or an empty array are considered meaningful and MUST be stored and passed on to processors / exporters.
+Attributes are key-value pairs attached to spans, events, links, and
+resources. Keys are 'Text' strings; values are one of the OpenTelemetry
+primitive types: 'Text', 'Bool', 'Int64', 'Double', or arrays thereof.
+
+= Quick example
+
+@
+import OpenTelemetry.Attributes
+
+-- On a span:
+addAttribute span "http.request.method" (toAttribute "GET")
+addAttribute span "http.response.status_code" (toAttribute (200 :: Int))
+addAttributes span
+  [ ("user.id", toAttribute "abc123")
+  , ("user.role", toAttribute "admin")
+  ]
+
+-- Using the builder API:
+let attrs = buildAttrs $
+      attr "http.request.method" ("GET" :: Text)
+      <> attr "http.response.status_code" (200 :: Int)
+@
+
+= Typed attribute keys
+
+For type-safe attribute access, use 'AttributeKey':
+
+@
+import OpenTelemetry.Attributes.Key (AttributeKey(..), unkey)
+import qualified OpenTelemetry.SemanticConventions as SC
+
+let attrs' = addAttributeByKey defaultAttributeLimits attrs SC.http_request_method "GET"
+lookupAttributeByKey attrs' SC.http_response_statusCode  -- Maybe Int64
+@
+
+= Attribute limits
+
+The SDK enforces limits on attribute count and value length, configured via
+@OTEL_ATTRIBUTE_COUNT_LIMIT@ and @OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT@
+environment variables. When limits are exceeded, attributes are dropped
+(tracked by 'getDropped').
+
+= Spec reference
+
+<https://opentelemetry.io/docs/specs/otel/common/#attribute>
 -}
 module OpenTelemetry.Attributes (
   Attributes,
   emptyAttributes,
+  unsafeAttributesFromMap,
   addAttribute,
   addAttributeByKey,
   addAttributes,
@@ -61,11 +100,12 @@ module OpenTelemetry.Attributes (
 
   -- * Unsafe utilities
   unsafeAttributesFromListIgnoringLimits,
+  unsafeAttributesFromMapIgnoringLimits,
   unsafeMergeAttributesIgnoringLimits,
 ) where
 
 import Data.Data (Data)
-import qualified Data.HashMap.Strict as H
+import qualified Data.HashMap.Lazy as H
 import Data.Hashable (Hashable)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -83,6 +123,8 @@ import qualified OpenTelemetry.Attributes.Map as Map
 
  - 'attributeCountLimit': @Just 128@
  - 'attributeLengthLimit':  or @Nothing@
+
+@since 0.0.1.0
 -}
 defaultAttributeLimits :: AttributeLimits
 defaultAttributeLimits =
@@ -92,6 +134,7 @@ defaultAttributeLimits =
     }
 
 
+-- | @since 0.0.1.0
 data Attributes = Attributes
   { attributeMap :: !Map.AttributeMap
   , attributesCount :: {-# UNPACK #-} !Int
@@ -103,14 +146,55 @@ data Attributes = Attributes
 instance Hashable Attributes
 
 
+-- | @since 0.0.1.0
 emptyAttributes :: Attributes
 emptyAttributes = Attributes mempty 0 0
 {-# INLINE emptyAttributes #-}
 
 
+{- | Build 'Attributes' directly from a pre-built 'AttributeMap', applying
+count and length limits. Faster than @addAttributes limits emptyAttributes map@
+because it skips the per-key membership check against an empty base map.
+
+@since 0.4.0.0
+-}
+unsafeAttributesFromMap :: AttributeLimits -> Map.AttributeMap -> Attributes
+unsafeAttributesFromMap AttributeLimits {..} m =
+  let limitVal = case attributeLengthLimit of
+        Nothing -> id
+        Just limit -> limitLengths limit
+  in case attributeCountLimit of
+      Nothing ->
+        let !m' = case attributeLengthLimit of
+              Nothing -> m
+              Just _ -> H.map limitVal m
+        in Attributes m' (H.size m) 0
+      Just limit_ ->
+        let !sz = H.size m
+        in if sz <= limit_
+            then
+              let !m' = case attributeLengthLimit of
+                    Nothing -> m
+                    Just _ -> H.map limitVal m
+              in Attributes m' sz 0
+            else
+              let (!kept, !dropped) = H.foldlWithKey'
+                    (\(!acc, !d) k v ->
+                      if H.size acc < limit_
+                        then (H.insert k (limitVal v) acc, d)
+                        else (acc, d + 1))
+                    (H.empty, 0)
+                    m
+              in Attributes kept (H.size kept) dropped
+{-# INLINE unsafeAttributesFromMap #-}
+
+
+-- | @since 0.0.1.0
 addAttribute :: (ToAttribute a) => AttributeLimits -> Attributes -> Text -> a -> Attributes
-addAttribute AttributeLimits {..} Attributes {..} !k !v =
-  let !attr = maybe id limitLengths attributeLengthLimit $! toAttribute v
+addAttribute AttributeLimits {..} Attributes {..} !k v =
+  let attr = case attributeLengthLimit of
+        Nothing -> toAttribute v
+        Just limit -> limitLengths limit (toAttribute v)
       (!replacing, !newAttrs) = H.alterF (\old -> (isJust old, Just attr)) k attributeMap
       !newCount = if replacing then attributesCount else attributesCount + 1
   in case attributeCountLimit of
@@ -122,13 +206,14 @@ addAttribute AttributeLimits {..} Attributes {..} !k !v =
 {-# INLINE [0] addAttribute #-}
 
 
+-- | @since 0.0.1.0
 addAttributeByKey :: (ToAttribute a) => AttributeLimits -> Attributes -> AttributeKey a -> a -> Attributes
-addAttributeByKey limits attrs (AttributeKey k) !v = addAttribute limits attrs k v
+addAttributeByKey limits attrs (AttributeKey k) v = addAttribute limits attrs k v
 {-# INLINE addAttributeByKey #-}
 
 
 -- Fuse two nested pure addAttribute calls into a single addAttributesFromBuilder pass.
--- Two H.alterF → one fold. Only fires in phases ≥1 (before addAttribute inlines in phase 0).
+-- Two H.alterF to one fold. Only fires in phases >=1 (before addAttribute inlines in phase 0).
 {-# RULES
 "addAttribute/addAttribute" forall lim attrs k1 v1 k2 v2.
   addAttribute lim (addAttribute lim attrs k1 v1) k2 v2 =
@@ -136,16 +221,19 @@ addAttributeByKey limits attrs (AttributeKey k) !v = addAttribute limits attrs k
   #-}
 
 
+-- | @since 0.0.1.0
 addAttributes :: (ToAttribute a) => AttributeLimits -> Attributes -> H.HashMap Text a -> Attributes
 addAttributes AttributeLimits {..} Attributes {..} attrs
   | H.null attrs = Attributes attributeMap attributesCount attributesDropped
   | otherwise =
-      let convertVal = maybe id limitLengths attributeLengthLimit . toAttribute
+      let convertVal = case attributeLengthLimit of
+            Nothing -> toAttribute
+            Just limit -> limitLengths limit . toAttribute
       in case attributeCountLimit of
           Nothing ->
             let (!newAttrs, !added) =
                   H.foldlWithKey'
-                    (\(!m, !n) k v -> let !m' = H.insert k (convertVal v) m in (m', if H.member k attributeMap then n else n + 1))
+                    (\(!m, !n) k v -> (H.insert k (convertVal v) m, if H.member k attributeMap then n else n + 1))
                     (attributeMap, 0 :: Int)
                     attrs
                 !newCount = attributesCount + added
@@ -172,18 +260,22 @@ addAttributes AttributeLimits {..} Attributes {..} attrs
 {- | Like 'addAttributes', but consumes an 'AttrsBuilder' instead of a 'HashMap'.
 Folds each attribute directly into the existing 'Attributes' without allocating
 an intermediate collection.
+
+@since 0.4.0.0
 -}
 addAttributesFromBuilder :: AttributeLimits -> Attributes -> AttrsBuilder -> Attributes
-addAttributesFromBuilder AttributeLimits {..} as@Attributes {..} (AttrsBuilder fold) =
-  let limitVal = maybe id limitLengths attributeLengthLimit
+addAttributesFromBuilder AttributeLimits {..} _as@Attributes {..} (AttrsBuilder fold) =
+  let limitVal = case attributeLengthLimit of
+        Nothing -> id
+        Just limit -> limitLengths limit
   in case attributeCountLimit of
       Nothing ->
         let (!newMap, !added) = fold (\(!m, !n) k v -> (H.insert k (limitVal v) m, if H.member k m then n else n + 1)) (attributeMap, 0 :: Int)
             !newCount = attributesCount + added
         in Attributes newMap newCount attributesDropped
       Just limit_ ->
-        let step (!m, !cnt, !drp) !k !v =
-              let !a = limitVal v
+        let step (!m, !cnt, !drp) !k v =
+              let a = limitVal v
               in if H.member k m
                   then (H.insert k a m, cnt, drp)
                   else
@@ -198,7 +290,8 @@ addAttributesFromBuilder AttributeLimits {..} as@Attributes {..} (AttrsBuilder f
 -- Eliminate no-ops at compile time.
 {-# RULES
 "addAttributesFromBuilder/mempty" forall lim attrs.
-  addAttributesFromBuilder lim attrs mempty = attrs
+  addAttributesFromBuilder lim attrs mempty =
+    attrs
   #-}
 
 
@@ -216,10 +309,10 @@ intermediate allocation.
  <> SC.url_full '.@' url
  <> SC.server_port '.@?' mPort
 @
+
+@since 0.4.0.0
 -}
-newtype AttrsBuilder = AttrsBuilder
-  { foldAttrsBuilder :: forall r. (r -> Text -> Attribute -> r) -> r -> r
-  }
+newtype AttrsBuilder = AttrsBuilder (forall r. (r -> Text -> Attribute -> r) -> r -> r)
 
 
 instance Semigroup AttrsBuilder where
@@ -233,15 +326,20 @@ instance Monoid AttrsBuilder where
 
 
 {- | Build an attribute entry from a 'Text' key. The value is converted
-to 'Attribute' eagerly via 'toAttribute'.
+to 'Attribute' lazily; actual conversion is deferred until the exporter
+thread reads the attribute, keeping the instrumented thread fast.
+
+@since 0.4.0.0
 -}
 attr :: (ToAttribute a) => Text -> a -> AttrsBuilder
-attr !k v = let !a = toAttribute v in AttrsBuilder (\step z -> step z k a)
+attr !k v = let a = toAttribute v in AttrsBuilder (\step z -> step z k a)
 {-# INLINE attr #-}
 
 
 {- | Build an optional attribute entry. 'Nothing' contributes nothing
 to the builder (zero cost).
+
+@since 0.4.0.0
 -}
 optAttr :: (ToAttribute a) => Text -> Maybe a -> AttrsBuilder
 optAttr _ Nothing = mempty
@@ -255,6 +353,8 @@ the value type must match the key's phantom type.
 @
 SC.http_request_method '.@' ("GET" :: Text)
 @
+
+@since 0.4.0.0
 -}
 (.@) :: (ToAttribute a) => AttributeKey a -> a -> AttrsBuilder
 (AttributeKey !k) .@ v = attr k v
@@ -266,6 +366,8 @@ infixl 8 .@
 
 {- | Build an optional attribute entry from a typed 'AttributeKey'.
 'Nothing' contributes nothing to the builder.
+
+@since 0.4.0.0
 -}
 (.@?) :: (ToAttribute a) => AttributeKey a -> Maybe a -> AttrsBuilder
 _ .@? Nothing = mempty
@@ -278,6 +380,8 @@ infixl 8 .@?
 
 {- | Materialize a builder into an 'Map.AttributeMap'. Useful when a raw
 'HashMap' is needed (e.g. for 'NewEvent' attributes or 'SpanArguments').
+
+@since 0.4.0.0
 -}
 buildAttrs :: AttrsBuilder -> Map.AttributeMap
 buildAttrs (AttrsBuilder f) = f (\m k v -> H.insert k v m) H.empty
@@ -294,34 +398,41 @@ limitLengths limit (AttributeValue val) = AttributeValue $ limitPrimAttr limit v
 limitLengths limit (AttributeArray arr) = AttributeArray $ fmap (limitPrimAttr limit) arr
 
 
+-- | @since 0.0.1.0
 getAttributeMap :: Attributes -> Map.AttributeMap
 getAttributeMap Attributes {..} = attributeMap
 {-# INLINE getAttributeMap #-}
 
 
+-- | @since 0.0.1.0
 getCount :: Attributes -> Int
 getCount Attributes {..} = attributesCount
 {-# INLINE getCount #-}
 
 
+-- | @since 0.0.1.0
 getDropped :: Attributes -> Int
 getDropped Attributes {..} = attributesDropped
 {-# INLINE getDropped #-}
 
 
+-- | @since 0.0.1.0
 lookupAttribute :: Attributes -> Text -> Maybe Attribute
 lookupAttribute Attributes {..} k = H.lookup k attributeMap
 {-# INLINE lookupAttribute #-}
 
 
+-- | @since 0.0.1.0
 lookupAttributeByKey :: FromAttribute a => Attributes -> AttributeKey a -> Maybe a
 lookupAttributeByKey Attributes {..} k = Map.lookupByKey k attributeMap
-{-# INLINABLE lookupAttributeByKey #-}
+{-# INLINEABLE lookupAttributeByKey #-}
 
 
 {- | It is possible when adding attributes that a programming error might cause too many
  attributes to be added to an event. Thus, 'Attributes' use the limits set here as a safeguard
  against excessive memory consumption.
+
+@since 0.0.1.0
 -}
 data AttributeLimits = AttributeLimits
   { attributeCountLimit :: Maybe Int
@@ -335,6 +446,8 @@ data AttributeLimits = AttributeLimits
 
 
 -- | Left-biased merge.
+--
+-- @since 0.0.1.0
 unsafeMergeAttributesIgnoringLimits :: Attributes -> Attributes -> Attributes
 unsafeMergeAttributesIgnoringLimits left right = Attributes hm c d
   where
@@ -343,8 +456,20 @@ unsafeMergeAttributesIgnoringLimits left right = Attributes hm c d
     d = attributesDropped left + attributesDropped right
 
 
+-- | @since 0.0.1.0
 unsafeAttributesFromListIgnoringLimits :: [(Text, Attribute)] -> Attributes
 unsafeAttributesFromListIgnoringLimits l = Attributes hm c 0
   where
     hm = H.fromList l
     c = H.size hm
+
+
+{- | Wrap a pre-built HashMap directly into 'Attributes' with zero conversion.
+No limit enforcement.  Used by 'filterAttributesByKeys' to avoid
+a HashMap -> list -> HashMap roundtrip.
+
+@since 0.0.1.0
+-}
+unsafeAttributesFromMapIgnoringLimits :: H.HashMap Text Attribute -> Attributes
+unsafeAttributesFromMapIgnoringLimits m = Attributes m (H.size m) 0
+{-# INLINE unsafeAttributesFromMapIgnoringLimits #-}

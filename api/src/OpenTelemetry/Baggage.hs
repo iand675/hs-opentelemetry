@@ -5,24 +5,72 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
- Module      :  OpenTelemetry.Baggage
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Serializable annotations to add user-defined values to telemetry
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Baggage
+Copyright   :  (c) Ian Duncan, 2021-2026
+License     :  BSD-3
+Description :  Propagated key-value metadata for cross-service context
+Stability   :  experimental
 
- Baggage is used to annotate telemetry, adding context and information to metrics, traces, and logs.
- It is a set of name/value pairs describing user-defined properties.
+= Overview
 
- Note: if you are trying to add data annotations specific to a single trace span, you should use
- 'OpenTelemetry.Trace.addAttribute' and 'OpenTelemetry.Trace.addAttributes'
+Baggage is a set of key-value pairs that propagate alongside trace context
+across service boundaries (typically via the @baggage@ HTTP header). Use it
+to pass metadata like tenant IDs, feature flags, or routing hints through
+your distributed system.
+
+Baggage is /not/ for span-specific annotations. Use 'OpenTelemetry.Trace.addAttribute'
+for that.
+
+= Quick example
+
+@
+import OpenTelemetry.Baggage
+
+-- Create baggage:
+let bag = insert [token|tenant-id|] (element "abc123")
+        $ insert [token|region|] (element "us-east-1")
+        $ empty
+
+-- Encode for HTTP propagation:
+let headerValue = encodeBaggageHeader bag
+-- "tenant-id=abc123,region=us-east-1"
+
+-- Decode from an incoming header:
+case decodeBaggageHeader headerBytes of
+  Right bag -> -- use the baggage
+  Left err  -> -- malformed header
+@
+
+= Thread-local baggage
+
+Use the functions in "OpenTelemetry.Context.ThreadLocal" to get\/set baggage
+on the current thread:
+
+@
+import OpenTelemetry.Context.ThreadLocal (getContext, adjustContext)
+import OpenTelemetry.Context (insertBaggage, lookupBaggage)
+
+-- Read:
+mbag <- lookupBaggage \<$\> getContext
+-- Write:
+adjustContext (insertBaggage myBaggage)
+@
+
+= Limits
+
+W3C Baggage specification enforces:
+
+* Max 8192 bytes total serialized size
+* Max 4096 bytes per member
+* Max 180 members
+
+'insertChecked' validates these limits and returns 'Left' 'InvalidBaggage'
+on violation.
+
+= Spec reference
+
+<https://opentelemetry.io/docs/specs/otel/baggage/api/>
 -}
 module OpenTelemetry.Baggage (
   -- * Constructing 'Baggage' structures
@@ -49,6 +97,9 @@ module OpenTelemetry.Baggage (
   insertChecked,
   delete,
 
+  -- * Querying 'Baggage'
+  getValue,
+
   -- * Encoding and decoding 'Baggage'
   encodeBaggageHeader,
   encodeBaggageHeaderB,
@@ -68,7 +119,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Hashable
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Word (Word8)
 import Language.Haskell.TH.Lib
 import Language.Haskell.TH.Quote
@@ -80,6 +131,8 @@ import System.IO.Unsafe
  specified in the @token@ definition of RFC 2616:
 
  https://www.rfc-editor.org/rfc/rfc2616#section-2.2
+
+ @since 0.0.1.0
 -}
 newtype Token = Token ByteString
   deriving stock (Show, Eq, Ord)
@@ -87,6 +140,8 @@ newtype Token = Token ByteString
 
 
 -- | Convert a 'Token' into a 'ByteString'
+--
+-- @since 0.0.1.0
 tokenValue :: Token -> ByteString
 tokenValue (Token t) = t
 
@@ -100,6 +155,8 @@ instance Lift Token where
 
 
 -- | An entry into the baggage
+--
+-- @since 0.0.1.0
 data Element = Element
   { value :: Text
   , properties :: [Property]
@@ -107,6 +164,7 @@ data Element = Element
   deriving stock (Show, Eq)
 
 
+-- | @since 0.0.1.0
 element :: Text -> Element
 element t = Element t []
 
@@ -118,6 +176,7 @@ data Property = Property
   deriving stock (Show, Eq)
 
 
+-- | @since 0.0.1.0
 property :: Token -> Maybe Text -> Property
 property = Property
 
@@ -125,6 +184,8 @@ property = Property
 {- | Baggage is used to annotate telemetry, adding context and information to metrics, traces, and logs.
  It is a set of name/value pairs describing user-defined properties.
  Each name in Baggage is associated with exactly one value.
+
+ @since 0.0.1.0
 -}
 newtype Baggage = Baggage (H.HashMap Token Element)
   deriving stock (Show, Eq)
@@ -300,13 +361,16 @@ bsToExp bs = do
 #endif
 
 
+-- | @since 0.0.1.0
 mkToken :: Text -> Maybe Token
 mkToken txt
+  | T.null txt = Nothing
   | txt `T.compareLength` 4096 == GT = Nothing
   | T.all isTokenChar txt = Just $ Token $ encodeUtf8 txt
   | otherwise = Nothing
 
 
+-- | @since 0.0.1.0
 token :: QuasiQuoter
 token =
   QuasiQuoter
@@ -321,6 +385,7 @@ token =
       Just tok -> lift tok
 
 
+-- | @since 0.0.1.0
 data InvalidBaggage
   = BaggageTooLong
   | MemberTooLong
@@ -329,6 +394,7 @@ data InvalidBaggage
   deriving stock (Show, Eq)
 
 
+-- | @since 0.0.1.0
 encodeBaggageHeader :: Baggage -> ByteString
 encodeBaggageHeader =
   L.toStrict
@@ -336,6 +402,7 @@ encodeBaggageHeader =
     . encodeBaggageHeaderB
 
 
+-- | @since 0.0.1.0
 encodeBaggageHeaderB :: Baggage -> B.Builder
 encodeBaggageHeaderB (Baggage bmap) =
   go 0 True (take maxMembers $ H.toList bmap)
@@ -356,19 +423,6 @@ encodeBaggageHeaderB (Baggage bmap) =
                 (if isFirst then mempty else B.char7 ',')
                   <> B.byteString memberBs
                   <> go newTotal False rest
-
-
--- | Encode without enforcing limits (for internal size checks in insertChecked)
-encodeBaggageHeaderRaw :: Baggage -> ByteString
-encodeBaggageHeaderRaw (Baggage bmap) =
-  builderToStrict $
-    go True (H.toList bmap)
-  where
-    go _ [] = mempty
-    go isFirst ((tok, el) : rest) =
-      (if isFirst then mempty else B.char7 ',')
-        <> encodeMemberB tok el
-        <> go False rest
 
 
 encodeMemberB :: Token -> Element -> B.Builder
@@ -393,12 +447,15 @@ builderToStrict = L.toStrict . B.toLazyByteString
 
 
 -- | W3C Baggage: max 8192 bytes total, max 180 members, max 4096 bytes per member
+--
+-- @since 0.0.1.0
 maxBaggageBytes, maxMemberBytes, maxMembers :: Int
 maxBaggageBytes = 8192
 maxMemberBytes = 4096
 maxMembers = 180
 
 
+-- | @since 0.0.1.0
 decodeBaggageHeader :: ByteString -> Either String Baggage
 decodeBaggageHeader bs
   | BS.length bs > maxBaggageBytes = Left "Baggage header exceeds 8192 byte limit"
@@ -425,7 +482,9 @@ parseMember raw = do
   rest2 <- expectByte 0x3D rest1 -- '='
   let rest3 = stripOWS rest2
       (valBs, rest4) = BS.span isValueByte rest3
-      val = decodeUtf8 $ percentDecode valBs
+  val <- case decodeUtf8' (percentDecode valBs) of
+    Right t -> Right t
+    Left _ -> Left "Invalid UTF-8 in baggage value"
   props <- parseProperties rest4
   pure (Token keyBs, Element val props)
 
@@ -435,7 +494,8 @@ parseProperties bs = go (stripOWS bs)
   where
     go s
       | BS.null s = Right []
-      | BS.head s == 0x3B = do -- ';'
+      | BS.head s == 0x3B = do
+          -- ';'
           let s1 = stripOWS (BS.tail s)
               (keyBs, rest0) = B8.span isTokenChar s1
           when (BS.null keyBs) $ Left "Expected token in baggage property"
@@ -445,7 +505,10 @@ parseProperties bs = go (stripOWS bs)
               let rest2 = stripOWS (BS.tail rest1)
                   (valBs, rest3) = BS.span isValueByte rest2
               rest <- go (stripOWS rest3)
-              pure $ Property (Token keyBs) (Just $ decodeUtf8 $ percentDecode valBs) : rest
+              propVal <- case decodeUtf8' (percentDecode valBs) of
+                Right t -> Right t
+                Left _ -> Left "Invalid UTF-8 in baggage property value"
+              pure $ Property (Token keyBs) (Just propVal) : rest
             else do
               rest <- go rest1
               pure $ Property (Token keyBs) Nothing : rest
@@ -484,10 +547,13 @@ splitOnByte w bs
 
 
 -- | An empty initial baggage value
+--
+-- @since 0.0.1.0
 empty :: Baggage
 empty = Baggage H.empty
 
 
+-- | @since 0.0.1.0
 insert
   :: Token
   -- ^ The name for which to set the value
@@ -502,8 +568,8 @@ insert k v (Baggage c) = Baggage (H.insert k v c)
 
 Returns 'Left' 'InvalidBaggage' if adding the entry would violate:
 
-* 'TooManyListMembers' — exceeds 180 entries (W3C ABNF max)
-* 'BaggageTooLong' — serialized header would exceed 8192 bytes
+* 'TooManyListMembers': exceeds 180 entries (W3C ABNF max)
+* 'BaggageTooLong': serialized header would exceed 8192 bytes
 
 @since 0.4.0.0
 -}
@@ -542,8 +608,22 @@ baggageSerializedSize m =
 
 
 -- | Delete a key/value pair from the baggage.
+--
+-- @since 0.0.1.0
 delete :: Token -> Baggage -> Baggage
 delete k (Baggage c) = Baggage (H.delete k c)
+
+
+-- | Look up a baggage value by name.
+--
+-- Per the spec, this takes a name and returns the associated value, or
+-- 'Nothing' if the name is not present in the baggage.
+--
+-- @since 0.4.0.0
+getValue :: Token -> Baggage -> Maybe Text
+getValue k (Baggage m) = case H.lookup k m of
+  Just (Element v _) -> Just v
+  Nothing -> Nothing
 
 
 {- | Returns the name/value pairs in the `Baggage`. The order of name/value pairs
@@ -556,6 +636,8 @@ values (Baggage m) = m
 
 
 -- | Convert a 'H.HashMap' into 'Baggage'
+--
+-- @since 0.0.1.0
 fromHashMap :: H.HashMap Token Element -> Baggage
 fromHashMap = Baggage
 
@@ -600,7 +682,8 @@ percentDecode bs = L.toStrict $ B.toLazyByteString $ go 0
     len = BS.length bs
     go i
       | i >= len = mempty
-      | BS.index bs i == 0x25, i + 2 < len -- '%'
+      | BS.index bs i == 0x25
+      , i + 2 < len -- '%'
       , Just hi <- unhex (BS.index bs (i + 1))
       , Just lo <- unhex (BS.index bs (i + 2)) =
           B.word8 (hi * 16 + lo) <> go (i + 3)

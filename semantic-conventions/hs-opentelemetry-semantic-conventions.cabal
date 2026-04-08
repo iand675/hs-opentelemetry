@@ -5,10 +5,19 @@ version: 1.40.0.0
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 license: BSD-3-Clause
+license-file: LICENSE
+copyright: 2024 Ian Duncan, Mercury Technologies
+homepage: https://github.com/iand675/hs-opentelemetry#readme
+bug-reports: https://github.com/iand675/hs-opentelemetry/issues
+category: OpenTelemetry, Telemetry, Monitoring, Observability
 synopsis: OpenTelemetry Semantic Conventions for Haskell
 description:
   OpenTelemetry Semantic Conventions for Haskell is a library that is automatically generated
   based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.40.
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
 
 common common
   build-depends: base >= 4 && < 5

@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-exporter-in-memory
 version:        0.0.1.4
+synopsis:       In-memory exporter for OpenTelemetry testing
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/in-memory#readme>
+category:       OpenTelemetry, Telemetry, Testing
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
 author:         Ian Duncan

@@ -31,6 +31,7 @@ import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
 
 
+-- | @since 0.0.1.0
 detectFaaS :: IO (Maybe FaaS)
 detectFaaS = do
   mLambda <- detectLambda
@@ -59,7 +60,7 @@ detectLambda = do
         Just
           FaaS
             { faasName = name
-            , faasId = mAcctAndFn
+            , faasCloudResourceId = mAcctAndFn
             , faasVersion = mVersion
             , faasInstance = mLogStream
             , faasMaxMemory = mMem
@@ -87,7 +88,7 @@ detectGCF = do
         Just
           FaaS
             { faasName = target
-            , faasId = Nothing
+            , faasCloudResourceId = Nothing
             , faasVersion = mRevision
             , faasInstance = Nothing
             , faasMaxMemory = mMem
@@ -108,7 +109,7 @@ detectAzureFunctions = do
             Just
               FaaS
                 { faasName = name
-                , faasId = Nothing
+                , faasCloudResourceId = Nothing
                 , faasVersion = Nothing
                 , faasInstance = Nothing
                 , faasMaxMemory = Nothing

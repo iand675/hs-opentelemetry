@@ -28,7 +28,9 @@ module OpenTelemetry.Resource.Detector.AWS.EC2 (
 
 import Data.Aeson (FromJSON (..), withObject, (.:?))
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
 import System.Environment (lookupEnv)
 
@@ -54,7 +56,7 @@ detectEC2Self = do
   mRegion <- lookupEnv "AWS_REGION"
   mDefault <- lookupEnv "AWS_DEFAULT_REGION"
   mExecEnv <- lookupEnv "AWS_EXECUTION_ENV"
-  -- Also check for ECS — if on ECS, the ECS detector is more specific
+  -- Also check for ECS. If on ECS, the ECS detector is more specific
   mEcs <- lookupEnv "ECS_CONTAINER_METADATA_URI_V4"
   let isNonEcsAws = any (/= Nothing) [mRegion, mDefault, mExecEnv] && mEcs == Nothing
   if isNonEcsAws
@@ -83,15 +85,15 @@ detectEC2 client = do
       mAcctId <- fetchAccountId client mToken
       pure $
         mkResource
-          [ "cloud.provider" .= ("aws" :: Text)
-          , "cloud.platform" .= ("aws_ec2" :: Text)
-          , "cloud.region" .=? mRegion
-          , "cloud.availability_zone" .=? mAz
-          , "cloud.account.id" .=? mAcctId
-          , "host.id" .= instanceId
-          , "host.type" .=? mInstanceType
-          , "host.name" .=? mHostname
-          , "host.image.id" .=? mAmiId
+          [ unkey SC.cloud_provider .= ("aws" :: Text)
+          , unkey SC.cloud_platform .= ("aws_ec2" :: Text)
+          , unkey SC.cloud_region .=? mRegion
+          , unkey SC.cloud_availabilityZone .=? mAz
+          , unkey SC.cloud_account_id .=? mAcctId
+          , unkey SC.host_id .= instanceId
+          , unkey SC.host_type .=? mInstanceType
+          , unkey SC.host_name .=? mHostname
+          , unkey SC.host_image_id .=? mAmiId
           ]
 
 

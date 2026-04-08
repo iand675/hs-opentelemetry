@@ -50,8 +50,10 @@ import Data.Typeable (Proxy (..), Typeable, tyConName, typeRep, typeRepTyCon)
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types.Status as HTTP
 import OpenTelemetry.Attributes (toAttribute)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Context (insertSpan, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal (getAndAdjustContext)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core (
   Span,
   SpanArguments (..),
@@ -120,11 +122,11 @@ tracingConfiguredRequest tracer baseHook env req = do
         { kind = Client
         , attributes =
             HM.fromList
-              [ ("rpc.system", toAttribute ("aws-api" :: T.Text))
-              , ("rpc.service", toAttribute svcAbbrev)
-              , ("rpc.method", toAttribute opName)
-              , ("cloud.region", toAttribute region)
-              , ("server.address", toAttribute host)
+              [ (unkey SC.rpc_system, toAttribute ("aws-api" :: T.Text))
+              , (unkey SC.rpc_service, toAttribute svcAbbrev)
+              , (unkey SC.rpc_method, toAttribute opName)
+              , (unkey SC.cloud_region, toAttribute region)
+              , (unkey SC.server_address, toAttribute host)
               ]
         }
 
@@ -145,10 +147,10 @@ tracingClientResponse baseHook env arg@(_req, resp) = do
           mReqId = requestIdFromHeaders (HTTP.responseHeaders resp)
           attrs =
             HM.fromList $
-              ("http.response.status_code", toAttribute sc)
+              (unkey SC.http_response_statusCode, toAttribute sc)
                 : case mReqId of
-                    Just reqId -> [("aws.request_id", toAttribute reqId)]
-                    Nothing -> []
+                  Just reqId -> [(unkey SC.aws_requestId, toAttribute reqId)]
+                  Nothing -> []
       addAttributes span attrs
     Nothing -> pure ()
   baseHook env arg
@@ -181,10 +183,10 @@ tracingError baseHook env arg@(finality, _req, err) = do
           let errDesc = describeError err
               attrs =
                 HM.fromList $
-                  ("error.type", toAttribute errDesc)
+                  (unkey SC.error_type, toAttribute errDesc)
                     : case extractServiceRequestId err of
-                        Just reqId -> [("aws.request_id", toAttribute reqId)]
-                        Nothing -> []
+                      Just reqId -> [(unkey SC.aws_requestId, toAttribute reqId)]
+                      Nothing -> []
           addAttributes span attrs
           setStatus span (Error errDesc)
           endSpan span Nothing

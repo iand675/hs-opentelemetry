@@ -4,7 +4,7 @@ import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Context (insertSpan)
 import qualified OpenTelemetry.Context as Ctxt
 import OpenTelemetry.Contrib.SpanTraversals (IterationInstruction (..), alterSpansUpwards)
-import OpenTelemetry.Processor.Span (SpanProcessor (..))
+import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.TraceState as TraceState
@@ -13,6 +13,7 @@ import Test.Hspec
 
 spec :: Spec
 spec = describe "Contrib.SpanTraversals" $ do
+  -- Implementation-specific: walk span parent chain (non-portable helper)
   it "alterSpansUpwards on FrozenSpan returns initial state" $ do
     let (Right tid) = baseEncodedToTraceId Base16 "00000000000000000000000000000001"
         (Right sid) = baseEncodedToSpanId Base16 "000000000000000a"
@@ -43,8 +44,8 @@ spec = describe "Contrib.SpanTraversals" $ do
           SpanProcessor
             { spanProcessorOnStart = \_ _ -> pure ()
             , spanProcessorOnEnd = \_ -> pure ()
-            , spanProcessorShutdown = error "SpanTraversalsSpec: shutdown not used"
-            , spanProcessorForceFlush = pure ()
+            , spanProcessorShutdown = pure ShutdownSuccess
+            , spanProcessorForceFlush = pure FlushSuccess
             }
     tp <- createTracerProvider [dummyProcessor] emptyTracerProviderOptions
     let instrLib = InstrumentationLibrary "test" "1.0.0" "" A.emptyAttributes

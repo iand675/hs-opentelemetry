@@ -27,7 +27,9 @@ module OpenTelemetry.Resource.Detector.Heroku (
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.Environment (lookupEnv)
 
 
@@ -47,13 +49,13 @@ detectHeroku = do
       mReleaseCreated <- lookupText "HEROKU_RELEASE_CREATED_AT"
       pure $
         mkResource
-          [ "cloud.provider" .= ("heroku" :: Text)
-          , "heroku.app.id" .= appId
-          , "heroku.release.commit" .=? mSlugCommit
-          , "heroku.release.creation_timestamp" .=? mReleaseCreated
-          , "service.name" .=? mAppName
-          , "service.version" .=? mReleaseVersion
-          , "service.instance.id" .=? mDynoId
+          [ unkey SC.cloud_provider .= ("heroku" :: Text)
+          , unkey SC.heroku_app_id .= appId
+          , unkey SC.heroku_release_commit .=? mSlugCommit
+          , unkey SC.heroku_release_creationTimestamp .=? mReleaseCreated
+          , unkey SC.service_name .=? mAppName
+          , unkey SC.service_version .=? mReleaseVersion
+          , unkey SC.service_instance_id .=? mDynoId
           ]
 
 

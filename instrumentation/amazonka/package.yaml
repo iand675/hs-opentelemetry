@@ -25,6 +25,7 @@ library:
   - bytestring
   - case-insensitive
   - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - http-client
   - http-types
   - text

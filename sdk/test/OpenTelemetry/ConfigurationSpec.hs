@@ -19,7 +19,11 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
+  -- File configuration: declarative SDK configuration (YAML)
+  -- https://opentelemetry.io/docs/specs/otel/configuration/
   describe "OpenTelemetry.Configuration.Parse.parseConfigBytes" $ do
+    -- Configuration file_format and empty document defaults
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses minimal valid config with defaults elsewhere" $ do
       let yaml :: Text
           yaml =
@@ -31,6 +35,8 @@ spec = do
           configFileFormat cfg `shouldBe` "1.0"
           cfg `shouldBe` emptyConfiguration
 
+    -- Configuration: tracer_provider processors and sampler
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses full tracer_provider with batch processor and always_on sampler" $ do
       let yaml :: Text
           yaml =
@@ -66,6 +72,8 @@ spec = do
                     expectationFailure "expected SpanProcessorBatch as first processor"
             tpSampler tp `shouldBe` Just SamplerAlwaysOn
 
+    -- Configuration: top-level disabled flag
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses disabled: true" $ do
       let yaml :: Text
           yaml =
@@ -76,6 +84,8 @@ spec = do
         Left err -> expectationFailure $ "expected Right, got Left: " ++ show err
         Right cfg -> configDisabled cfg `shouldBe` Just True
 
+    -- Configuration: resource.attributes map
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses resource attributes map" $ do
       let yaml :: Text
           yaml =
@@ -95,6 +105,7 @@ spec = do
               Map.lookup "service.name" attrs `shouldBe` Just "my-service"
               Map.lookup "service.version" attrs `shouldBe` Just "1.0"
 
+    -- Implementation-specific: parser surfaces YAML errors as ConfigYamlError
     it "returns ConfigYamlError for invalid YAML" $ do
       let garbage :: Text
           garbage = "this is not : valid ::: yaml [[[\n"
@@ -105,6 +116,8 @@ spec = do
           ConfigYamlError _ -> pure ()
           other -> expectationFailure $ "expected ConfigYamlError, got " ++ show other
 
+    -- Configuration: ${ENV} substitution in config file
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "substitutes environment variables in YAML before parsing" $ do
       let varName :: String
           varName = "HS_OTEL_CONFIG_PARSE_TEST_SUBST_913847"
@@ -134,6 +147,8 @@ spec = do
               Just (_ : _) ->
                 expectationFailure "expected SpanProcessorBatch as first processor"
 
+    -- Configuration: default value syntax for unset env vars
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "uses default after :- when environment variable is unset" $ do
       let varName :: String
           varName = "HS_OTEL_CONFIG_PARSE_TEST_NONEXISTENT_774019"
@@ -167,6 +182,8 @@ spec = do
             Just [] -> expectationFailure "expected non-empty processors"
 
   describe "parseConfigBytes (branches)" $ do
+    -- Configuration: meter_provider.readers (periodic + exporter)
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses meter_provider with periodic reader and otlp_http exporter" $ do
       let yaml :: Text
           yaml =
@@ -195,6 +212,8 @@ spec = do
                 other -> expectationFailure $ "expected PushMetricExporterOtlpHttp, got " ++ show other
             _ -> expectationFailure "expected MetricReaderPeriodic"
 
+    -- Configuration: logger_provider processors
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses logger_provider with batch processor" $ do
       let yaml :: Text
           yaml =
@@ -219,6 +238,8 @@ spec = do
                 other -> expectationFailure $ "expected LogRecordExporterConsole, got " ++ show other
             _ -> expectationFailure "expected LogRecordProcessorBatch"
 
+    -- Configuration: tracer_provider simple processor
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses simple span processor" $ do
       let yaml :: Text
           yaml =
@@ -240,6 +261,8 @@ spec = do
               other -> expectationFailure $ "expected SpanExporterConsole, got " ++ show other
             _ -> expectationFailure "expected SpanProcessorSimple"
 
+    -- Configuration: parent_based sampler
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses parent_based sampler with nested always_on root" $ do
       let yaml :: Text
           yaml =
@@ -256,6 +279,8 @@ spec = do
           Just (SamplerParentBased pb) -> pbRoot pb `shouldBe` Just SamplerAlwaysOn
           other -> expectationFailure $ "expected SamplerParentBased with root always_on, got " ++ show other
 
+    -- Configuration: trace_id_ratio_based sampler
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses trace_id_ratio_based sampler" $ do
       let yaml :: Text
           yaml =
@@ -271,6 +296,7 @@ spec = do
           Just (SamplerTraceIdRatioBased r) -> ratioValue r `shouldBe` 0.5
           other -> expectationFailure $ "expected SamplerTraceIdRatioBased, got " ++ show other
 
+    -- Implementation-specific: validation rejects non-object root
     it "returns ConfigValidationError for non-object YAML" $ do
       result <- parseConfigBytes "hello\n"
       case result of
@@ -279,12 +305,14 @@ spec = do
           ConfigValidationError _ -> pure ()
           other -> expectationFailure $ "expected ConfigValidationError, got " ++ show other
 
+    -- Implementation-specific: parseConfigFile IO error surface
     it "returns ConfigFileNotFound for missing file" $ do
       result <- parseConfigFile "/nonexistent/hs_opentelemetry_config_missing_01928374.yaml"
       case result of
         Right cfg -> expectationFailure $ "expected Left, got Right: " ++ show cfg
         Left err -> err `shouldBe` ConfigFileNotFound "/nonexistent/hs_opentelemetry_config_missing_01928374.yaml"
 
+    -- Implementation-specific: substitution edge cases
     it "env substitution: malformed ${...} without closing brace preserves literal" $ do
       let yaml :: Text
           yaml =
@@ -294,6 +322,7 @@ spec = do
         Left err -> expectationFailure $ "expected Right, got Left: " ++ show err
         Right cfg -> configFileFormat cfg `shouldBe` "${UNCLOSED"
 
+    -- Implementation-specific: empty ${} substitution
     it "env substitution: empty variable name ${} is handled gracefully" $ do
       let yaml :: Text
           yaml =
@@ -303,6 +332,8 @@ spec = do
         Left err -> expectationFailure $ "expected Right, got Left: " ++ show err
         Right cfg -> configFileFormat cfg `shouldBe` ""
 
+    -- Configuration: tracer_provider.limits (span limits)
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "parses span limits" $ do
       let yaml :: Text
           yaml =
@@ -329,6 +360,8 @@ spec = do
             slLinkAttributeCountLimit sl `shouldBe` Just 6
 
   describe "OpenTelemetry.Configuration.Create.createFromConfig" $ do
+    -- Configuration: SDK startup from parsed file (components graph)
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "createFromConfig produces components from minimal config" $ do
       let yaml :: Text
           yaml = "file_format: \"1.0\"\n"
@@ -339,6 +372,8 @@ spec = do
           bracket (createFromConfig cfg) otelShutdown $ \comps -> do
             not (null (propagatorFields (otelPropagators comps))) `shouldBe` True
 
+    -- Configuration: disabled SDK (no-op telemetry)
+    -- https://opentelemetry.io/docs/specs/otel/configuration/
     it "createFromConfig with disabled=true returns noop components" $ do
       let yaml :: Text
           yaml =
@@ -351,6 +386,8 @@ spec = do
           bracket (createFromConfig cfg) otelShutdown $ \comps -> do
             propagatorFields (otelPropagators comps) `shouldBe` []
 
+    -- Resource SDK: attributes from configuration merged into TracerProvider resource
+    -- https://opentelemetry.io/docs/specs/otel/resource/sdk/
     it "createFromConfig resource attributes are propagated" $ do
       let yaml :: Text
           yaml =
@@ -372,6 +409,8 @@ spec = do
             lookupAttribute attrs "service.version" `shouldBe` Just (toAttribute ("1.0" :: Text))
 
   describe "detectSpanLimits (environment)" $ sequential $ do
+    -- General SDK environment variables for span limits (OTEL_SPAN_*)
+    -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
     it "maps OTEL_SPAN_LINK_COUNT_LIMIT and OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT to distinct SpanLimits fields" $
       bracketUnset spanLimitEnvKeys $ \_ -> do
         setEnv "OTEL_SPAN_LINK_COUNT_LIMIT" "42"

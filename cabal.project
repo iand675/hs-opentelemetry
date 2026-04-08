@@ -23,7 +23,7 @@ packages:
   , instrumentation/gogol
   , instrumentation/conduit
   , instrumentation/cloudflare
-  , instrumentation/hedis
+  , instrumentation/ghc-metrics
   , instrumentation/hspec
   , instrumentation/http-client
   , instrumentation/hw-kafka-client
@@ -32,6 +32,9 @@ packages:
   , instrumentation/postgresql-simple
   , instrumentation/tasty
   , instrumentation/yesod
+  , instrumentation/monad-logger
+  , instrumentation/katip
+  , instrumentation/co-log
   , instrumentation/wai
   , utils/exceptions
   , vendors/honeycomb

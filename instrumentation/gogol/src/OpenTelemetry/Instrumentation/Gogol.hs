@@ -47,8 +47,10 @@ import Data.Typeable (Proxy (..), Typeable, tyConName, typeRep, typeRepTyCon)
 import qualified Gogol.Types as G
 import qualified Network.HTTP.Types.Status as HTTP
 import OpenTelemetry.Attributes (toAttribute)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Context (insertSpan)
 import OpenTelemetry.Context.ThreadLocal (getAndAdjustContext, getContext)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core (
   Span,
   SpanArguments (..),
@@ -83,7 +85,7 @@ tracedSend tracer sendFn req = do
     sendFn req `catch` \(e :: SomeException) -> do
       liftIO $ do
         let errText = T.pack (show e)
-        addAttributes s $ HM.fromList [("error.type", toAttribute errText)]
+        addAttributes s $ HM.fromList [(unkey SC.error_type, toAttribute errText)]
         setStatus s (Error errText)
         endSpan s Nothing
       throwM e
@@ -135,11 +137,11 @@ startSpan tracer req = do
         { kind = Client
         , attributes =
             HM.fromList
-              [ ("rpc.system", toAttribute ("gcp-api" :: T.Text))
-              , ("rpc.service", toAttribute svcId)
-              , ("rpc.method", toAttribute opName)
-              , ("server.address", toAttribute host)
-              , ("cloud.provider", toAttribute ("gcp" :: T.Text))
+              [ (unkey SC.rpc_system, toAttribute ("gcp-api" :: T.Text))
+              , (unkey SC.rpc_service, toAttribute svcId)
+              , (unkey SC.rpc_method, toAttribute opName)
+              , (unkey SC.server_address, toAttribute host)
+              , (unkey SC.cloud_provider, toAttribute ("gcp" :: T.Text))
               ]
         }
 
@@ -150,12 +152,12 @@ startSpan tracer req = do
 recordError :: Span -> G.Error -> IO ()
 recordError s err = do
   let errDesc = describeError err
-      statusAttr sc = [("http.response.status_code", toAttribute (HTTP.statusCode sc))]
+      statusAttr sc = [(unkey SC.http_response_statusCode, toAttribute (HTTP.statusCode sc))]
       attrs = case err of
         G.ServiceError svcErr -> statusAttr (G._serviceStatus svcErr)
         G.SerializeError serr -> statusAttr (G._serializeStatus serr)
         G.TransportError _ -> []
-  addAttributes s $ HM.fromList $ ("error.type", toAttribute errDesc) : attrs
+  addAttributes s $ HM.fromList $ (unkey SC.error_type, toAttribute errDesc) : attrs
   setStatus s (Error errDesc)
 
 

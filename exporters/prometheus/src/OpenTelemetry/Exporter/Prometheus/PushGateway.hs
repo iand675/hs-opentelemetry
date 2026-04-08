@@ -32,6 +32,7 @@ import Control.Exception (SomeException, try)
 import Control.Monad (forever, void)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Text (Text)
+import Data.Vector (Vector)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Network.HTTP.Client (
@@ -60,7 +61,7 @@ data PushGatewayConfig = PushGatewayConfig
 Uses HTTP PUT to @\/metrics\/job\/<job>@ which replaces all metrics
 for the given job.
 -}
-pushMetricsOnce :: PushGatewayConfig -> Manager -> IO [ResourceMetricsExport] -> IO ()
+pushMetricsOnce :: PushGatewayConfig -> Manager -> IO (Vector ResourceMetricsExport) -> IO ()
 pushMetricsOnce config mgr collect = do
   metrics <- collect
   let body = LBS.fromStrict (TE.encodeUtf8 (renderPrometheusText metrics))
@@ -83,7 +84,7 @@ pushMetricsOnce config mgr collect = do
 Returns an 'Async' handle. Errors during individual pushes are silently
 swallowed to avoid crashing the application; the next push will retry.
 -}
-startPushGateway :: PushGatewayConfig -> Manager -> IO [ResourceMetricsExport] -> IO (Async ())
+startPushGateway :: PushGatewayConfig -> Manager -> IO (Vector ResourceMetricsExport) -> IO (Async ())
 startPushGateway config mgr collect = async $ forever $ do
   _ <- try @SomeException $ pushMetricsOnce config mgr collect
   threadDelay (pushGatewayIntervalSeconds config * 1000000)

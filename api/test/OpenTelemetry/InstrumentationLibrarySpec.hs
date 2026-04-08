@@ -3,7 +3,9 @@ module OpenTelemetry.InstrumentationLibrarySpec where
 import OpenTelemetry.Attributes (addAttribute, defaultAttributeLimits, emptyAttributes)
 import OpenTelemetry.Internal.Common.Types (
   InstrumentationLibrary (..),
+  InstrumentationScope,
   instrumentationLibrary,
+  instrumentationScope,
   parseInstrumentationLibrary,
   withLibraryAttributes,
   withSchemaUrl,
@@ -12,7 +14,24 @@ import Test.Hspec
 
 
 spec :: Spec
-spec = describe "InstrumentationLibrary" $ do
+spec = describe "InstrumentationLibrary / InstrumentationScope" $ do
+  -- Spec §Instrumentation scope: name, version, schema URL, attributes
+  -- https://opentelemetry.io/docs/specs/otel/common/instrumentation-scope/
+  describe "InstrumentationScope alias" $ do
+    it "is the same type as InstrumentationLibrary" $ do
+      let scope = instrumentationScope "my-lib" "1.0" :: InstrumentationScope
+          lib = instrumentationLibrary "my-lib" "1.0" :: InstrumentationLibrary
+      scope `shouldBe` lib
+
+    it "instrumentationScope produces valid scope with all fields" $ do
+      let scope = withSchemaUrl "https://opentelemetry.io/schemas/1.40.0"
+                    (instrumentationScope "my-lib" "2.0")
+      libraryName scope `shouldBe` "my-lib"
+      libraryVersion scope `shouldBe` "2.0"
+      librarySchemaUrl scope `shouldBe` "https://opentelemetry.io/schemas/1.40.0"
+
+  -- Glossary §Instrumentation scope: name, version, schema URL, attributes
+  -- https://opentelemetry.io/docs/specs/otel/glossary/#instrumentation-scope
   describe "construction helpers" $ do
     it "builds a library with name, version, and empty schema and attributes" $ do
       let lib = instrumentationLibrary "my-lib" "1.0"
@@ -31,6 +50,8 @@ spec = describe "InstrumentationLibrary" $ do
           lib = withLibraryAttributes someAttrs (instrumentationLibrary "x" "1")
       libraryAttributes lib `shouldBe` someAttrs
 
+  -- Implementation-specific: parse Cabal/GHC-style package IDs into scope fields
+  -- https://opentelemetry.io/docs/specs/otel/glossary/#instrumentation-scope
   describe "parsing" $ do
     let mkLib n v =
           Just

@@ -2,23 +2,32 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- |
+-- Module      : OpenTelemetry.Processor.Simple.LogRecord
+-- Description : Simple log record processor. Immediately forwards each log record to the exporter.
+-- Stability   : experimental
+--
 module OpenTelemetry.Processor.Simple.LogRecord (
   SimpleLogRecordProcessorConfig (..),
   simpleLogRecordProcessor,
 ) where
 
-import Control.Concurrent.Async
+import Control.Concurrent.MVar
 import Control.Exception
 import Data.IORef
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types (ExportResult (..), ShutdownResult (..))
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Logging (otelLogWarning)
+import OpenTelemetry.Internal.Log.Types
 import System.Timeout (timeout)
 
 
-newtype SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
+-- | @since 0.0.1.0
+data SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
   { simpleLogRecordExporter :: LogRecordExporter
+  , simpleLogRecordExportTimeoutMicros :: !Int
+  -- ^ Export timeout in microseconds, defaults to 30,000,000 (30s)
   }
 
 
@@ -29,6 +38,10 @@ newtype SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
  to the exporter. This means @onEmit@ blocks until the export completes,
  matching Go, Java, .NET, C++, Rust, and Python SDKs.
 
+ Export calls are serialized via an internal MVar so that the exporter is
+ never invoked concurrently, per the spec requirement that a processor MUST
+ NOT invoke the exporter concurrently.
+
  Use 'OpenTelemetry.Processor.Batch.LogRecord.batchLogRecordProcessor' for
  non-blocking, production-grade log processing.
 
@@ -37,6 +50,7 @@ newtype SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
 simpleLogRecordProcessor :: SimpleLogRecordProcessorConfig -> IO LogRecordProcessor
 simpleLogRecordProcessor SimpleLogRecordProcessorConfig {..} = do
   shutdownRef <- newIORef False
+  exportLock <- newMVar ()
   pure
     LogRecordProcessor
       { logRecordProcessorOnEmit = \lr _ctxt -> do
@@ -45,14 +59,23 @@ simpleLogRecordProcessor SimpleLogRecordProcessorConfig {..} = do
             then pure ()
             else do
               readable <- mkReadableLogRecord lr
-              _ <-
-                try @SomeException $
-                  fromMaybe (Failure Nothing)
-                    <$> timeout 30_000_000 (logRecordExporterExport simpleLogRecordExporter (V.singleton readable))
-              pure ()
-      , logRecordProcessorShutdown = async $ do
+              withMVar exportLock $ \_ -> do
+                er <-
+                  try @SomeException $
+                    fromMaybe (Failure Nothing)
+                      <$> timeout simpleLogRecordExportTimeoutMicros (logRecordExporterExport simpleLogRecordExporter (V.singleton readable))
+                case er of
+                  Left ex ->
+                    otelLogWarning $ "Simple log record export failed: " <> show ex
+                  Right Success -> pure ()
+                  Right (Failure mex) ->
+                    otelLogWarning $
+                      "Simple log record export failed: "
+                        <> maybe "timeout or unspecified" show mex
+      , logRecordProcessorShutdown = do
           atomicWriteIORef shutdownRef True
+          _ <- logRecordExporterForceFlush simpleLogRecordExporter
           logRecordExporterShutdown simpleLogRecordExporter
           pure ShutdownSuccess
-      , logRecordProcessorForceFlush = logRecordExporterForceFlush simpleLogRecordExporter
+      , logRecordProcessorForceFlush = logRecordExporterForceFlush simpleLogRecordExporter >> pure FlushSuccess
       }

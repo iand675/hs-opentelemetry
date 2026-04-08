@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Spec conformance (1.55.0 audit)
+- **NaN/Inf silently dropped for all metric instrument types.**
+  Previously only histograms filtered non-finite double values. Now
+  `addSumDbl`, `setSumDbl`, and `recordGauge` also drop NaN and Infinity.
+  Spec: <https://opentelemetry.io/docs/specs/otel/metrics/sdk/>
+
+### Performance
+- **Batch processor**: switched to `unagi-chan` bounded queue with power-of-two
+  sizing. `tryWriteChan` is non-blocking; drain uses `estimatedLength` for
+  batch sizing. Export groups spans by tracer at drain time. Concurrent chunk
+  export via `mapConcurrently_`.
+- **Simple processor**: synchronous export in `onEnd`/`onEmit` (no thread
+  overhead). Matches Go/Java/Python SDK design for low-throughput use cases.
+- **Metrics**: `AtomicBucketArray` for histogram buckets (single
+  `MutableByteArray#` with `fetchAddIntArray#`, zero vector copying on record).
+  Separate `SumIntCell`/`SumDblCell` to avoid boxing. Binary search for bucket
+  index. `OptionalDouble` sentinel for min/max instead of `Maybe Double`.
+- **Default ID generator**: thread-local xoshiro256++ in C, replacing the
+  Haskell `random` package (`System.Random.Stateful`) that was used on
+  `origin/main`. No contention, no syscalls, no Haskell allocation after
+  initial seed.
+
 ### Bug fixes
 - **Batch processor shutdown deadlock fixed.**
   Second `shutdownTracerProvider` / `shutdownLoggerProvider` call would hang
@@ -43,7 +65,7 @@
   `onEnd` / `onEmit` calls the exporter directly on the calling thread instead of
   enqueueing to an unbounded async channel. This matches the OTel specification
   ("passes finished spans directly to the configured SpanExporter") and the behavior
-  of every other OTel SDK — Go, Java, .NET, C++, Rust, and Python all export
+  of every other OTel SDK: Go, Java, .NET, C++, Rust, and Python all export
   synchronously in their simple processors. The previous unbounded `unagi-chan`
   queue could grow without bound under backpressure. Use `BatchSpanProcessor` /
   `BatchLogRecordProcessor` for non-blocking, production-grade processing.
@@ -118,8 +140,8 @@
   - `SdkMeterProviderOptions` gains `metricExporter :: Maybe MetricExporter` field
   - Periodic metric reader stop now calls `metricExporterShutdown` after final export
   - `forceFlushTracerProvider` exported from `OpenTelemetry.Trace` (SDK)
-- Implement `SimpleLogRecordProcessor` — processes log records inline, passes them to configured `LogRecordExporter`
-- Implement `BatchLogRecordProcessor` — batches log records with configurable queue size, export interval, and timeout
+- Implement `SimpleLogRecordProcessor`: processes log records inline, passes them to configured `LogRecordExporter`
+- Implement `BatchLogRecordProcessor`: batches log records with configurable queue size, export interval, and timeout
 - Batch/simple span processors now call `spanExporterForceFlush` during processor `ForceFlush`
 - IsValid test coverage expanded for TraceId-only and SpanId-only zero cases
 - Track `startTimeUnixNano` across all data points (was hardcoded to 0)
@@ -132,7 +154,7 @@
 - Default explicit histogram bounds updated to spec: `[0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]`
 - NaN/Inf measurements silently dropped in recordHist/recordExpHist (spec MUST)
 - Advisory `Attributes` parameter used as fallback when View has no `attribute_keys` (spec SHOULD)
-- `ExemplarFilter`: TraceBased (default), AlwaysOn, AlwaysOff — replaces boolean `exemplarCaptureTraceContext`
+- `ExemplarFilter`: TraceBased (default), AlwaysOn, AlwaysOff: replaces boolean `exemplarCaptureTraceContext`
 - `OTEL_METRICS_EXEMPLAR_FILTER` env var fully wired into SDK
 - New `OpenTelemetry.Metrics.ExporterSelection` module: wire `OTEL_METRICS_EXPORTER` to concrete `MetricExporter`
 - Comprehensive test coverage for all instrument types, views, delta temporality, observables

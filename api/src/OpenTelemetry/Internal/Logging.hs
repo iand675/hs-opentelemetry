@@ -11,13 +11,13 @@ Portability :  non-portable (GHC extensions)
 
 The OpenTelemetry specification mandates that the SDK produces
 self-diagnostic output controllable via @OTEL_LOG_LEVEL@
-(error, warn, info, debug).  This module provides the shared
-implementation used by all packages in the hs-opentelemetry
-distribution.
+(error, warn, info, debug) and that users can plug a custom error
+handler.
 
-Output goes to @stderr@ so it never interferes with application
-stdout.  The log level is read once from the environment on first
-use and cached for the process lifetime.
+Output goes to @stderr@ by default so it never interferes with
+application stdout. The log level is read once from the environment
+on first use and cached for the process lifetime. Users can override
+the output sink via 'setGlobalErrorHandler'.
 
 This module is internal. Library authors should not depend on it.
 
@@ -30,15 +30,18 @@ module OpenTelemetry.Internal.Logging (
   otelLogInfo,
   otelLogDebug,
   getOTelLogLevel,
+  setGlobalErrorHandler,
+  getGlobalErrorHandler,
 ) where
 
 import Data.Char (toLower)
-import Data.IORef (IORef, newIORef, readIORef)
+import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import System.Environment (lookupEnv)
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
 
+-- | @since 0.4.0.0
 data OTelLogLevel
   = OTelLogNone
   | OTelLogError
@@ -68,7 +71,36 @@ cachedLogLevel = unsafePerformIO $ do
 {-# NOINLINE cachedLogLevel #-}
 
 
--- | Retrieve the currently configured log level.
+globalErrorHandler :: IORef (String -> IO ())
+globalErrorHandler = unsafePerformIO $ newIORef (hPutStrLn stderr)
+{-# NOINLINE globalErrorHandler #-}
+
+
+{- | Replace the global error handler used by all OTel SDK diagnostic
+output. The default writes to @stderr@. The OTel spec requires that
+the SDK allow users to plug a custom error handler.
+
+The handler receives a pre-formatted message string including the
+severity prefix (e.g. @"OpenTelemetry [ERROR] ..."@).
+
+@since 0.4.0.0
+-}
+setGlobalErrorHandler :: (String -> IO ()) -> IO ()
+setGlobalErrorHandler = writeIORef globalErrorHandler
+
+
+{- | Retrieve the current global error handler.
+
+@since 0.4.0.0
+-}
+getGlobalErrorHandler :: IO (String -> IO ())
+getGlobalErrorHandler = readIORef globalErrorHandler
+
+
+{- | Retrieve the currently configured log level.
+
+@since 0.4.0.0
+-}
 getOTelLogLevel :: IO OTelLogLevel
 getOTelLogLevel = readIORef cachedLogLevel
 {-# INLINE getOTelLogLevel #-}
@@ -78,30 +110,44 @@ otelLog :: OTelLogLevel -> String -> String -> IO ()
 otelLog minLevel prefix msg = do
   level <- getOTelLogLevel
   if level >= minLevel
-    then hPutStrLn stderr (prefix <> msg)
+    then do
+      handler <- getGlobalErrorHandler
+      handler (prefix <> msg)
     else pure ()
 {-# INLINE otelLog #-}
 
 
--- | Log at ERROR level. Always emitted unless @OTEL_LOG_LEVEL=none@.
+{- | Log at ERROR level. Always emitted unless @OTEL_LOG_LEVEL=none@.
+
+@since 0.4.0.0
+-}
 otelLogError :: String -> IO ()
 otelLogError = otelLog OTelLogError "OpenTelemetry [ERROR] "
 {-# INLINE otelLogError #-}
 
 
--- | Log at WARNING level.
+{- | Log at WARNING level.
+
+@since 0.4.0.0
+-}
 otelLogWarning :: String -> IO ()
 otelLogWarning = otelLog OTelLogWarning "OpenTelemetry [WARN] "
 {-# INLINE otelLogWarning #-}
 
 
--- | Log at INFO level.
+{- | Log at INFO level.
+
+@since 0.4.0.0
+-}
 otelLogInfo :: String -> IO ()
 otelLogInfo = otelLog OTelLogInfo "OpenTelemetry [INFO] "
 {-# INLINE otelLogInfo #-}
 
 
--- | Log at DEBUG level.
+{- | Log at DEBUG level.
+
+@since 0.4.0.0
+-}
 otelLogDebug :: String -> IO ()
 otelLogDebug = otelLog OTelLogDebug "OpenTelemetry [DEBUG] "
 {-# INLINE otelLogDebug #-}

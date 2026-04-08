@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -33,10 +33,12 @@ library
       OpenTelemetry.Configuration.Create
       OpenTelemetry.Configuration.Parse
       OpenTelemetry.Configuration.Types
-      OpenTelemetry.MetricReader
+      OpenTelemetry.Log
       OpenTelemetry.MeterProvider
-      OpenTelemetry.Metrics.ExporterSelection
-      OpenTelemetry.Metrics.View
+      OpenTelemetry.Metric
+      OpenTelemetry.Metric.ExporterSelection
+      OpenTelemetry.Metric.View
+      OpenTelemetry.MetricReader
       OpenTelemetry.Processor.Batch
       OpenTelemetry.Processor.Batch.LogRecord
       OpenTelemetry.Processor.Batch.Span
@@ -45,6 +47,7 @@ library
       OpenTelemetry.Processor.Simple.Span
       OpenTelemetry.Resource.Cloud.Detector
       OpenTelemetry.Resource.Container.Detector
+      OpenTelemetry.Resource.Detect
       OpenTelemetry.Resource.Detector.AWS.EC2
       OpenTelemetry.Resource.Detector.AWS.ECS
       OpenTelemetry.Resource.Detector.AWS.EKS
@@ -67,6 +70,8 @@ library
       OpenTelemetry.Attributes
     , OpenTelemetry.Baggage
     , OpenTelemetry.Context
+    , OpenTelemetry.Log.Core
+    , OpenTelemetry.Metric.Core
     , OpenTelemetry.Context.Environment
     , OpenTelemetry.Context.ThreadLocal
     , OpenTelemetry.Context.ThreadLocal.Propagation
@@ -115,10 +120,12 @@ library
     , hs-opentelemetry-propagator-jaeger >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
     , hs-opentelemetry-propagator-xray >=0.0.1 && <0.1
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , http-client
     , http-client-tls
     , http-types
     , network-bsd
+    , process
     , scientific
     , stm
     , text
@@ -152,8 +159,10 @@ test-suite hs-opentelemetry-sdk-test
       OpenTelemetry.ContextSpec
       OpenTelemetry.ContextInSpanSpec
       OpenTelemetry.MeterProviderSpec
+      OpenTelemetry.MetricReaderSpec
       OpenTelemetry.Resource.DetectorSpec
       OpenTelemetry.ResourceSpec
+      OpenTelemetry.Trace.CallStackSpec
       OpenTelemetry.TraceSpec
   hs-source-dirs:
       test
@@ -169,6 +178,7 @@ test-suite hs-opentelemetry-sdk-test
     , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , process
     , text

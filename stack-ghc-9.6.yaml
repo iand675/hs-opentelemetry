@@ -17,7 +17,7 @@ packages:
 - propagators/w3c
 - instrumentation/cloudflare
 - instrumentation/conduit
-- instrumentation/hedis
+- instrumentation/ghc-metrics
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/hw-kafka-client

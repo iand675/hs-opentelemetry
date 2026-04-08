@@ -9,6 +9,7 @@
 module Minimal where
 
 import Conduit
+import Control.Monad (void)
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as L
 import Data.Pool (Pool)
@@ -19,6 +20,8 @@ import Database.Persist.Sql.Raw.QQ
 import Database.Persist.SqlBackend.SqlPoolHooks
 import GHC.Stack
 import Network.Wai.Handler.Warp (run)
+import OpenTelemetry.Instrumentation.GHCMetrics (registerGHCMetrics)
+import OpenTelemetry.Metric.Core (getMeter, getGlobalMeterProvider)
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
@@ -116,8 +119,19 @@ main :: IO ()
 main = do
   bracket
     initializeGlobalTracerProvider
-    shutdownTracerProvider
+    (\tp -> void $ shutdownTracerProvider tp Nothing)
     $ \_ -> do
+      -- Register GHC runtime metrics (heap size, GC counts, etc.)
+      -- as async instruments on the global MeterProvider.
+      mp <- getGlobalMeterProvider
+      meter <- getMeter mp "yesod-minimal"
+      void $ registerGHCMetrics meter
+
+      -- Metrics are exported via OTLP (configured by OTEL_METRICS_EXPORTER).
+      -- To also expose a Prometheus scrape endpoint, set
+      -- OTEL_METRICS_EXPORTER=prometheus and the SDK will start a server
+      -- on :9464/metrics (configurable via OTEL_EXPORTER_PROMETHEUS_HOST/PORT).
+
       runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
         waiApp <- toWaiApp $ Minimal pool
         openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware

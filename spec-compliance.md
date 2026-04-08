@@ -74,7 +74,7 @@ formats is required. Implementing more than one format is optional.
 | RecordException                                                                                                                 |          | +  |
 | RecordException with extra parameters                                                                                           |          | +  |
 | [Sampling](https://opentelemetry.io/docs/specs/otel/trace/sdk/#sampling)                                                       |          | +  |
-| AlwaysRecord sampler (decorator: DROP→RECORD_ONLY)                                                                              | X        | +  |
+| AlwaysRecord sampler (decorator: DROP to RECORD_ONLY)                                                                              | X        | +  |
 | Allow samplers to modify tracestate                                                                                             |          | +  |
 | ShouldSample gets full parent Context                                                                                           |          | +  |
 | ShouldSample gets InstrumentationLibrary                                                                                        |          | +  |
@@ -97,14 +97,14 @@ formats is required. Implementing more than one format is optional.
 
 | Feature                                                                                                                            | Optional | Haskell |
 |------------------------------------------------------------------------------------------------------------------------------------|----------|--|
-| [MeterProvider](https://opentelemetry.io/docs/specs/otel/metrics/api/#meterprovider) — Get a Meter                                |          | + |
-| [Meter](https://opentelemetry.io/docs/specs/otel/metrics/api/#meter) — create instruments                                         |          | + |
+| [MeterProvider](https://opentelemetry.io/docs/specs/otel/metrics/api/#meterprovider): Get a Meter                                |          | + |
+| [Meter](https://opentelemetry.io/docs/specs/otel/metrics/api/#meter): create instruments                                         |          | + |
 | [Counter / UpDownCounter / Histogram / Gauge](https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument) (sync)             |          | + |
 | [Observable instruments](https://opentelemetry.io/docs/specs/otel/metrics/api/#asynchronous-instrument-api)                        |          | + (callbacks at creation + register) |
 | [Enabled](https://opentelemetry.io/docs/specs/otel/metrics/api/#enabled) (sync)                                                   |          | + |
 | [Enabled](https://opentelemetry.io/docs/specs/otel/metrics/api/#enabled) (async)                                                  |          | + |
 | Global default MeterProvider                                                                                                       |          | + |
-| [Metrics SDK](https://opentelemetry.io/docs/specs/otel/metrics/sdk/) — aggregations (sum, explicit + exponential histogram, gauge) |          | + |
+| [Metrics SDK](https://opentelemetry.io/docs/specs/otel/metrics/sdk/): aggregations (sum, explicit + exponential histogram, gauge) |          | + |
 | Histogram min/max tracking                                                                                                         |          | + |
 | Default histogram bounds per spec (includes 750, 7500)                                                                             |          | + |
 | [Views](https://opentelemetry.io/docs/specs/otel/metrics/sdk/#view) (drop, aggregation, attribute keys, name, description)         |          | + |
@@ -170,13 +170,13 @@ See `OpenTelemetry.Metrics`, `OpenTelemetry.MeterProvider`, `OpenTelemetry.Metri
 | Host (host.name, host.arch)                                                                                                      | Runtime               | +       |
 | Telemetry SDK (telemetry.sdk.name/language/version)                                                                              | Build info            | +       |
 | Container (container.id, container.runtime)                                                                                      | /proc cgroup/mountinfo| +       |
-| Cloud (cloud.provider, cloud.platform, cloud.region) — env-var based                                                            | Env vars              | +       |
-| FaaS (faas.name, faas.version, faas.instance) — Lambda, GCF, Azure Functions                                                   | Env vars              | +       |
+| Cloud (cloud.provider, cloud.platform, cloud.region): env-var based                                                            | Env vars              | +       |
+| FaaS (faas.name, faas.version, faas.instance): Lambda, GCF, Azure Functions                                                   | Env vars              | +       |
 | Kubernetes (k8s.cluster.name, k8s.namespace.name, k8s.pod.name/uid, k8s.node.name)                                             | Env vars + SA token   | +       |
 | AWS EC2 IMDS (host.id, host.type, host.image.id, cloud.region, cloud.availability_zone, cloud.account.id)                      | IMDS v2 HTTP          | +       |
 | AWS ECS Task Metadata (aws.ecs.task.arn/family/revision, aws.ecs.cluster.arn, aws.ecs.launchtype, aws.log.*)                   | ECS metadata endpoint | +       |
 | GCP Compute Metadata (host.id, host.name, host.type, cloud.region, cloud.availability_zone, cloud.account.id)                  | GCP metadata server   | +       |
-| Azure VM IMDS (host.id, host.type, cloud.region, cloud.account.id)                                                              | Azure IMDS            | -       |
+| Azure VM IMDS (host.id, host.type, cloud.region, cloud.resource_id, os.type, os.version)                                        | Azure IMDS            | +       |
 
 ## Context Propagation
 
@@ -248,7 +248,7 @@ Note: Support for environment variables is optional. See the [OTel environment v
 | Concurrent sending                                                                                                 |          |    |
 | [Honors retryable responses with backoff](https://opentelemetry.io/docs/specs/otlp/#failures)                     | X        | +  |
 | [Honors non-retryable responses](https://opentelemetry.io/docs/specs/otlp/#failures)                              | X        | +  |
-| Honors throttling response                                                                                         | X        | (partial) |
+| Honors throttling response (Retry-After: delay-seconds + HTTP-date)                                               | X        | +  |
 | Multi-destination spec compliance                                                                                  | X        |    |
 | [Zipkin](https://opentelemetry.io/docs/specs/otel/trace/sdk_exporters/zipkin/)                                    |          |    |
 | Zipkin V1 JSON                                                                                                     | X        |    |
@@ -265,7 +265,7 @@ Note: Support for environment variables is optional. See the [OTel environment v
 | Event attributes mapping to Annotations                                                                            |          |    |
 | Integer microseconds in timestamps                                                                                 |          |    |
 | [Jaeger](https://opentelemetry.io/docs/specs/otel/trace/sdk_exporters/jaeger/)                                    |          | N/A |
-| _(Deprecated by OTel spec — use OTLP to send to Jaeger backends)_                                                 |          |    |
+| _(Deprecated by OTel spec: use OTLP to send to Jaeger backends)_                                                 |          |    |
 | OpenCensus                                                                                                         |          |    |
 | TBD                                                                                                                |          |    |
 | [Prometheus](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/)                          |          | +  |
@@ -277,6 +277,24 @@ Note: Support for environment variables is optional. See the [OTel environment v
 | Exception handlers (`ExceptionHandler` / `ExceptionClassification`) | Classify exceptions as Error / Recorded / Ignored; enrich spans with extra attributes. Configurable per `TracerProvider` and `Tracer`. Includes `exitSuccessHandler` for common Haskell patterns. |
 | Simple processors export synchronously in `OnEnd` / `onEmit` | Matches Go, Java, .NET, C++, Rust, Python SDKs. Use Batch variants for non-blocking production use. |
 
+## Conformance Gaps (identified in 1.0 audit against OTel spec 1.55.0)
+
+Gaps found during systematic spec audit. Items marked **fix** are being addressed
+in this release; items marked **deferred** are tracked but not blocking 1.0.
+
+| Area | Gap | Spec Section | Status |
+|------|-----|--------------|--------|
+| Trace | `shouldSample` now receives `InstrumentationScope` | [trace/sdk#sampling](https://opentelemetry.io/docs/specs/otel/trace/sdk/#sampling) | **done** |
+| Naming | Type is `InstrumentationLibrary`, spec says `InstrumentationScope` | [common/instrumentation-scope](https://opentelemetry.io/docs/specs/otel/common/instrumentation-scope/) | **done** (type alias `InstrumentationScope` + `instrumentationScope` constructor) |
+| Metrics | NaN/Inf not filtered for sum/gauge doubles | [metrics/sdk](https://opentelemetry.io/docs/specs/otel/metrics/sdk/) | **done** (`addSumDbl`, `setSumDbl`, `recordGauge`) |
+| Logs | `LogRecordExporter.forceFlush` returns `IO ()` not `FlushResult` | [logs/sdk#logrecordexporter](https://opentelemetry.io/docs/specs/otel/logs/sdk/#logrecordexporter) | **done** (returns `IO FlushResult`) |
+| Propagation | W3C multi-header `tracestate` not wired through propagator | [W3C trace-context](https://www.w3.org/TR/trace-context/) | **done** (already works: `decodeTraceState` parses comma-separated combined headers; helpers `decodeTraceStateMultiple`/`encodeTraceStateMultiple` available) |
+| OTLP | `Retry-After` only parses integer seconds, not HTTP-date | [OTLP#failures](https://opentelemetry.io/docs/specs/otlp/#failures) | **done** (`parseRetryAfterMicros` handles both formats) |
+| OTLP | TLS certificate env vars read; application must supply custom Manager for non-default CAs | [OTLP](https://opentelemetry.io/docs/specs/otlp/) | **documented** (see migration guide) |
+| OTLP | Concurrent export config available (`otlpConcurrentExports`); default sequential | [OTLP](https://opentelemetry.io/docs/specs/otlp/) | **done** (config + env var) |
+| OTLP | No OTLP/HTTP JSON exporter | [OTLP](https://opentelemetry.io/docs/specs/otlp/) | deferred (1.1) |
+| Resource | Azure VM IMDS detector | [resource detectors](https://opentelemetry.io/docs/specs/semconv/resource/) | **done** (already implemented; stale `-` corrected) |
+
 ## Development-Status / Not Yet Implemented
 
 These features are either in "Development" status in the OTel specification (subject to change)
@@ -286,5 +304,5 @@ or not yet implemented. They are tracked here for visibility.
 |------------------------------------------------------|---------------|---------|
 | CompositeSampler / ComposableSampler                 | Development   | -       |
 | ProbabilitySampler (consistent probability sampling) | Development   | -       |
-| OTLP/HTTP JSON exporter                             | Stable        | -       |
-| Concurrent OTLP sending                             | Stable        | -       |
+| OTLP/HTTP JSON exporter                             | Stable        | - (deferred to 1.1) |
+| Concurrent OTLP sending                             | Stable        | - (deferred to 1.1) |

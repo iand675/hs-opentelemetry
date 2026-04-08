@@ -33,6 +33,7 @@ import OpenTelemetry.Configuration.Types
 import System.Environment (lookupEnv)
 
 
+-- | @since 0.1.0.0
 data ConfigParseError
   = ConfigFileNotFound !FilePath
   | ConfigYamlError !Text
@@ -45,6 +46,8 @@ instance Exception ConfigParseError
 
 {- | Parse a configuration file from a file path.
 Performs environment variable substitution and validates the result.
+
+@since 0.1.0.0
 -}
 parseConfigFile :: FilePath -> IO (Either ConfigParseError OTelConfiguration)
 parseConfigFile path = do
@@ -55,6 +58,8 @@ parseConfigFile path = do
 
 
 -- | Parse configuration from YAML text content.
+--
+-- @since 0.1.0.0
 parseConfigBytes :: Text -> IO (Either ConfigParseError OTelConfiguration)
 parseConfigBytes content = do
   substituted <- substituteEnvVars content

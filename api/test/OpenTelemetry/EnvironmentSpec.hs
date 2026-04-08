@@ -10,7 +10,11 @@ import Test.Hspec
 spec :: Spec
 spec = sequential $
   describe "Environment" $ do
+    -- Configuration §SDK environment variables: parsing helpers used by the SDK
+    -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
     describe "lookupBooleanEnv" $ do
+      -- SDK environment variables §General rules: boolean-like env parsing (test helper)
+      -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
       it "returns False when env var is unset" $ do
         unsetEnv "OTEL_TEST_BOOL"
         result <- lookupBooleanEnv "OTEL_TEST_BOOL"
@@ -46,6 +50,8 @@ spec = sequential $
         result `shouldBe` False
         unsetEnv "OTEL_TEST_BOOL"
 
+    -- SDK environment variables §OTEL_METRICS_EXPORTER
+    -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
     describe "lookupMetricsExporterSelection" $ do
       it "returns Nothing when unset" $ do
         unsetEnv "OTEL_METRICS_EXPORTER"
@@ -88,10 +94,10 @@ spec = sequential $
         result `shouldBe` Just MetricsExporterOtlp
         unsetEnv "OTEL_METRICS_EXPORTER"
 
-      it "returns Nothing for unknown value" $ do
+      it "returns Custom for unknown value" $ do
         setEnv "OTEL_METRICS_EXPORTER" "zipkin"
         result <- lookupMetricsExporterSelection
-        result `shouldBe` Nothing
+        result `shouldBe` Just (MetricsExporterCustom "zipkin")
         unsetEnv "OTEL_METRICS_EXPORTER"
 
       it "returns Nothing for empty string" $ do
@@ -106,6 +112,8 @@ spec = sequential $
         result `shouldBe` Just MetricsExporterOtlp
         unsetEnv "OTEL_METRICS_EXPORTER"
 
+    -- SDK environment variables §OTEL_METRIC_EXPORT_INTERVAL
+    -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
     describe "lookupMetricExportIntervalMillis" $ do
       it "returns Nothing when unset" $ do
         unsetEnv "OTEL_METRIC_EXPORT_INTERVAL"
@@ -142,6 +150,8 @@ spec = sequential $
         result `shouldBe` Just 1000
         unsetEnv "OTEL_METRIC_EXPORT_INTERVAL"
 
+    -- SDK environment variables §OTEL_METRICS_EXEMPLAR_FILTER
+    -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
     describe "lookupMetricsExemplarFilter" $ do
       it "returns Nothing when unset" $ do
         unsetEnv "OTEL_METRICS_EXEMPLAR_FILTER"
@@ -178,6 +188,8 @@ spec = sequential $
         result `shouldBe` Nothing
         unsetEnv "OTEL_METRICS_EXEMPLAR_FILTER"
 
+    -- SDK environment variables §OTEL_LOGS_EXPORTER
+    -- https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
     describe "lookupLogsExporterSelection" $ do
       it "returns Nothing when unset" $ do
         unsetEnv "OTEL_LOGS_EXPORTER"
@@ -214,10 +226,10 @@ spec = sequential $
         result `shouldBe` Just LogsExporterOtlp
         unsetEnv "OTEL_LOGS_EXPORTER"
 
-      it "returns Nothing for unknown value" $ do
+      it "returns Custom for unknown value" $ do
         setEnv "OTEL_LOGS_EXPORTER" "zipkin"
         result <- lookupLogsExporterSelection
-        result `shouldBe` Nothing
+        result `shouldBe` Just (LogsExporterCustom "zipkin")
         unsetEnv "OTEL_LOGS_EXPORTER"
 
       it "returns Nothing for empty string" $ do

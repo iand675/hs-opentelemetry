@@ -132,16 +132,16 @@ openMySQLConn tp attrs ci@MySQL.ConnectInfo {connectUser, connectPort, connectOp
         ]
           <> if null connectDatabase
             then []
-            else [("db.namespace", fromString connectDatabase)]
+            else [(unkey SC.db_namespace, fromString connectDatabase)]
     addOldAttributes =
       -- "net.sock.family" is unnecessary because it must be "inet" when "net.sock.peer.addr" or "net.sock.host.addr" is set.
       H.union
         [ (unkey SC.db_connectionString, fromString $ showsPrecConnectInfoMasked 0 ci "")
         , (unkey SC.db_user, fromString connectUser)
         , (unkey SC.net_peer_port, portAttr)
-        , ("net.sock.peer.port", portAttr)
+        , (unkey SC.net_sock_peer_port, portAttr)
         , (unkey SC.net_transport, transportAttr)
-        , (maybe (unkey SC.net_peer_name) (const "net.sock.peer.addr") (readMaybe connectHost :: Maybe IP), fromString connectHost)
+        , (maybe (unkey SC.net_peer_name) (const (unkey SC.net_sock_peer_addr)) (readMaybe connectHost :: Maybe IP), fromString connectHost)
         ]
 
   semanticsOptions <- getSemanticsOptions

@@ -6,11 +6,16 @@ author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 license: BSD-3-Clause
 license-file: LICENSE
-category: Telemetry
-homepage: https://github.com/iand675/hs-opentelemetry
+copyright: 2024 Ian Duncan, Mercury Technologies
+category: OpenTelemetry, Telemetry, Tracing, Datadog
+homepage: https://github.com/iand675/hs-opentelemetry#readme
 bug-reports: https://github.com/iand675/hs-opentelemetry/issues
 synopsis: Datadog Propagator for OpenTelemetry
 description: This package provides a Datadog style propagator for hs-opentelemetry suite.
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
 
 common common
   build-depends: base >= 4 && < 5

@@ -13,6 +13,7 @@ in rec {
   inherit pkgs;
 
   localPackages = {
+    hs-opentelemetry-api-types = ../api-types;
     hs-opentelemetry-api = ../api;
     hs-opentelemetry-sdk = ../sdk;
     hs-opentelemetry-otlp = ../otlp;
@@ -20,11 +21,16 @@ in rec {
     hs-opentelemetry-exporter-handle = ../exporters/handle;
     hs-opentelemetry-exporter-in-memory = ../exporters/in-memory;
     hs-opentelemetry-exporter-otlp = ../exporters/otlp;
+    hs-opentelemetry-exporter-prometheus = ../exporters/prometheus;
     hs-opentelemetry-propagator-b3 = ../propagators/b3;
     hs-opentelemetry-propagator-datadog = ../propagators/datadog;
+    hs-opentelemetry-propagator-jaeger = ../propagators/jaeger;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
+    hs-opentelemetry-propagator-xray = ../propagators/xray;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
+    hs-opentelemetry-instrumentation-ghc-metrics = ../instrumentation/ghc-metrics;
+    hs-opentelemetry-instrumentation-gogol = ../instrumentation/gogol;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
     hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
@@ -108,5 +114,8 @@ in rec {
     # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just
     # relax the bounds of 0.7.1.5 ourselves
     proto-lens = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens;
+    # connection 0.3.1 has an upper bound on tls < 1.7, but nixpkgs has tls 2.0+.
+    # Jailbreak + unbreak so it builds with the newer tls.
+    connection = pkgs.haskell.lib.compose.doJailbreak (pkgs.haskell.lib.compose.markUnbroken prev.connection);
   };
 }

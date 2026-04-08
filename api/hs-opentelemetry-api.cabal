@@ -1,6 +1,6 @@
-cabal-version: 1.22
+cabal-version: 3.0
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -14,7 +14,7 @@ bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
 maintainer:         ian@iankduncan.com
 copyright:          2024 Ian Duncan, Mercury Technologies
-license:            BSD3
+license:            BSD-3-Clause
 license-file:       LICENSE
 build-type:         Simple
 extra-source-files:
@@ -43,16 +43,17 @@ library
       OpenTelemetry.Exporter.LogRecord
       OpenTelemetry.Exporter.Metric
       OpenTelemetry.Exporter.Span
+      OpenTelemetry.Internal.AtomicBucketArray
       OpenTelemetry.Internal.AtomicCounter
       OpenTelemetry.Internal.Common.Types
+      OpenTelemetry.Internal.Log.Core
+      OpenTelemetry.Internal.Log.Types
       OpenTelemetry.Internal.Logging
-      OpenTelemetry.Internal.Logs.Core
-      OpenTelemetry.Internal.Logs.Types
       OpenTelemetry.Internal.Trace.Id
+      OpenTelemetry.Log.Core
       OpenTelemetry.LogAttributes
-      OpenTelemetry.Logs.Core
-      OpenTelemetry.Metrics
-      OpenTelemetry.Metrics.InstrumentName
+      OpenTelemetry.Metric.Core
+      OpenTelemetry.Metric.InstrumentName
       OpenTelemetry.Processor
       OpenTelemetry.Processor.LogRecord
       OpenTelemetry.Processor.Span
@@ -83,8 +84,8 @@ library
       OpenTelemetry.Util
   other-modules:
       OpenTelemetry.Context.Types
-      OpenTelemetry.Internal.Metrics.Export
-      OpenTelemetry.Internal.Metrics.Types
+      OpenTelemetry.Internal.Metric.Export
+      OpenTelemetry.Internal.Metric.Types
       OpenTelemetry.Internal.Trace.Types
       OpenTelemetry.Internal.UnpackedMaybe
       Paths_hs_opentelemetry_api
@@ -131,8 +132,9 @@ test-suite hs-opentelemetry-api-test
       OpenTelemetry.Contrib.SpanTraversalsSpec
       OpenTelemetry.EnvironmentSpec
       OpenTelemetry.InstrumentationLibrarySpec
-      OpenTelemetry.Logs.CoreSpec
-      OpenTelemetry.MetricsSpec
+      OpenTelemetry.Internal.LoggingSpec
+      OpenTelemetry.Log.CoreSpec
+      OpenTelemetry.MetricSpec
       OpenTelemetry.RegistrySpec
       OpenTelemetry.ResourceSpec
       OpenTelemetry.SemanticsConfigSpec
@@ -152,8 +154,10 @@ test-suite hs-opentelemetry-api-test
       async
     , base >=4.7 && <5
     , bytestring
+    , hedgehog
     , hs-opentelemetry-api
     , hspec
+    , hspec-hedgehog
     , text
     , transformers
     , unliftio-core
@@ -174,8 +178,11 @@ benchmark hs-opentelemetry-api-bench
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       base >=4.7 && <5
+    , containers
     , hs-opentelemetry-api
     , tasty-bench
     , text
     , unordered-containers
+    , vector
+    , vector-builder
   default-language: Haskell2010

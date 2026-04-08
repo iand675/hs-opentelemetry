@@ -3,18 +3,18 @@
 
 module OpenTelemetry.Trace.UtilsSpec where
 
+import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Text (Text)
-import qualified Data.HashMap.Strict as H
-import System.IO.Error (userError)
 import qualified Data.Vector as V
 import OpenTelemetry.Attributes (lookupAttribute)
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Context (empty, insertSpan)
 import OpenTelemetry.Context.ThreadLocal (attachContext)
-import OpenTelemetry.Processor.Span (SpanProcessor (..))
+import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Util (appendOnlyBoundedCollectionValues)
+import System.IO.Error (userError)
 import Test.Hspec
 
 
@@ -23,8 +23,8 @@ dummyProcessor =
   SpanProcessor
     { spanProcessorOnStart = \_ _ -> pure ()
     , spanProcessorOnEnd = \_ -> pure ()
-    , spanProcessorShutdown = error "not implemented in test"
-    , spanProcessorForceFlush = pure ()
+    , spanProcessorShutdown = pure ShutdownSuccess
+    , spanProcessorForceFlush = pure FlushSuccess
     }
 
 
@@ -38,6 +38,8 @@ withTracer f = do
 
 spec :: Spec
 spec = describe "Trace utilities" $ do
+  -- Trace API §Span Kind: SpanKind values
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
   describe "SpanKind Eq" $ do
     it "compares equal SpanKinds" $ do
       Server `shouldBe` Server
@@ -51,6 +53,8 @@ spec = describe "Trace utilities" $ do
       Producer `shouldNotBe` Consumer
       Internal `shouldNotBe` Client
 
+  -- Context API §Context interactions with OTel: active context (thread-local helper)
+  -- https://opentelemetry.io/docs/specs/otel/context/
   describe "getActiveSpan" $ do
     it "returns Nothing when no span is active" $ do
       _ <- attachContext empty
@@ -99,6 +103,8 @@ spec = describe "Trace utilities" $ do
           traceId sc `shouldBe` traceId expectedSc
           spanId sc `shouldBe` spanId expectedSc
 
+  -- Trace API §Add Events: event name and attributes
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#add-events
   describe "newEvent" $ do
     it "creates an event with just a name" $ do
       let e = newEvent "my-event"
@@ -113,6 +119,8 @@ spec = describe "Trace utilities" $ do
       newEventName e `shouldBe` "my-event"
       newEventAttributes e `shouldBe` attrs
 
+  -- Trace API §Record exception: exception event and span status
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#record-exception
   describe "recordError" $ do
     it "sets span status to Error and records exception event" $ withTracer $ \t -> do
       s <- createSpan t empty "test-span" defaultSpanArguments

@@ -6,10 +6,18 @@ license:         BSD-3-Clause
 license-file:    LICENSE
 author:          Alberto Fanton
 maintainer:      alberto.fanton@protonmail.com
+copyright:       2024 Ian Duncan, Mercury Technologies
+homepage:        https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:     https://github.com/iand675/hs-opentelemetry/issues
+category:        OpenTelemetry, Telemetry, Kafka
 build-type:      Simple
 extra-doc-files: CHANGELOG.md
 
 -- extra-source-files:
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
 
 common warnings
   ghc-options: -Wall

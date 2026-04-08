@@ -10,8 +10,8 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis: OpenTelemetry instrumentation for the Persistent database library
+category: OpenTelemetry, Database, Telemetry
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -46,6 +46,7 @@ tests:
     dependencies:
     - hs-opentelemetry-instrumentation-persistent >= 0.1 && < 0.2
     - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     - hspec
     - text
     - unordered-containers

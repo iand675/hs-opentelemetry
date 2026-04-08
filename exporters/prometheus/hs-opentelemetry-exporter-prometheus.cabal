@@ -63,6 +63,7 @@ test-suite hs-opentelemetry-exporter-prometheus-test
     , bytestring
     , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-exporter-prometheus ==0.1.*
+    , hs-opentelemetry-semantic-conventions ==1.40.*
     , hspec
     , http-types
     , text

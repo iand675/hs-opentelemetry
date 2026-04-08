@@ -18,6 +18,8 @@ import Network.Wai (defaultRequest, responseLBS)
 import Network.Wai.Internal (Request (..), ResponseReceived (..))
 import OpenTelemetry.Attributes (lookupAttribute)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
+import OpenTelemetry.Attributes.Key (unkey)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
 import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware')
 import OpenTelemetry.Instrumentation.Yesod
@@ -244,13 +246,13 @@ spec = do
               , vault = Vault.empty
               }
       _ <- fullApp req $ \_ -> pure ResponseReceived
-      shutdownTracerProvider tp
+      _ <- shutdownTracerProvider tp Nothing
       spans <- readIORef ref
       case spans of
         [] -> expectationFailure "no spans recorded"
         (s : _) -> do
           hot <- readIORef (spanHot s)
-          lookupAttribute (hotAttributes hot) "http.route"
+          lookupAttribute (hotAttributes hot) (unkey SC.http_route)
             `shouldBe` Just (AttributeValue (TextAttribute "/"))
           lookupAttribute (hotAttributes hot) "http.handler"
             `shouldBe` Just (AttributeValue (TextAttribute "HomeR"))
@@ -273,13 +275,13 @@ spec = do
               , vault = Vault.empty
               }
       _ <- fullApp req $ \_ -> pure ResponseReceived
-      shutdownTracerProvider tp
+      _ <- shutdownTracerProvider tp Nothing
       spans <- readIORef ref
       case spans of
         [] -> expectationFailure "no spans recorded"
         (s : _) -> do
           hot <- readIORef (spanHot s)
-          lookupAttribute (hotAttributes hot) "http.route"
+          lookupAttribute (hotAttributes hot) (unkey SC.http_route)
             `shouldBe` Just (AttributeValue (TextAttribute "/user/#{Int}"))
 
     it "uses /** pattern for subsite routes" $ do
@@ -298,13 +300,13 @@ spec = do
               , vault = Vault.empty
               }
       _ <- fullApp req $ \_ -> pure ResponseReceived
-      shutdownTracerProvider tp
+      _ <- shutdownTracerProvider tp Nothing
       spans <- readIORef ref
       case spans of
         [] -> expectationFailure "no spans recorded"
         (s : _) -> do
           hot <- readIORef (spanHot s)
-          lookupAttribute (hotAttributes hot) "http.route"
+          lookupAttribute (hotAttributes hot) (unkey SC.http_route)
             `shouldBe` Just (AttributeValue (TextAttribute "/api/**"))
           lookupAttribute (hotAttributes hot) "http.handler"
             `shouldBe` Just (AttributeValue (TextAttribute "ApiR"))
@@ -325,11 +327,11 @@ spec = do
               , vault = Vault.empty
               }
       _ <- fullApp req $ \_ -> pure ResponseReceived
-      shutdownTracerProvider tp
+      _ <- shutdownTracerProvider tp Nothing
       spans <- readIORef ref
       case spans of
         [] -> expectationFailure "no spans recorded"
         (s : _) -> do
           hot <- readIORef (spanHot s)
-          lookupAttribute (hotAttributes hot) "http.route"
+          lookupAttribute (hotAttributes hot) (unkey SC.http_route)
             `shouldBe` Just (AttributeValue (TextAttribute "/api/**"))

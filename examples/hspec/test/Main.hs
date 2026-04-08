@@ -3,7 +3,7 @@
 import Control.Monad (void)
 import Data.Text (Text, unpack)
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
+import OpenTelemetry.Context.ThreadLocal (attachContext)
 import OpenTelemetry.Exporter.Handle.Span
 import OpenTelemetry.Instrumentation.Hspec (instrumentSpec)
 import OpenTelemetry.Processor.Batch.Span
@@ -26,10 +26,10 @@ import UnliftIO (MonadUnliftIO, bracket, finally, throwString)
 -}
 withGlobalTracing :: Sampler -> IO a -> IO a
 withGlobalTracing sampler act = do
-  void $ attachContext Context.empty
+  _ <- attachContext Context.empty
   bracket
     (initializeTracing sampler)
-    shutdownTracerProvider
+    (\tp -> void $ shutdownTracerProvider tp Nothing)
     $ const act
 
 
@@ -51,7 +51,7 @@ initializeTracing sampler = do
   (processors, tracerOptions') <- getTracerProviderInitializationOptions
 
   -- forcibly adds a stderr exporter; this is just for demo purposes
-  stderrProc <- batchProcessor batchTimeoutConfig $ stderrExporter' (pure . defaultFormatter)
+  stderrProc <- batchProcessor batchTimeoutConfig $ stderrExporter' defaultFormatter
   let processors' = stderrProc : processors
 
   provider <- createTracerProvider processors' (tracerOptions' {tracerProviderOptionsSampler = sampler})

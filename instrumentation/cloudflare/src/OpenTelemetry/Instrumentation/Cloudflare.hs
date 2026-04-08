@@ -1,17 +1,21 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |
+-- Module      : OpenTelemetry.Instrumentation.Cloudflare
+-- Description : OpenTelemetry instrumentation for Cloudflare Workers.
+-- Stability   : experimental
+--
+-- Extracts trace context from Cloudflare request headers.
 module OpenTelemetry.Instrumentation.Cloudflare where
 
 import Control.Monad (forM_)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
 import qualified Data.List
-import Data.Maybe
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Network.Wai
-import OpenTelemetry.Attributes (PrimitiveAttribute (..), ToAttribute (..))
+import OpenTelemetry.Attributes (ToAttribute (..))
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Context
 import OpenTelemetry.Instrumentation.Wai (requestContext)

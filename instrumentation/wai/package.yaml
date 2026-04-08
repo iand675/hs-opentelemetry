@@ -49,6 +49,7 @@ tests:
     - hs-opentelemetry-api == 0.4.*
     - hs-opentelemetry-sdk == 0.1.*
     - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     - hspec
     - text
     - wai

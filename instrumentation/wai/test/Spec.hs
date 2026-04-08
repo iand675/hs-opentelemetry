@@ -11,6 +11,8 @@ import Network.Wai (defaultRequest, responseLBS)
 import Network.Wai.Internal (Request (..), ResponseReceived (..))
 import OpenTelemetry.Attributes (lookupAttribute)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
+import OpenTelemetry.Attributes.Key (unkey)
+import qualified OpenTelemetry.SemanticConventions as SC
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
@@ -42,7 +44,7 @@ withTestMiddleware action = do
   (processor, ref) <- inMemoryListExporter
   tp <- createTracerProvider [processor] emptyTracerProviderOptions
   _ <- action tp
-  shutdownTracerProvider tp
+  _ <- shutdownTracerProvider tp Nothing
   readIORef ref
 
 
@@ -69,7 +71,7 @@ spec = describe "WAI middleware" $ do
             app _req respond = do
               ctx <- getContext
               case Context.lookupSpan ctx of
-                Just s -> addAttribute s ("http.route" :: Text) ("/users/:id" :: Text)
+                Just s -> addAttribute s (unkey SC.http_route) ("/users/:id" :: Text)
                 Nothing -> pure ()
               respond $ responseLBS ok200 [] "ok"
             req = mkRequest GET [("Host", "example.com")]
@@ -85,7 +87,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "error.type"
+      lookupAttribute (hotAttributes hot) (unkey SC.error_type)
         `shouldBe` Just (AttributeValue (TextAttribute "500"))
 
     it "does not set error.type on 2xx responses" $ do
@@ -95,7 +97,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "error.type"
+      lookupAttribute (hotAttributes hot) (unkey SC.error_type)
         `shouldBe` Nothing
 
     it "does not set error.type on 4xx responses" $ do
@@ -105,7 +107,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "error.type"
+      lookupAttribute (hotAttributes hot) (unkey SC.error_type)
         `shouldBe` Nothing
 
   describe "stable HTTP attributes (OTEL_SEMCONV_STABILITY_OPT_IN=http)" $ do
@@ -116,7 +118,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest POST [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "http.request.method"
+      lookupAttribute (hotAttributes hot) (unkey SC.http_request_method)
         `shouldBe` Just (AttributeValue (TextAttribute "POST"))
 
     it "sets url.path" $ do
@@ -126,7 +128,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "url.path"
+      lookupAttribute (hotAttributes hot) (unkey SC.url_path)
         `shouldBe` Just (AttributeValue (TextAttribute "/users/123"))
 
     it "sets server.address from Host header" $ do
@@ -136,7 +138,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com:8080")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "server.address"
+      lookupAttribute (hotAttributes hot) (unkey SC.server_address)
         `shouldBe` Just (AttributeValue (TextAttribute "example.com"))
 
     it "sets http.response.status_code" $ do
@@ -146,7 +148,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "http.response.status_code"
+      lookupAttribute (hotAttributes hot) (unkey SC.http_response_statusCode)
         `shouldBe` Just (AttributeValue (IntAttribute 200))
 
     it "sets url.scheme" $ do
@@ -156,7 +158,7 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "url.scheme"
+      lookupAttribute (hotAttributes hot) (unkey SC.url_scheme)
         `shouldBe` Just (AttributeValue (TextAttribute "http"))
 
     it "sets server.port default 80 for non-secure" $ do
@@ -166,5 +168,5 @@ spec = describe "WAI middleware" $ do
             req = mkRequest GET [("Host", "example.com")]
         mw app req $ \_ -> pure ResponseReceived
       hot <- readIORef (spanHot (firstSpan spans))
-      lookupAttribute (hotAttributes hot) "server.port"
+      lookupAttribute (hotAttributes hot) (unkey SC.server_port)
         `shouldBe` Just (AttributeValue (IntAttribute 80))

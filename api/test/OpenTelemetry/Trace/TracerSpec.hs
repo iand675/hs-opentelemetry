@@ -2,7 +2,7 @@ module OpenTelemetry.Trace.TracerSpec where
 
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Context (empty, insertSpan)
-import OpenTelemetry.Processor.Span (SpanProcessor (..))
+import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id (Base (Base16), baseEncodedToSpanId, baseEncodedToTraceId)
 import OpenTelemetry.Trace.Sampler
@@ -15,8 +15,8 @@ dummyProcessor =
   SpanProcessor
     { spanProcessorOnStart = \_ _ -> pure ()
     , spanProcessorOnEnd = \_ -> pure ()
-    , spanProcessorShutdown = error "not implemented in test"
-    , spanProcessorForceFlush = pure ()
+    , spanProcessorShutdown = pure ShutdownSuccess
+    , spanProcessorForceFlush = pure FlushSuccess
     }
 
 
@@ -35,6 +35,8 @@ parentSpanContextWithTraceState parentTs =
 
 spec :: Spec
 spec = describe "Tracer" $ do
+  -- Trace API §Tracer: whether a tracer will produce spans (SDK wiring)
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#tracer
   describe "tracerIsEnabled" $ do
     it "returns False when TracerProvider has no processors" $ do
       tp <- createTracerProvider [] emptyTracerProviderOptions
@@ -47,8 +49,8 @@ spec = describe "Tracer" $ do
             SpanProcessor
               { spanProcessorOnStart = \_ _ -> pure ()
               , spanProcessorOnEnd = \_ -> pure ()
-              , spanProcessorShutdown = error "not implemented in test"
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
       tp <- createTracerProvider [dummyProcessor] emptyTracerProviderOptions
       let instrLib = InstrumentationLibrary "test" "1.0.0" "" A.emptyAttributes
@@ -60,21 +62,23 @@ spec = describe "Tracer" $ do
             SpanProcessor
               { spanProcessorOnStart = \_ _ -> pure ()
               , spanProcessorOnEnd = \_ -> pure ()
-              , spanProcessorShutdown = error "not implemented in test"
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
           dummyProcessor2 =
             SpanProcessor
               { spanProcessorOnStart = \_ _ -> pure ()
               , spanProcessorOnEnd = \_ -> pure ()
-              , spanProcessorShutdown = error "not implemented in test"
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
       tp <- createTracerProvider [dummyProcessor1, dummyProcessor2] emptyTracerProviderOptions
       let instrLib = InstrumentationLibrary "test" "1.0.0" "" A.emptyAttributes
           tracer = makeTracer tp instrLib tracerOptions
       tracerIsEnabled tracer `shouldBe` True
 
+  -- Trace API §SpanContext: TraceState is part of immutable span context; child inherits parent TraceState
+  -- https://opentelemetry.io/docs/specs/otel/trace/api/#spancontext
   describe "TraceState inheritance (regression: Dropped child must not reset traceState)" $ do
     it "inherits parent TraceState when TracerProvider has no processors (FrozenSpan parent)" $ do
       let parentTs =

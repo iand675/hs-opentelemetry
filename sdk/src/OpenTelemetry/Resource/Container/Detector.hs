@@ -28,6 +28,7 @@ import OpenTelemetry.Resource.Container (Container (..))
 import System.IO.Error (tryIOError)
 
 
+-- | @since 0.0.1.0
 detectContainer :: IO Container
 detectContainer = do
   cid <- detectContainerId
@@ -39,6 +40,7 @@ detectContainer = do
       , containerRuntime = rt
       , containerImageName = Nothing
       , containerImageTag = Nothing
+      , containerImageId = Nothing
       }
 
 

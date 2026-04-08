@@ -40,7 +40,14 @@ import Prelude
 b3TraceContextPropagator :: Propagator Context TextMap TextMap
 b3TraceContextPropagator =
   Propagator
-    { propagatorFields = ["b3"]
+    { propagatorFields =
+        [ b3Header
+        , xb3TraceIdHeader
+        , xb3SpanIdHeader
+        , xb3SampledHeader
+        , xb3FlagsHeader
+        , xb3ParentSpanIdHeader
+        ]
     , extractor = \tm c ->
         case b3Extractor tm of
           Nothing -> pure c
@@ -49,10 +56,14 @@ b3TraceContextPropagator =
         case Context.lookupSpan c of
           Nothing -> pure tm
           Just span' -> do
-            Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState} <- Core.getSpanContext span'
+            scx@Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState} <- Core.getSpanContext span'
             let traceIdValue = encodeTraceId traceId
                 spanIdValue = encodeSpanId spanId
-                samplingStateValue = lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue >>= printSamplingStateSingle
+                fromTs = lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue >>= printSamplingStateSingle
+                fromFlags
+                  | Core.isSampled (Core.traceFlags scx) = Just "1"
+                  | otherwise = Just "0"
+                samplingStateValue = fromTs <|> fromFlags
                 value = mconcat $ intersperse "-" $ [traceIdValue, spanIdValue] <> catMaybes [Text.encodeUtf8 <$> samplingStateValue]
 
             pure $ textMapInsert b3Header (Text.decodeUtf8 value) tm
@@ -62,7 +73,14 @@ b3TraceContextPropagator =
 b3MultiTraceContextPropagator :: Propagator Context TextMap TextMap
 b3MultiTraceContextPropagator =
   Propagator
-    { propagatorFields = [xb3TraceIdHeader, xb3SpanIdHeader, xb3SampledHeader, xb3FlagsHeader]
+    { propagatorFields =
+        [ b3Header
+        , xb3TraceIdHeader
+        , xb3SpanIdHeader
+        , xb3SampledHeader
+        , xb3FlagsHeader
+        , xb3ParentSpanIdHeader
+        ]
     , extractor = \tm c -> do
         case b3Extractor tm of
           Nothing -> pure c
@@ -71,13 +89,17 @@ b3MultiTraceContextPropagator =
         case Context.lookupSpan c of
           Nothing -> pure tm
           Just span' -> do
-            Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState} <- Core.getSpanContext span'
+            scx@Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState} <- Core.getSpanContext span'
             let traceIdValue = encodeTraceId traceId
                 spanIdValue = encodeSpanId spanId
-                samplingStateValue = lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue >>= printSamplingStateMulti
+                fromTs = lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue >>= printSamplingStateMulti
+                fromFlags
+                  | Core.isSampled (Core.traceFlags scx) = Just (xb3SampledHeader, "1")
+                  | otherwise = Just (xb3SampledHeader, "0")
+                samplingStateValue = fromTs <|> fromFlags
                 baseTm =
-                  textMapInsert xb3TraceIdHeader (Text.decodeUtf8 traceIdValue)
-                    $ textMapInsert xb3SpanIdHeader (Text.decodeUtf8 spanIdValue) tm
+                  textMapInsert xb3TraceIdHeader (Text.decodeUtf8 traceIdValue) $
+                    textMapInsert xb3SpanIdHeader (Text.decodeUtf8 spanIdValue) tm
             pure $ case samplingStateValue of
               Nothing -> baseTm
               Just (k, v) -> textMapInsert k v baseTm
@@ -122,7 +144,8 @@ b3MultiExtractor tm = do
   let sampled = decodeXb3SampledHeader =<< tmLookupBs xb3SampledHeader tm
       debug = decodeXb3FlagsHeader =<< tmLookupBs xb3FlagsHeader tm
       samplingState = fromMaybe Defer $ debug <|> sampled
-  let traceFlags = if samplingState == Accept || samplingState == Debug then TraceFlags 1 else TraceFlags 0
+      traceFlags = if samplingState == Accept || samplingState == Debug then TraceFlags 1 else TraceFlags 0
+      _parentSpanId = decodeXb3SpanIdHeader =<< tmLookupBs xb3ParentSpanIdHeader tm
 
   pure $
     Core.SpanContext

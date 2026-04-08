@@ -61,6 +61,8 @@ Checks @OTEL_EXPERIMENTAL_CONFIG_FILE@ first (per the evolving
 <https://opentelemetry.io/docs/specs/otel/configuration/file-configuration/ file configuration spec>),
 then falls back to @OTEL_CONFIG_FILE@ for backward compatibility.
 Returns @Nothing@ if neither env var is set.
+
+@since 0.1.0.0
 -}
 initializeFromConfigFile :: IO (Maybe OTelComponents)
 initializeFromConfigFile = do
@@ -74,6 +76,8 @@ initializeFromConfigFile = do
 
 
 -- | Parse and create SDK components from a YAML configuration file.
+--
+-- @since 0.1.0.0
 initializeFromFile :: FilePath -> IO OTelComponents
 initializeFromFile path = do
   result <- parseConfigFile path
@@ -83,6 +87,8 @@ initializeFromFile path = do
 
 
 -- | Parse and create SDK components from YAML text content.
+--
+-- @since 0.1.0.0
 initializeFromText :: Text -> IO OTelComponents
 initializeFromText content = do
   result <- parseConfigBytes content

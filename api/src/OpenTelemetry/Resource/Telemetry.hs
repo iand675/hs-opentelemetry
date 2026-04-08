@@ -1,9 +1,4 @@
 {-# LANGUAGE CPP #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.Telemetry
  Copyright   :  (c) Ian Duncan, 2021
@@ -45,6 +40,8 @@ import qualified OpenTelemetry.SemanticConventions as SC
 -- other allowed
 
 -- | The telemetry SDK used to capture data recorded by the instrumentation libraries.
+--
+-- @since 0.0.1.0
 data Telemetry = Telemetry
   { telemetrySdkName :: Text
   -- ^ The name of the telemetry SDK as defined above.
@@ -52,16 +49,19 @@ data Telemetry = Telemetry
   -- ^ The name of the telemetry SDK as defined above.
   , telemetrySdkVersion :: Maybe Text
   -- ^ The version string of the telemetry SDK.
-  , telemetryAutoVersion :: Maybe Text
-  --- ^ The version string of the auto instrumentation agent, if used.
+  , telemetryDistroName :: Maybe Text
+  -- ^ The name of the telemetry auto instrumentation provider, if used.
+  , telemetryDistroVersion :: Maybe Text
+  -- ^ The version string of the telemetry auto instrumentation provider, if used.
   }
 
 
 instance ToResource Telemetry where
   toResource Telemetry {..} =
-    mkResource
+    mkResourceWithSchema (Just semConvSchemaUrl)
       [ unkey SC.telemetry_sdk_name .= telemetrySdkName
       , unkey SC.telemetry_sdk_language .=? telemetrySdkLanguage
       , unkey SC.telemetry_sdk_version .=? telemetrySdkVersion
-      , "telemetry.auto.version" .=? telemetryAutoVersion
+      , unkey SC.telemetry_distro_name .=? telemetryDistroName
+      , unkey SC.telemetry_distro_version .=? telemetryDistroVersion
       ]

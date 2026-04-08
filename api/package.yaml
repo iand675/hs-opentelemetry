@@ -52,8 +52,8 @@ library:
   - vector
   other-modules:
   - OpenTelemetry.Context.Types
-  - OpenTelemetry.Internal.Metrics.Export
-  - OpenTelemetry.Internal.Metrics.Types
+  - OpenTelemetry.Internal.Metric.Export
+  - OpenTelemetry.Internal.Metric.Types
   - OpenTelemetry.Internal.Trace.Types
   - OpenTelemetry.Internal.UnpackedMaybe
   - Paths_hs_opentelemetry_api
@@ -87,8 +87,9 @@ tests:
     - OpenTelemetry.Contrib.SpanTraversalsSpec
     - OpenTelemetry.EnvironmentSpec
     - OpenTelemetry.InstrumentationLibrarySpec
-    - OpenTelemetry.Logs.CoreSpec
-    - OpenTelemetry.MetricsSpec
+    - OpenTelemetry.Internal.LoggingSpec
+    - OpenTelemetry.Log.CoreSpec
+    - OpenTelemetry.MetricSpec
     - OpenTelemetry.RegistrySpec
     - OpenTelemetry.ResourceSpec
     - OpenTelemetry.SemanticsConfigSpec
@@ -106,8 +107,10 @@ tests:
     dependencies:
     - async
     - bytestring
+    - hedgehog
     - hs-opentelemetry-api
     - hspec
+    - hspec-hedgehog
     - text
     - transformers
     - unliftio-core

@@ -28,10 +28,12 @@ library:
   - OpenTelemetry.Configuration.Create
   - OpenTelemetry.Configuration.Parse
   - OpenTelemetry.Configuration.Types
-  - OpenTelemetry.MetricReader
+  - OpenTelemetry.Log
   - OpenTelemetry.MeterProvider
-  - OpenTelemetry.Metrics.ExporterSelection
-  - OpenTelemetry.Metrics.View
+  - OpenTelemetry.Metric
+  - OpenTelemetry.Metric.ExporterSelection
+  - OpenTelemetry.Metric.View
+  - OpenTelemetry.MetricReader
   - OpenTelemetry.Processor.Batch
   - OpenTelemetry.Processor.Batch.LogRecord
   - OpenTelemetry.Processor.Batch.Span
@@ -40,6 +42,7 @@ library:
   - OpenTelemetry.Processor.Simple.Span
   - OpenTelemetry.Resource.Cloud.Detector
   - OpenTelemetry.Resource.Container.Detector
+  - OpenTelemetry.Resource.Detect
   - OpenTelemetry.Resource.Detector.AWS.EC2
   - OpenTelemetry.Resource.Detector.AWS.ECS
   - OpenTelemetry.Resource.Detector.AWS.EKS
@@ -79,16 +82,19 @@ library:
   - tls
   - x509-store
   - network-bsd
+  - process
   - scientific
   - stm
   - text
   - yaml
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
+
   - vector
   - unagi-chan >= 0.4 && < 0.5
   # These are "distribution" packages
   - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0
   - hs-opentelemetry-exporter-handle ^>= 0.0.1
   - hs-opentelemetry-exporter-otlp ^>= 0.1
@@ -100,6 +106,8 @@ library:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
     - OpenTelemetry.Context
+    - OpenTelemetry.Log.Core
+    - OpenTelemetry.Metric.Core
     - OpenTelemetry.Context.Environment
     - OpenTelemetry.Context.ThreadLocal
     - OpenTelemetry.Context.ThreadLocal.Propagation
@@ -142,8 +150,10 @@ tests:
     - OpenTelemetry.ContextSpec
     - OpenTelemetry.ContextInSpanSpec
     - OpenTelemetry.MeterProviderSpec
+    - OpenTelemetry.MetricReaderSpec
     - OpenTelemetry.Resource.DetectorSpec
     - OpenTelemetry.ResourceSpec
+    - OpenTelemetry.Trace.CallStackSpec
     - OpenTelemetry.TraceSpec
     source-dirs:         test
     ghc-options:
@@ -163,6 +173,7 @@ tests:
     - hs-opentelemetry-propagator-b3 >= 0.0.1 && < 0.1
     - hs-opentelemetry-propagator-w3c >= 0.1.0 && < 0.2
     - hs-opentelemetry-sdk
+    - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     - hspec
     - process
     - text

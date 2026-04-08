@@ -2,6 +2,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |
+-- Module      : OpenTelemetry.Propagator.Datadog
+-- Description : Datadog trace context propagation. Extracts and injects Datadog-format trace headers.
+-- Stability   : experimental
+--
 module OpenTelemetry.Propagator.Datadog (
   datadogTraceContextPropagator,
   convertOpenTelemetrySpanIdToDatadogSpanId,
@@ -12,11 +17,9 @@ module OpenTelemetry.Propagator.Datadog (
 ) where
 
 import qualified Data.ByteString.Char8 as BC
-import qualified Data.ByteString.Short.Internal as SBI
-import Data.Primitive (ByteArray (ByteArray))
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
-import Data.Word (Word64)
+import Data.Word (Word64, byteSwap64)
 import OpenTelemetry.Common (TraceFlags (TraceFlags))
 import OpenTelemetry.Context (
   Context,
@@ -29,7 +32,6 @@ import OpenTelemetry.Internal.Trace.Id (
  )
 import OpenTelemetry.Propagator (Propagator (Propagator, extractor, injector, propagatorFields), TextMap, textMapInsert, textMapLookup)
 import OpenTelemetry.Propagator.Datadog.Internal (
-  indexByteArrayNbo,
   newHeaderFromSpanId,
   newHeaderFromTraceId,
   newSpanIdFromHeader,
@@ -55,8 +57,8 @@ datadogTraceContextPropagator =
     { propagatorFields = [traceIdKey, parentIdKey, samplingPriorityKey]
     , extractor = \tm c -> do
         let spanContext' = do
-              traceId <- TraceId . newTraceIdFromHeader . TE.encodeUtf8 <$> textMapLookup traceIdKey tm
-              parentId <- SpanId . newSpanIdFromHeader . TE.encodeUtf8 <$> textMapLookup parentIdKey tm
+              traceId <- newTraceIdFromHeader . TE.encodeUtf8 <$> textMapLookup traceIdKey tm
+              parentId <- newSpanIdFromHeader . TE.encodeUtf8 <$> textMapLookup parentIdKey tm
               let rawPriority = textMapLookup samplingPriorityKey tm
                   priorityInt = rawPriority >>= (fmap fst . BC.readInt . TE.encodeUtf8)
                   sampled = maybe True (> 0) priorityInt
@@ -78,16 +80,16 @@ datadogTraceContextPropagator =
           Nothing -> pure tm
           Just span' -> do
             SpanContext {traceId, spanId, traceFlags, traceState = TraceState traceState} <- getSpanContext span'
-            let traceIdValue = TE.decodeUtf8 $ (\(TraceId b) -> newHeaderFromTraceId b) traceId
-                parentIdValue = TE.decodeUtf8 $ (\(SpanId b) -> newHeaderFromSpanId b) spanId
+            let traceIdValue = TE.decodeUtf8 $ newHeaderFromTraceId traceId
+                parentIdValue = TE.decodeUtf8 $ newHeaderFromSpanId spanId
                 samplingPriority = case lookup (TS.Key samplingPriorityKey) traceState of
                   Just (TS.Value p) -> p
                   Nothing -> if isSampled traceFlags then "1" else "0"
-            pure
-              $ textMapInsert traceIdKey traceIdValue
-              $ textMapInsert parentIdKey parentIdValue
-              $ textMapInsert samplingPriorityKey samplingPriority
-              $ tm
+            pure $
+              textMapInsert traceIdKey traceIdValue $
+                textMapInsert parentIdKey parentIdValue $
+                  textMapInsert samplingPriorityKey samplingPriority $
+                    tm
     }
   where
     traceIdKey, parentIdKey, samplingPriorityKey :: Text
@@ -96,12 +98,14 @@ datadogTraceContextPropagator =
     samplingPriorityKey = "x-datadog-sampling-priority"
 
 
+-- | Extract the span ID as a big-endian Word64 (Datadog's native format).
 convertOpenTelemetrySpanIdToDatadogSpanId :: SpanId -> Word64
-convertOpenTelemetrySpanIdToDatadogSpanId (SpanId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 0
+convertOpenTelemetrySpanIdToDatadogSpanId (SpanId w) = byteSwap64 w
 
 
+-- | Extract the low 64 bits of the trace ID as a big-endian Word64.
 convertOpenTelemetryTraceIdToDatadogTraceId :: TraceId -> Word64
-convertOpenTelemetryTraceIdToDatadogTraceId (TraceId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 1
+convertOpenTelemetryTraceIdToDatadogTraceId (TraceId _hi lo) = byteSwap64 lo
 
 
 {- | Register the Datadog propagator under the name @\"datadog\"@ in

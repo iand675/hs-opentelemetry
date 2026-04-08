@@ -29,6 +29,7 @@ import OpenTelemetry.Resource.Cloud (Cloud (..))
 import System.Environment (lookupEnv)
 
 
+-- | @since 0.0.1.0
 detectCloud :: IO Cloud
 detectCloud = do
   mAws <- detectAWS
@@ -53,6 +54,7 @@ emptyCloud =
     , cloudRegion = Nothing
     , cloudAvailabilityZone = Nothing
     , cloudPlatform = Nothing
+    , cloudResourceId = Nothing
     }
 
 
@@ -98,6 +100,7 @@ detectAWS = do
             , cloudRegion = mRegion
             , cloudAvailabilityZone = mAz
             , cloudPlatform = platform
+            , cloudResourceId = Nothing
             }
 
 
@@ -134,6 +137,7 @@ detectGCP = do
             , cloudRegion = mRegion
             , cloudAvailabilityZone = Nothing
             , cloudPlatform = platform
+            , cloudResourceId = Nothing
             }
 
 
@@ -169,6 +173,7 @@ detectAzure = do
             , cloudRegion = mRegion
             , cloudAvailabilityZone = Nothing
             , cloudPlatform = platform
+            , cloudResourceId = Nothing
             }
 
 

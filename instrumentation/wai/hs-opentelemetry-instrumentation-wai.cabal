@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.Wai
+      OpenTelemetry.Instrumentation.Wai.Metrics
   other-modules:
       Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:
@@ -61,6 +62,7 @@ test-suite hs-opentelemetry-instrumentation-wai-test
     , hs-opentelemetry-exporter-in-memory ==0.0.*
     , hs-opentelemetry-instrumentation-wai ==0.1.*
     , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , http-types
     , network

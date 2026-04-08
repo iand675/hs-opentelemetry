@@ -40,6 +40,7 @@ module OpenTelemetry.Exporter.Prometheus.WAI (
 import Control.Concurrent.Async (Async, async)
 import qualified Data.ByteString.Lazy as LBS
 import Data.String (fromString)
+import Data.Vector (Vector)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import Network.HTTP.Types (status200)
@@ -70,7 +71,7 @@ Every request path returns @200@ with the current metrics snapshot. Use
 this with 'Warp.runSettings' for a dedicated metrics server, or compose
 into a larger application with a router.
 -}
-prometheusApplication :: IO [ResourceMetricsExport] -> Application
+prometheusApplication :: IO (Vector ResourceMetricsExport) -> Application
 prometheusApplication collect _request respond = do
   metrics <- collect
   let body = LBS.fromStrict (TE.encodeUtf8 (renderPrometheusText metrics))
@@ -88,12 +89,12 @@ immediately; all other requests pass through to the inner application.
 Place this __outside__ any OTel tracing middleware to avoid generating
 spans for Prometheus scrape requests.
 -}
-prometheusMiddleware :: IO [ResourceMetricsExport] -> Middleware
+prometheusMiddleware :: IO (Vector ResourceMetricsExport) -> Middleware
 prometheusMiddleware = prometheusMiddleware' defaultPrometheusExporterConfig
 
 
 -- | Like 'prometheusMiddleware' with a custom 'PrometheusExporterConfig'.
-prometheusMiddleware' :: PrometheusExporterConfig -> IO [ResourceMetricsExport] -> Middleware
+prometheusMiddleware' :: PrometheusExporterConfig -> IO (Vector ResourceMetricsExport) -> Middleware
 prometheusMiddleware' config collect inner request respond
   | pathInfo request == prometheusMetricsPath config =
       prometheusApplication collect request respond
@@ -111,7 +112,7 @@ Reads environment variables per the OpenTelemetry specification:
 The server responds to every path with the metrics snapshot. No
 OpenTelemetry instrumentation is applied to this server.
 -}
-startPrometheusServer :: IO [ResourceMetricsExport] -> IO ()
+startPrometheusServer :: IO (Vector ResourceMetricsExport) -> IO ()
 startPrometheusServer collect = do
   host <- maybe "0.0.0.0" id <$> lookupEnv "OTEL_EXPORTER_PROMETHEUS_HOST"
   port <- maybe 9464 id . (>>= readMaybe) <$> lookupEnv "OTEL_EXPORTER_PROMETHEUS_PORT"
@@ -123,5 +124,5 @@ startPrometheusServer collect = do
 
 
 -- | Like 'startPrometheusServer' but runs in a background thread.
-startPrometheusServerAsync :: IO [ResourceMetricsExport] -> IO (Async ())
+startPrometheusServerAsync :: IO (Vector ResourceMetricsExport) -> IO (Async ())
 startPrometheusServerAsync collect = async (startPrometheusServer collect)

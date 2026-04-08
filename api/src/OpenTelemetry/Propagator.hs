@@ -1,31 +1,65 @@
 {-# LANGUAGE RankNTypes #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
- Module      :  OpenTelemetry.Trace.Propagator
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Sending and receiving state between system boundaries
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Propagator
+Copyright   :  (c) Ian Duncan, 2021-2026
+License     :  BSD-3
+Description :  Context propagation across process boundaries
+Stability   :  experimental
 
- Cross-cutting concerns send their state to the next process using Propagators, which are defined as objects used to
- read and write context data to and from messages exchanged by the applications.
- Each concern creates a set of Propagators for every supported Propagator type.
+= Overview
 
- Propagators leverage the Context to inject and extract data for each cross-cutting concern, such as traces and Baggage.
+Propagators serialize and deserialize 'Context' (trace state and baggage)
+into carrier formats like HTTP headers. This is how distributed tracing
+works across service boundaries.
 
- Propagation is usually implemented via a cooperation of library-specific request interceptors and Propagators,
- where the interceptors detect incoming and outgoing requests and use the Propagator's extract and inject operations
- respectively.
+= Built-in propagators
 
- The Propagators API is expected to be leveraged by users writing instrumentation libraries. However,
- users using the OpenTelemetry SDK may need to select appropriate propagators to work with existing 3rd party systems
- such as AWS.
+The SDK registers these propagators automatically:
+
+* __W3C TraceContext__ (@traceparent@ header) -- default
+* __W3C Baggage__ (@baggage@ header) -- default
+* __B3__ (Zipkin single and multi-header)
+* __Jaeger__ (@uber-trace-id@ header)
+* __Datadog__ (@x-datadog-trace-id@ headers)
+* __AWS X-Ray__ (@X-Amzn-Trace-Id@ header)
+
+Configure via @OTEL_PROPAGATORS@:
+
+> export OTEL_PROPAGATORS=tracecontext,baggage,b3
+
+= Usage in instrumentation
+
+If you are writing instrumentation for a transport (HTTP, gRPC, messaging),
+use the global propagator to inject\/extract context:
+
+@
+import OpenTelemetry.Propagator
+import OpenTelemetry.Context.ThreadLocal
+
+-- Injecting (outbound request):
+propagator <- getGlobalTextMapPropagator
+ctx <- getContext
+headers <- inject propagator ctx request
+
+-- Extracting (inbound request):
+propagator <- getGlobalTextMapPropagator
+ctx <- extract propagator request =<< getContext
+tok <- attachContext ctx
+-- ... later, restore previous context:
+detachContext tok
+@
+
+= Custom propagators
+
+Implement the 'Propagator' record with 'propagatorFields', 'extractor',
+and 'injector' fields. Propagators are composable via their 'Monoid'
+instance (extracts and injects run in sequence).
+
+= Spec reference
+
+<https://opentelemetry.io/docs/specs/otel/context/api-propagators/>
 -}
 module OpenTelemetry.Propagator (
   -- * Propagator
@@ -52,19 +86,24 @@ module OpenTelemetry.Propagator (
   setGlobalTextMapPropagator,
 ) where
 
+import Control.Exception (SomeException, catch)
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.IORef
 import qualified Data.HashMap.Strict as H
+import Data.IORef
+import qualified Data.List as List
 import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Context.Types (Context)
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import System.IO.Unsafe (unsafePerformIO)
 
 
 {- |
 A carrier is the medium used by Propagators to read values from and write values to.
 Each specific Propagator type defines its expected carrier type, such as a string map or a byte array.
+
+@since 0.0.1.0
 -}
 data Propagator context inboundCarrier outboundCarrier = Propagator
   { propagatorFields :: [Text]
@@ -80,8 +119,22 @@ instance Semigroup (Propagator c i o) where
   (Propagator lFields lExtract lInject) <> (Propagator rFields rExtract rInject) =
     Propagator
       { propagatorFields = lFields <> rFields
-      , extractor = \i -> lExtract i >=> rExtract i
-      , injector = \c -> lInject c >=> rInject c
+      , extractor = \i ctx -> do
+          ctx' <-
+            lExtract i ctx `catch` \(e :: SomeException) -> do
+              otelLogWarning $ "Propagator extract failed: " <> show e
+              pure ctx
+          rExtract i ctx' `catch` \(e :: SomeException) -> do
+            otelLogWarning $ "Propagator extract failed: " <> show e
+            pure ctx'
+      , injector = \c carrier -> do
+          carrier' <-
+            lInject c carrier `catch` \(e :: SomeException) -> do
+              otelLogWarning $ "Propagator inject failed: " <> show e
+              pure carrier
+          rInject c carrier' `catch` \(e :: SomeException) -> do
+            otelLogWarning $ "Propagator inject failed: " <> show e
+            pure carrier'
       }
 
 
@@ -90,50 +143,73 @@ instance Monoid (Propagator c i o) where
 
 
 {- | A case-insensitive text map used as the carrier for context propagation.
-Keys are normalized to lowercase on insertion and lookup, matching the
-behavior required by HTTP header semantics.
+Keys are compared case-insensitively but their original casing is preserved,
+matching the behavior required by HTTP header semantics.
 
 Instrumentation code converts between transport-specific representations
 (e.g. HTTP headers) and 'TextMap' at the boundary.
 
 @since 0.4.0.0
 -}
-newtype TextMap = TextMap (H.HashMap Text Text)
+data TextMap = TextMap
+  { tmLookup :: !(H.HashMap Text Text)
+  -- ^ Lowercase key -> value (for O(1) case-insensitive lookup)
+  , tmOriginal :: !(H.HashMap Text Text)
+  -- ^ Lowercase key -> original-cased key (to preserve casing on output)
+  }
   deriving (Show, Eq)
 
 
+-- | @since 0.4.0.0
 emptyTextMap :: TextMap
-emptyTextMap = TextMap H.empty
+emptyTextMap = TextMap H.empty H.empty
 {-# INLINE emptyTextMap #-}
 
 
+-- | @since 0.4.0.0
 textMapInsert :: Text -> Text -> TextMap -> TextMap
-textMapInsert k v (TextMap m) = TextMap (H.insert (T.toLower k) v m)
+textMapInsert k v (TextMap lk orig) =
+  let lk' = T.toLower k
+  in TextMap (H.insert lk' v lk) (H.insert lk' k orig)
 {-# INLINE textMapInsert #-}
 
 
+-- | @since 0.4.0.0
 textMapLookup :: Text -> TextMap -> Maybe Text
-textMapLookup k (TextMap m) = H.lookup (T.toLower k) m
+textMapLookup k (TextMap lk _) = H.lookup (T.toLower k) lk
 {-# INLINE textMapLookup #-}
 
 
+-- | @since 0.4.0.0
 textMapDelete :: Text -> TextMap -> TextMap
-textMapDelete k (TextMap m) = TextMap (H.delete (T.toLower k) m)
+textMapDelete k (TextMap lk orig) =
+  let lk' = T.toLower k
+  in TextMap (H.delete lk' lk) (H.delete lk' orig)
 {-# INLINE textMapDelete #-}
 
 
+-- | @since 0.4.0.0
 textMapKeys :: TextMap -> [Text]
-textMapKeys (TextMap m) = H.keys m
+textMapKeys (TextMap _ orig) = H.elems orig
 {-# INLINE textMapKeys #-}
 
 
+-- | @since 0.4.0.0
 textMapToList :: TextMap -> [(Text, Text)]
-textMapToList (TextMap m) = H.toList m
+textMapToList (TextMap lk orig) =
+  H.foldlWithKey'
+    ( \acc lk' v -> case H.lookup lk' orig of
+        Just origKey -> (origKey, v) : acc
+        Nothing -> (lk', v) : acc
+    )
+    []
+    lk
 {-# INLINE textMapToList #-}
 
 
+-- | @since 0.4.0.0
 textMapFromList :: [(Text, Text)] -> TextMap
-textMapFromList = TextMap . H.fromList . map (\(k, v) -> (T.toLower k, v))
+textMapFromList = List.foldl' (\tm (k, v) -> textMapInsert k v tm) emptyTextMap
 
 
 {- | A 'TextMapPropagator' is a 'Propagator' specialized for text-based
@@ -183,6 +259,8 @@ setGlobalTextMapPropagator = atomicWriteIORef globalTextMapPropagator
 Extracts the value from an incoming request. For example, from the headers of an HTTP request.
 
 If a value can not be parsed from the carrier, for a cross-cutting concern, the implementation MUST NOT throw an exception and MUST NOT store a new value in the Context, in order to preserve any previously existing valid value.
+
+@since 0.0.1.0
 -}
 extract
   :: (MonadIO m)
@@ -192,8 +270,11 @@ extract
   -> context
   -> m context
   -- ^ a new Context derived from the Context passed as argument, containing the extracted value, which can be a SpanContext, Baggage or another cross-cutting concern context.
-extract (Propagator _ extractor _) i = liftIO . extractor i
-{-# INLINE extract #-}
+extract (Propagator _ extractor_ _) i ctx =
+  liftIO $
+    extractor_ i ctx `catch` \(e :: SomeException) -> do
+      otelLogWarning $ "Propagator extract failed: " <> show e
+      pure ctx
 
 
 {- | Deprecated alias for 'propagatorFields'.
@@ -205,7 +286,10 @@ propagatorNames = propagatorFields
 {-# DEPRECATED propagatorNames "Use propagatorFields instead. propagatorNames will be removed in a future release." #-}
 
 
--- | Injects the value into a carrier. For example, into the headers of an HTTP request.
+{- | Injects the value into a carrier. For example, into the headers of an HTTP request.
+
+@since 0.0.1.0
+-}
 inject
   :: (MonadIO m)
   => Propagator context i o
@@ -213,5 +297,8 @@ inject
   -> o
   -- ^ The carrier that holds the propagation fields. For example, an outgoing message or HTTP request.
   -> m o
-inject (Propagator _ _ injector) c = liftIO . injector c
-{-# INLINE inject #-}
+inject (Propagator _ _ injector_) c carrier =
+  liftIO $
+    injector_ c carrier `catch` \(e :: SomeException) -> do
+      otelLogWarning $ "Propagator inject failed: " <> show e
+      pure carrier
