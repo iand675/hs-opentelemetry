@@ -1,8 +1,8 @@
 # OpenTelemetry SDK for Haskell
 
-This package provides everything a functioning implementation of
-the OpenTelemetry the API, useful for exporting a variety of
-tracing, logging, and metric data.
+[![hs-opentelemetry-sdk](https://img.shields.io/hackage/v/hs-opentelemetry-sdk?style=flat-square&logo=haskell&label=hs-opentelemetry-sdk&labelColor=5D4F85)](https://hackage.haskell.org/package/hs-opentelemetry-sdk)
+
+This package provides everything a functioning implementation of the OpenTelemetry the API requires, useful for exporting a variety of tracing, logging, and metric data.
 
 ## Why use OpenTelemetry tracing?
 
@@ -38,7 +38,7 @@ A trace is made up of multiple spans. Tracing vendors such as Zipkin, Jaeger, Ho
 
 ### Context
 
-In order for OpenTelemetry to work, it must store and propagate important telemetry data. For example, when a request is received and a span is started it must be available to component which want to create child spans. To solve this problem, OpenTelemetry stores the span in a data structure called `Context`. 
+In order for OpenTelemetry to work, it must store and propagate important telemetry data. For example, when a request is received and a span is started it must be available to component which want to create child spans. To solve this problem, OpenTelemetry stores the span in a data structure called `Context`.
 
 A `Context` is an specialized map structure structure that can store values of arbitrary types. As your code executes, the current active span will be stored in the `Context`. Creating new spans requires a `Context`, which is used to determine the parent span for the newly created span (if a parent exists). At the outermost edges of your "complete unit of work" that you choose to instrument, you can start with an empty context in order to create a root span.
 
@@ -79,6 +79,7 @@ Add `hs-opentelemetry-sdk` to your `package.yaml` or Cabal file.
 ## Trace Your Code
 
 ### Initialization
+
 Get started by importing the `OpenTelemetry.Trace` module. It exports most of what you need to instrument your application.
 
 ``` haskell
@@ -95,7 +96,7 @@ main = withTracer $ \tracer -> do
   pure ()
   where
     withTracer :: ((TracerOptions -> Tracer) -> IO c) -> IO c
-    withTracer f = bracket 
+    withTracer f = bracket
       -- Install the SDK, pulling configuration from the environment
       initializeGlobalTracerProvider
       -- Ensure that any spans that haven't been exported yet are flushed
@@ -174,13 +175,13 @@ This just scratches the surface of the capabilities that OpenTelemetry tracing p
 ### Launch your app!
 
 Out of the box, your instrumented app will attempt to send trace information to localhost. We recommend running an instance of the
-[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) locally where possible, but can also set environment variables to configure your application to use different exporters, endpoints, and more: 
+[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) locally where possible, but can also set environment variables to configure your application to use different exporters, endpoints, and more:
 
 ``` shell
 OTEL_EXPORTER_OTLP_ENDPOINT="https://api.vendor.xyz" OTEL_EXPORTER_OTLP_HEADERS="x-vendor-api-key=$YOUR_API_KEY,x-vendor-dataset=$YOUR_VENDOR_DATASET_NAME" stack exec yesod-minimal
 ```
 
-See the environment variable mentioned earlier in the README for the full list. 
+See the environment variable mentioned earlier in the README for the full list.
 
 <hr/>
 ✅ <b>Before you go...</b> ✅
@@ -192,6 +193,7 @@ Visit the [GitHub project](https://github.com/iand675/hs-opentelemetry#readme) f
 <hr/>
 
 ### Useful Links
+
 - For more information on OpenTelemetry, visit: <https://opentelemetry.io/>
 - For more about OpenTelemetry Haskell: <https://github.com/iand675/hs-opentelemetry>
 

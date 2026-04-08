@@ -15,9 +15,9 @@ services:
       - "4318:4318"
     environment:
       - LOG_LEVEL=debug
-  ##################
+  ####################
   # Redpanda Brokers #
-  ##################
+  ####################
   redpanda-0:
     command:
       - redpanda
