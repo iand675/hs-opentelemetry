@@ -154,9 +154,10 @@ module OpenTelemetry.Trace.Core (
   ImmutableSpan (..),
   SpanHot (..),
   SpanContext (..),
-  -- | W3c Trace flags
-  --
-  -- https://www.w3.org/TR/trace-context/#trace-flags
+  {- | W3c Trace flags
+
+  https://www.w3.org/TR/trace-context/#trace-flags
+  -}
   TraceFlags,
   traceFlagsValue,
   traceFlagsFromWord8,
@@ -257,7 +258,7 @@ module OpenTelemetry.Trace.Core (
 
 import Control.Applicative
 import Control.Concurrent.Async
-import Control.Concurrent.Thread.StorageV2 (getCurrentThreadId)
+import Control.Concurrent.Thread.Storage (getCurrentThreadId)
 import Control.Exception (Exception (..), SomeException (..), catch, displayException)
 import qualified Control.Exception as EUnsafe
 import Control.Monad
@@ -316,19 +317,22 @@ import System.Timeout (timeout)
 createSpan
   :: (MonadIO m, HasCallStack)
   => Tracer
-  -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
-  -- used for the lifecycle of the created 'Span'
+  {- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
+  used for the lifecycle of the created 'Span'
+  -}
   -> Context
-  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
-  -- you can use 'OpenTelemetry.Context.empty'.
+  {- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
+  you can use 'OpenTelemetry.Context.empty'.
+  -}
   -> Text
   -- ^ Span name
   -> SpanArguments
   -- ^ Additional span information
   -> m Span
-  -- ^ The created span.
-  -- Try and infer source code information unless the user has set any of the attributes already, which
-  -- we take as an indication that our automatic strategy won't work well.
+  {- ^ The created span.
+  Try and infer source code information unless the user has set any of the attributes already, which
+  we take as an indication that our automatic strategy won't work well.
+  -}
 createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (addAttributesToSpanArgumentsIfNonePresent callerAttributes args)
 {-# INLINE createSpan #-}
 
@@ -340,11 +344,13 @@ createSpan t ctxt n args = createSpanWithoutCallStack t ctxt n (addAttributesToS
 createSpanWithoutCallStack
   :: (MonadIO m)
   => Tracer
-  -- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
-  -- used for the lifecycle of the created 'Span'
+  {- ^ 'Tracer' to create the span from. Associated 'Processor's and 'Exporter's will be
+  used for the lifecycle of the created 'Span'
+  -}
   -> Context
-  -- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
-  -- you can use 'OpenTelemetry.Context.empty'.
+  {- ^ Context, potentially containing a parent span. If no existing parent (or context) exists,
+  you can use 'OpenTelemetry.Context.empty'.
+  -}
   -> Text
   -- ^ Span name
   -> SpanArguments
@@ -499,11 +505,11 @@ ownCodeAttributes :: (HasCallStack) => AttributeMap
 ownCodeAttributes =
   let opt = codeOption $ unsafePerformIO getSemanticsOptions
   in case getCallStack callStack of
-      (("ownCodeAttributes", ownCodeCalledAt) : (ownFunction, _ownFunctionCalledAt) : _) ->
-        codeAttributes opt ownFunction ownCodeCalledAt
-      (("ownCodeAttributes", ownCodeCalledAt) : _) ->
-        codeAttributes opt "<unknown>" ownCodeCalledAt
-      _ -> mempty
+       (("ownCodeAttributes", ownCodeCalledAt) : (ownFunction, _ownFunctionCalledAt) : _) ->
+         codeAttributes opt ownFunction ownCodeCalledAt
+       (("ownCodeAttributes", ownCodeCalledAt) : _) ->
+         codeAttributes opt "<unknown>" ownCodeCalledAt
+       _ -> mempty
 
 
 {- |
@@ -518,11 +524,11 @@ callerAttributes :: (HasCallStack) => AttributeMap
 callerAttributes =
   let opt = codeOption $ unsafePerformIO getSemanticsOptions
   in case getCallStack callStack of
-      (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : (callerFunction, _) : _) ->
-        codeAttributes opt callerFunction ownFunctionCalledAt
-      (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : _) ->
-        codeAttributes opt "<unknown>" ownFunctionCalledAt
-      _ -> mempty
+       (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : (callerFunction, _) : _) ->
+         codeAttributes opt callerFunction ownFunctionCalledAt
+       (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : _) ->
+         codeAttributes opt "<unknown>" ownFunctionCalledAt
+       _ -> mempty
 
 
 codeAttributes :: StabilityOpt -> String -> SrcLoc -> AttributeMap
@@ -602,12 +608,14 @@ inSpan
   -> Text
   -- ^ The name of the span. This may be updated later via 'updateName'
   -> SpanArguments
-  -- ^ Additional options for creating the span, such as 'SpanKind',
-  -- span links, starting attributes, etc.
+  {- ^ Additional options for creating the span, such as 'SpanKind',
+  span links, starting attributes, etc.
+  -}
   -> m a
-  -- ^ The action to perform. 'inSpan' will record the time spent on the
-  -- action without forcing strict evaluation of the result. Any uncaught
-  -- exceptions will be recorded and rethrown.
+  {- ^ The action to perform. 'inSpan' will record the time spent on the
+  action without forcing strict evaluation of the result. Any uncaught
+  exceptions will be recorded and rethrown.
+  -}
   -> m a
 inSpan t n args m =
   let opt = codeOption $ unsafePerformIO getSemanticsOptions
@@ -1170,10 +1178,11 @@ data TracerProviderOptions = TracerProviderOptions
   , tracerProviderOptionsSpanLimits :: SpanLimits
   , tracerProviderOptionsPropagators :: TextMapPropagator
   , tracerProviderOptionsExceptionHandlers :: [ExceptionHandler]
-  -- ^ Exception handlers consulted (after any tracer-level handlers) when
-  -- 'inSpan' catches an exception. Defaults to @[]@ (all exceptions are errors).
-  --
-  -- @since 0.4.0.0
+  {- ^ Exception handlers consulted (after any tracer-level handlers) when
+  'inSpan' catches an exception. Defaults to @[]@ (all exceptions are errors).
+
+  @since 0.4.0.0
+  -}
   }
 
 
@@ -1275,16 +1284,18 @@ getTracerProviderPropagators = tracerProviderPropagators
 -}
 data TracerOptions = TracerOptions
   { tracerSchema :: Maybe Text
-  -- ^ OpenTelemetry provides a schema for describing common attributes so that backends can easily parse and identify relevant information.
-  -- It is important to understand these conventions when writing instrumentation, in order to normalize your data and increase its utility.
-  --
-  -- In particular, this option is valuable to set when possible, because it allows vendors to normalize data accross releases in order to account
-  -- for attribute name changes.
+  {- ^ OpenTelemetry provides a schema for describing common attributes so that backends can easily parse and identify relevant information.
+  It is important to understand these conventions when writing instrumentation, in order to normalize your data and increase its utility.
+
+  In particular, this option is valuable to set when possible, because it allows vendors to normalize data accross releases in order to account
+  for attribute name changes.
+  -}
   , tracerExceptionHandlerOptions :: [ExceptionHandler]
-  -- ^ Exception handlers specific to this tracer, consulted before
-  -- provider-level handlers. Defaults to @[]@.
-  --
-  -- @since 0.4.0.0
+  {- ^ Exception handlers specific to this tracer, consulted before
+  provider-level handlers. Defaults to @[]@.
+
+  @since 0.4.0.0
+  -}
   }
 
 
@@ -1329,15 +1340,15 @@ makeTracer tp n opts =
           }
       !sl = tracerProviderSpanLimits tp
   in Tracer
-      { tracerName = n'
-      , tracerProvider = tp
-      , tracerExceptionHandlers = tracerExceptionHandlerOptions opts
-      , tracerSpanAttributeLimits = resolveLimits spanAttributeCountLimit
-      , tracerEventAttributeLimits = resolveLimits eventAttributeCountLimit
-      , tracerLinkAttributeLimits = resolveLimits linkAttributeCountLimit
-      , tracerEventCountLimit = fromMaybe 128 (eventCountLimit sl)
-      , tracerLinkCountLimit = fromMaybe 128 (linkCountLimit sl)
-      }
+       { tracerName = n'
+       , tracerProvider = tp
+       , tracerExceptionHandlers = tracerExceptionHandlerOptions opts
+       , tracerSpanAttributeLimits = resolveLimits spanAttributeCountLimit
+       , tracerEventAttributeLimits = resolveLimits eventAttributeCountLimit
+       , tracerLinkAttributeLimits = resolveLimits linkAttributeCountLimit
+       , tracerEventCountLimit = fromMaybe 128 (eventCountLimit sl)
+       , tracerLinkCountLimit = fromMaybe 128 (linkCountLimit sl)
+       }
 
 
 {- | Like 'makeTracer' but caches by 'InstrumentationLibrary', so repeated

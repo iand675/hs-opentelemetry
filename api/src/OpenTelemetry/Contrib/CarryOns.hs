@@ -1,10 +1,11 @@
--- |
--- Module      : OpenTelemetry.Contrib.CarryOns
--- Description : Carry-on attributes that propagate from parent to child spans.
--- Stability   : experimental
---
--- Carry-ons are extra attributes merged into spans completed within a thread's
--- context, so values can flow down a trace without attaching them to every span.
+{- |
+Module      : OpenTelemetry.Contrib.CarryOns
+Description : Carry-on attributes that propagate from parent to child spans.
+Stability   : experimental
+
+Carry-ons are extra attributes merged into spans completed within a thread's
+context, so values can flow down a trace without attaching them to every span.
+-}
 module OpenTelemetry.Contrib.CarryOns (
   alterCarryOns,
   withCarryOnProcessor,

@@ -3,11 +3,11 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
--- |
--- Module      : OpenTelemetry.Resource.Host.Detector
--- Description : Resource detector for host attributes. Auto-detects hostname and architecture from the runtime environment.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Resource.Host.Detector
+Description : Resource detector for host attributes. Auto-detects hostname and architecture from the runtime environment.
+Stability   : experimental
+-}
 module OpenTelemetry.Resource.Host.Detector (
   detectHost,
   builtInHostDetectors,
@@ -21,11 +21,13 @@ import Network.BSD
 import OpenTelemetry.Resource.Host
 import System.Info (arch)
 
+
 #if defined(linux_HOST_OS)
 import qualified Data.Text.IO as TIO
 #elif defined(darwin_HOST_OS)
 import System.Process (readProcess)
 #endif
+
 
 adaptedArch :: T.Text
 adaptedArch = case arch of
@@ -38,7 +40,6 @@ adaptedArch = case arch of
   "powerpc64" -> "ppc64"
   "powerpc64le" -> "ppc64"
   other -> T.pack other
-
 
 #if defined(darwin_HOST_OS)
 -- | Parse @\"IOPlatformUUID\" = \"…\"@ from @ioreg@ output (see OpenTelemetry host.id for macOS).

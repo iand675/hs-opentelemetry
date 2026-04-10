@@ -46,8 +46,8 @@ data MetricsExporterSelection
   | MetricsExporterOtlp
   | MetricsExporterPrometheus
   | MetricsExporterConsole
-  | MetricsExporterCustom !String
-  -- ^ A name not in the built-in set; looked up via the exporter registry.
+  | -- | A name not in the built-in set; looked up via the exporter registry.
+    MetricsExporterCustom !String
   deriving (Eq, Show)
 
 
@@ -66,12 +66,12 @@ lookupMetricsExporterSelection = do
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
       in pure $ case key of
-          "" -> Nothing
-          "none" -> Just MetricsExporterNone
-          "otlp" -> Just MetricsExporterOtlp
-          "prometheus" -> Just MetricsExporterPrometheus
-          "console" -> Just MetricsExporterConsole
-          other -> Just (MetricsExporterCustom other)
+           "" -> Nothing
+           "none" -> Just MetricsExporterNone
+           "otlp" -> Just MetricsExporterOtlp
+           "prometheus" -> Just MetricsExporterPrometheus
+           "console" -> Just MetricsExporterConsole
+           other -> Just (MetricsExporterCustom other)
 
 
 {- | Read @OTEL_METRIC_EXPORT_INTERVAL@ (milliseconds between periodic export cycles).
@@ -105,13 +105,14 @@ data LogsExporterSelection
   = LogsExporterNone
   | LogsExporterOtlp
   | LogsExporterConsole
-  | LogsExporterCustom !String
-  -- ^ A name not in the built-in set; looked up via the exporter registry.
+  | -- | A name not in the built-in set; looked up via the exporter registry.
+    LogsExporterCustom !String
   deriving (Eq, Show)
 
 
--- | Read @OTEL_LOGS_EXPORTER@. Empty values return 'Nothing' (caller defaults to OTLP).
--- Unknown names are returned as 'LogsExporterCustom' for registry lookup.
+{- | Read @OTEL_LOGS_EXPORTER@. Empty values return 'Nothing' (caller defaults to OTLP).
+Unknown names are returned as 'LogsExporterCustom' for registry lookup.
+-}
 lookupLogsExporterSelection :: IO (Maybe LogsExporterSelection)
 lookupLogsExporterSelection = do
   me <- lookupEnv "OTEL_LOGS_EXPORTER"
@@ -122,11 +123,11 @@ lookupLogsExporterSelection = do
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
       in pure $ case key of
-          "" -> Nothing
-          "none" -> Just LogsExporterNone
-          "otlp" -> Just LogsExporterOtlp
-          "console" -> Just LogsExporterConsole
-          other -> Just (LogsExporterCustom other)
+           "" -> Nothing
+           "none" -> Just LogsExporterNone
+           "otlp" -> Just LogsExporterOtlp
+           "console" -> Just LogsExporterConsole
+           other -> Just (LogsExporterCustom other)
 
 
 -- | Parsed @OTEL_METRICS_EXEMPLAR_FILTER@ (when present).
@@ -148,8 +149,8 @@ lookupMetricsExemplarFilter = do
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
       in pure $ case key of
-          "" -> Nothing
-          "trace_based" -> Just MetricsExemplarFilterTraceBased
-          "always_on" -> Just MetricsExemplarFilterAlwaysOn
-          "always_off" -> Just MetricsExemplarFilterAlwaysOff
-          _ -> Nothing
+           "" -> Nothing
+           "trace_based" -> Just MetricsExemplarFilterTraceBased
+           "always_on" -> Just MetricsExemplarFilterAlwaysOn
+           "always_off" -> Just MetricsExemplarFilterAlwaysOff
+           _ -> Nothing

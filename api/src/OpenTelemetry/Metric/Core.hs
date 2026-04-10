@@ -124,9 +124,10 @@ import qualified OpenTelemetry.Metric.InstrumentName as InstrumentName
 import System.IO.Unsafe (unsafePerformIO)
 
 
--- | Preferred accessor for obtaining a 'Meter' (spec: Get a Meter).
---
--- @since 0.0.1.0
+{- | Preferred accessor for obtaining a 'Meter' (spec: Get a Meter).
+
+@since 0.0.1.0
+-}
 getMeter :: MeterProvider -> InstrumentationLibrary -> IO Meter
 getMeter = meterProviderGetMeter
 
@@ -207,9 +208,10 @@ noopObservableGauge scope name =
     }
 
 
--- | A 'Meter' that records no telemetry (used by 'noopMeterProvider').
---
--- @since 0.0.1.0
+{- | A 'Meter' that records no telemetry (used by 'noopMeterProvider').
+
+@since 0.0.1.0
+-}
 noopMeter :: InstrumentationLibrary -> Meter
 noopMeter scope =
   Meter
@@ -230,9 +232,10 @@ noopMeter scope =
     }
 
 
--- | No-op provider: safe for libraries; all measurements are discarded.
---
--- @since 0.0.1.0
+{- | No-op provider: safe for libraries; all measurements are discarded.
+
+@since 0.0.1.0
+-}
 noopMeterProvider :: MeterProvider
 noopMeterProvider =
   MeterProvider

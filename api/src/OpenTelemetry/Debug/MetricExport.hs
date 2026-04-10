@@ -27,9 +27,10 @@ import OpenTelemetry.Exporter.Metric (
  )
 
 
--- | Multi-line text summary (not Prometheus or OTLP format).
---
--- @since 0.0.1.0
+{- | Multi-line text summary (not Prometheus or OTLP format).
+
+@since 0.0.1.0
+-}
 renderResourceMetricsExportDebug :: [ResourceMetricsExport] -> Text
 renderResourceMetricsExportDebug rs =
   T.intercalate "\n---\n" (fmap renderResource rs)

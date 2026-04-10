@@ -24,6 +24,8 @@ import Control.Exception (SomeException, catch)
 import Control.Monad (foldM)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.HashMap.Strict as H
+
+
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
@@ -48,12 +50,10 @@ import OpenTelemetry.Resource.Detector.Azure (detectAzureVMSelf)
 import OpenTelemetry.Resource.Detector.GCP (detectGCPComputeSelf)
 import OpenTelemetry.Resource.Detector.Heroku (detectHeroku)
 import OpenTelemetry.Resource.FaaS (FaaS)
-import OpenTelemetry.Resource.FaaS ()
 import OpenTelemetry.Resource.FaaS.Detector (detectFaaS)
 import OpenTelemetry.Resource.Host ()
 import OpenTelemetry.Resource.Host.Detector (detectHost)
 import OpenTelemetry.Resource.Kubernetes (Cluster, Namespace, Node, Pod)
-import OpenTelemetry.Resource.Kubernetes ()
 import OpenTelemetry.Resource.Kubernetes.Detector (KubernetesResources (..), detectKubernetes)
 import OpenTelemetry.Resource.OperatingSystem ()
 import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
@@ -66,10 +66,11 @@ import OpenTelemetry.Resource.Telemetry.Detector (detectTelemetry)
 import System.Environment (lookupEnv)
 
 
--- | Register all built-in resource detectors in the global registry.
--- Idempotent: uses 'Registry.registerResourceDetectorIfAbsent'.
---
--- @since 0.1.0.2
+{- | Register all built-in resource detectors in the global registry.
+Idempotent: uses 'Registry.registerResourceDetectorIfAbsent'.
+
+@since 0.1.0.2
+-}
 registerBuiltinResourceDetectors :: IO ()
 registerBuiltinResourceDetectors = do
   _ <- Registry.registerResourceDetectorIfAbsent "service" (toResource <$> detectService)
@@ -119,7 +120,7 @@ allDetectorsInDefaultOrder allDetectors =
       extraDetectors =
         H.elems $
           H.filterWithKey (\k _ -> not (k `Set.member` builtinNames)) allDetectors
-   in orderedBuiltins ++ extraDetectors
+  in orderedBuiltins ++ extraDetectors
 
 
 {- | Use all registered resource detectors to populate resource information.
@@ -138,18 +139,18 @@ detectBuiltInResources = do
     Nothing -> pure $ allDetectorsInDefaultOrder allDetectors
     Just filterStr ->
       let names = fmap T.strip $ T.splitOn "," $ T.pack filterStr
-       in if names == ["all"]
-            then pure $ allDetectorsInDefaultOrder allDetectors
-            else
-              foldM
-                ( \acc name -> case H.lookup name allDetectors of
-                    Just d -> pure (d : acc)
-                    Nothing -> do
-                      otelLogWarning ("Unknown resource detector '" <> T.unpack name <> "' in OTEL_RESOURCE_DETECTORS, ignoring")
-                      pure acc
-                )
-                []
-                names
+      in if names == ["all"]
+           then pure $ allDetectorsInDefaultOrder allDetectors
+           else
+             foldM
+               ( \acc name -> case H.lookup name allDetectors of
+                   Just d -> pure (d : acc)
+                   Nothing -> do
+                     otelLogWarning ("Unknown resource detector '" <> T.unpack name <> "' in OTEL_RESOURCE_DETECTORS, ignoring")
+                     pure acc
+               )
+               []
+               names
   resources <- mapM runDetectorSafely activeDetectors
   pure $ foldl' mergeResources (mkResource []) resources
   where

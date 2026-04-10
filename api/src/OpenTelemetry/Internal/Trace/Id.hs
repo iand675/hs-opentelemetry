@@ -2,11 +2,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 
--- |
--- Module      : OpenTelemetry.Internal.Trace.Id
--- Description : Internal representation of trace and span identifiers with hex encoding via C FFI.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Internal.Trace.Id
+Description : Internal representation of trace and span identifiers with hex encoding via C FFI.
+Stability   : experimental
+-}
 module OpenTelemetry.Internal.Trace.Id (
   TraceId (..),
   newTraceId,
@@ -50,13 +50,12 @@ import qualified Data.ByteString.Unsafe as BU
 import Data.Hashable (Hashable (..))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
-import Data.Word (Word8)
+import Data.Word (Word64, Word8)
 import Foreign.C.Types (CInt (..), CSize (..))
 import Foreign.Marshal.Alloc (allocaBytes)
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
 import Foreign.Storable (peek, peekElemOff, poke)
 import GHC.Exts (IsString (fromString))
-import Data.Word (Word64)
 import GHC.Generics (Generic)
 import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
 import System.IO.Unsafe (unsafeDupablePerformIO)
@@ -81,8 +80,6 @@ foreign import ccall unsafe "hs_otel_decode_hex"
 
 foreign import ccall unsafe "hs_otel_xoshiro_next"
   c_xoshiroNext :: IO Word64
-
-
 
 
 -- ---------------------------------------------------------------------------
@@ -119,9 +116,10 @@ instance IsString TraceId where
     Right ok -> ok
 
 
--- | All-zero 'TraceId'.
---
--- @since 0.0.1.0
+{- | All-zero 'TraceId'.
+
+@since 0.0.1.0
+-}
 nilTraceId :: TraceId
 nilTraceId = TraceId 0 0
 {-# INLINE nilTraceId #-}
@@ -241,9 +239,10 @@ instance IsString SpanId where
     Right ok -> ok
 
 
--- | All-zero 'SpanId'.
---
--- @since 0.0.1.0
+{- | All-zero 'SpanId'.
+
+@since 0.0.1.0
+-}
 nilSpanId :: SpanId
 nilSpanId = SpanId 0
 {-# INLINE nilSpanId #-}
@@ -375,21 +374,22 @@ sbsToTraceId :: ShortByteString -> TraceId
 sbsToTraceId sbs =
   let !bs = fromShort sbs
   in case bytesToTraceId bs of
-      Right tid -> tid
-      Left _ -> nilTraceId
+       Right tid -> tid
+       Left _ -> nilTraceId
 
 
 sbsToSpanId :: ShortByteString -> SpanId
 sbsToSpanId sbs =
   let !bs = fromShort sbs
   in case bytesToSpanId bs of
-      Right sid -> sid
-      Left _ -> nilSpanId
+       Right sid -> sid
+       Left _ -> nilSpanId
 
 
--- | Base encoding scheme. Only 'Base16' (hexadecimal) is supported.
---
--- @since 0.0.1.0
+{- | Base encoding scheme. Only 'Base16' (hexadecimal) is supported.
+
+@since 0.0.1.0
+-}
 data Base = Base16
   deriving (Show, Eq)
 

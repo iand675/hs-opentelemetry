@@ -339,10 +339,10 @@ immutableSpansToProtobuf completedSpans = do
           ( defMessage
               & Trace_Fields.resource
                 .~ ( defMessage
-                      & Trace_Fields.vec'attributes
-                        .~ attributesToProto resourceAttrs
-                      & Trace_Fields.droppedAttributesCount
-                        .~ fromIntegral (getDropped resourceAttrs)
+                       & Trace_Fields.vec'attributes
+                         .~ attributesToProto resourceAttrs
+                       & Trace_Fields.droppedAttributesCount
+                         .~ fromIntegral (getDropped resourceAttrs)
                    )
               & Trace_Fields.scopeSpans
                 .~ spansByLibrary
@@ -366,14 +366,14 @@ makeScopeSpans (library, completedSpans_) = do
     defMessage
       & Trace_Fields.scope
         .~ ( defMessage
-              & Trace_Fields.name
-                .~ OT.libraryName library
-              & Common_Fields.version
-                .~ OT.libraryVersion library
-              & Common_Fields.vec'attributes
-                .~ attributesToProto (OT.libraryAttributes library)
-              & Common_Fields.droppedAttributesCount
-                .~ fromIntegral (getDropped (OT.libraryAttributes library))
+               & Trace_Fields.name
+                 .~ OT.libraryName library
+               & Common_Fields.version
+                 .~ OT.libraryVersion library
+               & Common_Fields.vec'attributes
+                 .~ attributesToProto (OT.libraryAttributes library)
+               & Common_Fields.droppedAttributesCount
+                 .~ fromIntegral (getDropped (OT.libraryAttributes library))
            )
       & Trace_Fields.vec'spans
         .~ spans_
@@ -416,11 +416,11 @@ makeSpan completedSpan = do
         .~ OT.hotName hot
       & Trace_Fields.kind
         .~ ( case OT.spanKind completedSpan of
-              OT.Server -> Span'SPAN_KIND_SERVER
-              OT.Client -> Span'SPAN_KIND_CLIENT
-              OT.Producer -> Span'SPAN_KIND_PRODUCER
-              OT.Consumer -> Span'SPAN_KIND_CONSUMER
-              OT.Internal -> Span'SPAN_KIND_INTERNAL
+               OT.Server -> Span'SPAN_KIND_SERVER
+               OT.Client -> Span'SPAN_KIND_CLIENT
+               OT.Producer -> Span'SPAN_KIND_PRODUCER
+               OT.Consumer -> Span'SPAN_KIND_CONSUMER
+               OT.Internal -> Span'SPAN_KIND_INTERNAL
            )
       & Trace_Fields.startTimeUnixNano
         .~ startTime
@@ -440,20 +440,20 @@ makeSpan completedSpan = do
         .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.hotLinks hot))
       & Trace_Fields.status
         .~ ( case OT.hotStatus hot of
-              OT.Unset ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_UNSET
-              OT.Ok ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_OK
-              (OT.Error e) ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_ERROR
-                  & Trace_Fields.message
-                    .~ e
+               OT.Unset ->
+                 defMessage
+                   & Trace_Fields.code
+                     .~ Status'STATUS_CODE_UNSET
+               OT.Ok ->
+                 defMessage
+                   & Trace_Fields.code
+                     .~ Status'STATUS_CODE_OK
+               (OT.Error e) ->
+                 defMessage
+                   & Trace_Fields.code
+                     .~ Status'STATUS_CODE_ERROR
+                   & Trace_Fields.message
+                     .~ e
            )
       & parentSpanF
 
@@ -481,18 +481,18 @@ makeLink l =
       !linkFlags =
         fromIntegral (traceFlagsValue $ OT.traceFlags lctx) .|. remoteBits
   in defMessage
-      & Trace_Fields.traceId
-        .~ traceIdBytes (OT.traceId lctx)
-      & Trace_Fields.spanId
-        .~ spanIdBytes (OT.spanId lctx)
-      & Trace_Fields.traceState
-        .~ TE.decodeUtf8 (encodeTraceStateFull $ OT.traceState lctx)
-      & Trace_Fields.flags
-        .~ linkFlags
-      & Trace_Fields.vec'attributes
-        .~ attributesToProto (OT.frozenLinkAttributes l)
-      & Trace_Fields.droppedAttributesCount
-        .~ fromIntegral (getDropped $ OT.frozenLinkAttributes l)
+       & Trace_Fields.traceId
+         .~ traceIdBytes (OT.traceId lctx)
+       & Trace_Fields.spanId
+         .~ spanIdBytes (OT.spanId lctx)
+       & Trace_Fields.traceState
+         .~ TE.decodeUtf8 (encodeTraceStateFull $ OT.traceState lctx)
+       & Trace_Fields.flags
+         .~ linkFlags
+       & Trace_Fields.vec'attributes
+         .~ attributesToProto (OT.frozenLinkAttributes l)
+       & Trace_Fields.droppedAttributesCount
+         .~ fromIntegral (getDropped $ OT.frozenLinkAttributes l)
 
 
 attributesToProto :: Attributes -> Vector KeyValue
@@ -513,9 +513,9 @@ attributesToProto attrs =
           .~ k
         & Common_Fields.value
           .~ ( case v of
-                AttributeValue a -> primAttributeToAnyValue a
-                AttributeArray a ->
-                  defMessage
-                    & Common_Fields.arrayValue
-                      .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
+                 AttributeValue a -> primAttributeToAnyValue a
+                 AttributeArray a ->
+                   defMessage
+                     & Common_Fields.arrayValue
+                       .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
              )

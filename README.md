@@ -26,30 +26,24 @@
 
 ## In Brief
 
-**hs-opentelemetry** is a native Haskell implementation of
-[OpenTelemetry](https://opentelemetry.io), the vendor-neutral observability
-standard backed by the CNCF. It lets you instrument your Haskell code to emit
+**hs-opentelemetry** is a Haskell implementation of
+[OpenTelemetry](https://opentelemetry.io). It provides:
 
-- **[Traces](#traces)** — distributed request flows across services
-- **[Metrics](#metrics)** — counters, histograms, and gauges
-- **[Logs](#logs)** — structured log records correlated with traces
+- **[Traces](#traces)** - distributed request flows across services
+- **[Metrics](#metrics)** - counters, histograms, and gauges
+- **[Logs](#logs)** - structured log records correlated with traces
 
-and export them to any OpenTelemetry-compatible backend (Jaeger, Honeycomb,
-Datadog, Grafana, etc.) without coupling your code to a specific vendor.
+Data can be exported to any OpenTelemetry-compatible backend (Jaeger, Honeycomb,
+Datadog, Grafana, etc.).
 
 The project follows the upstream [OpenTelemetry
-specification](https://opentelemetry.io/docs/specs/otel/) closely, with a clean
-separation between the **API** (for library authors) and the **SDK** (for
-application authors) — the same split used by the official Go, Python, and Java
-implementations.
+specification](https://opentelemetry.io/docs/specs/otel/) and separates the
+**API** (types and interfaces used by all code) from the **SDK** (initialization,
+export, and configuration used by the application entry point).
 
-## Why Instrument with OpenTelemetry?
+## Why OpenTelemetry?
 
-If you've ever added `putStrLn`-based debugging to track down why a request was
-slow, or scattered ad-hoc metrics across your codebase, you've felt the problem
-OpenTelemetry solves.
-
-**Without OpenTelemetry**, observability in Haskell tends to look like:
+Ad-hoc observability code tends to look like this:
 
 ```haskell
 handleRequest req = do
@@ -61,11 +55,10 @@ handleRequest req = do
   pure result
 ```
 
-This doesn't compose. It doesn't correlate across services. It doesn't let you
-switch from stdout to Datadog to Honeycomb without rewriting your code. And it
-pollutes your business logic with observability concerns.
+This doesn't correlate across services, can't be routed to different backends
+without code changes, and mixes timing/logging code into your request handling.
 
-**With hs-opentelemetry**, the same intent becomes:
+With hs-opentelemetry:
 
 ```haskell
 handleRequest req =
@@ -73,23 +66,23 @@ handleRequest req =
     processRequest req
 ```
 
-One line. The span carries timing, a unique trace ID that correlates across
-service boundaries, and you can attach structured attributes to it. The SDK
-decides *where* the data goes — stdout in development, OTLP to your collector in
-production — and your application code doesn't change.
+The span records timing and a trace ID that propagates across service
+boundaries. You can attach structured attributes to it. The SDK controls where
+data is sent (stdout locally, OTLP to a collector in production) without
+touching the call sites.
 
 ## Getting Started
 
-There are two packages to know about:
+There are two main packages:
 
-| You are... | Use |
+| Package | When to use |
 |---|---|
-| **Instrumenting a library** (e.g., a database driver, HTTP client wrapper) | [`hs-opentelemetry-api`](api/) |
-| **Building an application** that configures and exports telemetry | [`hs-opentelemetry-sdk`](sdk/) |
+| [`hs-opentelemetry-api`](https://github.com/iand675/hs-opentelemetry/tree/main/api) | Creating spans, recording metrics, emitting logs. Both libraries and applications depend on this. |
+| [`hs-opentelemetry-sdk`](https://github.com/iand675/hs-opentelemetry/tree/main/sdk) | Initializing providers, configuring exporters, and setting up the pipeline. Only the application entry point needs this. |
 
-Library authors depend on the API so their users aren't forced into a particular
-SDK configuration. Application authors pull in the SDK, which initializes
-providers, installs exporters, and wires everything together.
+Library authors depend only on the API so their users can choose their own SDK
+configuration. Application authors depend on both: the SDK for initialization,
+and the API for the actual instrumentation calls (`inSpan`, `counterAdd`, etc.).
 
 ### Traces
 
@@ -111,8 +104,8 @@ main = withTracerProvider $ \tp -> do
 ```
 
 `withTracerProvider` reads standard `OTEL_*` environment variables (service
-name, exporter endpoint, sampling rate, etc.), initializes the global provider,
-and shuts it down cleanly on exit — including flushing any buffered spans.
+name, exporter endpoint, sampling rate), initializes the global provider,
+and shuts it down on exit, flushing buffered spans.
 
 Use `inSpan'` when you need access to the `Span` handle, for example to attach
 attributes during execution:
@@ -160,9 +153,9 @@ registerGHCMetrics meter
 
 ### Logs
 
-The logging API is a *bridge*: it lets existing Haskell logging libraries
-(katip, co-log, monad-logger) emit structured log records that are
-automatically correlated with the active trace context.
+The logging API is a bridge for existing Haskell logging libraries
+(katip, co-log, monad-logger). Log records are correlated with the active
+trace context automatically.
 
 ```haskell
 import OpenTelemetry.Log (withLoggerProvider, makeLogger)
@@ -177,18 +170,17 @@ main = withLoggerProvider $ \lp -> do
     }
 ```
 
-Or use one of the bridge libraries to connect your existing logging framework:
+Or use a bridge library:
 
 | Logger | Bridge |
 |---|---|
-| katip | [`hs-opentelemetry-instrumentation-katip`](instrumentation/katip) |
-| co-log | [`hs-opentelemetry-instrumentation-co-log`](instrumentation/co-log) |
-| monad-logger | [`hs-opentelemetry-instrumentation-monad-logger`](instrumentation/monad-logger) |
+| katip | [`hs-opentelemetry-instrumentation-katip`](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/katip) |
+| co-log | [`hs-opentelemetry-instrumentation-co-log`](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/co-log) |
+| monad-logger | [`hs-opentelemetry-instrumentation-monad-logger`](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/monad-logger) |
 
 ### WAI Middleware
 
-For web applications, a single line of middleware instruments every incoming
-HTTP request:
+For WAI applications, one middleware instruments all incoming HTTP requests:
 
 ```haskell
 import Network.Wai.Handler.Warp (run)
@@ -201,14 +193,14 @@ main = withTracerProvider $ \_ -> do
   run 8080 $ otelMiddleware myApp
 ```
 
-Each request gets a server span with method, route, status code, and timing.
-Downstream calls (database queries, HTTP clients) automatically nest as child
-spans when you use the corresponding instrumentation libraries.
+Each request produces a server span with method, route, status code, and timing.
+Database queries and outgoing HTTP calls nest as child spans when you use the
+corresponding instrumentation libraries.
 
 ## Specification Conformance
 
 Traces, metrics, and logs are fully implemented. See the detailed [conformance
-checklist](spec-compliance.md) for per-feature coverage against the
+checklist](https://github.com/iand675/hs-opentelemetry/blob/main/spec-compliance.md) for per-feature coverage against the
 OpenTelemetry specification.
 
 | Signal | API Module | SDK Module | Status |
@@ -219,16 +211,15 @@ OpenTelemetry specification.
 
 ## Performance
 
-The library is designed for minimal overhead in instrumented applications. When
-the SDK is not installed or has no processors configured, `inSpan` is a no-op
-that costs **13.6 ns** and allocates **15 bytes**.
+When the SDK is not installed or has no processors configured, `inSpan` is a
+no-op that costs **13.6 ns** and allocates **15 bytes**.
 
 Benchmarks (GHC 9.10, aarch64-osx, `-O1 -N1 -A32m`):
 
 | Operation | Time | Allocated |
 |---|---|---|
 | `inSpan` no-op (no SDK) | 13.6 ns | 15 B |
-| `inSpan` active | 218–445 ns | 1.2–2.5 KB |
+| `inSpan` active | 218-445 ns | 1.2-2.5 KB |
 | bare span (create+end) | 209 ns | 1.2 KB |
 | HTTP span (3 attrs) | 410 ns | 2.5 KB |
 | DB span (5 attrs) | 520 ns | 3.3 KB |
@@ -263,32 +254,32 @@ Run `make bench.save` to establish a baseline on your machine, then
 
 | Library | Package | Signals |
 |---|---|---|
-| wai | [hs-opentelemetry-instrumentation-wai](instrumentation/wai) | Traces, Metrics |
-| yesod-core | [hs-opentelemetry-instrumentation-yesod](instrumentation/yesod) | Traces |
-| persistent / esqueleto | [hs-opentelemetry-instrumentation-persistent](instrumentation/persistent) | Traces |
-| persistent-mysql | [hs-opentelemetry-instrumentation-persistent-mysql](instrumentation/persistent-mysql) | Traces |
-| postgresql-simple | [hs-opentelemetry-instrumentation-postgresql-simple](instrumentation/postgresql-simple) | Traces |
-| http-client / http-conduit | [hs-opentelemetry-instrumentation-http-client](instrumentation/http-client) | Traces, Metrics |
-| conduit | [hs-opentelemetry-instrumentation-conduit](instrumentation/conduit) | Traces |
-| hw-kafka-client | [hs-opentelemetry-instrumentation-hw-kafka-client](instrumentation/hw-kafka-client) | Traces |
-| amazonka | [hs-opentelemetry-instrumentation-amazonka](instrumentation/amazonka) | Traces |
-| gogol | [hs-opentelemetry-instrumentation-gogol](instrumentation/gogol) | Traces |
-| GHC runtime | [hs-opentelemetry-instrumentation-ghc-metrics](instrumentation/ghc-metrics) | Metrics |
-| hspec | [hs-opentelemetry-instrumentation-hspec](instrumentation/hspec) | Traces |
-| tasty | [hs-opentelemetry-instrumentation-tasty](instrumentation/tasty) | Traces |
-| katip | [hs-opentelemetry-instrumentation-katip](instrumentation/katip) | Logs |
-| co-log | [hs-opentelemetry-instrumentation-co-log](instrumentation/co-log) | Logs |
-| monad-logger | [hs-opentelemetry-instrumentation-monad-logger](instrumentation/monad-logger) | Logs |
-| cloudflare | [hs-opentelemetry-instrumentation-cloudflare](instrumentation/cloudflare) | Traces |
+| wai | [hs-opentelemetry-instrumentation-wai](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/wai) | Traces, Metrics |
+| yesod-core | [hs-opentelemetry-instrumentation-yesod](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/yesod) | Traces |
+| persistent / esqueleto | [hs-opentelemetry-instrumentation-persistent](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent) | Traces |
+| persistent-mysql | [hs-opentelemetry-instrumentation-persistent-mysql](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent-mysql) | Traces |
+| postgresql-simple | [hs-opentelemetry-instrumentation-postgresql-simple](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/postgresql-simple) | Traces |
+| http-client / http-conduit | [hs-opentelemetry-instrumentation-http-client](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client) | Traces, Metrics |
+| conduit | [hs-opentelemetry-instrumentation-conduit](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/conduit) | Traces |
+| hw-kafka-client | [hs-opentelemetry-instrumentation-hw-kafka-client](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/hw-kafka-client) | Traces |
+| amazonka | [hs-opentelemetry-instrumentation-amazonka](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/amazonka) | Traces |
+| gogol | [hs-opentelemetry-instrumentation-gogol](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/gogol) | Traces |
+| GHC runtime | [hs-opentelemetry-instrumentation-ghc-metrics](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/ghc-metrics) | Metrics |
+| hspec | [hs-opentelemetry-instrumentation-hspec](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/hspec) | Traces |
+| tasty | [hs-opentelemetry-instrumentation-tasty](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/tasty) | Traces |
+| katip | [hs-opentelemetry-instrumentation-katip](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/katip) | Logs |
+| co-log | [hs-opentelemetry-instrumentation-co-log](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/co-log) | Logs |
+| monad-logger | [hs-opentelemetry-instrumentation-monad-logger](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/monad-logger) | Logs |
+| cloudflare | [hs-opentelemetry-instrumentation-cloudflare](https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/cloudflare) | Traces |
 
 ### Exporters
 
 | Format | Package | Signals |
 |---|---|---|
-| OTLP | [hs-opentelemetry-exporter-otlp](exporters/otlp) | Traces, Metrics, Logs |
-| Handle (stdout) | [hs-opentelemetry-exporter-handle](exporters/handle) | Traces, Metrics, Logs |
-| In-Memory | [hs-opentelemetry-exporter-in-memory](exporters/in-memory) | Traces, Metrics, Logs |
-| Prometheus | [hs-opentelemetry-exporter-prometheus](exporters/prometheus) | Metrics |
+| OTLP | [hs-opentelemetry-exporter-otlp](https://github.com/iand675/hs-opentelemetry/tree/main/exporters/otlp) | Traces, Metrics, Logs |
+| Handle (stdout) | [hs-opentelemetry-exporter-handle](https://github.com/iand675/hs-opentelemetry/tree/main/exporters/handle) | Traces, Metrics, Logs |
+| In-Memory | [hs-opentelemetry-exporter-in-memory](https://github.com/iand675/hs-opentelemetry/tree/main/exporters/in-memory) | Traces, Metrics, Logs |
+| Prometheus | [hs-opentelemetry-exporter-prometheus](https://github.com/iand675/hs-opentelemetry/tree/main/exporters/prometheus) | Metrics |
 
 > **Tip:** For Honeycomb, Datadog, Grafana Cloud, and other OTLP-compatible backends,
 > use `hs-opentelemetry-exporter-otlp` with the appropriate endpoint.
@@ -297,12 +288,12 @@ Run `make bench.save` to establish a baseline on your machine, then
 
 | Format | Package | Module |
 |---|---|---|
-| W3C TraceContext | [hs-opentelemetry-propagator-w3c](propagators/w3c) | `OpenTelemetry.Propagator.W3CTraceContext` |
-| W3C Baggage | [hs-opentelemetry-propagator-w3c](propagators/w3c) | `OpenTelemetry.Propagator.W3CBaggage` |
-| B3 | [hs-opentelemetry-propagator-b3](propagators/b3) | `OpenTelemetry.Propagator.B3` |
-| Jaeger | [hs-opentelemetry-propagator-jaeger](propagators/jaeger) | `OpenTelemetry.Propagator.Jaeger` |
-| Datadog | [hs-opentelemetry-propagator-datadog](propagators/datadog) | `OpenTelemetry.Propagator.Datadog` |
-| AWS X-Ray | [hs-opentelemetry-propagator-xray](propagators/xray) | `OpenTelemetry.Propagator.XRay` |
+| W3C TraceContext | [hs-opentelemetry-propagator-w3c](https://github.com/iand675/hs-opentelemetry/tree/main/propagators/w3c) | `OpenTelemetry.Propagator.W3CTraceContext` |
+| W3C Baggage | [hs-opentelemetry-propagator-w3c](https://github.com/iand675/hs-opentelemetry/tree/main/propagators/w3c) | `OpenTelemetry.Propagator.W3CBaggage` |
+| B3 | [hs-opentelemetry-propagator-b3](https://github.com/iand675/hs-opentelemetry/tree/main/propagators/b3) | `OpenTelemetry.Propagator.B3` |
+| Jaeger | [hs-opentelemetry-propagator-jaeger](https://github.com/iand675/hs-opentelemetry/tree/main/propagators/jaeger) | `OpenTelemetry.Propagator.Jaeger` |
+| Datadog | [hs-opentelemetry-propagator-datadog](https://github.com/iand675/hs-opentelemetry/tree/main/propagators/datadog) | `OpenTelemetry.Propagator.Datadog` |
+| AWS X-Ray | [hs-opentelemetry-propagator-xray](https://github.com/iand675/hs-opentelemetry/tree/main/propagators/xray) | `OpenTelemetry.Propagator.XRay` |
 
 ## GHC Compatibility
 
@@ -316,12 +307,22 @@ Run `make bench.save` to establish a baseline on your machine, then
 
 ## Examples
 
-Working application examples are in the [`examples/`](examples/) directory:
+See the [`examples/`](https://github.com/iand675/hs-opentelemetry/tree/main/examples) directory:
 
-- [Yesod web application](examples/yesod-minimal) — WAI middleware, database spans, GHC metrics
+- [Yesod web application](https://github.com/iand675/hs-opentelemetry/tree/main/examples/yesod-minimal) - WAI middleware, database spans, GHC metrics
+
+## Project Goals
+
+- **Interface stability.** Breaking changes to public APIs require a spec
+  conformance fix or a measurable performance improvement to justify them.
+- **Minimal dependencies.** The API package in particular should be cheap to
+  depend on.
+- **Spec conformance.** We track the OTel specification as closely as Haskell
+  allows. Where something isn't natively expressible (e.g. the spec assumes mutable
+  thread-local storage), we document the deviation or attempt to hew as closely as possible to the intent.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/iand675/hs-opentelemetry/blob/main/CONTRIBUTING.md).
 
 Maintainer: [Ian Duncan](https://github.com/iand675)

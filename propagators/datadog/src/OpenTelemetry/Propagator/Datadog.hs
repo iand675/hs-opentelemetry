@@ -2,11 +2,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- |
--- Module      : OpenTelemetry.Propagator.Datadog
--- Description : Datadog trace context propagation. Extracts and injects Datadog-format trace headers.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Propagator.Datadog
+Description : Datadog trace context propagation. Extracts and injects Datadog-format trace headers.
+Stability   : experimental
+-}
 module OpenTelemetry.Propagator.Datadog (
   datadogTraceContextPropagator,
   convertOpenTelemetrySpanIdToDatadogSpanId,

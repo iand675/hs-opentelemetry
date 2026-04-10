@@ -30,8 +30,8 @@ import Data.Aeson (FromJSON (..), withObject, (.:?))
 import Data.Text (Text)
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.Environment (lookupEnv)
 
 

@@ -1,8 +1,8 @@
--- |
--- Module      : OpenTelemetry.Exporter.InMemory
--- Description : Re-exports for in-memory exporters, primarily used for testing.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Exporter.InMemory
+Description : Re-exports for in-memory exporters, primarily used for testing.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.InMemory (
   module OpenTelemetry.Exporter.InMemory.Span,
   module OpenTelemetry.Exporter.InMemory.Metric,

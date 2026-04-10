@@ -6,8 +6,8 @@ import qualified Data.HashMap.Strict as H
 import OpenTelemetry.Attributes (Attribute (..))
 import OpenTelemetry.Attributes.Attribute (PrimitiveAttribute (..))
 import OpenTelemetry.Attributes.Key (unkey)
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Instrumentation.Persistent
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig (StabilityOpt (..))
 import Test.Hspec
 

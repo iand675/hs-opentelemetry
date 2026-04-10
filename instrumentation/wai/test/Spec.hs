@@ -12,11 +12,11 @@ import Network.Wai.Internal (Request (..), ResponseReceived (..))
 import OpenTelemetry.Attributes (lookupAttribute)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
 import OpenTelemetry.Attributes.Key (unkey)
-import qualified OpenTelemetry.SemanticConventions as SC
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
 import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware')
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core
 import System.Environment (setEnv)
 import Test.Hspec

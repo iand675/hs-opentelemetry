@@ -25,12 +25,12 @@ parentSpanContextWithTraceState parentTs =
   let (Right tId) = baseEncodedToTraceId Base16 "00000000000000000000000000000001"
       (Right pSId) = baseEncodedToSpanId Base16 "000000000000000a"
   in SpanContext
-      { traceFlags = setSampled defaultTraceFlags
-      , isRemote = False
-      , traceId = tId
-      , spanId = pSId
-      , traceState = parentTs
-      }
+       { traceFlags = setSampled defaultTraceFlags
+       , isRemote = False
+       , traceId = tId
+       , spanId = pSId
+       , traceState = parentTs
+       }
 
 
 spec :: Spec

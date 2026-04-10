@@ -164,45 +164,47 @@ unsafeAttributesFromMap AttributeLimits {..} m =
         Nothing -> id
         Just limit -> limitLengths limit
   in case attributeCountLimit of
-      Nothing ->
-        let !m' = case attributeLengthLimit of
-              Nothing -> m
-              Just _ -> H.map limitVal m
-        in Attributes m' (H.size m) 0
-      Just limit_ ->
-        let !sz = H.size m
-        in if sz <= limit_
-            then
-              let !m' = case attributeLengthLimit of
-                    Nothing -> m
-                    Just _ -> H.map limitVal m
-              in Attributes m' sz 0
-            else
-              let (!kept, !dropped) = H.foldlWithKey'
-                    (\(!acc, !d) k v ->
-                      if H.size acc < limit_
-                        then (H.insert k (limitVal v) acc, d)
-                        else (acc, d + 1))
-                    (H.empty, 0)
-                    m
-              in Attributes kept (H.size kept) dropped
+       Nothing ->
+         let !m' = case attributeLengthLimit of
+               Nothing -> m
+               Just _ -> H.map limitVal m
+         in Attributes m' (H.size m) 0
+       Just limit_ ->
+         let !sz = H.size m
+         in if sz <= limit_
+              then
+                let !m' = case attributeLengthLimit of
+                      Nothing -> m
+                      Just _ -> H.map limitVal m
+                in Attributes m' sz 0
+              else
+                let (!kept, !dropped) =
+                      H.foldlWithKey'
+                        ( \(!acc, !d) k v ->
+                            if H.size acc < limit_
+                              then (H.insert k (limitVal v) acc, d)
+                              else (acc, d + 1)
+                        )
+                        (H.empty, 0)
+                        m
+                in Attributes kept (H.size kept) dropped
 {-# INLINE unsafeAttributesFromMap #-}
 
 
 -- | @since 0.0.1.0
 addAttribute :: (ToAttribute a) => AttributeLimits -> Attributes -> Text -> a -> Attributes
 addAttribute AttributeLimits {..} Attributes {..} !k v =
-  let attr = case attributeLengthLimit of
+  let a = case attributeLengthLimit of
         Nothing -> toAttribute v
         Just limit -> limitLengths limit (toAttribute v)
-      (!replacing, !newAttrs) = H.alterF (\old -> (isJust old, Just attr)) k attributeMap
+      (!replacing, !newAttrs) = H.alterF (\old -> (isJust old, Just a)) k attributeMap
       !newCount = if replacing then attributesCount else attributesCount + 1
   in case attributeCountLimit of
-      Nothing -> Attributes newAttrs newCount attributesDropped
-      Just limit_ ->
-        if not replacing && newCount > limit_
-          then Attributes attributeMap attributesCount (attributesDropped + 1)
-          else Attributes newAttrs newCount attributesDropped
+       Nothing -> Attributes newAttrs newCount attributesDropped
+       Just limit_ ->
+         if not replacing && newCount > limit_
+           then Attributes attributeMap attributesCount (attributesDropped + 1)
+           else Attributes newAttrs newCount attributesDropped
 {-# INLINE [0] addAttribute #-}
 
 
@@ -230,30 +232,30 @@ addAttributes AttributeLimits {..} Attributes {..} attrs
             Nothing -> toAttribute
             Just limit -> limitLengths limit . toAttribute
       in case attributeCountLimit of
-          Nothing ->
-            let (!newAttrs, !added) =
-                  H.foldlWithKey'
-                    (\(!m, !n) k v -> (H.insert k (convertVal v) m, if H.member k attributeMap then n else n + 1))
-                    (attributeMap, 0 :: Int)
-                    attrs
-                !newCount = attributesCount + added
-            in Attributes newAttrs newCount attributesDropped
-          Just limit_ ->
-            let (!merged, !accepted, !totalNew) =
-                  H.foldlWithKey'
-                    ( \(!m, !n, !seen) k v ->
-                        if H.member k attributeMap
-                          then (H.insert k (convertVal v) m, n, seen)
-                          else
-                            if n < limit_
-                              then (H.insert k (convertVal v) m, n + 1, seen + 1)
-                              else (m, n, seen + 1)
-                    )
-                    (attributeMap, attributesCount, 0 :: Int)
-                    attrs
-                !newKeys = accepted - attributesCount
-                !dropped = totalNew - newKeys
-            in Attributes merged accepted (attributesDropped + dropped)
+           Nothing ->
+             let (!newAttrs, !added) =
+                   H.foldlWithKey'
+                     (\(!m, !n) k v -> (H.insert k (convertVal v) m, if H.member k attributeMap then n else n + 1))
+                     (attributeMap, 0 :: Int)
+                     attrs
+                 !newCount = attributesCount + added
+             in Attributes newAttrs newCount attributesDropped
+           Just limit_ ->
+             let (!merged, !accepted, !totalNew) =
+                   H.foldlWithKey'
+                     ( \(!m, !n, !seen) k v ->
+                         if H.member k attributeMap
+                           then (H.insert k (convertVal v) m, n, seen)
+                           else
+                             if n < limit_
+                               then (H.insert k (convertVal v) m, n + 1, seen + 1)
+                               else (m, n, seen + 1)
+                     )
+                     (attributeMap, attributesCount, 0 :: Int)
+                     attrs
+                 !newKeys = accepted - attributesCount
+                 !dropped = totalNew - newKeys
+             in Attributes merged accepted (attributesDropped + dropped)
 {-# INLINE addAttributes #-}
 
 
@@ -269,21 +271,21 @@ addAttributesFromBuilder AttributeLimits {..} _as@Attributes {..} (AttrsBuilder 
         Nothing -> id
         Just limit -> limitLengths limit
   in case attributeCountLimit of
-      Nothing ->
-        let (!newMap, !added) = fold (\(!m, !n) k v -> (H.insert k (limitVal v) m, if H.member k m then n else n + 1)) (attributeMap, 0 :: Int)
-            !newCount = attributesCount + added
-        in Attributes newMap newCount attributesDropped
-      Just limit_ ->
-        let step (!m, !cnt, !drp) !k v =
-              let a = limitVal v
-              in if H.member k m
-                  then (H.insert k a m, cnt, drp)
-                  else
-                    if cnt < limit_
-                      then (H.insert k a m, cnt + 1, drp)
-                      else (m, cnt, drp + 1)
-            (!newMap, !newCount, !newDropped) = fold step (attributeMap, attributesCount, attributesDropped)
-        in Attributes newMap newCount newDropped
+       Nothing ->
+         let (!newMap, !added) = fold (\(!m, !n) k v -> (H.insert k (limitVal v) m, if H.member k m then n else n + 1)) (attributeMap, 0 :: Int)
+             !newCount = attributesCount + added
+         in Attributes newMap newCount attributesDropped
+       Just limit_ ->
+         let step (!m, !cnt, !drp) !k v =
+               let a = limitVal v
+               in if H.member k m
+                    then (H.insert k a m, cnt, drp)
+                    else
+                      if cnt < limit_
+                        then (H.insert k a m, cnt + 1, drp)
+                        else (m, cnt, drp + 1)
+             (!newMap, !newCount, !newDropped) = fold step (attributeMap, attributesCount, attributesDropped)
+         in Attributes newMap newCount newDropped
 {-# INLINE addAttributesFromBuilder #-}
 
 
@@ -390,7 +392,7 @@ buildAttrs (AttrsBuilder f) = f (\m k v -> H.insert k v m) H.empty
 
 limitPrimAttr :: Int -> PrimitiveAttribute -> PrimitiveAttribute
 limitPrimAttr limit (TextAttribute t) = TextAttribute (T.take limit t)
-limitPrimAttr _ attr = attr
+limitPrimAttr _ pa = pa
 
 
 limitLengths :: Int -> Attribute -> Attribute
@@ -438,16 +440,18 @@ data AttributeLimits = AttributeLimits
   { attributeCountLimit :: Maybe Int
   -- ^ The number of unique attributes that may be added to an 'Attributes' structure before they are dropped.
   , attributeLengthLimit :: Maybe Int
-  -- ^ The maximum length of string attributes that may be set. Longer-length string values will be truncated to the
-  -- specified amount.
+  {- ^ The maximum length of string attributes that may be set. Longer-length string values will be truncated to the
+  specified amount.
+  -}
   }
   deriving stock (Read, Show, Eq, Ord, Data, Generic)
   deriving anyclass (Hashable)
 
 
--- | Left-biased merge.
---
--- @since 0.0.1.0
+{- | Left-biased merge.
+
+@since 0.0.1.0
+-}
 unsafeMergeAttributesIgnoringLimits :: Attributes -> Attributes -> Attributes
 unsafeMergeAttributesIgnoringLimits left right = Attributes hm c d
   where

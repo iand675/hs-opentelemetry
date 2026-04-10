@@ -46,6 +46,7 @@ library:
   - proto-lens >= 0.7.1.0
   - random
   - text
+  - time
   - unordered-containers
   - vector
   - zlib

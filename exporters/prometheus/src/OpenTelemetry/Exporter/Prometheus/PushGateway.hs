@@ -32,9 +32,9 @@ import Control.Exception (SomeException, try)
 import Control.Monad (forever, void)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Text (Text)
-import Data.Vector (Vector)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import Data.Vector (Vector)
 import Network.HTTP.Client (
   Manager,
   Request (..),

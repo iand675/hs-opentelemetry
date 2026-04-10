@@ -75,9 +75,10 @@ import OpenTelemetry.Trace.Core (
  )
 
 
--- | This is generally scoped by Monad stack to do different things
---
--- @since 0.0.1.0
+{- | This is generally scoped by Monad stack to do different things
+
+@since 0.0.1.0
+-}
 class (Monad m) => MonadTracer m where
   getTracer :: m Tracer
 

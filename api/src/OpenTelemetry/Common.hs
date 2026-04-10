@@ -24,9 +24,10 @@ newtype Timestamp = Timestamp Word64
   deriving (Read, Show, Eq, Ord)
 
 
--- | Contain details about the trace. Unlike TraceState values, TraceFlags are present in all traces. The current version of the specification only supports a single flag called sampled.
---
--- @since 0.0.1.0
+{- | Contain details about the trace. Unlike TraceState values, TraceFlags are present in all traces. The current version of the specification only supports a single flag called sampled.
+
+@since 0.0.1.0
+-}
 newtype TraceFlags = TraceFlags Word8
   deriving (Show, Eq, Ord)
 
@@ -87,9 +88,10 @@ mkTimestamp sec nsec = Timestamp (sec * 1_000_000_000 + nsec)
 {-# INLINE mkTimestamp #-}
 
 
--- | Extract nanoseconds since epoch. Identity on the internal representation.
---
--- @since 0.0.1.0
+{- | Extract nanoseconds since epoch. Identity on the internal representation.
+
+@since 0.0.1.0
+-}
 timestampToNanoseconds :: Timestamp -> Word64
 timestampToNanoseconds (Timestamp ns) = ns
 {-# INLINE timestampToNanoseconds #-}

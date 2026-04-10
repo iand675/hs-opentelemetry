@@ -134,7 +134,7 @@ lookupSpan (Context s _ _) = case s of
 
 -- | @since 0.0.1.0
 insertSpan :: Span -> Context -> Context
-insertSpan !span (Context _ b v) = Context (UJust (unsafeCoerce span)) b v
+insertSpan !s (Context _ b v) = Context (UJust (unsafeCoerce s)) b v
 {-# INLINE insertSpan #-}
 
 

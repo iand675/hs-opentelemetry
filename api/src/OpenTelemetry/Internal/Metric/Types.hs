@@ -44,9 +44,10 @@ import OpenTelemetry.Attributes (Attributes)
 import OpenTelemetry.Internal.Common.Types (FlushResult, InstrumentationLibrary, ShutdownResult)
 
 
--- | Instrument kinds from the metrics API specification.
---
--- @since 0.0.1.0
+{- | Instrument kinds from the metrics API specification.
+
+@since 0.0.1.0
+-}
 data InstrumentKind
   = KindCounter
   | KindAsyncCounter
@@ -59,9 +60,10 @@ data InstrumentKind
   deriving anyclass (Hashable)
 
 
--- | Histogram aggregation chosen for an instrument (explicit bounds vs exponential).
---
--- @since 0.0.1.0
+{- | Histogram aggregation chosen for an instrument (explicit bounds vs exponential).
+
+@since 0.0.1.0
+-}
 data HistogramAggregation
   = HistogramAggregationExplicit !(Vector Double)
   | -- | Exponential histogram scale (OTel mapping index uses @2^scale@).
@@ -76,9 +78,10 @@ instance Hashable HistogramAggregation where
     s `hashWithSalt` (1 :: Int) `hashWithSalt` sc
 
 
--- | Advisory parameters (spec: implementations MAY ignore; SDK SHOULD honor where defined).
---
--- @since 0.0.1.0
+{- | Advisory parameters (spec: implementations MAY ignore; SDK SHOULD honor where defined).
+
+@since 0.0.1.0
+-}
 data AdvisoryParameters = AdvisoryParameters
   { advisoryExplicitBucketBoundaries :: !(Maybe [Double])
   -- ^ Histogram explicit bucket boundaries (sorted ascending in SDK when applied).
@@ -100,9 +103,10 @@ defaultAdvisoryParameters =
     }
 
 
--- | Synchronous counter (non-negative increments). @a@ is 'Int64' or 'Double'.
---
--- @since 0.0.1.0
+{- | Synchronous counter (non-negative increments). @a@ is 'Int64' or 'Double'.
+
+@since 0.0.1.0
+-}
 data Counter a = Counter
   { counterAdd :: !(a -> Attributes -> IO ())
   -- ^ Record an increment. Negative values are silently dropped for monotonic counters.
@@ -111,9 +115,10 @@ data Counter a = Counter
   }
 
 
--- | Synchronous additive instrument that may increase or decrease.
---
--- @since 0.0.1.0
+{- | Synchronous additive instrument that may increase or decrease.
+
+@since 0.0.1.0
+-}
 data UpDownCounter a = UpDownCounter
   { upDownCounterAdd :: !(a -> Attributes -> IO ())
   -- ^ Record an increment (positive) or decrement (negative).
@@ -122,9 +127,10 @@ data UpDownCounter a = UpDownCounter
   }
 
 
--- | Synchronous histogram (records 'Double' measurements).
---
--- @since 0.0.1.0
+{- | Synchronous histogram (records 'Double' measurements).
+
+@since 0.0.1.0
+-}
 data Histogram = Histogram
   { histogramRecord :: !(Double -> Attributes -> IO ())
   -- ^ Record a measurement. NaN and Infinity are silently dropped.
@@ -133,9 +139,10 @@ data Histogram = Histogram
   }
 
 
--- | Synchronous gauge (last value wins per collect cycle semantics in SDK).
---
--- @since 0.0.1.0
+{- | Synchronous gauge (last value wins per collect cycle semantics in SDK).
+
+@since 0.0.1.0
+-}
 data Gauge a = Gauge
   { gaugeRecord :: !(a -> Attributes -> IO ())
   -- ^ Record a value. The last value per attribute set wins at collection time.
@@ -144,27 +151,30 @@ data Gauge a = Gauge
   }
 
 
--- | Result handle passed to observable callbacks (spec: observe measurements at one logical instant).
---
--- @since 0.0.1.0
+{- | Result handle passed to observable callbacks (spec: observe measurements at one logical instant).
+
+@since 0.0.1.0
+-}
 newtype ObservableResult a = ObservableResult
   { observe :: a -> Attributes -> IO ()
   -- ^ Report a measurement for the given attribute set.
   }
 
 
--- | Handle to unregister a callback registered after instrument creation.
---
--- @since 0.0.1.0
+{- | Handle to unregister a callback registered after instrument creation.
+
+@since 0.0.1.0
+-}
 newtype ObservableCallbackHandle = ObservableCallbackHandle
   { unregisterObservableCallback :: IO ()
   -- ^ Remove this callback so it is no longer invoked during collection.
   }
 
 
--- | Asynchronous counter: monotonic cumulative values observed per collection.
---
--- @since 0.0.1.0
+{- | Asynchronous counter: monotonic cumulative values observed per collection.
+
+@since 0.0.1.0
+-}
 data ObservableCounter a = ObservableCounter
   { observableCounterRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
   -- ^ Register an additional callback after creation; returns a handle to unregister it.
@@ -177,9 +187,10 @@ data ObservableCounter a = ObservableCounter
   }
 
 
--- | Asynchronous up-down counter.
---
--- @since 0.0.1.0
+{- | Asynchronous up-down counter.
+
+@since 0.0.1.0
+-}
 data ObservableUpDownCounter a = ObservableUpDownCounter
   { observableUpDownCounterRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
   -- ^ Register an additional callback after creation.
@@ -192,9 +203,10 @@ data ObservableUpDownCounter a = ObservableUpDownCounter
   }
 
 
--- | Asynchronous gauge.
---
--- @since 0.0.1.0
+{- | Asynchronous gauge.
+
+@since 0.0.1.0
+-}
 data ObservableGauge a = ObservableGauge
   { observableGaugeRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
   -- ^ Register an additional callback after creation.
@@ -207,11 +219,12 @@ data ObservableGauge a = ObservableGauge
   }
 
 
--- | Creates instruments for a single instrumentation scope.
---
--- @since 0.0.1.0
--- | All instrument factory functions take: name, optional unit, optional description, advisory parameters.
--- Observable factories additionally take initial callbacks.
+{- | Creates instruments for a single instrumentation scope.
+
+@since 0.0.1.0
+| All instrument factory functions take: name, optional unit, optional description, advisory parameters.
+Observable factories additionally take initial callbacks.
+-}
 data Meter = Meter
   { meterInstrumentationScope :: !InstrumentationLibrary
   -- ^ The scope that owns instruments created by this meter.
@@ -244,15 +257,17 @@ data Meter = Meter
   }
 
 
--- | Entry point for metrics API (spec: global default SHOULD exist).
---
--- @since 0.0.1.0
+{- | Entry point for metrics API (spec: global default SHOULD exist).
+
+@since 0.0.1.0
+-}
 data MeterProvider = MeterProvider
   { meterProviderGetMeter :: !(InstrumentationLibrary -> IO Meter)
   -- ^ Get or create a Meter for the given instrumentation scope.
   , meterProviderShutdown :: !(IO ShutdownResult)
   -- ^ Shut down the provider, flushing and releasing resources.
   , meterProviderForceFlush :: !(Maybe Int -> IO FlushResult)
-  -- ^ Force a collection and export cycle. Optional timeout in microseconds;
-  -- @Nothing@ uses the SDK default (5s).
+  {- ^ Force a collection and export cycle. Optional timeout in microseconds;
+  @Nothing@ uses the SDK default (5s).
+  -}
   }

@@ -39,17 +39,20 @@ by 'inSpan' and similar bracket-style functions.
 @since 0.4.0.0
 -}
 data ExceptionClassification
-  = -- | Set span status to 'Error', record an exception event. This is the
-    -- default behavior for all exceptions.
+  = {- | Set span status to 'Error', record an exception event. This is the
+    default behavior for all exceptions.
+    -}
     ErrorException
-  | -- | Record an exception event on the span, but do not set the span status
-    -- to 'Error'. Useful for exceptions that represent expected control flow
-    -- (e.g. a cache miss exception) that you still want visibility into.
+  | {- | Record an exception event on the span, but do not set the span status
+    to 'Error'. Useful for exceptions that represent expected control flow
+    (e.g. a cache miss exception) that you still want visibility into.
+    -}
     RecordedException
-  | -- | Do not record an exception event and do not set the span status to
-    -- 'Error'. The exception is completely invisible to the tracing system.
-    -- Useful for 'System.Exit.ExitSuccess', 'Control.Exception.AsyncCancelled',
-    -- and similar non-error exceptions.
+  | {- | Do not record an exception event and do not set the span status to
+    'Error'. The exception is completely invisible to the tracing system.
+    Useful for 'System.Exit.ExitSuccess', 'Control.Exception.AsyncCancelled',
+    and similar non-error exceptions.
+    -}
     IgnoredException
   deriving (Show, Eq, Ord)
 
@@ -61,8 +64,9 @@ data ExceptionClassification
 data ExceptionResponse = ExceptionResponse
   { exceptionClassification :: !ExceptionClassification
   , exceptionAdditionalAttributes :: !AttributeMap
-  -- ^ Extra attributes to add to the exception event (when classification is
-  -- 'ErrorException' or 'RecordedException') or directly to the span.
+  {- ^ Extra attributes to add to the exception event (when classification is
+  'ErrorException' or 'RecordedException') or directly to the span.
+  -}
   }
 
 
@@ -116,25 +120,27 @@ data SpanProcessor = SpanProcessor
   , spanProcessorOnEnd :: ImmutableSpan -> IO ()
   -- ^ Called after a span is ended with the final frozen span state.
   , spanProcessorShutdown :: IO ShutdownResult
-  -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
-  --
-  -- Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
-  --
-  -- Shutdown SHOULD let the caller know whether it succeeded, failed or timed out.
-  --
-  -- Shutdown MUST include the effects of ForceFlush.
-  --
-  -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
+  {- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
+
+  Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
+
+  Shutdown SHOULD let the caller know whether it succeeded, failed or timed out.
+
+  Shutdown MUST include the effects of ForceFlush.
+
+  Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
+  -}
   , spanProcessorForceFlush :: IO FlushResult
-  -- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
-  --
-  -- In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
-  --
-  -- ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-  --
-  -- ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans.
-  --
-  -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
+  {- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
+
+  In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
+
+  ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+
+  ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans.
+
+  ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
+  -}
   }
 
 
@@ -147,15 +153,17 @@ Spec: <https://opentelemetry.io/docs/specs/otel/trace/api/#tracerprovider>
 -}
 data TracerProvider = TracerProvider
   { tracerProviderOnStart :: !(ImmutableSpan -> Context -> IO ())
-  -- ^ Pre-composed span-start callback. Built from the processor list at
-  -- construction time so the hot path does one indirect call, no vector.
+  {- ^ Pre-composed span-start callback. Built from the processor list at
+  construction time so the hot path does one indirect call, no vector.
+  -}
   , tracerProviderOnEnd :: !(ImmutableSpan -> IO ())
   -- ^ Pre-composed span-end callback (same idea).
   , tracerProviderProcessors :: !(Vector SpanProcessor)
   -- ^ Raw processor vector, used only for shutdown\/flush (cold path).
   , tracerProviderHasProcessor :: !Bool
-  -- ^ 'True' when at least one processor was registered.  Used for the
-  -- fast-path Dropped check without touching the vector.
+  {- ^ 'True' when at least one processor was registered.  Used for the
+  fast-path Dropped check without touching the vector.
+  -}
   , tracerProviderIdGenerator :: !IdGenerator
   , tracerProviderSampler :: !Sampler
   , tracerProviderResources :: !MaterializedResources
@@ -163,14 +171,17 @@ data TracerProvider = TracerProvider
   , tracerProviderSpanLimits :: !SpanLimits
   , tracerProviderPropagators :: !TextMapPropagator
   , tracerProviderExceptionHandlers :: ![ExceptionHandler]
-  -- ^ Ordered list of exception handlers consulted when 'inSpan' catches an
-  -- exception. These are checked after any tracer-level handlers.
+  {- ^ Ordered list of exception handlers consulted when 'inSpan' catches an
+  exception. These are checked after any tracer-level handlers.
+  -}
   , tracerProviderIsShutdown :: !(IORef Bool)
-  -- ^ Set to 'True' after 'shutdownTracerProvider'. Spec: after shutdown,
-  -- subsequent 'createSpan' calls SHOULD return non-recording spans.
+  {- ^ Set to 'True' after 'shutdownTracerProvider'. Spec: after shutdown,
+  subsequent 'createSpan' calls SHOULD return non-recording spans.
+  -}
   , tracerProviderTracerCache :: !(IORef (HashMap InstrumentationLibrary Tracer))
-  -- ^ Spec SHOULD: return the same Tracer instance for a given
-  -- InstrumentationScope (name+version+schema+attributes).
+  {- ^ Spec SHOULD: return the same Tracer instance for a given
+  InstrumentationScope (name+version+schema+attributes).
+  -}
   }
 
 
@@ -182,20 +193,24 @@ Spec: <https://opentelemetry.io/docs/specs/otel/trace/api/#tracer>
 -}
 data Tracer = Tracer
   { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
-  -- ^ Get the name of the 'Tracer'
-  --
-  -- @since 0.0.10
+  {- ^ Get the name of the 'Tracer'
+
+  @since 0.0.10
+  -}
   , tracerProvider :: !TracerProvider
-  -- ^ Get the TracerProvider from which the 'Tracer' was created
-  --
-  -- @since 0.0.10
+  {- ^ Get the TracerProvider from which the 'Tracer' was created
+
+  @since 0.0.10
+  -}
   , tracerExceptionHandlers :: ![ExceptionHandler]
-  -- ^ Tracer-level exception handlers, consulted before provider-level handlers.
-  --
-  -- @since 0.4.0.0
+  {- ^ Tracer-level exception handlers, consulted before provider-level handlers.
+
+  @since 0.4.0.0
+  -}
   , tracerSpanAttributeLimits :: !AttributeLimits
-  -- ^ Pre-resolved attribute limits for span attributes, avoiding repeated
-  -- pointer chasing through TracerProvider on every addAttribute call.
+  {- ^ Pre-resolved attribute limits for span attributes, avoiding repeated
+  pointer chasing through TracerProvider on every addAttribute call.
+  -}
   , tracerEventAttributeLimits :: !AttributeLimits
   -- ^ Pre-resolved attribute limits for event attributes.
   , tracerLinkAttributeLimits :: !AttributeLimits
@@ -281,13 +296,15 @@ data Link = Link
 -}
 data SpanArguments = SpanArguments
   { kind :: SpanKind
-  -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
-  -- of the various values that may be specified.
+  {- ^ The kind of the span. See 'SpanKind's documentation for the semantics
+  of the various values that may be specified.
+  -}
   , attributes :: AttributeMap
-  -- ^ An initial set of attributes set at 'Span' creation time. Adding
-  -- attributes at span creation is preferred to calling 'addAttribute' later,
-  -- because samplers can only consider information already present during
-  -- span creation.
+  {- ^ An initial set of attributes set at 'Span' creation time. Adding
+  attributes at span creation is preferred to calling 'addAttribute' later,
+  because samplers can only consider information already present during
+  span creation.
+  -}
   , links :: [NewLink]
   -- ^ A collection of `Link`s that point to causally related 'Span's.
   , startTime :: Maybe Timestamp
@@ -323,21 +340,25 @@ To summarize the interpretation of these kinds
 @since 0.0.1.0
 -}
 data SpanKind
-  = -- | Indicates that the span covers server-side handling of a synchronous RPC or other remote request.
-    -- This span is the child of a remote @Client@ span that was expected to wait for a response.
+  = {- | Indicates that the span covers server-side handling of a synchronous RPC or other remote request.
+    This span is the child of a remote @Client@ span that was expected to wait for a response.
+    -}
     Server
-  | -- | Indicates that the span describes a synchronous request to some remote service.
-    -- This span is the parent of a remote @Server@ span and waits for its response.
+  | {- | Indicates that the span describes a synchronous request to some remote service.
+    This span is the parent of a remote @Server@ span and waits for its response.
+    -}
     Client
-  | -- | Indicates that the span describes the parent of an asynchronous request.
-    -- This parent span is expected to end before the corresponding child @Producer@ span,
-    -- possibly even before the child span starts. In messaging scenarios with batching,
-    -- tracing individual messages requires a new @Producer@ span per message to be created.
+  | {- | Indicates that the span describes the parent of an asynchronous request.
+    This parent span is expected to end before the corresponding child @Producer@ span,
+    possibly even before the child span starts. In messaging scenarios with batching,
+    tracing individual messages requires a new @Producer@ span per message to be created.
+    -}
     Producer
   | -- | Indicates that the span describes the child of an asynchronous @Producer@ request.
     Consumer
-  | -- |  Default value. Indicates that the span represents an internal operation within an application,
-    -- as opposed to an operations with remote parents or children.
+  | {- | Default value. Indicates that the span represents an internal operation within an application,
+    as opposed to an operations with remote parents or children.
+    -}
     Internal
   deriving (Show, Eq)
 
@@ -407,8 +428,9 @@ allocate a fresh 'SpanHot' instead of the entire span.
 -}
 data ImmutableSpan = ImmutableSpan
   { spanContext :: !SpanContext
-  -- ^ A @SpanContext@ represents the portion of a @Span@ which must be serialized and
-  -- propagated along side of a distributed context. @SpanContext@s are immutable.
+  {- ^ A @SpanContext@ represents the portion of a @Span@ which must be serialized and
+  propagated along side of a distributed context. @SpanContext@s are immutable.
+  -}
   , spanKind :: !SpanKind
   -- ^ The kind of the span.
   , spanStart :: !Timestamp
@@ -417,8 +439,9 @@ data ImmutableSpan = ImmutableSpan
   , spanTracer :: !Tracer
   -- ^ Creator of the span.
   , spanHot :: {-# UNPACK #-} !(IORef SpanHot)
-  -- ^ Mutable span fields (name, end time, attributes, links, events, status).
-  -- Updated via CAS during the span's lifetime.
+  {- ^ Mutable span fields (name, end time, attributes, links, events, status).
+  Updated via CAS during the span's lifetime.
+  -}
   }
 
 
@@ -624,9 +647,10 @@ data NewEvent = NewEvent
   , newEventAttributes :: AttributeMap
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
-  -- ^ The time that the event occurred.
-  --
-  -- If not specified, 'OpenTelemetry.Trace.getTimestamp' will be used to get a timestamp.
+  {- ^ The time that the event occurred.
+
+  If not specified, 'OpenTelemetry.Trace.getTimestamp' will be used to get a timestamp.
+  -}
   }
 
 
@@ -652,9 +676,10 @@ data Event = Event
 @since 0.0.1.0
 -}
 class ToEvent a where
-  -- | Convert a value to an 'Event'
-  --
-  -- @since 0.0.1.0
+  {- | Convert a value to an 'Event'
+
+  @since 0.0.1.0
+  -}
   toEvent :: a -> Event
 
 
@@ -700,18 +725,21 @@ data Sampler
     AlwaysOnSampler
   | -- | Always returns 'Drop'.
     AlwaysOffSampler
-  | -- | Sample based on the lower 63 bits of the trace ID (bytes 8-15).
-    -- Fields: clamped fraction, precomputed upper bound, precomputed sampleRate attribute.
+  | {- | Sample based on the lower 63 bits of the trace ID (bytes 8-15).
+    Fields: clamped fraction, precomputed upper bound, precomputed sampleRate attribute.
+    -}
     TraceIdRatioSampler !Double !Word64 !Attribute
-  | -- | Delegates to child samplers depending on whether the parent span
-    -- is remote/local and sampled/unsampled.
+  | {- | Delegates to child samplers depending on whether the parent span
+    is remote/local and sampled/unsampled.
+    -}
     ParentBasedSampler !ParentBasedOptions
   | -- | Wraps another sampler, upgrading 'Drop' to 'RecordOnly'.
     AlwaysRecordSampler !Sampler
-  | -- | Escape hatch for user-defined samplers.
-    -- The 'InstrumentationLibrary' parameter is the instrumentation scope of the
-    -- 'Tracer' creating the span, per spec §Sampling.
-    -- Spec: <https://opentelemetry.io/docs/specs/otel/trace/sdk/#shouldsample>
+  | {- | Escape hatch for user-defined samplers.
+    The 'InstrumentationLibrary' parameter is the instrumentation scope of the
+    'Tracer' creating the span, per spec §Sampling.
+    Spec: <https://opentelemetry.io/docs/specs/otel/trace/sdk/#shouldsample>
+    -}
     CustomSampler !Text !(Context -> TraceId -> Text -> SpanArguments -> InstrumentationLibrary -> IO SamplingDecision)
 
 

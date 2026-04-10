@@ -2,11 +2,11 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
--- |
--- Module      : OpenTelemetry.LogAttributes
--- Description : Re-exports of log-specific attribute types.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.LogAttributes
+Description : Re-exports of log-specific attribute types.
+Stability   : experimental
+-}
 module OpenTelemetry.LogAttributes (
   LogAttributes (..),
   emptyAttributes,

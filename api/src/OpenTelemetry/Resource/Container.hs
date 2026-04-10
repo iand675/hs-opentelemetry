@@ -15,14 +15,16 @@ import OpenTelemetry.Resource
 import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- | A container instance.
---
--- @since 0.0.1.0
+{- | A container instance.
+
+@since 0.0.1.0
+-}
 data Container = Container
   { containerName :: Maybe Text
-  -- ^ Container name used by container runtime.
-  --
-  -- Examples: 'opentelemetry-autoconf'
+  {- ^ Container name used by container runtime.
+
+  Examples: 'opentelemetry-autoconf'
+  -}
   , containerId :: Maybe Text
   -- ^ Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated.
   , containerRuntime :: Maybe Text
@@ -38,7 +40,8 @@ data Container = Container
 
 instance ToResource Container where
   toResource Container {..} =
-    mkResourceWithSchema (Just semConvSchemaUrl)
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
       [ unkey SC.container_name .=? containerName
       , unkey SC.container_id .=? containerId
       , unkey SC.container_runtime_name .=? containerRuntime

@@ -97,7 +97,6 @@ import OpenTelemetry.Metric.Core (
  )
 
 
-
 {- | Register all GHC runtime metric instruments on the given 'Meter'.
 
 Returns a list of callback handles that can be used to unregister the

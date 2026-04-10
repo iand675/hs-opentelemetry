@@ -1,30 +1,31 @@
--- |
--- Module      : OpenTelemetry.Exporter.InMemory.Span
--- Copyright   : (c) Ian Duncan, 2021-2026
--- License     : BSD-3
--- Description : In-memory span exporter for testing
--- Stability   : experimental
---
--- = Overview
---
--- Stores exported spans in an 'IORef' for inspection in tests. This is the
--- recommended exporter for unit testing your instrumentation.
---
--- = Quick example
---
--- @
--- import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
---
--- (processor, ref) <- inMemoryListExporter
--- tp <- createTracerProvider [processor] emptyTracerProviderOptions
--- let tracer = makeTracer tp "test" tracerOptions
---
--- -- ... run your instrumented code ...
---
--- forceFlushTracerProvider tp Nothing
--- spans <- readIORef ref
--- -- Now inspect 'spans' to verify your instrumentation
--- @
+{- |
+Module      : OpenTelemetry.Exporter.InMemory.Span
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : In-memory span exporter for testing
+Stability   : experimental
+
+= Overview
+
+Stores exported spans in an 'IORef' for inspection in tests. This is the
+recommended exporter for unit testing your instrumentation.
+
+= Quick example
+
+@
+import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
+
+(processor, ref) <- inMemoryListExporter
+tp <- createTracerProvider [processor] emptyTracerProviderOptions
+let tracer = makeTracer tp "test" tracerOptions
+
+-- ... run your instrumented code ...
+
+forceFlushTracerProvider tp Nothing
+spans <- readIORef ref
+-- Now inspect 'spans' to verify your instrumentation
+@
+-}
 module OpenTelemetry.Exporter.InMemory.Span (
   inMemoryChannelExporter,
   inMemoryListExporter,

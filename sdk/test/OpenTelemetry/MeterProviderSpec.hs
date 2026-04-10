@@ -1956,7 +1956,7 @@ spec = do
       (provider, env) <- mkProvider defaultSdkMeterProviderOptions
       m <- getMeter provider defaultScope
       c <- meterCreateCounterDouble m "nan.counter" Nothing Nothing defaultAdvisoryParameters
-      counterAdd c (0/0) emptyAttributes
+      counterAdd c (0 / 0) emptyAttributes
       counterAdd c 5.0 emptyAttributes
       batches <- collectResourceMetrics env cumulativeTemporality
       sumDblSumPointsInBatches batches `shouldBe` 5.0
@@ -1965,7 +1965,7 @@ spec = do
       (provider, env) <- mkProvider defaultSdkMeterProviderOptions
       m <- getMeter provider defaultScope
       c <- meterCreateCounterDouble m "inf.counter" Nothing Nothing defaultAdvisoryParameters
-      counterAdd c (1/0) emptyAttributes
+      counterAdd c (1 / 0) emptyAttributes
       counterAdd c 3.0 emptyAttributes
       batches <- collectResourceMetrics env cumulativeTemporality
       sumDblSumPointsInBatches batches `shouldBe` 3.0
@@ -1975,7 +1975,7 @@ spec = do
       m <- getMeter provider defaultScope
       g <- meterCreateGaugeDouble m "nan.gauge" Nothing Nothing defaultAdvisoryParameters
       gaugeRecord g 42.0 emptyAttributes
-      gaugeRecord g (0/0) emptyAttributes
+      gaugeRecord g (0 / 0) emptyAttributes
       batches <- collectResourceMetrics env cumulativeTemporality
       let points = concatMap extractGaugePoints (V.toList batches)
       any (\gdp -> gaugeDataPointValue gdp == DoubleNumber 42.0) points `shouldBe` True

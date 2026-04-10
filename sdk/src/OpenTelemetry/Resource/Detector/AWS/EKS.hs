@@ -42,8 +42,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.Environment (lookupEnv)
 import System.IO.Error (tryIOError)
 

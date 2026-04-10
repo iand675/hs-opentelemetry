@@ -1,44 +1,43 @@
 # hs-opentelemetry-instrumentation-gogol
 
-OpenTelemetry instrumentation for the [Gogol](https://hackage.haskell.org/package/gogol) Google Cloud SDK.
+[![Hackage](https://img.shields.io/hackage/v/hs-opentelemetry-instrumentation-gogol?style=flat-square)](https://hackage.haskell.org/package/hs-opentelemetry-instrumentation-gogol)
+
+OpenTelemetry instrumentation for the
+[Gogol](https://hackage.haskell.org/package/gogol) Google Cloud SDK. Provides
+wrapper functions that create spans per Google API call with RPC semantic
+convention attributes.
+
+Part of [hs-opentelemetry](https://github.com/iand675/hs-opentelemetry).
 
 ## Usage
 
-Gogol does not have a hooks/middleware API, so instrumentation is provided as
-wrapper functions. Replace `send` with `tracedSend` (or `sendEither` with
-`tracedSendEither`):
+Gogol doesn't have a hooks/middleware API, so instrumentation is provided as
+wrapper functions. Replace `send` with `tracedSend`:
 
 ```haskell
 import Gogol
 import OpenTelemetry.Instrumentation.Gogol (tracedSend)
+import OpenTelemetry.Trace (withTracerProvider, getTracer, tracerOptions)
 
 main :: IO ()
-main = do
-  tracer <- ...
+main = withTracerProvider $ \tp -> do
+  let tracer = getTracer tp "my-service" tracerOptions
   env <- newEnv
   runResourceT . runGoogle env $ do
-    -- Instead of: send (newObjectsGet bucket object)
     result <- tracedSend tracer send (newObjectsGet bucket object)
     ...
 ```
 
 ## Attributes
 
-Each span includes:
+| Attribute | Example |
+|---|---|
+| `rpc.system` | `gcp-api` |
+| `rpc.service` | `storage` |
+| `rpc.method` | `ObjectsGet` |
+| `server.address` | `storage.googleapis.com` |
+| `cloud.provider` | `gcp` |
 
-| Attribute            | Example           |
-|----------------------|-------------------|
-| `rpc.system`         | `gcp-api`         |
-| `rpc.service`        | `storage`         |
-| `rpc.method`         | `ObjectsGet`      |
-| `server.address`     | `storage.googleapis.com` |
-| `cloud.provider`     | `gcp`             |
-| `error.type`         | (on failure)      |
-| `http.response.status_code` | (on failure) |
+## GHC Compatibility
 
-## Design
-
-Because Gogol runs in a `Google` monad (essentially `ReaderT (Env s) (ResourceT IO)`)
-without hook points, the wrappers take the `send` function as a parameter. This
-avoids depending on the full `gogol` package (only `gogol-core`) and works with
-any send-like function.
+Requires GHC 9.10+ (`gogol-core` is only available in LTS 24+ / nightly).

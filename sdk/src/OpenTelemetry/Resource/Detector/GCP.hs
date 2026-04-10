@@ -30,8 +30,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.Environment (lookupEnv)
 
 
@@ -121,5 +121,5 @@ extractRegionFromZone :: Text -> Maybe Text
 extractRegionFromZone az =
   let parts = T.splitOn "-" az
   in if length parts >= 3
-      then Just $ T.intercalate "-" (take (length parts - 1) parts)
-      else Nothing
+       then Just $ T.intercalate "-" (take (length parts - 1) parts)
+       else Nothing

@@ -17,40 +17,42 @@ import OpenTelemetry.Resource
 import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- | The operating system (OS) on which the process represented by this resource is running.
---
--- @since 0.0.1.0
+{- | The operating system (OS) on which the process represented by this resource is running.
+
+@since 0.0.1.0
+-}
 data OperatingSystem = OperatingSystem
   { osType :: Text
-  -- ^ The operating system type.
-  --
-  -- MUST be one of the following or, if none of the listed values apply, a custom value:
-  --
-  -- +-----------------+---------------------------------------+
-  -- | Value           | Description                           |
-  -- +=================+=======================================+
-  -- | @windows@       | Microsoft Windows                     |
-  -- +-----------------+---------------------------------------+
-  -- | @linux@         | Linux                                 |
-  -- +-----------------+---------------------------------------+
-  -- | @darwin@        | Apple Darwin                          |
-  -- +-----------------+---------------------------------------+
-  -- | @freebsd@       | FreeBSD                               |
-  -- +-----------------+---------------------------------------+
-  -- | @netbsd@        | NetBSD                                |
-  -- +-----------------+---------------------------------------+
-  -- | @openbsd@       | OpenBSD                               |
-  -- +-----------------+---------------------------------------+
-  -- | @dragonflybsd@  | DragonFly BSD                         |
-  -- +-----------------+---------------------------------------+
-  -- | @hpux@          | HP-UX (Hewlett Packard Unix)          |
-  -- +-----------------+---------------------------------------+
-  -- | @aix@           | AIX (Advanced Interactive eXecutive)  |
-  -- +-----------------+---------------------------------------+
-  -- | @solaris@       | Oracle Solaris                        |
-  -- +-----------------+---------------------------------------+
-  -- | @z_os@          | IBM z/OS                              |
-  -- +-----------------+---------------------------------------+
+  {- ^ The operating system type.
+
+  MUST be one of the following or, if none of the listed values apply, a custom value:
+
+  +-----------------+---------------------------------------+
+  | Value           | Description                           |
+  +=================+=======================================+
+  | @windows@       | Microsoft Windows                     |
+  +-----------------+---------------------------------------+
+  | @linux@         | Linux                                 |
+  +-----------------+---------------------------------------+
+  | @darwin@        | Apple Darwin                          |
+  +-----------------+---------------------------------------+
+  | @freebsd@       | FreeBSD                               |
+  +-----------------+---------------------------------------+
+  | @netbsd@        | NetBSD                                |
+  +-----------------+---------------------------------------+
+  | @openbsd@       | OpenBSD                               |
+  +-----------------+---------------------------------------+
+  | @dragonflybsd@  | DragonFly BSD                         |
+  +-----------------+---------------------------------------+
+  | @hpux@          | HP-UX (Hewlett Packard Unix)          |
+  +-----------------+---------------------------------------+
+  | @aix@           | AIX (Advanced Interactive eXecutive)  |
+  +-----------------+---------------------------------------+
+  | @solaris@       | Oracle Solaris                        |
+  +-----------------+---------------------------------------+
+  | @z_os@          | IBM z/OS                              |
+  +-----------------+---------------------------------------+
+  -}
   , osDescription :: Maybe Text
   -- ^ Human readable (not intended to be parsed) OS version information, like e.g. reported by @ver@ or @lsb_release -a@ commands.
   , osName :: Maybe Text
@@ -64,7 +66,8 @@ data OperatingSystem = OperatingSystem
 
 instance ToResource OperatingSystem where
   toResource OperatingSystem {..} =
-    mkResourceWithSchema (Just semConvSchemaUrl)
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
       [ unkey SC.os_type .= osType
       , unkey SC.os_description .=? osDescription
       , unkey SC.os_name .=? osName

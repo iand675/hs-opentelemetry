@@ -24,6 +24,12 @@
   `origin/main`. No contention, no syscalls, no Haskell allocation after
   initial seed.
 
+### Dependencies
+- **Replaced `connection` with `crypton-connection`, `x509-store` with `crypton-x509-store`.**
+  The legacy `connection` package is not in modern Stackage (LTS-24+) and fails to
+  build against `tls 2.x` in nixpkgs. The `crypton-*` forks are drop-in replacements
+  with identical module paths.
+
 ### Bug fixes
 - **Batch processor shutdown deadlock fixed.**
   Second `shutdownTracerProvider` / `shutdownLoggerProvider` call would hang

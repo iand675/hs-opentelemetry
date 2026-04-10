@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:               hs-opentelemetry-instrumentation-cloudflare
-version:            0.2.0.1
+version:            0.3.0.0
 synopsis:           OpenTelemetry instrumentation for Cloudflare services
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/cloudflare#readme>
 category:           OpenTelemetry, Telemetry, Web, Cloudflare
@@ -34,10 +34,12 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , case-insensitive
     , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-instrumentation-wai ==0.1.*
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , http-types
     , text
     , unordered-containers
     , wai
@@ -55,7 +57,7 @@ test-suite cloudflare-test
       base >=4.7 && <5
     , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-exporter-in-memory ==0.0.*
-    , hs-opentelemetry-instrumentation-cloudflare ==0.2.*
+    , hs-opentelemetry-instrumentation-cloudflare ==0.3.*
     , hs-opentelemetry-instrumentation-wai ==0.1.*
     , hs-opentelemetry-sdk ==0.1.*
     , hspec

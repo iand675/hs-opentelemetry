@@ -2,11 +2,11 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
--- |
--- Module      : OpenTelemetry.Processor.Simple.LogRecord
--- Description : Simple log record processor. Immediately forwards each log record to the exporter.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Processor.Simple.LogRecord
+Description : Simple log record processor. Immediately forwards each log record to the exporter.
+Stability   : experimental
+-}
 module OpenTelemetry.Processor.Simple.LogRecord (
   SimpleLogRecordProcessorConfig (..),
   simpleLogRecordProcessor,
@@ -18,8 +18,8 @@ import Data.IORef
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..))
-import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import System.Timeout (timeout)
 
 

@@ -109,8 +109,9 @@ library
     , base >=4.7 && <5
     , bytestring
     , case-insensitive
-    , connection
     , containers
+    , crypton-connection
+    , crypton-x509-store
     , hashable
     , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-exporter-handle >=0.0.1 && <0.1
@@ -134,7 +135,6 @@ library
     , unix-compat >=0.7.1
     , unordered-containers
     , vector
-    , x509-store
     , yaml
   default-language: Haskell2010
   if os(windows)

@@ -153,4 +153,3 @@ installContext ctx = do
   _ <- attachContext ctx
   pure ()
 {-# INLINE installContext #-}
-

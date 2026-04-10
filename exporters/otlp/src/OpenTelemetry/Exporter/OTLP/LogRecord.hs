@@ -75,8 +75,8 @@ import OpenTelemetry.Trace.Core (timestampNanoseconds, traceFlagsValue)
 import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest, ExportLogsServiceResponse)
 import qualified Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields as LSF
 import Proto.Opentelemetry.Proto.Common.V1.Common (KeyValue)
-import qualified Proto.Opentelemetry.Proto.Common.V1.Common as ProtoCommon
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common as Common
+import qualified Proto.Opentelemetry.Proto.Common.V1.Common as ProtoCommon
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as CF
 import Proto.Opentelemetry.Proto.Logs.V1.Logs (ResourceLogs, ScopeLogs)
 import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs as PL
@@ -84,6 +84,7 @@ import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields as LF
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as RF
 import System.Random (randomRIO)
+
 
 #ifdef GRPC_ENABLED
 import qualified OpenTelemetry.Exporter.OTLP.GRPC
@@ -371,10 +372,10 @@ materializedResourceToProto :: MaterializedResources -> Res.Resource
 materializedResourceToProto r =
   let attrs = getMaterializedResourcesAttributes r
   in defMessage
-      & RF.vec'attributes
-        .~ attrsToProto attrs
-      & RF.droppedAttributesCount
-        .~ fromIntegral (A.getDropped attrs)
+       & RF.vec'attributes
+         .~ attrsToProto attrs
+       & RF.droppedAttributesCount
+         .~ fromIntegral (A.getDropped attrs)
 
 
 instrumentationLibraryToProto :: InstrumentationLibrary -> ProtoCommon.InstrumentationScope
@@ -402,11 +403,11 @@ attrsToProto attrs =
         & CF.key .~ k
         & CF.value
           .~ ( case v of
-                A.AttributeValue a -> primToAnyValue a
-                A.AttributeArray a ->
-                  defMessage
-                    & CF.arrayValue
-                      .~ (defMessage & CF.values .~ fmap primToAnyValue a)
+                 A.AttributeValue a -> primToAnyValue a
+                 A.AttributeArray a ->
+                   defMessage
+                     & CF.arrayValue
+                       .~ (defMessage & CF.values .~ fmap primToAnyValue a)
              )
 
 

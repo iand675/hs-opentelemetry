@@ -1,4 +1,4 @@
-cabal-version: 3.0
+cabal-version: 1.22
 
 -- This file has been generated from package.yaml by hpack version 0.38.1.
 --
@@ -14,7 +14,7 @@ bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
 maintainer:         ian@iankduncan.com
 copyright:          2024 Ian Duncan, Mercury Technologies
-license:            BSD-3-Clause
+license:            BSD3
 license-file:       LICENSE
 build-type:         Simple
 extra-source-files:
@@ -113,7 +113,7 @@ library
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , template-haskell
     , text
-    , thread-utils-context ==0.3.*
+    , thread-utils-context >=0.3 && <0.5
     , transformers
     , unliftio-core
     , unordered-containers

@@ -149,8 +149,8 @@ extractOperationName stmt =
   let trimmed = C.dropWhile (\c -> c == ' ' || c == '\n' || c == '\r' || c == '\t') stmt
       keyword = C.takeWhile (\c -> c /= ' ' && c /= '\n' && c /= '\r' && c /= '\t' && c /= '(') trimmed
   in if C.null keyword
-      then Nothing
-      else Just $ T.toUpper $ TE.decodeUtf8 keyword
+       then Nothing
+       else Just $ T.toUpper $ TE.decodeUtf8 keyword
 
 
 -- | Function to help with wrapping functions in postgresql-simple

@@ -82,9 +82,9 @@ import qualified Data.Text as T
 import qualified Data.Vault.Strict as Vault
 import Data.Word (Word64)
 import Database.Persist.Sql (SqlReadBackend, SqlWriteBackend, Statement (..))
-import Database.Persist.SqlBackend.Internal.IsolationLevel (IsolationLevel (..))
 import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBackendHooks, getConnVault, getRDBMS, modifyConnVault, setConnHooks)
 import Database.Persist.SqlBackend.Internal
+import Database.Persist.SqlBackend.Internal.IsolationLevel (IsolationLevel (..))
 import OpenTelemetry.Attributes (Attribute (..), Attributes)
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Attributes.Map (AttributeMap)
@@ -186,14 +186,14 @@ wrapSqlBackend' tp attrs conn_ = do
                 Old -> []
               Nothing -> []
         in H.union (H.fromList opAttrs) $ case dbSemOpt of
-            Stable -> H.insert (unkey SC.db_query_text) v attrs
-            StableAndOld -> H.insert (unkey SC.db_query_text) v $ H.insert (unkey SC.db_statement) v attrs
-            Old -> H.insert (unkey SC.db_statement) v attrs
+             Stable -> H.insert (unkey SC.db_query_text) v attrs
+             StableAndOld -> H.insert (unkey SC.db_query_text) v $ H.insert (unkey SC.db_statement) v attrs
+             Old -> H.insert (unkey SC.db_statement) v attrs
       spanName sql = dbSpanName (extractSqlOperation sql) dbNamespace
-      -- We use createSpanWithoutCallStack/inSpan'' because these spans are created
-      -- from persistent's internal hooks, not from user code. Using the callstack
-      -- variants would capture this instrumentation library's source location,
-      -- not the user's application code callsite.
+  -- We use createSpanWithoutCallStack/inSpan'' because these spans are created
+  -- from persistent's internal hooks, not from user code. Using the callstack
+  -- variants would capture this instrumentation library's source location,
+  -- not the user's application code callsite.
   let hooks =
         emptySqlBackendHooks
           { hookGetStatement = \conn sql stmt -> do
@@ -319,8 +319,8 @@ extractSqlOperation sql =
   let trimmed = T.dropWhile (\c -> c == ' ' || c == '\n' || c == '\r' || c == '\t') sql
       keyword = T.takeWhile (\c -> c /= ' ' && c /= '\n' && c /= '\r' && c /= '\t' && c /= '(') trimmed
   in if T.null keyword
-      then Nothing
-      else Just $ T.toUpper keyword
+       then Nothing
+       else Just $ T.toUpper keyword
 
 
 lookupDbNamespace :: StabilityOpt -> AttributeMap -> Maybe Text
@@ -329,9 +329,9 @@ lookupDbNamespace opt attrMap =
         Just (AttributeValue (TextAttribute v)) -> Just v
         _ -> Nothing
   in case opt of
-      Stable -> tryKey (unkey SC.db_namespace)
-      StableAndOld -> tryKey (unkey SC.db_namespace) <|> tryKey (unkey SC.db_name)
-      Old -> tryKey (unkey SC.db_name)
+       Stable -> tryKey (unkey SC.db_namespace)
+       StableAndOld -> tryKey (unkey SC.db_namespace) <|> tryKey (unkey SC.db_name)
+       Old -> tryKey (unkey SC.db_name)
   where
     Nothing <|> b = b
     a <|> _ = a

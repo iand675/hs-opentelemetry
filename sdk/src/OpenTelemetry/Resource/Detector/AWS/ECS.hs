@@ -33,8 +33,8 @@ import qualified Data.Text as T
 import OpenTelemetry.Attributes (Attribute)
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Resource.Detector.Metadata
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.Environment (lookupEnv)
 
 

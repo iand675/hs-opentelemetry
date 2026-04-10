@@ -27,6 +27,9 @@
   bit in W3C trace flags was always 0 in exported OTLP spans and links, even
   when the span was sampled. Now populates `flags` from `traceFlagsValue` on
   both `Span` and `Span.Link` messages (matching the existing log exporter).
+- **Export `readableLogRecordsToProtobuf` from `OpenTelemetry.Exporter.OTLP.LogRecord`.**
+  Converts a batch of `ReadableLogRecord` into the OTLP `ExportLogsServiceRequest` protobuf.
+  Previously internal-only (used by gRPC codepath).
 - OTLP span exporter: set `schema_url` on `ResourceSpans` and `ScopeSpans`, set scope `attributes` and `droppedAttributesCount`
 - `OpenTelemetry.Exporter.OTLP` barrel module now re-exports all three signals (Span, Metric, LogRecord)
 - Implement `OpenTelemetry.Exporter.OTLP.LogRecord`: full OTLP HTTP/Protobuf log exporter with retry, compression, and severity/AnyValue/tracing-context serialization

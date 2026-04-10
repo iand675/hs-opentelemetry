@@ -58,8 +58,10 @@ spec =
 
       it "forceFlush does not throw" $ do
         exporter <- makeHandleLogRecordExporter stdout (\_ -> pure "test")
-        logRecordExporterForceFlush exporter
+        _ <- logRecordExporterForceFlush exporter
+        pure ()
 
       it "shutdown does not throw" $ do
         exporter <- makeHandleLogRecordExporter stdout (\_ -> pure "test")
-        logRecordExporterShutdown exporter
+        _ <- logRecordExporterShutdown exporter
+        pure ()

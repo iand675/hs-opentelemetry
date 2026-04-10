@@ -17,9 +17,10 @@ import OpenTelemetry.Resource (ToResource (..), mkResourceWithSchema, semConvSch
 import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- | A host is defined as a general computing instance.
---
--- @since 0.0.1.0
+{- | A host is defined as a general computing instance.
+
+@since 0.0.1.0
+-}
 data Host = Host
   { hostId :: Maybe Text
   -- ^ Unique host ID. For Cloud, this must be the instance_id assigned by the cloud provider.
@@ -44,7 +45,8 @@ data Host = Host
 
 instance ToResource Host where
   toResource Host {..} =
-    mkResourceWithSchema (Just semConvSchemaUrl)
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
       [ unkey SC.host_id .=? hostId
       , unkey SC.host_name .=? hostName
       , unkey SC.host_type .=? hostType

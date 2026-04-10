@@ -139,9 +139,10 @@ newtype Token = Token ByteString
   deriving newtype (Hashable)
 
 
--- | Convert a 'Token' into a 'ByteString'
---
--- @since 0.0.1.0
+{- | Convert a 'Token' into a 'ByteString'
+
+@since 0.0.1.0
+-}
 tokenValue :: Token -> ByteString
 tokenValue (Token t) = t
 
@@ -154,9 +155,10 @@ instance Lift Token where
 #endif
 
 
--- | An entry into the baggage
---
--- @since 0.0.1.0
+{- | An entry into the baggage
+
+@since 0.0.1.0
+-}
 data Element = Element
   { value :: Text
   , properties :: [Property]
@@ -415,14 +417,14 @@ encodeBaggageHeaderB (Baggage bmap) =
           sep = if isFirst then 0 else 1
           newTotal = totalSoFar + sep + memberLen
       in if memberLen > maxMemberBytes
-          then go totalSoFar isFirst rest
-          else
-            if newTotal > maxBaggageBytes
-              then mempty
-              else
-                (if isFirst then mempty else B.char7 ',')
-                  <> B.byteString memberBs
-                  <> go newTotal False rest
+           then go totalSoFar isFirst rest
+           else
+             if newTotal > maxBaggageBytes
+               then mempty
+               else
+                 (if isFirst then mempty else B.char7 ',')
+                   <> B.byteString memberBs
+                   <> go newTotal False rest
 
 
 encodeMemberB :: Token -> Element -> B.Builder
@@ -446,9 +448,10 @@ builderToStrict :: B.Builder -> ByteString
 builderToStrict = L.toStrict . B.toLazyByteString
 
 
--- | W3C Baggage: max 8192 bytes total, max 180 members, max 4096 bytes per member
---
--- @since 0.0.1.0
+{- | W3C Baggage: max 8192 bytes total, max 180 members, max 4096 bytes per member
+
+@since 0.0.1.0
+-}
 maxBaggageBytes, maxMemberBytes, maxMembers :: Int
 maxBaggageBytes = 8192
 maxMemberBytes = 4096
@@ -546,9 +549,10 @@ splitOnByte w bs
       in before : if BS.null rest then [] else splitOnByte w (BS.tail rest)
 
 
--- | An empty initial baggage value
---
--- @since 0.0.1.0
+{- | An empty initial baggage value
+
+@since 0.0.1.0
+-}
 empty :: Baggage
 empty = Baggage H.empty
 
@@ -583,12 +587,12 @@ insertChecked k v (Baggage c) =
       newCount = H.size c'
       newBag = Baggage c'
   in if newCount > maxMembers
-      then Left TooManyListMembers
-      else
-        let totalBytes = baggageSerializedSize c'
-        in if totalBytes > maxBaggageBytes
-            then Left BaggageTooLong
-            else Right newBag
+       then Left TooManyListMembers
+       else
+         let totalBytes = baggageSerializedSize c'
+         in if totalBytes > maxBaggageBytes
+              then Left BaggageTooLong
+              else Right newBag
 
 
 baggageSerializedSize :: H.HashMap Token Element -> Int
@@ -607,19 +611,21 @@ baggageSerializedSize m =
     propLen (Property (Token pk) (Just pv)) = 1 + BS.length pk + 1 + BS.length (percentEncode (encodeUtf8 pv))
 
 
--- | Delete a key/value pair from the baggage.
---
--- @since 0.0.1.0
+{- | Delete a key/value pair from the baggage.
+
+@since 0.0.1.0
+-}
 delete :: Token -> Baggage -> Baggage
 delete k (Baggage c) = Baggage (H.delete k c)
 
 
--- | Look up a baggage value by name.
---
--- Per the spec, this takes a name and returns the associated value, or
--- 'Nothing' if the name is not present in the baggage.
---
--- @since 0.4.0.0
+{- | Look up a baggage value by name.
+
+Per the spec, this takes a name and returns the associated value, or
+'Nothing' if the name is not present in the baggage.
+
+@since 0.4.0.0
+-}
 getValue :: Token -> Baggage -> Maybe Text
 getValue k (Baggage m) = case H.lookup k m of
   Just (Element v _) -> Just v
@@ -635,9 +641,10 @@ values :: Baggage -> H.HashMap Token Element
 values (Baggage m) = m
 
 
--- | Convert a 'H.HashMap' into 'Baggage'
---
--- @since 0.0.1.0
+{- | Convert a 'H.HashMap' into 'Baggage'
+
+@since 0.0.1.0
+-}
 fromHashMap :: H.HashMap Token Element -> Baggage
 fromHashMap = Baggage
 

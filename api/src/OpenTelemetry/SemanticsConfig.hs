@@ -1,13 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
--- |
--- Module      : OpenTelemetry.SemanticsConfig
--- Description : Configuration for semantic convention stability opt-in. Controls which attribute naming conventions are used.
--- Stability   : experimental
---
--- Values are typically derived from @OTEL_SEMCONV_STABILITY_OPT_IN@ via
--- 'getSemanticsOptions' and queried per signal area with 'lookupStability'.
+{- |
+Module      : OpenTelemetry.SemanticsConfig
+Description : Configuration for semantic convention stability opt-in. Controls which attribute naming conventions are used.
+Stability   : experimental
+
+Values are typically derived from @OTEL_SEMCONV_STABILITY_OPT_IN@ via
+'getSemanticsOptions' and queried per signal area with 'lookupStability'.
+-}
 module OpenTelemetry.SemanticsConfig (
   SemanticsOptions,
   StabilityOpt (..),
@@ -60,9 +61,10 @@ data StabilityOpt
   deriving (Show, Eq)
 
 
--- | Backward-compatible alias.
---
--- @since 0.4.0.0
+{- | Backward-compatible alias.
+
+@since 0.4.0.0
+-}
 type HttpOption = StabilityOpt
 
 
@@ -90,26 +92,29 @@ lookupStability key (SemanticsOptions vals)
   | otherwise = Old
 
 
--- | Stability setting for HTTP semantic conventions (@"http"@ / @"http\/dup"@).
---
--- @since 0.4.0.0
+{- | Stability setting for HTTP semantic conventions (@"http"@ / @"http\/dup"@).
+
+@since 0.4.0.0
+-}
 httpOption :: SemanticsOptions -> StabilityOpt
 httpOption = lookupStability "http"
 
 
--- | Stability setting for database semantic conventions (@"database"@ / @"database\/dup"@).
---
--- @since 0.4.0.0
+{- | Stability setting for database semantic conventions (@"database"@ / @"database\/dup"@).
+
+@since 0.4.0.0
+-}
 databaseOption :: SemanticsOptions -> StabilityOpt
 databaseOption = lookupStability "database"
 
 
--- | Stability setting for code source-location conventions (@"code"@ / @"code\/dup"@).
---
--- Controls whether @code.function.name@, @code.file.path@, @code.line.number@ (stable)
--- or @code.function@, @code.namespace@, @code.filepath@, @code.lineno@ (legacy) are emitted.
---
--- @since 0.5.0.0
+{- | Stability setting for code source-location conventions (@"code"@ / @"code\/dup"@).
+
+Controls whether @code.function.name@, @code.file.path@, @code.line.number@ (stable)
+or @code.function@, @code.namespace@, @code.filepath@, @code.lineno@ (legacy) are emitted.
+
+@since 0.5.0.0
+-}
 codeOption :: SemanticsOptions -> StabilityOpt
 codeOption = lookupStability "code"
 

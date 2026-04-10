@@ -53,8 +53,8 @@ import Data.Word (Word64, byteSwap64)
 import GHC.ByteOrder (ByteOrder (..), targetByteOrder)
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Context
-import OpenTelemetry.Internal.Trace.Id (TraceId (..))
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
+import OpenTelemetry.Internal.Trace.Id (TraceId (..))
 import OpenTelemetry.Internal.Trace.Types
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.TraceState as TraceState
@@ -187,16 +187,16 @@ shouldSampleComplex :: Sampler -> Context -> TraceId -> Text -> SpanArguments ->
 shouldSampleComplex (TraceIdRatioSampler frac upperBound sampleRateAttr) ctxt tid _name _args _scope =
   let !ts = parentTraceState ctxt
   in if frac >= 1
-      then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
-      else
-        let !(TraceId _ lo) = tid
-            !loBE = case targetByteOrder of
-              BigEndian -> lo
-              LittleEndian -> byteSwap64 lo
-            !x = loBE `shiftR` 1
-        in if x < upperBound
-            then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
-            else pure $! SamplingDecision Drop H.empty ts
+       then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
+       else
+         let !(TraceId _ lo) = tid
+             !loBE = case targetByteOrder of
+               BigEndian -> lo
+               LittleEndian -> byteSwap64 lo
+             !x = loBE `shiftR` 1
+         in if x < upperBound
+              then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
+              else pure $! SamplingDecision Drop H.empty ts
 shouldSampleComplex (ParentBasedSampler ParentBasedOptions {..}) ctxt tid name args scope =
   case parentSpanContext ctxt of
     Nothing -> shouldSample rootSampler ctxt tid name args scope
@@ -222,9 +222,10 @@ shouldSampleComplex AlwaysOffSampler ctxt tid name args scope = shouldSample Alw
 {-# NOINLINE shouldSampleComplex #-}
 
 
--- | Get the sampler's description string.
---
--- @since 0.0.1.0
+{- | Get the sampler's description string.
+
+@since 0.0.1.0
+-}
 getDescription :: Sampler -> Text
 getDescription AlwaysOnSampler = "AlwaysOnSampler"
 getDescription AlwaysOffSampler = "AlwaysOffSampler"

@@ -1,9 +1,19 @@
-# otlp
-A package containing `.hs` files with data types generated from the Protobuf definitions (i.e.: `.proto` files) of the OpenTelemetry protocol (OTLP).
+# hs-opentelemetry-otlp
 
-## Auto-generation Instructions
-To generate `.hs` files from a new version of OTLP, you need to take the corresponding Git tag from the opentelemetry-proto repository [1], write it into the `OTLP_VERSION` file, and run the `./scripts/generate-modules.sh` script.
+[![Hackage](https://img.shields.io/hackage/v/hs-opentelemetry-otlp?style=flat-square)](https://hackage.haskell.org/package/hs-opentelemetry-otlp)
 
-Auto-generated files can be found in the `src` directory.
+Haskell data types generated from the [OpenTelemetry Protocol](https://opentelemetry.io/docs/specs/otlp/)
+protobuf definitions using [proto-lens](https://hackage.haskell.org/package/proto-lens).
 
-[1] https://github.com/open-telemetry/opentelemetry-proto
+This is a low-level package. Most users should use
+[hs-opentelemetry-exporter-otlp](https://github.com/iand675/hs-opentelemetry/tree/main/exporters/otlp) instead, which provides
+the export logic on top of these types.
+
+Part of [hs-opentelemetry](https://github.com/iand675/hs-opentelemetry).
+
+## Regenerating
+
+To regenerate from a new OTLP version, update the `OTLP_VERSION` file with the
+corresponding tag from
+[opentelemetry-proto](https://github.com/open-telemetry/opentelemetry-proto)
+and run `./scripts/generate-modules.sh`.

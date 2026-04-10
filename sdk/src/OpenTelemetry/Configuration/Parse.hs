@@ -57,9 +57,10 @@ parseConfigFile path = do
     Right content -> parseConfigBytes content
 
 
--- | Parse configuration from YAML text content.
---
--- @since 0.1.0.0
+{- | Parse configuration from YAML text content.
+
+@since 0.1.0.0
+-}
 parseConfigBytes :: Text -> IO (Either ConfigParseError OTelConfiguration)
 parseConfigBytes content = do
   substituted <- substituteEnvVars content
@@ -89,10 +90,10 @@ substituteEnvVars input = go input T.empty
             (before, withRef) ->
               let afterOpen = T.drop 2 withRef
               in case T.breakOn "}" afterOpen of
-                  (_, "") -> pure (acc <> remaining)
-                  (ref, afterClose) -> do
-                    val <- resolveRef ref
-                    go (T.drop 1 afterClose) (acc <> before <> val)
+                   (_, "") -> pure (acc <> remaining)
+                   (ref, afterClose) -> do
+                     val <- resolveRef ref
+                     go (T.drop 1 afterClose) (acc <> before <> val)
 
     resolveRef ref =
       let (varSpec, defaultVal) = splitDefault ref
@@ -100,10 +101,10 @@ substituteEnvVars input = go input T.empty
             Just name -> name
             Nothing -> varSpec
       in do
-          result <- lookupEnv (T.unpack varName)
-          pure $ case result of
-            Just v -> T.pack v
-            Nothing -> defaultVal
+           result <- lookupEnv (T.unpack varName)
+           pure $ case result of
+             Just v -> T.pack v
+             Nothing -> defaultVal
 
     splitDefault ref =
       case T.breakOn ":-" ref of

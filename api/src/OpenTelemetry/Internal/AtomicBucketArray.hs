@@ -59,15 +59,16 @@ machine-word 'Int', accessible via hardware fetch-and-add.
 data AtomicBucketArray = AtomicBucketArray (MutableByteArray# RealWorld) Int#
 
 
--- | Allocate a new bucket array with all counters initialized to zero.
---
--- @since 0.0.1.0
+{- | Allocate a new bucket array with all counters initialized to zero.
+
+@since 0.0.1.0
+-}
 newAtomicBucketArray :: Int -> IO AtomicBucketArray
 newAtomicBucketArray (I# n) = IO $ \s ->
   let !nbytes = n *# SIZEOF_HSINT#
   in case newByteArray# nbytes s of
-      (# s1, arr #) -> case zeroFill arr n s1 of
-        s2 -> (# s2, AtomicBucketArray arr n #)
+       (# s1, arr #) -> case zeroFill arr n s1 of
+         s2 -> (# s2, AtomicBucketArray arr n #)
 
 
 zeroFill :: MutableByteArray# RealWorld -> Int# -> State# RealWorld -> State# RealWorld

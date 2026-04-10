@@ -472,8 +472,8 @@ gcpExtractRegionFromZone :: T.Text -> Maybe T.Text
 gcpExtractRegionFromZone az =
   let parts = T.splitOn "-" az
   in if length parts >= 3
-      then Just $ T.intercalate "-" (take (length parts - 1) parts)
-      else Nothing
+       then Just $ T.intercalate "-" (take (length parts - 1) parts)
+       else Nothing
 
 
 ecsNormalizeArn :: T.Text -> [T.Text] -> T.Text -> T.Text

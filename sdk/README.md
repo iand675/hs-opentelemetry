@@ -1,208 +1,96 @@
-# OpenTelemetry SDK for Haskell
+# hs-opentelemetry-sdk
 
-This package provides everything a functioning implementation of
-the OpenTelemetry the API, useful for exporting a variety of
-tracing, logging, and metric data.
+[![Hackage](https://img.shields.io/hackage/v/hs-opentelemetry-sdk?style=flat-square)](https://hackage.haskell.org/package/hs-opentelemetry-sdk)
 
-## Why use OpenTelemetry tracing?
+The OpenTelemetry SDK for Haskell. This is the package your application entry
+point depends on to initialize providers, configure exporters, and set up the
+telemetry pipeline. It reads standard `OTEL_*` environment variables for
+configuration.
 
-If you’re running a user-facing software service, it probably qualifies as a distributed service. You might have a proxy, an application and a database, or a more complicated microservice architecture. Regardless of the level of complexity, a distributed system means that multiple distinct services must work together in concert.
+You will also depend on [hs-opentelemetry-api](https://github.com/iand675/hs-opentelemetry/tree/main/api) for the actual
+instrumentation calls (`inSpan`, `counterAdd`, etc.).
 
-Tracing helps tie together instrumentation from separate services, or from different methods within one service. This makes it easier to identify the source of errors, find performance problems, or understand how data flows through a large system.
+Part of [hs-opentelemetry](https://github.com/iand675/hs-opentelemetry).
 
-## What is a Trace?
+## Usage
 
-A trace tells the story of a complete unit of work in your system. A unit of work is generally application specific, but often comes in some of the following forms:
+### Traces
 
-- An HTTP request initiated by a user or third party.
-- Execution of a cron job.
-- An async task being pulled from a queue and processed.
-
-For example, when a user loads a web page, their request might go to an edge proxy and/or load balancer. That proxy talks to a Haskell web service, which calls out to a Redis cache and PostgreSQL database. There could be multiple calls out to third-party services via HTTP APIs. Finally, the backend returns a result to the client.
-
-### Spans
-Each portion of the web request's lifecycle can be told by a span. A span is a single piece of instrumentation from a single location in your code or infrastructure. A span represents a single "unit of work" done by a service. Each span contains several key pieces of data:
-
-- A service name identifying the service the span is from
-- A name identifying the role of the span (like function or method name)
-- A timestamp that corresponds to the start of the span
-- A duration that describes how long that unit of work took to complete
-- An ID that uniquely identifies the span
-- A trace ID identifying which trace the span belongs to
-- A parent ID representing the parent span that called this span. (There is no parent ID for the root span of a given trace, which denotes that it's the start of the trace.)
-- Any additional metadata that might be helpful.
-- Zero or more links to related spans. Links can be useful for connecting causal relationships between things like web requests that enqueue asynchronous tasks to be processed.
-- Events, which denote a point in time occurrence. These can be useful for recording data about a span such as when an exception was thrown, or to emit structured logs into the span tree.
-
-A trace is made up of multiple spans. Tracing vendors such as Zipkin, Jaeger, Honeycomb, Datadog, Lightstep, etc. use the metadata from each span to reconstruct the relationships between them and generate a trace diagram.
-
-### Context
-
-In order for OpenTelemetry to work, it must store and propagate important telemetry data. For example, when a request is received and a span is started it must be available to component which want to create child spans. To solve this problem, OpenTelemetry stores the span in a data structure called `Context`. 
-
-A `Context` is an specialized map structure structure that can store values of arbitrary types. As your code executes, the current active span will be stored in the `Context`. Creating new spans requires a `Context`, which is used to determine the parent span for the newly created span (if a parent exists). At the outermost edges of your "complete unit of work" that you choose to instrument, you can start with an empty context in order to create a root span.
-
-### Exporting
-
-Once you have an application that is instrumented to track interesting data about the lifecycle and execution of your units of work, you need to send them somewhere! OpenTelemetry has the concept of an `Exporter`, which is an interface that receives a set of spans that have completed, and outputs them to a target of your choosing. Different vendors provide a number of useful tools for using exported span
-data to understand and monitor how your system is behaving in production.
-
-See the main project README for a list of supported exporters.
-
-### Sampling
-
-In large production systems, it is often not desirable to perform tracing for every request
-that comes through the system.  Sampling is a way to reduce the amount of data you send to OpenTelemetry without a significant reduction in the quality of your data. It’s like getting samples of food: you can taste all the important bits without getting full.
-
-Sampling is a process that restricts the amount of traces that are generated by a system. The exact sampler you should use depends on your specific needs, but in general you should make a decision at the start of a trace, and allow the sampling decision to propagate to other services.
-
-Typically, the way traces are sampled works like this: when the root span is being processed, a random sampling decision is made. If that span is decided to be sampled, it is exported and also propagates that decision out to the descendent spans, who follow suit, usually via injected HTTP headers signifying that the trace is selected to be sampled. That way, all the spans for a particular trace are preserved.
-
-### Processing
-
-
-### Tracer
-
-The OpenTelemetry Tracing API uses a data type called a `Tracer` to create traces. These `Tracer`s are designed to be associated with one instrumentation library. That way, telemetry they produce can be understood to come from the library or portion of your code base that it instruments.
-
-A `Tracer` is constructed by calling the `makeTracer` function, which requires a `TracerProvider` and `TracerOptions`, which we'll discuss next.
-
-### TracerProvider
-
-A `TracerProvider` is key to using OpenTelemetry tracing. It is the data structure responsible for designating how spans are processed and exported
-to external systems.
-
-## Install Dependencies
-
-Add `hs-opentelemetry-sdk` to your `package.yaml` or Cabal file.
-
-## Metrics (SDK)
-
-1. Build a resource (e.g. `emptyMaterializedResources` or service detectors).
-2. `createMeterProvider resource defaultSdkMeterProviderOptions` (adjust `views`, `aggregationTemporality`, `exemplarOptions`, `cardinalityLimit` as needed).
-3. `getMeter provider yourInstrumentationLibrary` and create instruments (`meterCreateCounterInt64`, `meterCreateHistogram`, …).
-4. Export: build a `MetricExporter` (e.g. `otlpMetricExporter` from `loadExporterEnvironmentVariables`), then either `forkPeriodicMetricReader env exporter =<< periodicMetricReaderOptionsFromEnv`, or on each scrape call `exportMetricsOnce env exporter` (pull-style HTTP handler).
-5. Use `otlpMetricExporter` from `OpenTelemetry.Exporter.OTLP.Metric` with `loadExporterEnvironmentVariables` / `OTLPExporterConfig` for OTLP/HTTP, or `renderPrometheusText` from `OpenTelemetry.Exporter.Prometheus` for Prometheus text.
-
-Shutdown: stop the periodic reader (if any), then `meterProviderShutdown` on the provider.
-
-## Trace Your Code
-
-### Initialization
-Get started by importing the `OpenTelemetry.Trace` module. It exports most of what you need to instrument your application.
-
-``` haskell
+```haskell
 import OpenTelemetry.Trace
-```
 
-Install a global `TracerProvider` for your code. Instrumentation libraries and directly instrumented
-systems will generally use `getGlobalTracerProvider` to create their `Tracer`s, since there is often a constraint that function signatures should not make breaking changes. The `getGlobalTracerProvider` allows OpenTelemetry to smuggle in the ability to emit tracing details without breaking existing APIs for users that aren't even using OpenTelemetry.
-
-``` haskell
 main :: IO ()
-main = withTracer $ \tracer -> do
-  -- your existing code here...
-  pure ()
-  where
-    withTracer :: ((TracerOptions -> Tracer) -> IO c) -> IO c
-    withTracer f = bracket 
-      -- Install the SDK, pulling configuration from the environment
-      initializeGlobalTracerProvider
-      -- Ensure that any spans that haven't been exported yet are flushed
-      shutdownTracerProvider
-      -- Get a tracer so you can create spans
-      (\tracerProvider -> f $ makeTracer tracerProvider "your-app-name-or-subsystem")
+main = withTracerProvider $ \tp -> do
+  let tracer = getTracer tp "my-service" tracerOptions
+  inSpan tracer "main" defaultSpanArguments $ do
+    putStrLn "Hello, traced world!"
 ```
 
-The primary configuration mechanism for `initializeGlobalTracerProvider` is via the environment variables listed in the official [OpenTelemetry specification](https://github.com/open-telemetry/opentelemetry-specification/blob/6ad485b743553099476d676f1f0369bae0304547/specification/sdk-environment-variables.md).
+`withTracerProvider` reads `OTEL_*` environment variables, initializes the
+global tracer provider, and shuts it down on exit (flushing buffered spans).
 
-<hr/>
-⚠️ <b>Caution</b> ⚠️
+For more control over initialization:
 
-These environment variables provide extensive configuration options for the samplers and exporters to use. Not all of the environment variables listed are fully supported yet (contributions welcome!), so make sure to validate in a development context that your configuration settings are behaving as expected.
-<hr/>
+```haskell
+import OpenTelemetry.Trace
 
-
-### Start Tracing
-
-In order to create some spans, you'll need a `Tracer`. It's usually a good idea to make your tracer
-available in whatever monadic contexts you frequently use:
-
-``` haskell
-import OpenTelemetry.Trace hiding (inSpan)
-import OpenTelemetry.Trace.Monad
-
-instance MonadTracer YourMonadHere where
-  getTracer = ...
+main :: IO ()
+main = bracket
+  initializeGlobalTracerProvider
+  (\tp -> shutdownTracerProvider tp Nothing)
+  $ \tp -> do
+    let tracer = makeTracer tp "my-service" tracerOptions
+    -- your application code
 ```
 
-Now you can get a `Tracer` when you need it! Now, find a function towards the outer edges of your unit of work that you want to instrument:
+### Metrics
 
-``` haskell
-handleWebRequest :: Request -> IO Response
-handleWebRequest req = makeResponse
-  where
-    makeResponse = ...
+```haskell
+import OpenTelemetry.MeterProvider
+
+mp <- createMeterProvider resource defaultSdkMeterProviderOptions
+meter <- getMeter mp "my-service"
+counter <- meterCreateCounterInt64 meter "http.requests" "" Nothing defaultAdvisoryParameters
 ```
 
-... and use one of the `inSpan` variants to wrap it like this:
+Export with a periodic reader (push) or on-demand (pull for Prometheus):
 
-``` haskell
-handleWebRequest :: Request -> IO Response
-handleWebRequest req = inSpan' (requestPath req) spanArgs $ \webReqSpan -> do
-  resp <- makeResponse
-  addEvent $ NewEvent
-    { name = "made a response"
-    , newEventAttributes = []
-    , newEventTimestamp = Nothing -- will be auto-generated if not supplied
+```haskell
+import OpenTelemetry.Exporter.OTLP.Metric (otlpMetricExporter)
+
+exporter <- otlpMetricExporter =<< loadExporterEnvironmentVariables
+forkPeriodicMetricReader env exporter =<< periodicMetricReaderOptionsFromEnv
+```
+
+### Logs
+
+```haskell
+import OpenTelemetry.Log
+
+main :: IO ()
+main = withLoggerProvider $ \lp -> do
+  let logger = makeLogger lp "my-app"
+  emitLogRecord logger $ emptyLogRecordArguments
+    { body = Just (toValue ("started" :: Text))
+    , severityNumber = Just SeverityNumberInfo
     }
-  annotateResponseInfo webReqSpan resp
-  pure resp
-  where
-    makeResponse = ...
-    spanArgs = defaultSpanArguments
-      { attributes =
-          [ ("user.id", toAttribute (1 :: Int))
-          , ("http.request.headers.idempotency-key", toAttribute $ fromMaybe "" $ lookupIdempotencyKey req)
-          ]
-      }
-    annotateResponseInfo webReqSpan resp = addAttributes webReqSpan
-      [ ("http.status_code", toAttribute $ responseStatus resp)
-      ]
 ```
 
-`inSpan` looks up the current parent span from the thread-local[^thread-local-state] `Context` if one exists, and uses it to create a span that is appropriately tied to the rest of the trace. It will record and rethrow any unhandled synchronous exceptions, and when the code executing in the passed in function completes,
-the span is completed for final processing and export to your configured exporter. Once the `inSpan` execution completes, it will restore the thread-local `Context` to the state it had prior to execution.
+## Configuration
 
-`defaultSpanArguments` allows for adding starting attributes to a span, as well as providing links to
-related spans, and specifying the `SpanKind`.
+The SDK is configured primarily through environment variables. Key variables:
 
-`addAttributes` can be used to progressively enrich spans with data as execution proceeds, so you can fully capture the outcome of code as it executes.
+| Variable | Purpose |
+|---|---|
+| `OTEL_SERVICE_NAME` | Service name for the resource |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Headers for the OTLP exporter (e.g. API keys) |
+| `OTEL_TRACES_SAMPLER` | Sampler to use (`always_on`, `always_off`, `traceidratio`, `parentbased_*`) |
+| `OTEL_TRACES_SAMPLER_ARG` | Sampler argument (e.g. ratio for `traceidratio`) |
+| `OTEL_SDK_DISABLED` | Disable the SDK entirely |
 
-This just scratches the surface of the capabilities that OpenTelemetry tracing provides for understanding your systems in production. See the `OpenTelemetry.Trace` module for more of the functionality available to you.
+See the [OpenTelemetry environment variable spec](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/) for the full list.
 
-### Launch your app!
+## Install
 
-Out of the box, your instrumented app will attempt to send trace information to localhost. We recommend running an instance of the
-[OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) locally where possible, but can also set environment variables to configure your application to use different exporters, endpoints, and more: 
-
-``` shell
-OTEL_EXPORTER_OTLP_ENDPOINT="https://api.vendor.xyz" OTEL_EXPORTER_OTLP_HEADERS="x-vendor-api-key=$YOUR_API_KEY,x-vendor-dataset=$YOUR_VENDOR_DATASET_NAME" stack exec yesod-minimal
-```
-
-See the environment variable mentioned earlier in the README for the full list. 
-
-<hr/>
-✅ <b>Before you go...</b> ✅
-
-Examples of instrumented systems are available here: [Instrumentated application examples](https://github.com/iand675/hs-opentelemetry/blob/main/examples/README.md).
-
-Visit the [GitHub project](https://github.com/iand675/hs-opentelemetry#readme) for a list of provided instrumentation libraries. We support several packages like `wai`, `persistent`, and `yesod` already, and want to provide official instrumentation for as much of the Haskell ecosystem as possible. We'd love to also have you contribute instrumentation packages to the project if you wrap any public packages yourself.
-
-<hr/>
-
-### Useful Links
-- For more information on OpenTelemetry, visit: <https://opentelemetry.io/>
-- For more about OpenTelemetry Haskell: <https://github.com/iand675/hs-opentelemetry>
-
-[^thread-local-state]: Thread-local here meaning that the state is scoped to the current Haskell green thread. If you do anything concurrently via e.g. `forkIO`, you'll need to use `OpenTelemetry.Context.ThreadLocal` to attach the `Context` to your new thread.
+Add `hs-opentelemetry-sdk` to your `.cabal` file or `package.yaml`.

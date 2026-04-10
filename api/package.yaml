@@ -44,7 +44,7 @@ library:
   - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - template-haskell
   - text
-  - thread-utils-context == 0.3.*
+  - thread-utils-context >= 0.3 && < 0.5
   - transformers
   - unliftio-core
   - unordered-containers

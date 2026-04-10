@@ -27,10 +27,10 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Data.Vector (Vector)
 import Data.Text.Lazy.Builder (Builder, fromText, singleton, toLazyText)
 import Data.Text.Lazy.Builder.Int (decimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
+import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word64)
 import OpenTelemetry.Attributes
@@ -68,11 +68,11 @@ renderResource :: ResourceMetricsExport -> Builder
 renderResource ResourceMetricsExport {..} =
   let resMap = attributesToLabelMap (getMaterializedResourcesAttributes resourceMetricsResource)
   in V.ifoldl'
-    ( \acc i s ->
-        acc <> (if i == 0 then mempty else nl) <> renderScope resMap s
-    )
-    mempty
-    resourceMetricsScopes
+       ( \acc i s ->
+           acc <> (if i == 0 then mempty else nl) <> renderScope resMap s
+       )
+       mempty
+       resourceMetricsScopes
 
 
 renderScope :: Map.Map Text Text -> ScopeMetricsExport -> Builder
@@ -82,11 +82,11 @@ renderScope resMap ScopeMetricsExport {..} =
           then resMap
           else Map.insert "job" (libraryName scopeMetricsScope) resMap
   in V.ifoldl'
-    ( \acc i m ->
-        acc <> (if i == 0 then mempty else nl) <> renderMetric jobMap m
-    )
-    mempty
-    scopeMetricsExports
+       ( \acc i m ->
+           acc <> (if i == 0 then mempty else nl) <> renderMetric jobMap m
+       )
+       mempty
+       scopeMetricsExports
 
 
 intersperse :: a -> [a] -> [a]
@@ -101,45 +101,45 @@ renderMetric baseLabels = \case
     let typ = if monotonic then "counter" else "gauge"
         nm = sanitizeName name
     in helpLine nm desc
-        <> typeLine nm typ
-        <> V.foldl'
-          ( \acc p ->
-              acc
-                <> fromText nm
-                <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (sumDataPointAttributes p)))
-                <> sp
-                <> numberValue (sumDataPointValue p)
-                <> exemplarSuffix (sumDataPointExemplars p)
-                <> nl
-          )
-          mempty
-          pts
+         <> typeLine nm typ
+         <> V.foldl'
+           ( \acc p ->
+               acc
+                 <> fromText nm
+                 <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (sumDataPointAttributes p)))
+                 <> sp
+                 <> numberValue (sumDataPointValue p)
+                 <> exemplarSuffix (sumDataPointExemplars p)
+                 <> nl
+           )
+           mempty
+           pts
   MetricExportGauge name desc _unit _lib _isInt pts ->
     let nm = sanitizeName name
     in helpLine nm desc
-        <> typeLine nm "gauge"
-        <> V.foldl'
-          ( \acc p ->
-              acc
-                <> fromText nm
-                <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (gaugeDataPointAttributes p)))
-                <> sp
-                <> numberValue (gaugeDataPointValue p)
-                <> exemplarSuffix (gaugeDataPointExemplars p)
-                <> nl
-          )
-          mempty
-          pts
+         <> typeLine nm "gauge"
+         <> V.foldl'
+           ( \acc p ->
+               acc
+                 <> fromText nm
+                 <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (gaugeDataPointAttributes p)))
+                 <> sp
+                 <> numberValue (gaugeDataPointValue p)
+                 <> exemplarSuffix (gaugeDataPointExemplars p)
+                 <> nl
+           )
+           mempty
+           pts
   MetricExportHistogram name desc _unit _lib _temp pts ->
     let nm = sanitizeName name
     in helpLine nm desc
-        <> typeLine nm "histogram"
-        <> V.foldl' (\acc p -> acc <> renderHistogramPoint baseLabels nm p) mempty pts
+         <> typeLine nm "histogram"
+         <> V.foldl' (\acc p -> acc <> renderHistogramPoint baseLabels nm p) mempty pts
   MetricExportExponentialHistogram name desc _unit _lib _temp pts ->
     let nm = sanitizeName name
     in helpLine nm desc
-        <> typeLine nm "histogram"
-        <> V.foldl' (\acc p -> acc <> renderExponentialHistogramPoint baseLabels nm p) mempty pts
+         <> typeLine nm "histogram"
+         <> V.foldl' (\acc p -> acc <> renderExponentialHistogramPoint baseLabels nm p) mempty pts
 
 
 helpLine :: Text -> Text -> Builder
@@ -197,11 +197,11 @@ exemplarSuffix exs
   | otherwise =
       let e = V.head exs
       in " # {trace_id=\""
-          <> byteStringHex (metricExemplarTraceId e)
-          <> "\",span_id=\""
-          <> byteStringHex (metricExemplarSpanId e)
-          <> "\"} "
-          <> exemplarValue e
+           <> byteStringHex (metricExemplarTraceId e)
+           <> "\",span_id=\""
+           <> byteStringHex (metricExemplarSpanId e)
+           <> "\"} "
+           <> exemplarValue e
 
 
 exemplarValue :: MetricExemplar -> Builder
@@ -223,33 +223,33 @@ renderHistogramPoint baseLabels hname p =
           ( \acc i b ->
               let c = cum V.! i
               in acc
-                  <> bucketName
-                  <> formatLabels (Map.insert "le" (doubleToText b) lbls)
-                  <> sp
-                  <> buildWord64 c
-                  <> nl
+                   <> bucketName
+                   <> formatLabels (Map.insert "le" (doubleToText b) lbls)
+                   <> sp
+                   <> buildWord64 c
+                   <> nl
           )
           mempty
           bounds
   in finiteB
-      <> bucketName
-      <> formatLabels (Map.insert "le" "+Inf" lbls)
-      <> sp
-      <> buildWord64 (histogramDataPointCount p)
-      <> exemplarSuffix (histogramDataPointExemplars p)
-      <> nl
-      <> fromText hname
-      <> "_sum"
-      <> formatLabels lbls
-      <> sp
-      <> buildDouble (histogramDataPointSum p)
-      <> nl
-      <> fromText hname
-      <> "_count"
-      <> formatLabels lbls
-      <> sp
-      <> buildWord64 (histogramDataPointCount p)
-      <> nl
+       <> bucketName
+       <> formatLabels (Map.insert "le" "+Inf" lbls)
+       <> sp
+       <> buildWord64 (histogramDataPointCount p)
+       <> exemplarSuffix (histogramDataPointExemplars p)
+       <> nl
+       <> fromText hname
+       <> "_sum"
+       <> formatLabels lbls
+       <> sp
+       <> buildDouble (histogramDataPointSum p)
+       <> nl
+       <> fromText hname
+       <> "_count"
+       <> formatLabels lbls
+       <> sp
+       <> buildWord64 (histogramDataPointCount p)
+       <> nl
 
 
 -- | Approximate @le@ upper bound for exponential bucket index (positive side).
@@ -275,11 +275,11 @@ renderExponentialHistogramPoint baseLabels hname p =
               let idx = off + fromIntegral i
                   le = (if negate_ then negate else id) (leUpperBoundExp sc idx)
               in acc
-                  <> bucketName
-                  <> formatLabels (Map.insert "le" (doubleToText le) lbls)
-                  <> sp
-                  <> buildWord64 c
-                  <> nl
+                   <> bucketName
+                   <> formatLabels (Map.insert "le" (doubleToText le) lbls)
+                   <> sp
+                   <> buildWord64 c
+                   <> nl
           )
           mempty
           cum
@@ -293,26 +293,26 @@ renderExponentialHistogramPoint baseLabels hname p =
               <> buildWord64 (exponentialHistogramDataPointZeroCount p)
               <> nl
   in zeroB
-      <> buildBuckets negOff negCum True
-      <> buildBuckets posOff posCum False
-      <> bucketName
-      <> formatLabels (Map.insert "le" "+Inf" lbls)
-      <> sp
-      <> buildWord64 (exponentialHistogramDataPointCount p)
-      <> exemplarSuffix (exponentialHistogramDataPointExemplars p)
-      <> nl
-      <> fromText hname
-      <> "_sum"
-      <> formatLabels lbls
-      <> sp
-      <> buildDouble (fromMaybe 0 (exponentialHistogramDataPointSum p))
-      <> nl
-      <> fromText hname
-      <> "_count"
-      <> formatLabels lbls
-      <> sp
-      <> buildWord64 (exponentialHistogramDataPointCount p)
-      <> nl
+       <> buildBuckets negOff negCum True
+       <> buildBuckets posOff posCum False
+       <> bucketName
+       <> formatLabels (Map.insert "le" "+Inf" lbls)
+       <> sp
+       <> buildWord64 (exponentialHistogramDataPointCount p)
+       <> exemplarSuffix (exponentialHistogramDataPointExemplars p)
+       <> nl
+       <> fromText hname
+       <> "_sum"
+       <> formatLabels lbls
+       <> sp
+       <> buildDouble (fromMaybe 0 (exponentialHistogramDataPointSum p))
+       <> nl
+       <> fromText hname
+       <> "_count"
+       <> formatLabels lbls
+       <> sp
+       <> buildWord64 (exponentialHistogramDataPointCount p)
+       <> nl
 
 
 mergeLabels :: Map.Map Text Text -> Map.Map Text Text -> Map.Map Text Text
@@ -384,8 +384,8 @@ formatLabels m
                 (\(k, v) -> (sanitizeLabelName k, escapeLabelValue v))
                 (Map.toList m)
       in singleton '{'
-          <> mconcat (intersperse (singleton ',') (fmap (\(k, v) -> fromText k <> "=\"" <> fromText v <> singleton '"') pairs))
-          <> singleton '}'
+           <> mconcat (intersperse (singleton ',') (fmap (\(k, v) -> fromText k <> "=\"" <> fromText v <> singleton '"') pairs))
+           <> singleton '}'
 
 
 sanitizeLabelName :: Text -> Text

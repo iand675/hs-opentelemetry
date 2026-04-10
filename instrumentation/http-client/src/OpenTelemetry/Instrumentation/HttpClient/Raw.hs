@@ -3,12 +3,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
--- |
--- Module      : OpenTelemetry.Instrumentation.HttpClient.Raw
--- Description : Low-level HTTP client instrumentation.
--- Stability   : experimental
---
--- Provides raw request/response hooks for creating spans around HTTP calls.
+{- |
+Module      : OpenTelemetry.Instrumentation.HttpClient.Raw
+Description : Low-level HTTP client instrumentation.
+Stability   : experimental
+
+Provides raw request/response hooks for creating spans around HTTP calls.
+-}
 module OpenTelemetry.Instrumentation.HttpClient.Raw (
   -- * Manager-level instrumentation
   instrumentManagerSettings,

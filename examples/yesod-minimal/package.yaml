@@ -27,6 +27,7 @@ executables:
       - hs-opentelemetry-sdk == 0.1.*
       - hs-opentelemetry-instrumentation-wai >= 0.1 && < 0.2
       - hs-opentelemetry-instrumentation-yesod >= 0.1 && < 0.2
+      - hs-opentelemetry-instrumentation-ghc-metrics >= 0.1 && < 0.2
       - hs-opentelemetry-instrumentation-http-client >= 0.1 && < 0.2
       - hs-opentelemetry-instrumentation-persistent >= 0.1 && < 0.2
       - hs-opentelemetry-instrumentation-postgresql-simple >= 0.2 && < 0.3

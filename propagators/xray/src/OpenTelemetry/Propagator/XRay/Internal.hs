@@ -88,8 +88,8 @@ xrayTraceIdToOTel bs
           unique = BS.drop 11 bs
           combined = epoch <> unique
       in case baseEncodedToTraceId Base16 combined of
-          Left _ -> Nothing
-          Right tid -> Just tid
+           Left _ -> Nothing
+           Right tid -> Just tid
 
 
 -- Decoders -------------------------------------------------------------------
@@ -114,26 +114,26 @@ parseXRayKVs bs = go bs Nothing Nothing Nothing
           let !trimmed = BS.dropWhile (== charW8 ' ') remaining
               (!key, !afterEq) = BS.break (== charW8 '=') trimmed
           in if BS.null afterEq
-              then Nothing -- no '=' found
-              else
-                let !valAndRest = BS.drop 1 afterEq -- skip '='
-                    (!val, !rest) = breakSemicolon valAndRest
-                    !next = skipSpacesAfterSemicolon rest
-                in case () of
-                    _
-                      | key == "Root" ->
-                          case xrayTraceIdToOTel val of
-                            Nothing -> Nothing
-                            Just !tid -> go next (Just tid) mParent mSampled
-                      | key == "Parent" ->
-                          case parseSpanIdHex val of
-                            Nothing -> Nothing
-                            Just !sid -> go next mRoot (Just sid) mSampled
-                      | key == "Sampled" ->
-                          let !s = val == "1"
-                          in go next mRoot mParent (Just s)
-                      | otherwise ->
-                          go next mRoot mParent mSampled
+               then Nothing -- no '=' found
+               else
+                 let !valAndRest = BS.drop 1 afterEq -- skip '='
+                     (!val, !rest) = breakSemicolon valAndRest
+                     !next = skipSpacesAfterSemicolon rest
+                 in case () of
+                      _
+                        | key == "Root" ->
+                            case xrayTraceIdToOTel val of
+                              Nothing -> Nothing
+                              Just !tid -> go next (Just tid) mParent mSampled
+                        | key == "Parent" ->
+                            case parseSpanIdHex val of
+                              Nothing -> Nothing
+                              Just !sid -> go next mRoot (Just sid) mSampled
+                        | key == "Sampled" ->
+                            let !s = val == "1"
+                            in go next mRoot mParent (Just s)
+                        | otherwise ->
+                            go next mRoot mParent mSampled
 
     breakSemicolon :: ByteString -> (ByteString, ByteString)
     breakSemicolon bs' =

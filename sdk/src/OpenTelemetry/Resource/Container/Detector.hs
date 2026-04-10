@@ -78,8 +78,8 @@ parseMountInfoId contents =
     extractFromLine line =
       let parts = T.words line
       in case filter containsContainerId parts of
-          (p : _) -> extractLastHexSegment p
-          [] -> Nothing
+           (p : _) -> extractLastHexSegment p
+           [] -> Nothing
 
     containsContainerId part =
       T.isInfixOf "/docker/containers/" part

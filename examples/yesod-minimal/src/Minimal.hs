@@ -21,12 +21,12 @@ import Database.Persist.SqlBackend.SqlPoolHooks
 import GHC.Stack
 import Network.Wai.Handler.Warp (run)
 import OpenTelemetry.Instrumentation.GHCMetrics (registerGHCMetrics)
-import OpenTelemetry.Metric.Core (getMeter, getGlobalMeterProvider)
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
+import OpenTelemetry.Metric.Core (getGlobalMeterProvider, getMeter)
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO hiding (Handler)
@@ -49,17 +49,17 @@ data Minimal = Minimal
 
 
 $( do
-    let routes =
-          [parseRoutes|
+     let routes =
+           [parseRoutes|
           / RootR GET
           /api ApiR GET
         |]
-    Prelude.concat
-      <$> Prelude.sequence
-        [ mkRouteToRenderer ''Minimal routes
-        , mkRouteToPattern ''Minimal routes
-        , mkYesod "Minimal" routes
-        ]
+     Prelude.concat
+       <$> Prelude.sequence
+         [ mkRouteToRenderer ''Minimal routes
+         , mkRouteToPattern ''Minimal routes
+         , mkYesod "Minimal" routes
+         ]
  )
 
 

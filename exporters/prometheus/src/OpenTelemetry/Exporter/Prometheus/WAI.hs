@@ -40,9 +40,9 @@ module OpenTelemetry.Exporter.Prometheus.WAI (
 import Control.Concurrent.Async (Async, async)
 import qualified Data.ByteString.Lazy as LBS
 import Data.String (fromString)
-import Data.Vector (Vector)
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
+import Data.Vector (Vector)
 import Network.HTTP.Types (status200)
 import Network.Wai (Application, Middleware, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp

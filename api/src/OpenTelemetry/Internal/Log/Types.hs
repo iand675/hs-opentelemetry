@@ -45,8 +45,8 @@ import Data.Vector (Vector)
 import OpenTelemetry.Common (Timestamp, TraceFlags)
 import OpenTelemetry.Context.Types (Context)
 import OpenTelemetry.Internal.Common.Types (ExportResult, FlushResult, InstrumentationLibrary, ShutdownResult)
-import OpenTelemetry.Internal.UnpackedMaybe (UMaybe (..), toBaseMaybe, umaybe)
 import OpenTelemetry.Internal.Trace.Id (SpanId, TraceId)
+import OpenTelemetry.Internal.UnpackedMaybe (UMaybe (..), toBaseMaybe, umaybe)
 import OpenTelemetry.LogAttributes
 import OpenTelemetry.Resource (MaterializedResources)
 
@@ -59,10 +59,11 @@ data LogRecordExporterArguments = LogRecordExporterArguments
   { logRecordExporterArgumentsExport :: Vector ReadableLogRecord -> IO ExportResult
   -- ^ See @logRecordExporterExport@ for documentation
   , logRecordExporterArgumentsForceFlush :: IO FlushResult
-  -- ^ See @logRecordExporterForceFlush@ for documentation.
-  -- Spec: ForceFlush SHOULD provide a way to let the caller know
-  -- whether it succeeded, failed or timed out.
-  -- <https://opentelemetry.io/docs/specs/otel/logs/sdk/#logrecordexporter>
+  {- ^ See @logRecordExporterForceFlush@ for documentation.
+  Spec: ForceFlush SHOULD provide a way to let the caller know
+  whether it succeeded, failed or timed out.
+  <https://opentelemetry.io/docs/specs/otel/logs/sdk/#logrecordexporter>
+  -}
   , logRecordExporterArgumentsShutdown :: IO ()
   -- ^ See @logRecordExporterArgumentsShutdown@ for documentation
   }
@@ -148,34 +149,37 @@ Spec: <https://opentelemetry.io/docs/specs/otel/logs/sdk/#logrecordprocessor>
 -}
 data LogRecordProcessor = LogRecordProcessor
   { logRecordProcessorOnEmit :: ReadWriteLogRecord -> Context -> IO ()
-  -- ^ Called when a LogRecord is emitted. This method is called synchronously on the thread that emitted the LogRecord, therefore it SHOULD NOT block or throw exceptions.
-  --
-  -- A LogRecordProcessor may freely modify logRecord for the duration of the OnEmit call. If logRecord is needed after OnEmit returns (i.e. for asynchronous processing) only reads are permitted.
+  {- ^ Called when a LogRecord is emitted. This method is called synchronously on the thread that emitted the LogRecord, therefore it SHOULD NOT block or throw exceptions.
+
+  A LogRecordProcessor may freely modify logRecord for the duration of the OnEmit call. If logRecord is needed after OnEmit returns (i.e. for asynchronous processing) only reads are permitted.
+  -}
   , logRecordProcessorShutdown :: IO ShutdownResult
-  -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
-  --
-  -- Shutdown SHOULD be called only once for each LogRecordProcessor instance. After the call to Shutdown, subsequent calls to OnEmit are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
-  --
-  -- Shutdown SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-  --
-  -- Shutdown MUST include the effects of ForceFlush.
-  --
-  -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event.
-  -- OpenTelemetry SDK authors can decide if they want to make the shutdown timeout configurable.
+  {- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
+
+  Shutdown SHOULD be called only once for each LogRecordProcessor instance. After the call to Shutdown, subsequent calls to OnEmit are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
+
+  Shutdown SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+
+  Shutdown MUST include the effects of ForceFlush.
+
+  Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event.
+  OpenTelemetry SDK authors can decide if they want to make the shutdown timeout configurable.
+  -}
   , logRecordProcessorForceFlush :: IO FlushResult
-  -- ^ This is a hint to ensure that any tasks associated with LogRecords for which the LogRecordProcessor had already received events prior to the call to ForceFlush SHOULD be completed
-  -- as soon as possible, preferably before returning from this method.
-  --
-  -- In particular, if any LogRecordProcessor has any associated exporter, it SHOULD try to call the exporter’s Export with all LogRecords for which this was not already done and then invoke ForceFlush on it.
-  -- The built-in LogRecordProcessors MUST do so. If a timeout is specified (see below), the LogRecordProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all
-  -- Export or ForceFlush calls it has made to achieve this goal.
-  --
-  -- ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-  --
-  -- ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the LogRecordProcessor exports the emitted LogRecords.
-  --
-  -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry SDK authors
-  -- can decide if they want to make the flush timeout configurable.
+  {- ^ This is a hint to ensure that any tasks associated with LogRecords for which the LogRecordProcessor had already received events prior to the call to ForceFlush SHOULD be completed
+  as soon as possible, preferably before returning from this method.
+
+  In particular, if any LogRecordProcessor has any associated exporter, it SHOULD try to call the exporter’s Export with all LogRecords for which this was not already done and then invoke ForceFlush on it.
+  The built-in LogRecordProcessors MUST do so. If a timeout is specified (see below), the LogRecordProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all
+  Export or ForceFlush calls it has made to achieve this goal.
+
+  ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+
+  ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the LogRecordProcessor exports the emitted LogRecords.
+
+  ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry SDK authors
+  can decide if they want to make the flush timeout configurable.
+  -}
   }
 
 
@@ -194,22 +198,26 @@ data LoggerProvider = LoggerProvider
   -- ^ Describes the source of the log, aka resource.
   , loggerProviderAttributeLimits :: AttributeLimits
   , loggerProviderIsShutdown :: IORef Bool
-  -- ^ Set to 'True' after 'shutdownLoggerProvider'. Spec: after shutdown,
-  -- subsequent 'emitLogRecord' calls SHOULD be no-ops.
+  {- ^ Set to 'True' after 'shutdownLoggerProvider'. Spec: after shutdown,
+  subsequent 'emitLogRecord' calls SHOULD be no-ops.
+  -}
   , loggerProviderHasProcessors :: !Bool
   -- ^ Cached at creation time. Avoids 'V.null' check on every emit.
   , loggerProviderOnEmit :: ReadWriteLogRecord -> Context -> IO ()
-  -- ^ Pre-composed processor callback. For 0 processors this is a no-op,
-  -- for 1 processor it's a direct call, for N it's a fused loop.
-  -- Avoids 'V.mapM_' + indirect call overhead on every emit.
+  {- ^ Pre-composed processor callback. For 0 processors this is a no-op,
+  for 1 processor it's a direct call, for N it's a fused loop.
+  Avoids 'V.mapM_' + indirect call overhead on every emit.
+  -}
   , loggerProviderMinSeverity :: IORef (Maybe SeverityNumber)
-  -- ^ When 'Just sev', 'loggerIsEnabled' returns 'False' and
-  -- 'emitLogRecord' skips processor dispatch for records whose
-  -- severity is below @sev@. Mutable at runtime via
-  -- 'setLoggerMinSeverity'. 'Nothing' means no filtering.
+  {- ^ When 'Just sev', 'loggerIsEnabled' returns 'False' and
+  'emitLogRecord' skips processor dispatch for records whose
+  severity is below @sev@. Mutable at runtime via
+  'setLoggerMinSeverity'. 'Nothing' means no filtering.
+  -}
   , loggerProviderLoggerCache :: IORef (HashMap InstrumentationLibrary Logger)
-  -- ^ Cache of 'Logger' instances per instrumentation scope. Spec: the same
-  -- 'Logger' SHOULD be returned for the same scope identity.
+  {- ^ Cache of 'Logger' instances per instrumentation scope. Spec: the same
+  'Logger' SHOULD be returned for the same scope identity.
+  -}
   }
 
 
@@ -256,7 +264,7 @@ guaranteed to see a consistent point-in-time view.
 @since 0.0.1.0
 -}
 mkReadableLogRecord :: ReadWriteLogRecord -> IO ReadableLogRecord
-mkReadableLogRecord rw@(ReadWriteLogRecord logger ref) = do
+mkReadableLogRecord (ReadWriteLogRecord logger ref) = do
   snapshot <- readIORef ref
   pure
     ReadableLogRecord
@@ -311,14 +319,16 @@ class (IsReadableLogRecord r) => IsReadWriteLogRecord r where
   readLogRecordAttributeLimits :: r -> AttributeLimits
 
 
-  -- | Atomically modifies the @LogRecord@ using its internal @IORef@.
-  -- Uses @atomicModifyIORef'@ (strict) to avoid thunk buildup and ensure
-  -- thread safety under concurrent mutation.
+  {- | Atomically modifies the @LogRecord@ using its internal @IORef@.
+  Uses @atomicModifyIORef'@ (strict) to avoid thunk buildup and ensure
+  thread safety under concurrent mutation.
+  -}
   modifyLogRecord :: r -> (ImmutableLogRecord -> ImmutableLogRecord) -> IO ()
 
 
-  -- | Atomically modifies the @LogRecord@ and returns a value.
-  -- Uses @atomicModifyIORef'@ (strict) for thread safety.
+  {- | Atomically modifies the @LogRecord@ and returns a value.
+  Uses @atomicModifyIORef'@ (strict) for thread safety.
+  -}
   atomicModifyLogRecord :: r -> (ImmutableLogRecord -> (ImmutableLogRecord, b)) -> IO b
 
 
@@ -350,52 +360,57 @@ data ImmutableLogRecord = ImmutableLogRecord
   { logRecordTimestamp :: {-# UNPACK #-} !(UMaybe Timestamp)
   -- ^ Time when the event occurred. 'UNothing' when unknown.
   , logRecordObservedTimestamp :: !Timestamp
-  -- ^ Time when the event was observed by the collection system. For events that originate in OpenTelemetry (e.g. using OpenTelemetry Logging SDK)
-  -- this timestamp is typically set at the generation time and is equal to Timestamp. For events originating externally and collected by OpenTelemetry (e.g. using Collector)
-  -- this is the time when OpenTelemetry’s code observed the event measured by the clock of the OpenTelemetry code. This field SHOULD be set once the event is observed by OpenTelemetry.
-  --
-  -- For converting OpenTelemetry log data to formats that support only one timestamp or when receiving OpenTelemetry log data by recipients that support only one timestamp internally the following logic is recommended:
-  -- - Use Timestamp if it is present, otherwise use ObservedTimestamp
+  {- ^ Time when the event was observed by the collection system. For events that originate in OpenTelemetry (e.g. using OpenTelemetry Logging SDK)
+  this timestamp is typically set at the generation time and is equal to Timestamp. For events originating externally and collected by OpenTelemetry (e.g. using Collector)
+  this is the time when OpenTelemetry’s code observed the event measured by the clock of the OpenTelemetry code. This field SHOULD be set once the event is observed by OpenTelemetry.
+
+  For converting OpenTelemetry log data to formats that support only one timestamp or when receiving OpenTelemetry log data by recipients that support only one timestamp internally the following logic is recommended:
+  - Use Timestamp if it is present, otherwise use ObservedTimestamp
+  -}
   , logRecordTracingDetails :: {-# UNPACK #-} !(UMaybe (TraceId, SpanId, TraceFlags))
-  -- ^ Tuple contains three fields:
-  --
-  -- - Request trace id as defined in W3C Trace Context. Can be set for logs that are part of request processing and have an assigned trace id.
-  -- - Span id. Can be set for logs that are part of a particular processing span.
-  -- - Trace flag as defined in W3C Trace Context specification. At the time of writing the specification defines one flag - the SAMPLED flag.
+  {- ^ Tuple contains three fields:
+
+  - Request trace id as defined in W3C Trace Context. Can be set for logs that are part of request processing and have an assigned trace id.
+  - Span id. Can be set for logs that are part of a particular processing span.
+  - Trace flag as defined in W3C Trace Context specification. At the time of writing the specification defines one flag - the SAMPLED flag.
+  -}
   , logRecordSeverityText :: {-# UNPACK #-} !(UMaybe Text)
   -- ^ Severity text (log level). Original string representation from the source.
   , logRecordSeverityNumber :: {-# UNPACK #-} !(UMaybe SeverityNumber)
-  -- ^ Severity number (1-24). See spec for severity ranges (TRACE/DEBUG/INFO/WARN/ERROR/FATAL).
-  -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
-  -- | 17-20                 | ERROR       | An error event. Something went wrong.                                                    |
-  -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
-  -- | 21-24                 | FATAL       | A fatal error such as application or system crash.                                       |
-  -- +-----------------------+-------------+------------------------------------------------------------------------------------------+
-  -- Smaller numerical values in each range represent less important (less severe) events. Larger numerical values in each range represent more important (more severe) events.
-  -- For example SeverityNumber=17 describes an error that is less critical than an error with SeverityNumber=20.
-  --
-  -- Mappings from existing logging systems and formats (or source format for short) must define how severity (or log level) of that particular format corresponds to SeverityNumber
-  -- of this data model based on the meaning given for each range in the above table. [More Information](https://opentelemetry.io/docs/specs/otel/logs/data-model/#mapping-of-severitynumber)
-  --
-  -- [These short names](https://opentelemetry.io/docs/specs/otel/logs/data-model/#displaying-severity) can be used to represent SeverityNumber in the UI
-  --
-  -- In the contexts where severity participates in less-than / greater-than comparisons SeverityNumber field should be used.
-  -- SeverityNumber can be compared to another SeverityNumber or to numbers in the 1..24 range (or to the corresponding short names).
+  {- ^ Severity number (1-24). See spec for severity ranges (TRACE/DEBUG/INFO/WARN/ERROR/FATAL).
+  +-----------------------+-------------+------------------------------------------------------------------------------------------+
+  | 17-20                 | ERROR       | An error event. Something went wrong.                                                    |
+  +-----------------------+-------------+------------------------------------------------------------------------------------------+
+  | 21-24                 | FATAL       | A fatal error such as application or system crash.                                       |
+  +-----------------------+-------------+------------------------------------------------------------------------------------------+
+  Smaller numerical values in each range represent less important (less severe) events. Larger numerical values in each range represent more important (more severe) events.
+  For example SeverityNumber=17 describes an error that is less critical than an error with SeverityNumber=20.
+
+  Mappings from existing logging systems and formats (or source format for short) must define how severity (or log level) of that particular format corresponds to SeverityNumber
+  of this data model based on the meaning given for each range in the above table. [More Information](https://opentelemetry.io/docs/specs/otel/logs/data-model/#mapping-of-severitynumber)
+
+  [These short names](https://opentelemetry.io/docs/specs/otel/logs/data-model/#displaying-severity) can be used to represent SeverityNumber in the UI
+
+  In the contexts where severity participates in less-than / greater-than comparisons SeverityNumber field should be used.
+  SeverityNumber can be compared to another SeverityNumber or to numbers in the 1..24 range (or to the corresponding short names).
+  -}
   , logRecordBody :: AnyValue
-  -- ^ A value containing the body of the log record. Can be for example a human-readable string message (including multi-line) describing the event in a free form or it can be a
-  -- structured data composed of arrays and maps of other values. Body MUST support any type to preserve the semantics of structured logs emitted by the applications.
-  -- Can vary for each occurrence of the event coming from the same source. This field is optional.
-  --
-  -- Type any
-  --    Value of type any can be one of the following:
-  --    - A scalar value: number, string or boolean,
-  --    - A byte array,
-  --    - An array (a list) of any values,
-  --    - A map<string, any>.
+  {- ^ A value containing the body of the log record. Can be for example a human-readable string message (including multi-line) describing the event in a free form or it can be a
+  structured data composed of arrays and maps of other values. Body MUST support any type to preserve the semantics of structured logs emitted by the applications.
+  Can vary for each occurrence of the event coming from the same source. This field is optional.
+
+  Type any
+   Value of type any can be one of the following:
+   - A scalar value: number, string or boolean,
+   - A byte array,
+   - An array (a list) of any values,
+   - A map<string, any>.
+  -}
   , logRecordAttributes :: LogAttributes
-  -- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source.
-  -- Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
-  -- emitted by the applications. This field is optional.
+  {- ^ Additional information about the specific event occurrence. Unlike the Resource field, which is fixed for a particular source, Attributes can vary for each occurrence of the event coming from the same source.
+  Can contain information about the request context (other than Trace Context Fields). The log attribute model MUST support any type, a superset of standard Attribute, to preserve the semantics of structured attributes
+  emitted by the applications. This field is optional.
+  -}
   , logRecordEventName :: {-# UNPACK #-} !(UMaybe Text)
   -- ^ Optional event name. When set, this identifies the log record as an event.
   }

@@ -89,7 +89,7 @@ module OpenTelemetry.Context.ThreadLocal (
 ) where
 
 import Control.Concurrent
-import Control.Concurrent.Thread.StorageV2
+import Control.Concurrent.Thread.Storage
 import Control.Monad (when)
 import Control.Monad.IO.Class
 import Data.IORef
@@ -102,8 +102,9 @@ import System.IO.Unsafe
 import Prelude hiding (lookup)
 
 
--- | Per-thread context entry: the context plus the active token ID.
--- A token ID of 0 means no token is active (initial state).
+{- | Per-thread context entry: the context plus the active token ID.
+A token ID of 0 means no token is active (initial state).
+-}
 data ContextEntry = ContextEntry
   { ceContext :: !Context
   , ceTokenId :: {-# UNPACK #-} !Word64
@@ -376,25 +377,28 @@ adjustContextOnThread tid f = updateOnThread threadContextMap tid $ \mentry ->
 {-# INLINE adjustContextOnThread #-}
 
 
--- | Get the currently active 'Baggage' from the implicit thread-local context.
---
--- @since 0.4.0.0
+{- | Get the currently active 'Baggage' from the implicit thread-local context.
+
+@since 0.4.0.0
+-}
 getActiveBaggage :: (MonadIO m) => m (Maybe Baggage)
 getActiveBaggage = lookupBaggage <$> getContext
 {-# INLINE getActiveBaggage #-}
 
 
--- | Set the currently active 'Baggage' in the implicit thread-local context.
---
--- @since 0.4.0.0
+{- | Set the currently active 'Baggage' in the implicit thread-local context.
+
+@since 0.4.0.0
+-}
 setActiveBaggage :: (MonadIO m) => Baggage -> m ()
 setActiveBaggage b = adjustContext (insertBaggage b)
 {-# INLINE setActiveBaggage #-}
 
 
--- | Clear the active 'Baggage' from the implicit thread-local context.
---
--- @since 0.4.0.0
+{- | Clear the active 'Baggage' from the implicit thread-local context.
+
+@since 0.4.0.0
+-}
 clearActiveBaggage :: (MonadIO m) => m ()
 clearActiveBaggage = adjustContext removeBaggage
 {-# INLINE clearActiveBaggage #-}

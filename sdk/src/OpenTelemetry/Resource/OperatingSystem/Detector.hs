@@ -23,6 +23,7 @@ module OpenTelemetry.Resource.OperatingSystem.Detector (
   detectOperatingSystem,
 ) where
 
+
 #ifndef darwin_HOST_OS
 import Data.Maybe (mapMaybe)
 #endif
@@ -62,7 +63,6 @@ detectOperatingSystem = do
       , osBuildId = lookupField "BUILD_ID" release
       }
 #endif
-
 
 #ifdef darwin_HOST_OS
 -- | Read macOS version metadata from @SystemVersion.plist@; on any failure or
@@ -129,7 +129,6 @@ parsePlistStringLine line =
         _ -> Nothing
 
 #endif
-
 
 #ifndef darwin_HOST_OS
 readOsRelease :: IO [(T.Text, T.Text)]

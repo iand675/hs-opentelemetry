@@ -68,14 +68,17 @@ data BatchTimeoutConfig = BatchTimeoutConfig
   { maxQueueSize :: Int
   -- ^ The maximum queue size. After the size is reached, spans are dropped.
   , scheduledDelayMillis :: Int
-  -- ^ The delay interval in milliseconds between two consective exports.
-  -- The default value is 5000.
+  {- ^ The delay interval in milliseconds between two consective exports.
+  The default value is 5000.
+  -}
   , exportTimeoutMillis :: Int
-  -- ^ How long the export can run before it is cancelled.
-  -- The default value is 30000.
+  {- ^ How long the export can run before it is cancelled.
+  The default value is 30000.
+  -}
   , maxExportBatchSize :: Int
-  -- ^ The maximum batch size of every export. It must be
-  -- smaller or equal to 'maxQueueSize'. The default value is 512.
+  {- ^ The maximum batch size of every export. It must be
+  smaller or equal to 'maxQueueSize'. The default value is 512.
+  -}
   }
   deriving (Show)
 
@@ -379,7 +382,7 @@ groupByTracer spans
           -- skip the HashMap entirely.
           allSame = V.all (\s -> tracerName (spanTracer s) == firstLib) spans
       in if allSame
-          then HashMap.singleton firstLib spans
-          else
-            fmap V.fromList $
-              V.foldl' (\acc s -> HashMap.insertWith (flip (++)) (tracerName (spanTracer s)) [s] acc) HashMap.empty spans
+           then HashMap.singleton firstLib spans
+           else
+             fmap V.fromList $
+               V.foldl' (\acc s -> HashMap.insertWith (flip (++)) (tracerName (spanTracer s)) [s] acc) HashMap.empty spans

@@ -40,7 +40,6 @@ import Network.HTTP.Client (Request (..), Response (..))
 import Network.HTTP.Types (statusCode)
 import OpenTelemetry.Attributes (Attributes, addAttribute, defaultAttributeLimits, emptyAttributes)
 import OpenTelemetry.Attributes.Key (unkey)
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Metric.Core (
   AdvisoryParameters (..),
   Counter (..),
@@ -49,6 +48,7 @@ import OpenTelemetry.Metric.Core (
   UpDownCounter (..),
   defaultAdvisoryParameters,
  )
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 data HttpClientMetrics = HttpClientMetrics

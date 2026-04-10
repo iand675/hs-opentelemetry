@@ -114,10 +114,10 @@ parseGrpcAddress url =
           _ -> 4317
         _ -> 4317
   in Address
-      { addressHost = host
-      , addressPort = port
-      , addressAuthority = Nothing
-      }
+       { addressHost = host
+       , addressPort = port
+       , addressAuthority = Nothing
+       }
   where
     dropScheme s = case break (== '/') (drop 1 $ dropWhile (/= ':') s) of
       (_, '/' : rest) -> rest

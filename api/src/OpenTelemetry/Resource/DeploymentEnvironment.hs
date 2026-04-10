@@ -25,9 +25,10 @@ import qualified OpenTelemetry.SemanticConventions as SC
 -}
 newtype DeploymentEnvironment = DeploymentEnvironment
   { deploymentEnvironment :: Maybe Text
-  -- ^ Name of the deployment environment (aka deployment tier).
-  --
-  -- Examples: @staging@, @production@
+  {- ^ Name of the deployment environment (aka deployment tier).
+
+  Examples: @staging@, @production@
+  -}
   }
 
 
@@ -35,7 +36,8 @@ instance ToResource DeploymentEnvironment where
   -- 'deployment.environment' is deprecated in favor of 'deployment.environment.name';
   -- we emit both for backward compatibility with older consumers.
   toResource DeploymentEnvironment {..} =
-    mkResourceWithSchema (Just semConvSchemaUrl)
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
       [ unkey SC.deployment_environment_name .=? deploymentEnvironment
       , unkey SC.deployment_environment .=? deploymentEnvironment
       ]

@@ -16,7 +16,7 @@ import OpenTelemetry.Context.ThreadLocal (adjustContext, attachContext, getConte
 import OpenTelemetry.Internal.AtomicCounter
 import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core
-import OpenTelemetry.Trace.Id (newSpanId, newTraceId, newTraceAndSpanId)
+import OpenTelemetry.Trace.Id (newSpanId, newTraceAndSpanId, newTraceId)
 import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
 import Test.Tasty.Bench
 
@@ -290,8 +290,8 @@ main = do
            , bench "3-deep nested spans" $ whnfIO $ nestedSpans activeTracer
            , bench "heavy span (5 attrs + status + event)" $ whnfIO $ heavySpan activeTracer
            , bench "getSpanContext (live, isolated)" $ whnfIO $ do
-              s <- createSpan activeTracer empty "s" defaultSpanArguments
-              getSpanContext s
+               s <- createSpan activeTracer empty "s" defaultSpanArguments
+               getSpanContext s
            ]
     , bgroup
         "rng"
@@ -300,8 +300,9 @@ main = do
         , bench "SpanId+TraceId (3 separate)" $ whnfIO $ do
             !_ <- newTraceId DefaultIdGenerator
             newSpanId DefaultIdGenerator
-        , bench "TraceId+SpanId (cmm primop)" $ whnfIO $
-            newTraceAndSpanId DefaultIdGenerator
+        , bench "TraceId+SpanId (cmm primop)" $
+            whnfIO $
+              newTraceAndSpanId DefaultIdGenerator
         ]
     ]
 

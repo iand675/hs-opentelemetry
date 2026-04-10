@@ -47,9 +47,10 @@ import OpenTelemetry.Internal.Common.Types (ExportResult, FlushResult, Instrumen
 import OpenTelemetry.Resource (MaterializedResources)
 
 
--- | Export-time aggregation temporality (maps to OTLP 'AggregationTemporality').
---
--- @since 0.0.1.0
+{- | Export-time aggregation temporality (maps to OTLP 'AggregationTemporality').
+
+@since 0.0.1.0
+-}
 data AggregationTemporality
   = AggregationDelta
   | AggregationCumulative
@@ -78,18 +79,20 @@ data OptionalDouble
   deriving stock (Eq, Show, Generic)
 
 
--- | Convert to the standard @Maybe Double@ (e.g. for OTLP export).
---
--- @since 0.0.1.0
+{- | Convert to the standard @Maybe Double@ (e.g. for OTLP export).
+
+@since 0.0.1.0
+-}
 toMaybeDouble :: OptionalDouble -> Maybe Double
 toMaybeDouble NoDouble = Nothing
 toMaybeDouble (SomeDouble d) = Just d
 {-# INLINE toMaybeDouble #-}
 
 
--- | Exemplar (trace link + optional measurement) for OTLP 'Exemplar'.
---
--- @since 0.0.1.0
+{- | Exemplar (trace link + optional measurement) for OTLP 'Exemplar'.
+
+@since 0.0.1.0
+-}
 data MetricExemplar = MetricExemplar
   { metricExemplarTraceId :: !ByteString
   , metricExemplarSpanId :: !ByteString
@@ -100,9 +103,10 @@ data MetricExemplar = MetricExemplar
   deriving stock (Eq, Show, Generic)
 
 
--- | One sum data point (cumulative or delta depending on reader temporality in SDK).
---
--- @since 0.0.1.0
+{- | One sum data point (cumulative or delta depending on reader temporality in SDK).
+
+@since 0.0.1.0
+-}
 data SumDataPoint = SumDataPoint
   { sumDataPointStartTimeUnixNano :: !Word64
   , sumDataPointTimeUnixNano :: !Word64
@@ -113,9 +117,10 @@ data SumDataPoint = SumDataPoint
   deriving stock (Eq, Show, Generic)
 
 
--- | Histogram bucket counts (explicit boundaries) + sum + count.
---
--- @since 0.0.1.0
+{- | Histogram bucket counts (explicit boundaries) + sum + count.
+
+@since 0.0.1.0
+-}
 data HistogramDataPoint = HistogramDataPoint
   { histogramDataPointStartTimeUnixNano :: !Word64
   , histogramDataPointTimeUnixNano :: !Word64
@@ -131,9 +136,10 @@ data HistogramDataPoint = HistogramDataPoint
   deriving stock (Eq, Show, Generic)
 
 
--- | Exponential histogram data point (OTLP native exponential layout).
---
--- @since 0.0.1.0
+{- | Exponential histogram data point (OTLP native exponential layout).
+
+@since 0.0.1.0
+-}
 data ExponentialHistogramDataPoint = ExponentialHistogramDataPoint
   { exponentialHistogramDataPointStartTimeUnixNano :: !Word64
   , exponentialHistogramDataPointTimeUnixNano :: !Word64
@@ -154,9 +160,10 @@ data ExponentialHistogramDataPoint = ExponentialHistogramDataPoint
   deriving stock (Eq, Show, Generic)
 
 
--- | Last-value gauge point.
---
--- @since 0.0.1.0
+{- | Last-value gauge point.
+
+@since 0.0.1.0
+-}
 data GaugeDataPoint = GaugeDataPoint
   { gaugeDataPointStartTimeUnixNano :: !Word64
   , gaugeDataPointTimeUnixNano :: !Word64
@@ -167,9 +174,10 @@ data GaugeDataPoint = GaugeDataPoint
   deriving stock (Eq, Show, Generic)
 
 
--- | One exported metric (all points share name/unit/description/scope).
---
--- @since 0.0.1.0
+{- | One exported metric (all points share name/unit/description/scope).
+
+@since 0.0.1.0
+-}
 data MetricExport
   = MetricExportSum
       { mesName :: !Text

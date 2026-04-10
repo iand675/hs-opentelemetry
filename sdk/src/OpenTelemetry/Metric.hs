@@ -135,7 +135,6 @@ import OpenTelemetry.Attributes.Attribute (Attribute (..), ToAttribute (..))
 import OpenTelemetry.Environment (lookupBooleanEnv)
 import OpenTelemetry.Internal.AtomicCounter (newAtomicCounter)
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
-import OpenTelemetry.Resource (emptyMaterializedResources, materializeResources, mergeResources, mkResource)
 import OpenTelemetry.Internal.Logging (otelLogDebug)
 import OpenTelemetry.MeterProvider (
   MetricReader (..),
@@ -148,14 +147,6 @@ import OpenTelemetry.MeterProvider (
   defaultSdkMeterProviderOptions,
   deltaTemporality,
  )
-import OpenTelemetry.MetricReader (
-  PeriodicMetricReaderHandle (..),
-  PeriodicMetricReaderOptions (..),
-  defaultPeriodicMetricReaderOptions,
-  exportMetricsOnce,
-  forkPeriodicMetricReader,
-  periodicMetricReaderOptionsFromEnv,
- )
 import OpenTelemetry.Metric.Core
 import OpenTelemetry.Metric.ExporterSelection (resolveMetricExporter)
 import OpenTelemetry.Metric.View (
@@ -164,12 +155,22 @@ import OpenTelemetry.Metric.View (
   ViewAggregation (..),
   ViewSelector (..),
  )
+import OpenTelemetry.MetricReader (
+  PeriodicMetricReaderHandle (..),
+  PeriodicMetricReaderOptions (..),
+  defaultPeriodicMetricReaderOptions,
+  exportMetricsOnce,
+  forkPeriodicMetricReader,
+  periodicMetricReaderOptionsFromEnv,
+ )
+import OpenTelemetry.Resource (emptyMaterializedResources, materializeResources, mergeResources, mkResource)
 import OpenTelemetry.Resource.Detect (detectBuiltInResources, detectResourceAttributes)
 
 
--- | Opaque handle for an initialized SDK 'MeterProvider' and its background
--- periodic reader. Use 'shutdownMeterProviderHandle' or the bracket in
--- 'withMeterProvider' to tear it down.
+{- | Opaque handle for an initialized SDK 'MeterProvider' and its background
+periodic reader. Use 'shutdownMeterProviderHandle' or the bracket in
+'withMeterProvider' to tear it down.
+-}
 data MeterProviderHandle = MeterProviderHandle
   { meterProviderHandleProvider :: !MeterProvider
   , meterProviderHandleEnv :: !SdkMeterEnv
@@ -177,8 +178,9 @@ data MeterProviderHandle = MeterProviderHandle
   }
 
 
--- | Build an inert 'SdkMeterEnv' for the disabled-SDK case. All mutable
--- fields are properly allocated (not bottom) so shutdown and flush never crash.
+{- | Build an inert 'SdkMeterEnv' for the disabled-SDK case. All mutable
+fields are properly allocated (not bottom) so shutdown and flush never crash.
+-}
 noopSdkMeterEnv :: IO SdkMeterEnv
 noopSdkMeterEnv = do
   instrRef <- newIORef []

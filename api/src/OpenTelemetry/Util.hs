@@ -67,9 +67,10 @@ constructorName :: (HasConstructor (Rep a), Generic a) => a -> String
 constructorName = genericConstrName . from
 
 
--- | Detect a constructor from any datatype which derives 'Generic'
---
--- @since 0.0.1.0
+{- | Detect a constructor from any datatype which derives 'Generic'
+
+@since 0.0.1.0
+-}
 class HasConstructor (f :: Type -> Type) where
   genericConstrName :: f x -> String
 
@@ -90,9 +91,10 @@ instance (Constructor c) => HasConstructor (C1 c f) where
 foreign import ccall unsafe "rts_getThreadId" c_getThreadId :: Addr# -> CInt
 
 
--- | Get an int representation of a thread id
---
--- @since 0.0.1.0
+{- | Get an int representation of a thread id
+
+@since 0.0.1.0
+-}
 getThreadId :: ThreadId -> Int
 getThreadId (ThreadId tid#) = fromIntegral $ c_getThreadId (unsafeCoerce# tid#)
 {-# INLINE getThreadId #-}
@@ -157,8 +159,8 @@ casModifyIORef_ (IORef (STRef ref#)) f = IO go#
         (# s1#, old #) ->
           let !new = f old
           in case Exts.casMutVar# ref# old new s1# of
-              (# s2#, 0#, _ #) -> (# s2#, () #)
-              (# s2#, _, _ #) -> go# s2#
+               (# s2#, 0#, _ #) -> (# s2#, () #)
+               (# s2#, _, _ #) -> go# s2#
 {-# NOINLINE casModifyIORef_ #-}
 
 
@@ -184,8 +186,8 @@ casReadModifyIORef_ (IORef (STRef ref#)) f = IO go#
         (# s1#, old #) ->
           let !new = f old
           in case Exts.casMutVar# ref# old new s1# of
-              (# s2#, 0#, _ #) -> (# s2#, old #)
-              (# s2#, _, _ #) -> go# s2#
+               (# s2#, 0#, _ #) -> (# s2#, old #)
+               (# s2#, _, _ #) -> go# s2#
 {-# NOINLINE casReadModifyIORef_ #-}
 
 
@@ -216,18 +218,19 @@ instance forall a. (Show a) => Show (AppendOnlyBoundedCollection a) where
   showsPrec d c =
     let vec = appendOnlyBoundedCollectionValues c
     in showParen (d > 10) $
-        showString "AppendOnlyBoundedCollection {collection = "
-          . shows vec
-          . showString ", maxSize = "
-          . shows (appendOnlyBoundedCollectionMaxSize c)
-          . showString ", dropped = "
-          . shows (appendOnlyBoundedCollectionDroppedElementCount c)
-          . showString "}"
+         showString "AppendOnlyBoundedCollection {collection = "
+           . shows vec
+           . showString ", maxSize = "
+           . shows (appendOnlyBoundedCollectionMaxSize c)
+           . showString ", dropped = "
+           . shows (appendOnlyBoundedCollectionDroppedElementCount c)
+           . showString "}"
 
 
--- | Initialize a bounded collection that admits a maximum size
---
--- @since 0.0.1.0
+{- | Initialize a bounded collection that admits a maximum size
+
+@since 0.0.1.0
+-}
 emptyAppendOnlyBoundedCollection
   :: Int
   -- ^ Maximum size
@@ -284,9 +287,10 @@ appendToBoundedCollection (BoundedCollection dl sz ms d) x
 {-# INLINE appendToBoundedCollection #-}
 
 
--- | Split a vector into chunks of at most @n@ elements. Used by batch processors.
---
--- @since 0.4.0.0
+{- | Split a vector into chunks of at most @n@ elements. Used by batch processors.
+
+@since 0.4.0.0
+-}
 chunksOfV :: Int -> V.Vector a -> [V.Vector a]
 chunksOfV n v
   | V.null v = []

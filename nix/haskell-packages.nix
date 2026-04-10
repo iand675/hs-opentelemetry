@@ -114,8 +114,5 @@ in rec {
     # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just
     # relax the bounds of 0.7.1.5 ourselves
     proto-lens = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens;
-    # connection 0.3.1 has an upper bound on tls < 1.7, but nixpkgs has tls 2.0+.
-    # Jailbreak + unbreak so it builds with the newer tls.
-    connection = pkgs.haskell.lib.compose.doJailbreak (pkgs.haskell.lib.compose.markUnbroken prev.connection);
   };
 }

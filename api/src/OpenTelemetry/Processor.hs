@@ -1,11 +1,12 @@
 {-# LANGUAGE PatternSynonyms #-}
 
--- |
--- Module      : OpenTelemetry.Processor
--- Description : Re-exports of span processor types.
--- Stability   : experimental
---
--- This module is deprecated; prefer 'OpenTelemetry.Processor.Span'.
+{- |
+Module      : OpenTelemetry.Processor
+Description : Re-exports of span processor types.
+Stability   : experimental
+
+This module is deprecated; prefer 'OpenTelemetry.Processor.Span'.
+-}
 module OpenTelemetry.Processor
   {-# DEPRECATED "use OpenTelemetry.Processor.Span instead" #-} (
   Processor,

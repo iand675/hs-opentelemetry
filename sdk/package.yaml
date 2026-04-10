@@ -73,14 +73,14 @@ library:
   - async
   - bytestring
   - case-insensitive
-  - connection
+  - crypton-connection
   - containers
   - hashable
   - http-client
   - http-client-tls
   - http-types
   - tls
-  - x509-store
+  - crypton-x509-store
   - network-bsd
   - process
   - scientific

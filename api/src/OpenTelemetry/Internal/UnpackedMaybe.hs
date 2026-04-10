@@ -8,7 +8,7 @@ heap indirection. When stored as @{\-\# UNPACK \#-\} !(UMaybe a)@ in a
 parent record, GHC can inline the tag + pointer directly into the parent
 closure, so there is zero extra indirection for the Maybe layer.
 
-Based on unpacked-maybe by Kyle McKean & Daniel Cartwright (BSD-3).
+Based on unpacked-maybe by Kyle McKean & chessai (BSD-3).
 -}
 module OpenTelemetry.Internal.UnpackedMaybe (
   UMaybe (UMaybe, UJust, UNothing),

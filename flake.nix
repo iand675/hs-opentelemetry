@@ -54,6 +54,10 @@
       # Haskell hooks
       fourmolu = ignoreGeneratedFiles {
         enable = true;
+        excludes = [
+          "exporters/otlp/src/OpenTelemetry/Exporter/OTLP/Internal/Config\\.hs$"
+          "instrumentation/ghc-metrics/test/Spec\\.hs$"
+        ];
       };
       hpack = {
         enable = false;

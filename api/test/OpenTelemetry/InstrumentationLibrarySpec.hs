@@ -24,8 +24,10 @@ spec = describe "InstrumentationLibrary / InstrumentationScope" $ do
       scope `shouldBe` lib
 
     it "instrumentationScope produces valid scope with all fields" $ do
-      let scope = withSchemaUrl "https://opentelemetry.io/schemas/1.40.0"
-                    (instrumentationScope "my-lib" "2.0")
+      let scope =
+            withSchemaUrl
+              "https://opentelemetry.io/schemas/1.40.0"
+              (instrumentationScope "my-lib" "2.0")
       libraryName scope `shouldBe` "my-lib"
       libraryVersion scope `shouldBe` "2.0"
       librarySchemaUrl scope `shouldBe` "https://opentelemetry.io/schemas/1.40.0"

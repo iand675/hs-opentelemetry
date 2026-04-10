@@ -108,8 +108,8 @@ parseTraceState :: ByteString -> Either String TraceState
 parseTraceState bs =
   let !trimmed = C8.dropWhile isOWS bs
   in if BS.null trimmed
-      then Right empty
-      else Right $! fromList (go trimmed [])
+       then Right empty
+       else Right $! fromList (go trimmed [])
   where
     go !remaining !acc
       | BS.null remaining = reverse acc
@@ -142,12 +142,12 @@ parseTraceState bs =
     scanKey !input =
       let !keyLen = BS.length (C8.takeWhile isTracestateKeyChar input)
       in if keyLen == 0
-          then Left "empty tracestate key"
-          else
-            let !keyBs = BS.take keyLen input
-            in if keyLen > 256
-                then Left "tracestate key too long"
-                else validateKey keyBs >> Right (keyBs, BS.drop keyLen input)
+           then Left "empty tracestate key"
+           else
+             let !keyBs = BS.take keyLen input
+             in if keyLen > 256
+                  then Left "tracestate key too long"
+                  else validateKey keyBs >> Right (keyBs, BS.drop keyLen input)
 
     validateKey :: ByteString -> Either String ()
     validateKey !keyBs =
@@ -160,26 +160,26 @@ parseTraceState bs =
           let !tenantPart = BS.take atIdx keyBs
               !systemPart = BS.drop (atIdx + 1) keyBs
           in if BS.null tenantPart
-              then Left "empty tenant-id in multi-tenant key"
-              else
-                if BS.null systemPart
-                  then Left "empty system-id in multi-tenant key"
-                  else
-                    if not (isLcAlphaOrDigit (BS.index tenantPart 0))
-                      then Left "tenant-id must start with a-z or 0-9"
-                      else
-                        if not (isLcAlpha (BS.index systemPart 0))
-                          then Left "system-id must start with a-z"
-                          else
-                            if C8.elem '@' systemPart
-                              then Left "multiple '@' in tracestate key"
-                              else
-                                if BS.length tenantPart > 241
-                                  then Left "tenant-id too long"
-                                  else
-                                    if BS.length systemPart > 14
-                                      then Left "system-id too long"
-                                      else Right ()
+               then Left "empty tenant-id in multi-tenant key"
+               else
+                 if BS.null systemPart
+                   then Left "empty system-id in multi-tenant key"
+                   else
+                     if not (isLcAlphaOrDigit (BS.index tenantPart 0))
+                       then Left "tenant-id must start with a-z or 0-9"
+                       else
+                         if not (isLcAlpha (BS.index systemPart 0))
+                           then Left "system-id must start with a-z"
+                           else
+                             if C8.elem '@' systemPart
+                               then Left "multiple '@' in tracestate key"
+                               else
+                                 if BS.length tenantPart > 241
+                                   then Left "tenant-id too long"
+                                   else
+                                     if BS.length systemPart > 14
+                                       then Left "system-id too long"
+                                       else Right ()
 
     isLcAlpha :: Word8 -> Bool
     isLcAlpha w = w >= 0x61 && w <= 0x7a
@@ -191,26 +191,26 @@ parseTraceState bs =
     scanValue !input =
       let !valLen = BS.length (C8.takeWhile isTracestateValueChar input)
       in if valLen == 0
-          then Left "empty tracestate value"
-          else
-            let !raw = BS.take valLen input
-                !stripped = fst (BS.spanEnd isOWSByte raw)
-            in if BS.null stripped
-                then Left "tracestate value is only whitespace"
-                else
-                  if BS.length stripped > 256
-                    then Left "tracestate value too long"
-                    else Right (stripped, BS.drop valLen input)
+           then Left "empty tracestate value"
+           else
+             let !raw = BS.take valLen input
+                 !stripped = fst (BS.spanEnd isOWSByte raw)
+             in if BS.null stripped
+                  then Left "tracestate value is only whitespace"
+                  else
+                    if BS.length stripped > 256
+                      then Left "tracestate value too long"
+                      else Right (stripped, BS.drop valLen input)
 
     skipCommaOWS :: ByteString -> ByteString
     skipCommaOWS !input =
       let !s1 = C8.dropWhile isOWS input
       in if BS.null s1
-          then s1
-          else
-            if BS.index s1 0 == 0x2c -- ','
-              then C8.dropWhile isOWS (BS.drop 1 s1)
-              else s1
+           then s1
+           else
+             if BS.index s1 0 == 0x2c -- ','
+               then C8.dropWhile isOWS (BS.drop 1 s1)
+               else s1
 
 
 isOWS :: Char -> Bool
@@ -293,8 +293,8 @@ encodeTraceStateMultiple maxSize ts =
     splitIntoHeaders limit entries =
       let (currentHeader, remaining) = buildHeader limit entries []
       in if C8.null currentHeader
-          then []
-          else currentHeader : splitIntoHeaders limit remaining
+           then []
+           else currentHeader : splitIntoHeaders limit remaining
 
     buildHeader :: Int -> [ByteString] -> [ByteString] -> (ByteString, [ByteString])
     buildHeader _ [] acc = (C8.intercalate "," (reverse acc), [])
@@ -302,8 +302,8 @@ encodeTraceStateMultiple maxSize ts =
       let currentSize = if null acc then 0 else sum (map C8.length acc) + length acc - 1
           newSize = currentSize + C8.length entry + if null acc then 0 else 1
       in if newSize <= limit || null acc
-          then buildHeader limit rest (entry : acc)
-          else (C8.intercalate "," (reverse acc), entry : rest)
+           then buildHeader limit rest (entry : acc)
+           else (C8.intercalate "," (reverse acc), entry : rest)
 
 
 {- | Combine multiple tracestate header values into a single TraceState.
@@ -321,8 +321,8 @@ decodeTraceStateMultiple headers =
   let nonEmptyHeaders = filter (not . C8.all (\c -> c == ' ' || c == '\t')) headers
       combinedHeader = C8.intercalate "," nonEmptyHeaders
   in if C8.null combinedHeader
-      then empty
-      else decodeTraceState combinedHeader
+       then empty
+       else decodeTraceState combinedHeader
 
 
 {- | Encoded the given 'Span' into a @traceparent@, @tracestate@ tuple.

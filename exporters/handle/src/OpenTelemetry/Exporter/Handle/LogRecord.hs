@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
--- |
--- Module      : OpenTelemetry.Exporter.Handle.LogRecord
--- Description : Handle-based log record exporter that writes log records to a file handle as text.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Exporter.Handle.LogRecord
+Description : Handle-based log record exporter that writes log records to a file handle as text.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.Handle.LogRecord (
   makeHandleLogRecordExporter,
   stdoutLogRecordExporter,

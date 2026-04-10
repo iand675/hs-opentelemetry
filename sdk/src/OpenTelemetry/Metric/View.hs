@@ -49,24 +49,26 @@ data ViewSelector = ViewSelector
   }
 
 
--- | Aggregation override or drop.
---
--- @since 0.0.1.0
+{- | Aggregation override or drop.
+
+@since 0.0.1.0
+-}
 data ViewAggregation
   = ViewAggregationDefault
   | ViewAggregationExplicitBucketHistogram ![Double]
   | ViewAggregationExponentialHistogram !Int32
-  | ViewAggregationSum
-  -- ^ Force Sum aggregation (for counters and up-down counters).
-  | ViewAggregationLastValue
-  -- ^ Force Last Value aggregation (for gauges).
+  | -- | Force Sum aggregation (for counters and up-down counters).
+    ViewAggregationSum
+  | -- | Force Last Value aggregation (for gauges).
+    ViewAggregationLastValue
   | ViewAggregationDrop
   deriving stock (Eq)
 
 
--- | One view (first matching view in the provider list wins for single-match queries).
---
--- @since 0.0.1.0
+{- | One view (first matching view in the provider list wins for single-match queries).
+
+@since 0.0.1.0
+-}
 data View = View
   { viewSelector :: !ViewSelector
   , viewAggregation :: !ViewAggregation
@@ -74,14 +76,16 @@ data View = View
   , viewName :: !(Maybe Text)
   , viewDescription :: !(Maybe Text)
   , viewExemplarFilter :: !(Maybe MetricsExemplarFilter)
-  -- ^ Per-view exemplar filter override. When set, takes precedence over
-  -- the global provider-level filter for instruments matched by this view.
+  {- ^ Per-view exemplar filter override. When set, takes precedence over
+  the global provider-level filter for instruments matched by this view.
+  -}
   }
 
 
--- | Scope info passed during matching (avoids importing InstrumentationLibrary into this module).
---
--- @since 0.0.1.0
+{- | Scope info passed during matching (avoids importing InstrumentationLibrary into this module).
+
+@since 0.0.1.0
+-}
 type MeterScope = (Text, Text, Text)
 
 
@@ -102,17 +106,19 @@ matchesSelector sel kind name mUnit (scopeName, scopeVer, scopeSchema) =
     && maybe True (== scopeSchema) (viewMeterSchemaUrl sel)
 
 
--- | First matching view with full selector criteria.
---
--- @since 0.0.1.0
+{- | First matching view with full selector criteria.
+
+@since 0.0.1.0
+-}
 findMatchingView :: [View] -> InstrumentKind -> Text -> Maybe Text -> MeterScope -> Maybe View
 findMatchingView views kind name mUnit scope =
   find (\v -> matchesSelector (viewSelector v) kind name mUnit scope) views
 
 
--- | All matching views (spec: each produces a separate metric stream).
---
--- @since 0.0.1.0
+{- | All matching views (spec: each produces a separate metric stream).
+
+@since 0.0.1.0
+-}
 findAllMatchingViews :: [View] -> InstrumentKind -> Text -> Maybe Text -> MeterScope -> [View]
 findAllMatchingViews views kind name mUnit scope =
   Data.List.filter (\v -> matchesSelector (viewSelector v) kind name mUnit scope) views

@@ -1,8 +1,8 @@
--- |
--- Module      : OpenTelemetry.Exporter.Handle
--- Description : Re-exports for handle-based (stdout/stderr) exporters.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Exporter.Handle
+Description : Re-exports for handle-based (stdout/stderr) exporters.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.Handle (
   module OpenTelemetry.Exporter.Handle.Span,
   module OpenTelemetry.Exporter.Handle.Metric,

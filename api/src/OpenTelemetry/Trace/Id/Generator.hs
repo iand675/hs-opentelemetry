@@ -38,24 +38,26 @@ call overhead of a record-of-functions approach.
  @since 0.0.1.0
 -}
 data IdGenerator
-  = -- | Thread-local xoshiro256++ PRNG seeded from the platform CSPRNG.
-    --
-    -- Each OS thread gets its own PRNG state, seeded once from the
-    -- platform CSPRNG. Subsequent ID generation is pure arithmetic
-    -- with no syscalls, no shared state, and no atomic operations.
-    --
-    -- xoshiro256++ passes BigCrush and PractRand with a period of
-    -- 2^256−1. Fork-safe: child processes reseed automatically via
-    -- @pthread_atfork@.
-    --
-    -- @since 0.1.0.0
+  = {- | Thread-local xoshiro256++ PRNG seeded from the platform CSPRNG.
+
+    Each OS thread gets its own PRNG state, seeded once from the
+    platform CSPRNG. Subsequent ID generation is pure arithmetic
+    with no syscalls, no shared state, and no atomic operations.
+
+    xoshiro256++ passes BigCrush and PractRand with a period of
+    2^256−1. Fork-safe: child processes reseed automatically via
+    @pthread_atfork@.
+
+    @since 0.1.0.0
+    -}
     DefaultIdGenerator
-  | -- | Fully custom generation.
-    --
-    -- The first action must produce exactly 8 random bytes (span ID),
-    -- the second exactly 16 bytes (trace ID).
-    --
-    -- @since 0.0.1.0
+  | {- | Fully custom generation.
+
+    The first action must produce exactly 8 random bytes (span ID),
+    the second exactly 16 bytes (trace ID).
+
+    @since 0.0.1.0
+    -}
     CustomIdGenerator
       !(IO ShortByteString)
       !(IO ShortByteString)

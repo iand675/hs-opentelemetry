@@ -116,13 +116,13 @@ jaegerBaggagePropagator =
           Just bag ->
             let entries = H.toList (Baggage.values bag)
             in pure $
-                foldl
-                  ( \acc (k, v) ->
-                      let headerName = uberBaggagePrefix <> TE.decodeUtf8 (Baggage.tokenValue k)
-                      in textMapInsert headerName (Baggage.value v) acc
-                  )
-                  tm
-                  entries
+                 foldl
+                   ( \acc (k, v) ->
+                       let headerName = uberBaggagePrefix <> TE.decodeUtf8 (Baggage.tokenValue k)
+                       in textMapInsert headerName (Baggage.value v) acc
+                   )
+                   tm
+                   entries
     }
 
 

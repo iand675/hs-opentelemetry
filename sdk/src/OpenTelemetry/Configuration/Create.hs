@@ -32,8 +32,8 @@ import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterCon
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import OpenTelemetry.Log.Core (LoggerProvider, LoggerProviderOptions (..), createLoggerProvider, emptyLoggerProviderOptions, shutdownLoggerProvider)
 import OpenTelemetry.MeterProvider
-import OpenTelemetry.MetricReader
 import OpenTelemetry.Metric.Core (MeterProvider (..))
+import OpenTelemetry.MetricReader
 import OpenTelemetry.Processor.Batch.LogRecord (batchLogRecordProcessor)
 import qualified OpenTelemetry.Processor.Batch.LogRecord as BlogProc
 import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)

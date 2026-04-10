@@ -1,19 +1,23 @@
 # hs-opentelemetry-instrumentation-tasty
 
-OpenTelemetry instrumentation library for Tasty.
-It creates spans for:
+[![Hackage](https://img.shields.io/hackage/v/hs-opentelemetry-instrumentation-tasty?style=flat-square)](https://hackage.haskell.org/package/hs-opentelemetry-instrumentation-tasty)
 
-1. Individual test cases
-2. Test groups
-3. Resource setup and teardown
+OpenTelemetry instrumentation for the
+[Tasty](https://hackage.haskell.org/package/tasty) test framework. Creates
+spans for individual test cases, test groups, and resource setup/teardown.
+Handles parallel test execution correctly.
 
-The library should be robust to tests running in parallel.
+Part of [hs-opentelemetry](https://github.com/iand675/hs-opentelemetry).
 
 ## Usage
 
-Usage requires:
+1. Initialize a tracer provider in your test executable.
+2. Call `instrumentTestTree` on your `TestTree`.
 
-1. Setting and tearing down a trace provider as normal in your test executable.
-2. Calling `instrumentTestTree` on your `TestTree`.
+```haskell
+import OpenTelemetry.Instrumentation.Tasty (instrumentTestTree)
 
-See the test suite for examples of how to use the library. 
+main :: IO ()
+main = withTracerProvider $ \_ -> do
+  defaultMain =<< instrumentTestTree tests
+```

@@ -270,8 +270,9 @@ data SdkMeterEnv = SdkMeterEnv
   , sdkMeterResource :: !MaterializedResources
   , sdkMeterShutdown :: !(IORef Bool)
   , sdkMeterCollectLock :: !(MVar ())
-  -- ^ Serializes collection so observable callbacks don't double-fire
-  -- when a periodic reader and manual flush overlap.
+  {- ^ Serializes collection so observable callbacks don't double-fire
+  when a periodic reader and manual flush overlap.
+  -}
   , sdkMeterCardinalityLimit :: !Int
   , sdkMeterReaders :: ![MetricReader]
   -- ^ Registered readers; used during shutdown and forceFlush.
@@ -281,8 +282,9 @@ data SdkMeterEnv = SdkMeterEnv
   , sdkMeterExemplarOptions :: !SdkMeterExemplarOptions
   , sdkMeterStartTimeNanos :: !Word64
   , sdkMeterLastCollectTime :: !(IORef Word64)
-  -- ^ Tracks the end timestamp of the previous collection cycle.
-  -- Used as the start time for delta-temporality data points.
+  {- ^ Tracks the end timestamp of the previous collection cycle.
+  Used as the start time for delta-temporality data points.
+  -}
   }
 
 
@@ -305,8 +307,9 @@ data SumCell
       , siMonotonic :: !Bool
       , siExemplars :: !(Vector MetricExemplar)
       , siPrevDelta :: {-# UNPACK #-} !Int64
-      -- ^ Last delta-exported value. Used only for async instruments during
-      -- delta collection: delta = siValue - siPrevDelta.
+      {- ^ Last delta-exported value. Used only for async instruments during
+      delta collection: delta = siValue - siPrevDelta.
+      -}
       }
   | SumDblCell
       { sdValue :: {-# UNPACK #-} !Double
@@ -318,19 +321,22 @@ data SumCell
 
 data HistCell = HistCell
   { hcBucketArr :: !AtomicBucketArray
-  -- ^ Mutable atomic bucket counters; incremented in-place via hardware
-  -- fetch-and-add, avoiding the O(n) vector copy that U.modify requires.
+  {- ^ Mutable atomic bucket counters; incremented in-place via hardware
+  fetch-and-add, avoiding the O(n) vector copy that U.modify requires.
+  -}
   , hcFrozenBuckets :: !(U.Vector Word64)
-  -- ^ Immutable snapshot populated during collection for export.
-  -- U.empty during recording (never read on the hot path).
+  {- ^ Immutable snapshot populated during collection for export.
+  U.empty during recording (never read on the hot path).
+  -}
   , hcBounds :: !(U.Vector Double)
   , hcSum :: {-# UNPACK #-} !Double
   , hcCount :: {-# UNPACK #-} !Word64
   , hcMin :: !OptionalDouble
   , hcMax :: !OptionalDouble
   , hcBucketExemplars :: !(Vector (Maybe MetricExemplar))
-  -- ^ Aligned histogram bucket reservoir: one exemplar slot per bucket.
-  -- Indexed by bucket number (same as hcBucketArr).
+  {- ^ Aligned histogram bucket reservoir: one exemplar slot per bucket.
+  Indexed by bucket number (same as hcBucketArr).
+  -}
   }
 
 
@@ -395,8 +401,8 @@ bucketIndex bounds v = go 0 (U.length bounds)
       | otherwise =
           let !mid = lo + ((hi - lo) `unsafeShiftR` 1)
           in if v <= U.unsafeIndex bounds mid
-              then go lo mid
-              else go (mid + 1) hi
+               then go lo mid
+               else go (mid + 1) hi
 {-# INLINE bucketIndex #-}
 
 
@@ -455,34 +461,34 @@ mergeExpHist ehc v =
       !mn = minOptDouble (ehcMin ehc) v
       !mx = maxOptDouble (ehcMax ehc) v
   in if v == 0
-      then
-        ehc
-          { ehcZeroCount = ehcZeroCount ehc + 1
-          , ehcSum = sm
-          , ehcCount = ct
-          , ehcMin = mn
-          , ehcMax = mx
-          }
-      else
-        let !absV = abs v
-            !idx = positiveBucketIndex absV sc
-        in if v > 0
-            then
-              ehc
-                { ehcPositive = IM.insertWith (+) idx 1 (ehcPositive ehc)
-                , ehcSum = sm
-                , ehcCount = ct
-                , ehcMin = mn
-                , ehcMax = mx
-                }
-            else
-              ehc
-                { ehcNegative = IM.insertWith (+) idx 1 (ehcNegative ehc)
-                , ehcSum = sm
-                , ehcCount = ct
-                , ehcMin = mn
-                , ehcMax = mx
-                }
+       then
+         ehc
+           { ehcZeroCount = ehcZeroCount ehc + 1
+           , ehcSum = sm
+           , ehcCount = ct
+           , ehcMin = mn
+           , ehcMax = mx
+           }
+       else
+         let !absV = abs v
+             !idx = positiveBucketIndex absV sc
+         in if v > 0
+              then
+                ehc
+                  { ehcPositive = IM.insertWith (+) idx 1 (ehcPositive ehc)
+                  , ehcSum = sm
+                  , ehcCount = ct
+                  , ehcMin = mn
+                  , ehcMax = mx
+                  }
+              else
+                ehc
+                  { ehcNegative = IM.insertWith (+) idx 1 (ehcNegative ehc)
+                  , ehcSum = sm
+                  , ehcCount = ct
+                  , ehcMin = mn
+                  , ehcMax = mx
+                  }
 {-# INLINE mergeExpHist #-}
 
 
@@ -510,26 +516,26 @@ expHistToDataPoint startT t attrs ehc =
   let (posOff, posVec) = intMapToOffsetCounts (ehcPositive ehc)
       (negOff, negVec) = intMapToOffsetCounts (ehcNegative ehc)
   in ExponentialHistogramDataPoint
-      { exponentialHistogramDataPointStartTimeUnixNano = startT
-      , exponentialHistogramDataPointTimeUnixNano = t
-      , exponentialHistogramDataPointCount = ehcCount ehc
-      , exponentialHistogramDataPointSum = Just (ehcSum ehc)
-      , exponentialHistogramDataPointScale = ehcScale ehc
-      , exponentialHistogramDataPointZeroCount = ehcZeroCount ehc
-      , exponentialHistogramDataPointPositiveOffset = posOff
-      , exponentialHistogramDataPointPositiveBucketCounts = posVec
-      , exponentialHistogramDataPointNegativeOffset = negOff
-      , exponentialHistogramDataPointNegativeBucketCounts = negVec
-      , exponentialHistogramDataPointAttributes = attrs
-      , exponentialHistogramDataPointMin = toMaybeDouble (ehcMin ehc)
-      , exponentialHistogramDataPointMax = toMaybeDouble (ehcMax ehc)
-      , exponentialHistogramDataPointExemplars =
-          V.fromList $
-            IM.elems (ehcPositiveExemplars ehc)
-              <> IM.elems (ehcNegativeExemplars ehc)
-              <> maybe [] (: []) (ehcZeroExemplar ehc)
-      , exponentialHistogramDataPointZeroThreshold = 0
-      }
+       { exponentialHistogramDataPointStartTimeUnixNano = startT
+       , exponentialHistogramDataPointTimeUnixNano = t
+       , exponentialHistogramDataPointCount = ehcCount ehc
+       , exponentialHistogramDataPointSum = Just (ehcSum ehc)
+       , exponentialHistogramDataPointScale = ehcScale ehc
+       , exponentialHistogramDataPointZeroCount = ehcZeroCount ehc
+       , exponentialHistogramDataPointPositiveOffset = posOff
+       , exponentialHistogramDataPointPositiveBucketCounts = posVec
+       , exponentialHistogramDataPointNegativeOffset = negOff
+       , exponentialHistogramDataPointNegativeBucketCounts = negVec
+       , exponentialHistogramDataPointAttributes = attrs
+       , exponentialHistogramDataPointMin = toMaybeDouble (ehcMin ehc)
+       , exponentialHistogramDataPointMax = toMaybeDouble (ehcMax ehc)
+       , exponentialHistogramDataPointExemplars =
+           V.fromList $
+             IM.elems (ehcPositiveExemplars ehc)
+               <> IM.elems (ehcNegativeExemplars ehc)
+               <> maybe [] (: []) (ehcZeroExemplar ehc)
+       , exponentialHistogramDataPointZeroThreshold = 0
+       }
 
 
 minOptDouble :: OptionalDouble -> Double -> OptionalDouble
@@ -544,8 +550,9 @@ maxOptDouble (SomeDouble a) v = SomeDouble (max a v)
 {-# INLINE maxOptDouble #-}
 
 
--- | True when a NumberValue holds a non-finite Double (NaN or Inf).
--- Int values are always finite.
+{- | True when a NumberValue holds a non-finite Double (NaN or Inf).
+Int values are always finite.
+-}
 isNonFiniteDouble :: NumberValue -> Bool
 isNonFiniteDouble (DoubleNumber d) = isNaN d || isInfinite d
 isNonFiniteDouble (IntNumber _) = False
@@ -604,8 +611,9 @@ data StreamTarget = StreamTarget
   { stRef :: !(IORef CellMap)
   , stExportKeys :: !(Maybe (HS.HashSet Text))
   , stExemplarOpts :: !SdkMeterExemplarOptions
-  -- ^ Effective exemplar options for this stream (may differ from the global
-  -- provider default when the matching view carries a filter override).
+  {- ^ Effective exemplar options for this stream (may differ from the global
+  provider default when the matching view carries a filter override).
+  -}
   }
 
 
@@ -861,18 +869,18 @@ setSumDbl !val !isMonotonic mExVal !attrs ref lim exOpts mExportKeys =
   -- Spec: NaN and Inf measurements MUST be silently dropped.
   -- https://opentelemetry.io/docs/specs/otel/metrics/sdk/
   unless (isNaN val || isInfinite val) $ do
-  mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
-  let !cap = exemplarReservoirLimit exOpts
-  cellRef <- acquireCell ref attrs lim (pure $! CsSum $! SumDblCell val isMonotonic V.empty 0)
-  atomicModifyIORef' cellRef $ \cell ->
-    let !cell' = case cell of
-          CsSum (SumDblCell _ mon exs prev) ->
-            CsSum $!
-              SumDblCell val mon (case mex of Nothing -> exs; Just e -> pushExemplar cap e exs) prev
-          _ ->
-            CsSum $!
-              SumDblCell val isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex) 0
-    in (cell', ())
+    mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
+    let !cap = exemplarReservoirLimit exOpts
+    cellRef <- acquireCell ref attrs lim (pure $! CsSum $! SumDblCell val isMonotonic V.empty 0)
+    atomicModifyIORef' cellRef $ \cell ->
+      let !cell' = case cell of
+            CsSum (SumDblCell _ mon exs prev) ->
+              CsSum $!
+                SumDblCell val mon (case mex of Nothing -> exs; Just e -> pushExemplar cap e exs) prev
+            _ ->
+              CsSum $!
+                SumDblCell val isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex) 0
+      in (cell', ())
 {-# INLINE setSumDbl #-}
 
 
@@ -958,36 +966,36 @@ recordGauge !val !t mExVal !attrs ref lim exOpts mExportKeys =
   -- Spec: NaN and Inf double measurements MUST be silently dropped.
   -- https://opentelemetry.io/docs/specs/otel/metrics/sdk/
   unless (isNonFiniteDouble val) $ do
-  mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
-  let !cap = exemplarReservoirLimit exOpts
-      initGauge =
-        pure $!
-          CsGauge
-            GaugeCell
-              { gcValue = val
-              , gcTimeUnixNano = t
-              , gcExemplars = V.empty
-              }
-  cellRef <- acquireCell ref attrs lim initGauge
-  atomicModifyIORef' cellRef $ \cell ->
-    let !cell' = case cell of
-          CsGauge gc ->
-            CsGauge $! case mex of
-              Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
-              Just e ->
-                gc
-                  { gcValue = val
-                  , gcTimeUnixNano = t
-                  , gcExemplars = pushExemplar cap e (gcExemplars gc)
-                  }
-          _ ->
+    mex <- captureMetricExemplar exOpts mExVal attrs mExportKeys
+    let !cap = exemplarReservoirLimit exOpts
+        initGauge =
+          pure $!
             CsGauge
               GaugeCell
                 { gcValue = val
                 , gcTimeUnixNano = t
-                , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                , gcExemplars = V.empty
                 }
-    in (cell', ())
+    cellRef <- acquireCell ref attrs lim initGauge
+    atomicModifyIORef' cellRef $ \cell ->
+      let !cell' = case cell of
+            CsGauge gc ->
+              CsGauge $! case mex of
+                Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
+                Just e ->
+                  gc
+                    { gcValue = val
+                    , gcTimeUnixNano = t
+                    , gcExemplars = pushExemplar cap e (gcExemplars gc)
+                    }
+            _ ->
+              CsGauge
+                GaugeCell
+                  { gcValue = val
+                  , gcTimeUnixNano = t
+                  , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                  }
+      in (cell', ())
 
 
 {- | Compute delta for an async instrument's cell.
@@ -1711,13 +1719,13 @@ buildMetricExport startT t temp dims cells =
                           DoubleNumber _ -> iI
                     in ( intCheck
                        , GaugeDataPoint
-                          { gaugeDataPointStartTimeUnixNano = startT
-                          , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
-                          , gaugeDataPointValue = gcValue gc
-                          , gaugeDataPointAttributes = applyDimAttrs dims attrs
-                          , gaugeDataPointExemplars = gcExemplars gc
-                          }
-                          : acc
+                           { gaugeDataPointStartTimeUnixNano = startT
+                           , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
+                           , gaugeDataPointValue = gcValue gc
+                           , gaugeDataPointAttributes = applyDimAttrs dims attrs
+                           , gaugeDataPointExemplars = gcExemplars gc
+                           }
+                           : acc
                        )
                   _ -> (iI, acc)
               )

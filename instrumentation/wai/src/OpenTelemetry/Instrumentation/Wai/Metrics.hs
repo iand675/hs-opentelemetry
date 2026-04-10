@@ -38,7 +38,6 @@ import Network.HTTP.Types (HttpVersion (..), statusCode)
 import Network.Wai (Middleware, Request (..), responseStatus)
 import OpenTelemetry.Attributes (Attributes, addAttribute, defaultAttributeLimits, emptyAttributes)
 import OpenTelemetry.Attributes.Key (unkey)
-import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Metric.Core (
   AdvisoryParameters (..),
   Counter (..),
@@ -47,6 +46,7 @@ import OpenTelemetry.Metric.Core (
   UpDownCounter (..),
   defaultAdvisoryParameters,
  )
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 data WaiMetrics = WaiMetrics

@@ -35,8 +35,8 @@ validateInstrumentName t
   | otherwise =
       let c0 = T.index t 0
       in if not (isAsciiAlpha c0)
-          then Just "instrument name must start with an ASCII letter"
-          else go 1
+           then Just "instrument name must start with an ASCII letter"
+           else go 1
   where
     go :: Int -> Maybe Text
     go i
@@ -44,8 +44,8 @@ validateInstrumentName t
       | otherwise =
           let c = T.index t i
           in if isValidChar c
-              then go (i + 1)
-              else Just "instrument name contains invalid characters"
+               then go (i + 1)
+               else Just "instrument name contains invalid characters"
     isAsciiAlpha c =
       isAscii c
         && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
@@ -53,17 +53,18 @@ validateInstrumentName t
     isValidChar c =
       isAscii c
         && ( isAsciiAlpha c
-              || isAsciiDigit c
-              || c == '_'
-              || c == '.'
-              || c == '-'
-              || c == '/'
+               || isAsciiDigit c
+               || c == '_'
+               || c == '.'
+               || c == '-'
+               || c == '/'
            )
 
 
--- | Unit is optional; when present it must be ASCII and at most 63 code units (specification/metrics/api.md).
---
--- @since 0.0.1.0
+{- | Unit is optional; when present it must be ASCII and at most 63 code units (specification/metrics/api.md).
+
+@since 0.0.1.0
+-}
 validateInstrumentUnit :: Text -> Maybe Text
 validateInstrumentUnit u
   | T.null u = Nothing

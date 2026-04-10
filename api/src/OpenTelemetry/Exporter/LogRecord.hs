@@ -1,8 +1,8 @@
--- |
--- Module      : OpenTelemetry.Exporter.LogRecord
--- Description : Re-exports of log record exporter types.
--- Stability   : experimental
---
+{- |
+Module      : OpenTelemetry.Exporter.LogRecord
+Description : Re-exports of log record exporter types.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.LogRecord (
   LogRecordExporter,
   LogRecordExporterArguments (..),

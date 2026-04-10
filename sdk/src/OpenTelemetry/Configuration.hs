@@ -75,9 +75,10 @@ initializeFromConfigFile = do
     Just path -> Just <$> initializeFromFile path
 
 
--- | Parse and create SDK components from a YAML configuration file.
---
--- @since 0.1.0.0
+{- | Parse and create SDK components from a YAML configuration file.
+
+@since 0.1.0.0
+-}
 initializeFromFile :: FilePath -> IO OTelComponents
 initializeFromFile path = do
   result <- parseConfigFile path
@@ -86,9 +87,10 @@ initializeFromFile path = do
     Right cfg -> createFromConfig cfg
 
 
--- | Parse and create SDK components from YAML text content.
---
--- @since 0.1.0.0
+{- | Parse and create SDK components from YAML text content.
+
+@since 0.1.0.0
+-}
 initializeFromText :: Text -> IO OTelComponents
 initializeFromText content = do
   result <- parseConfigBytes content
