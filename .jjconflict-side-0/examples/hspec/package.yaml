@@ -1,0 +1,31 @@
+name: hspec-example
+
+dependencies:
+- base >= 4.7 && < 5
+
+ghc-options:
+  - -Wall
+
+tests:
+  test:
+    dependencies:
+      # minimal example dependencies
+      - hspec
+      - hspec-example
+      - text
+      - unliftio
+      # opentelemetry dependencies
+      - hs-opentelemetry-sdk
+      - hs-opentelemetry-api
+      - hs-opentelemetry-exporter-handle
+      - hs-opentelemetry-instrumentation-hspec
+    main: Main.hs
+    source-dirs:
+      - test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+
+library:
+  source-dirs: src

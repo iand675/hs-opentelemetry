@@ -1,0 +1,139 @@
+cradle:
+  stack:
+    - path: "api/src"
+      component: "hs-opentelemetry-api:lib"
+
+    - path: "api/test"
+      component: "hs-opentelemetry-api:test:hs-opentelemetry-api-test"
+
+    - path: "examples/hspec/src"
+      component: "hspec-example:lib"
+
+    - path: "examples/hspec/test"
+      component: "hspec-example:test:test"
+
+    - path: "examples/yesod-minimal/src"
+      component: "yesod-minimal:lib"
+
+    - path: "examples/yesod-minimal/src/Minimal.hs"
+      component: "yesod-minimal:exe:yesod-minimal"
+
+    - path: "examples/yesod-minimal/src/Paths_yesod_minimal.hs"
+      component: "yesod-minimal:exe:yesod-minimal"
+
+    - path: "exporters/handle/src"
+      component: "hs-opentelemetry-exporter-handle:lib"
+
+    - path: "exporters/handle/test"
+      component: "hs-opentelemetry-exporter-handle:test:hs-opentelemetry-exporter-handle-test"
+
+    - path: "exporters/in-memory/src"
+      component: "hs-opentelemetry-exporter-in-memory:lib"
+
+    - path: "exporters/in-memory/test"
+      component: "hs-opentelemetry-exporter-in-memory:test:hs-opentelemetry-exporter-in-memory-test"
+
+    - path: "exporters/otlp/src"
+      component: "hs-opentelemetry-exporter-otlp:lib"
+
+    - path: "exporters/otlp/test"
+      component: "hs-opentelemetry-exporter-otlp:test:hs-opentelemetry-exporter-otlp-test"
+
+    - path: "instrumentation/cloudflare/src"
+      component: "hs-opentelemetry-instrumentation-cloudflare:lib"
+
+    - path: "instrumentation/cloudflare/test"
+      component: "hs-opentelemetry-instrumentation-cloudflare:test:cloudflare-test"
+
+    - path: "instrumentation/conduit/src"
+      component: "hs-opentelemetry-instrumentation-conduit:lib"
+
+    - path: "instrumentation/conduit/test"
+      component: "hs-opentelemetry-instrumentation-conduit:test:hs-opentelemetry-instrumentation-conduit-test"
+
+    - path: "instrumentation/hspec/src"
+      component: "hs-opentelemetry-instrumentation-hspec:lib"
+
+    - path: "instrumentation/hspec/test"
+      component: "hs-opentelemetry-instrumentation-hspec:test:hs-opentelemetry-hspec-test"
+
+    - path: "instrumentation/http-client/src"
+      component: "hs-opentelemetry-instrumentation-http-client:lib"
+
+    - path: "instrumentation/http-client/test"
+      component: "hs-opentelemetry-instrumentation-http-client:test:hs-opentelemetry-instrumentation-http-client-test"
+
+    - path: "instrumentation/persistent/src"
+      component: "hs-opentelemetry-instrumentation-persistent:lib"
+
+    - path: "instrumentation/persistent/test"
+      component: "hs-opentelemetry-instrumentation-persistent:test:hs-opentelemetry-persistent-test"
+
+    - path: "instrumentation/persistent-mysql/src"
+      component: "hs-opentelemetry-instrumentation-persistent-mysql:lib"
+
+    - path: "instrumentation/postgresql-simple/src"
+      component: "hs-opentelemetry-instrumentation-postgresql-simple:lib"
+
+    - path: "instrumentation/postgresql-simple/test"
+      component: "hs-opentelemetry-instrumentation-postgresql-simple:test:hs-opentelemetry-instrumentation-postgresql-simple-test"
+
+    - path: "instrumentation/wai/src"
+      component: "hs-opentelemetry-instrumentation-wai:lib"
+
+    - path: "instrumentation/wai/test"
+      component: "hs-opentelemetry-instrumentation-wai:test:hs-opentelemetry-instrumentation-wai-test"
+
+    - path: "instrumentation/yesod/src"
+      component: "hs-opentelemetry-instrumentation-yesod:lib"
+
+    - path: "instrumentation/yesod/test"
+      component: "hs-opentelemetry-instrumentation-yesod:test:hs-opentelemetry-instrumentation-yesod-test"
+
+    - path: "otlp/./"
+      component: "hs-opentelemetry-otlp:lib"
+
+    - path: "propagators/b3/src"
+      component: "hs-opentelemetry-propagator-b3:lib"
+
+    - path: "propagators/b3/test"
+      component: "hs-opentelemetry-propagator-b3:test:hs-opentelemetry-propagator-b3-test"
+
+    - path: "propagators/datadog/src"
+      component: "hs-opentelemetry-propagator-datadog:lib"
+
+    - path: "propagators/datadog/test/spec"
+      component: "hs-opentelemetry-propagator-datadog:test:spec"
+
+    - path: "propagators/datadog/old-src"
+      component: "hs-opentelemetry-propagator-datadog:test:spec"
+
+    - path: "propagators/datadog/benchmark/header-codec/main.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/old-src/main.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/benchmark/header-codec/Raw.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/benchmark/header-codec/String.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/old-src/Raw.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/datadog/old-src/String.hs"
+      component: "hs-opentelemetry-propagator-datadog:bench:header-codec"
+
+    - path: "propagators/w3c/src"
+      component: "hs-opentelemetry-propagator-w3c:lib"
+
+    - path: "propagators/w3c/test"
+      component: "hs-opentelemetry-propagator-w3c:test:hs-opentelemetry-propagator-w3c-test"
+
+    - path: "sdk/src"
+      component: "hs-opentelemetry-sdk:lib"
+
+    - path: "sdk/test"
+      component: "hs-opentelemetry-sdk:test:hs-opentelemetry-sdk-test"

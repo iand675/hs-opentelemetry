@@ -1,0 +1,44 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:               hs-opentelemetry-instrumentation-persistent
+version:            0.1.0.1
+description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/persistent#readme>
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan, Jade Lovelace
+maintainer:         ian@iankduncan.com
+copyright:          2024 Ian Duncan, Mercury Technologies
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Instrumentation.Persistent
+  other-modules:
+      Paths_hs_opentelemetry_instrumentation_persistent
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , clock
+    , hs-opentelemetry-api ==0.3.*
+    , mtl
+    , persistent >=2.13.3
+    , resourcet
+    , text
+    , unliftio
+    , unordered-containers
+    , vault
+  default-language: Haskell2010

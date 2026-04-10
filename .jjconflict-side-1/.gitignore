@@ -1,0 +1,10 @@
+.direnv/
+.vscode/
+.stack-work/
+.DS_Store
+*~
+client_session_key.aes
+.env.local
+dist-newstyle/
+.pre-commit-config.yaml
+.devenv/

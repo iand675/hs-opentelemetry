@@ -1,0 +1,3 @@
+- pattern: ^.*/package\.yaml$
+  commands:
+    - hpack \0

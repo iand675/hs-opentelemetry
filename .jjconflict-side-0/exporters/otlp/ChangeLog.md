@@ -1,0 +1,39 @@
+# Changelog for hs-opentelemetry-exporter-otlp
+
+## Unreleased
+
+- `OpenTelemetry.Exporter.OTLP` barrel module now re-exports all three signals (Span, Metric, LogRecord)
+- Implement `OpenTelemetry.Exporter.OTLP.LogRecord` — full OTLP HTTP/Protobuf log exporter with retry, compression, and severity/AnyValue/tracing-context serialization
+- Use `startTimeUnixNano` from data points instead of hardcoded 0
+- Comprehensive protobuf round-trip tests for all metric types
+- OTLP metrics: exemplars on number and histogram data points; exponential histogram messages; aggregation temporality from export model.
+
+## 0.1.1.0
+
+- Complete `loadExporterEnvironmentVariables` implementation
+- Bump `hs-opentelemetry-otlp` dependency to 0.2
+
+## 0.1.0.1
+
+### Added
+- TraceState support in OTLP span export
+- Proper encoding of traceState field in OTLP spans and span links
+- Full traceState preservation without HTTP header constraints
+
+### Changed
+- Span export now includes traceState information from span context
+- Span links export now includes traceState information from link context
+- Switched to `encodeTraceStateFull` to preserve all traceState entries in binary format
+
+### Dependencies
+- Added `hs-opentelemetry-propagator-w3c` dependency for traceState encoding
+
+## 0.1.0.0
+
+- Export dropped span, link, event, and attribute counts
+- Add gzip compression support
+- Swallow errors from sending data to localhost
+
+## 0.0.1.0
+
+- Initial release

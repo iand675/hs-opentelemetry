@@ -1,0 +1,49 @@
+name:                hs-opentelemetry-exporter-in-memory
+version:             0.0.1.4
+github:              "iand675/hs-opentelemetry"
+license:             BSD3
+author:              "Ian Duncan"
+maintainer:          "ian@iankduncan.com"
+copyright:           "2021 Ian Duncan"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/in-memory#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  exposed-modules:
+  - OpenTelemetry.Exporter.InMemory
+  - OpenTelemetry.Exporter.InMemory.LogRecord
+  - OpenTelemetry.Exporter.InMemory.Metric
+  - OpenTelemetry.Exporter.InMemory.Span
+  dependencies:
+  - hs-opentelemetry-api ^>= 0.3
+  - async
+  - unagi-chan
+  - vector
+
+# Test suite not yet implemented
+_tests:
+  hs-opentelemetry-exporter-in-memory-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-exporter-in-memory

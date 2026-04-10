@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -e
+
+# Find all packages with version bumps compared to origin/main
+echo "Finding packages with version bumps..."
+echo ""
+
+packages=()
+tags=()
+
+# Check all cabal files for version changes
+while IFS= read -r cabal_file; do
+  pkg_name=$(basename "$cabal_file" .cabal)
+
+  # Get current version
+  current_version=$(grep "^version:" "$cabal_file" | head -1 | awk '{print $2}')
+
+  # Get old version from origin/main
+  old_version=$(git show origin/main:"$cabal_file" 2>/dev/null | grep "^version:" | head -1 | awk '{print $2}')
+
+  # Check if version changed
+  if [ -n "$current_version" ] && [ -n "$old_version" ] && [ "$current_version" != "$old_version" ]; then
+    tag="${pkg_name}-${current_version}"
+    echo "Found: $pkg_name"
+    echo "  Old version: $old_version"
+    echo "  New version: $current_version"
+    echo "  Tag: $tag"
+    echo ""
+
+    packages+=("$pkg_name")
+    tags+=("$tag")
+  fi
+done < <(find . -name "*.cabal" -type f | grep -v "dist-newstyle" | sort)
+
+echo "Found ${#tags[@]} packages with version bumps"
+echo ""
+
+if [ "${#tags[@]}" -eq 0 ]; then
+  echo "No version bumps found. Exiting."
+  exit 0
+fi
+
+# Ask for confirmation
+echo "The following tags will be created:"
+for tag in "${tags[@]}"; do
+  echo "  - $tag"
+done
+echo ""
+read -p "Create these tags? (y/n) " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Aborted."
+  exit 1
+fi
+
+# Create tags
+echo ""
+echo "Creating tags..."
+for tag in "${tags[@]}"; do
+  echo "Creating tag: $tag"
+  git tag "$tag"
+done
+
+echo ""
+echo "Done! Created ${#tags[@]} tags."
+echo ""
+echo "To push these tags to the remote, run:"
+echo "  git push origin ${tags[*]}"

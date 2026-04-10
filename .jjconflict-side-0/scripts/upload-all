@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+stack upload \
+  otlp \
+  api \
+  sdk \
+  semantic-conventions \
+  exporters/in-memory \
+  exporters/otlp \
+  exporters/handle \
+  propagators/b3 \
+  propagators/datadog \
+  propagators/w3c \
+  instrumentation/cloudflare \
+  instrumentation/conduit \
+  instrumentation/hspec \
+  instrumentation/http-client \
+  instrumentation/hw-kafka-client \
+  instrumentation/persistent \
+  instrumentation/persistent-mysql \
+  instrumentation/postgresql-simple \
+  instrumentation/tasty \
+  instrumentation/wai \
+  instrumentation/yesod \
+  utils/exceptions \
+  vendors/honeycomb

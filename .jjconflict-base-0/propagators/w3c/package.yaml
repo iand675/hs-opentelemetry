@@ -1,0 +1,50 @@
+_common/lib: !include "../../package-common.yaml"
+
+name:                hs-opentelemetry-propagator-w3c
+version:             0.1.0.0
+
+<<: *preface
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+synopsis:            Trace propagation via HTTP headers following the w3c tracestate spec.
+category:            OpenTelemetry, Tracing, Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/propagators/w3c#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  dependencies:
+  - bytestring
+  - hs-opentelemetry-api ^>= 0.3
+  - http-types
+  - attoparsec
+  - text
+
+tests:
+  hs-opentelemetry-propagator-w3c-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-propagator-w3c
+    - hspec
+    - hspec-discover
+    - QuickCheck
+    - bytestring
+    - text
+    - hs-opentelemetry-api
+    - attoparsec

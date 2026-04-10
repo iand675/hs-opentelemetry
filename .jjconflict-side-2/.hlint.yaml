@@ -1,0 +1,13 @@
+- functions:
+  - name: print
+    message: &avoid-stdout-use-logger  |
+      Avoid using functions like `print` and `putStrLn` that write directly to STDOUT or STDERR.
+      We need to support user-configurable logging, and these functions bypass that.
+
+  - name: putStrLn
+    message: *avoid-stdout-use-logger
+
+- ignore:
+    name: "Use newtype instead of data"
+- ignore:
+    name: "Use list comprehension"

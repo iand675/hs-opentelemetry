@@ -1,0 +1,40 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:          yesod-minimal
+version:       0.0.0
+build-type:    Simple
+
+executable yesod-minimal
+  main-is: Minimal.hs
+  other-modules:
+      Paths_yesod_minimal
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N -main-is Minimal
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , conduit
+    , hs-opentelemetry-api
+    , hs-opentelemetry-instrumentation-ghc-metrics
+    , hs-opentelemetry-instrumentation-http-client ==0.1.*
+    , hs-opentelemetry-instrumentation-persistent ==0.1.*
+    , hs-opentelemetry-instrumentation-postgresql-simple ==0.2.*
+    , hs-opentelemetry-instrumentation-wai ==0.1.*
+    , hs-opentelemetry-instrumentation-yesod ==0.1.*
+    , hs-opentelemetry-sdk ==0.1.*
+    , monad-logger
+    , persistent >=2.13.3
+    , persistent-postgresql >=2.13.4
+    , persistent-qq
+    , resource-pool
+    , text
+    , unliftio
+    , warp
+    , yesod-core
+    , yesod-persistent
+  default-language: Haskell2010

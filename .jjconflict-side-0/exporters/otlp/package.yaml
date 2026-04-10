@@ -1,0 +1,65 @@
+name:                hs-opentelemetry-exporter-otlp
+version:             0.1.1.0
+github:              "iand675/hs-opentelemetry"
+license:             BSD3
+author:              "Ian Duncan"
+maintainer:          "ian@iankduncan.com"
+copyright:           "2021 Ian Duncan"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+synopsis:            OpenTelemetry exporter supporting the standard OTLP protocol
+category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/otlp#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  exposed-modules:
+  - OpenTelemetry.Exporter.OTLP
+  - OpenTelemetry.Exporter.OTLP.LogRecord
+  - OpenTelemetry.Exporter.OTLP.Span
+  - OpenTelemetry.Exporter.OTLP.Metric
+  dependencies:
+  - bytestring
+  - case-insensitive
+  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-otlp ^>= 0.2
+  - hs-opentelemetry-propagator-w3c
+  - http-client
+  - http-conduit
+  - http-types
+  - microlens
+  - proto-lens >= 0.7.1.0
+  - text
+  - unordered-containers
+  - vector
+  - zlib
+
+tests:
+  hs-opentelemetry-exporter-otlp-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-api ^>= 0.3
+    - hs-opentelemetry-exporter-otlp
+    - hs-opentelemetry-otlp ^>= 0.2
+    - hspec
+    - microlens
+    - proto-lens
+    - text
+    - vector
