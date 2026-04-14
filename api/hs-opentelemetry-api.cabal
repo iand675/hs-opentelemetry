@@ -127,10 +127,23 @@ test-suite hs-opentelemetry-api-test
   other-modules:
       OpenTelemetry.AttributesSpec
       OpenTelemetry.BaggageSpec
+      OpenTelemetry.Context.EnvironmentSpec
+      OpenTelemetry.Contrib.CarryOnsSpec
+      OpenTelemetry.Contrib.SpanTraversalsSpec
+      OpenTelemetry.EnvironmentSpec
       OpenTelemetry.InstrumentationLibrarySpec
+      OpenTelemetry.Internal.LoggingSpec
+      OpenTelemetry.Log.CoreSpec
+      OpenTelemetry.MetricSpec
+      OpenTelemetry.RegistrySpec
+      OpenTelemetry.ResourceSpec
       OpenTelemetry.SemanticsConfigSpec
+      OpenTelemetry.Trace.ExceptionHandlerSpec
+      OpenTelemetry.Trace.MonadSpec
+      OpenTelemetry.Trace.SamplerSpec
       OpenTelemetry.Trace.TraceFlagsSpec
       OpenTelemetry.Trace.TracerSpec
+      OpenTelemetry.Trace.UtilsSpec
   hs-source-dirs:
       test
   default-extensions:
