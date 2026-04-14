@@ -99,6 +99,7 @@
                 pcre
                 postgresql
                 protobuf
+                rdkafka
                 shellcheck
                 zlib
                 zstd
