@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:               hs-opentelemetry-instrumentation-http-client
 version:            0.1.0.1
+synopsis:           OpenTelemetry instrumentation for http-client
 description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client#readme>
+category:           OpenTelemetry, Telemetry, HTTP, Web
 homepage:           https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
 author:             Ian Duncan, Jade Lovelace
@@ -26,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.HttpClient
+      OpenTelemetry.Instrumentation.HttpClient.Metrics
       OpenTelemetry.Instrumentation.HttpClient.Raw
       OpenTelemetry.Instrumentation.HttpClient.Simple
   other-modules:
@@ -39,12 +42,35 @@ library
     , bytestring
     , case-insensitive
     , conduit
-    , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , http-client
     , http-conduit
     , http-types
     , text
     , unliftio
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite hs-opentelemetry-instrumentation-http-client-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hs_opentelemetry_instrumentation_http_client
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , hs-opentelemetry-api ==0.4.*
+    , hs-opentelemetry-exporter-in-memory ==0.0.*
+    , hs-opentelemetry-instrumentation-http-client ==0.1.*
+    , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , hspec
+    , http-client
+    , http-types
+    , text
     , unordered-containers
   default-language: Haskell2010

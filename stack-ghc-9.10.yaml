@@ -16,6 +16,19 @@ packages:
 - propagators/w3c
 - sdk
 - utils/exceptions
+- instrumentation/cloudflare
+- instrumentation/conduit
+- instrumentation/ghc-metrics
+- instrumentation/gogol
+- instrumentation/hspec
+- instrumentation/http-client
+- instrumentation/hw-kafka-client
+- instrumentation/persistent
+- instrumentation/persistent-mysql
+- instrumentation/postgresql-simple
+- instrumentation/tasty
+- instrumentation/wai
+- instrumentation/yesod
 
 extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619

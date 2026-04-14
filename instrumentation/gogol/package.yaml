@@ -1,0 +1,48 @@
+_common/lib: !include "../../package-common.yaml"
+
+name:                hs-opentelemetry-instrumentation-gogol
+version:             0.1.0.0
+
+<<: *preface
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            OpenTelemetry instrumentation for the Gogol Google Cloud SDK
+category:            OpenTelemetry, Telemetry, Monitoring, Observability, Google Cloud
+description:         Tracing wrappers for Gogol Google Cloud SDK calls. Creates spans per Google API call with RPC semantic convention attributes.
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  dependencies:
+  - exceptions
+  - gogol-core ^>= 1.0
+  - bytestring
+  - hs-opentelemetry-api >= 0.3 && < 0.5
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+  - http-types
+  - resourcet
+  - text
+  - unordered-containers
+
+tests:
+  hs-opentelemetry-instrumentation-gogol-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-gogol == 0.1.*
+    - hs-opentelemetry-api >= 0.3 && < 0.5
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - gogol-core
+    - hspec
+    - text

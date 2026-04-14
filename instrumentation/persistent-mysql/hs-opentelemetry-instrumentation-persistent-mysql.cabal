@@ -6,6 +6,15 @@ synopsis: OpenTelemetry instrumentation for persistent-mysql
 license: BSD-3-Clause
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
+copyright: 2024 Ian Duncan, Mercury Technologies
+license-file: LICENSE
+homepage: https://github.com/iand675/hs-opentelemetry#readme
+bug-reports: https://github.com/iand675/hs-opentelemetry/issues
+category: OpenTelemetry, Database, MySQL
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
 
 common common
   build-depends: base >= 4 && < 5
@@ -18,8 +27,9 @@ library
   import: common
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.Persistent.MySQL
-  build-depends: hs-opentelemetry-api,
-                 hs-opentelemetry-instrumentation-persistent,
+  build-depends: hs-opentelemetry-api == 0.4.*,
+                 hs-opentelemetry-instrumentation-persistent >= 0.1 && < 0.2,
+                 hs-opentelemetry-semantic-conventions >= 1.40 && < 2,
                  iproute,
                  monad-logger,
                  mysql,
