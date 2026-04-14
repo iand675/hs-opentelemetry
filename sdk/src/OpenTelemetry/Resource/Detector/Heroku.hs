@@ -29,7 +29,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
-import OpenTelemetry.Resource.Detector.Internal (lookupEnvText)
 import qualified OpenTelemetry.SemanticConventions as SC
 import System.Environment (lookupEnv)
 
@@ -39,15 +38,15 @@ Returns an empty resource if @HEROKU_APP_ID@ is not set.
 -}
 detectHeroku :: IO Resource
 detectHeroku = do
-  mAppId <- lookupEnvText "HEROKU_APP_ID"
+  mAppId <- lookupText "HEROKU_APP_ID"
   case mAppId of
     Nothing -> pure $ mkResource []
     Just appId -> do
-      mAppName <- lookupEnvText "HEROKU_APP_NAME"
-      mDynoId <- lookupEnvText "HEROKU_DYNO_ID"
-      mReleaseVersion <- lookupEnvText "HEROKU_RELEASE_VERSION"
-      mSlugCommit <- lookupEnvText "HEROKU_SLUG_COMMIT"
-      mReleaseCreated <- lookupEnvText "HEROKU_RELEASE_CREATED_AT"
+      mAppName <- lookupText "HEROKU_APP_NAME"
+      mDynoId <- lookupText "HEROKU_DYNO_ID"
+      mReleaseVersion <- lookupText "HEROKU_RELEASE_VERSION"
+      mSlugCommit <- lookupText "HEROKU_SLUG_COMMIT"
+      mReleaseCreated <- lookupText "HEROKU_RELEASE_CREATED_AT"
       pure $
         mkResource
           [ unkey SC.cloud_provider .= ("heroku" :: Text)
@@ -58,3 +57,7 @@ detectHeroku = do
           , unkey SC.service_version .=? mReleaseVersion
           , unkey SC.service_instance_id .=? mDynoId
           ]
+
+
+lookupText :: String -> IO (Maybe Text)
+lookupText k = fmap T.pack <$> lookupEnv k

@@ -28,7 +28,6 @@ module OpenTelemetry.Resource.Detector.AWS.ECS (
 ) where
 
 import Data.Aeson (FromJSON (..), withObject, (.:), (.:?))
-import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes (Attribute)
@@ -174,4 +173,6 @@ normalizeArn val arnParts suffix
 
 
 safeIndex :: [a] -> Int -> Maybe a
-safeIndex xs i = listToMaybe (drop i xs)
+safeIndex xs i
+  | i < length xs = Just (xs !! i)
+  | otherwise = Nothing

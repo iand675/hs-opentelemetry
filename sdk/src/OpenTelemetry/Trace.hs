@@ -578,6 +578,15 @@ detectResourceAttributes = do
               Baggage.values ok
 
 
+readEnvDefault :: forall a. (Read a) => String -> a -> IO a
+readEnvDefault k defaultValue =
+  fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
+
+
+readEnv :: forall a. (Read a) => String -> IO (Maybe a)
+readEnv k = (>>= readMaybe) <$> lookupEnv k
+
+
 {- | Discover resource attributes using the shared SDK implementation in
      "OpenTelemetry.Resource.Detect".
 

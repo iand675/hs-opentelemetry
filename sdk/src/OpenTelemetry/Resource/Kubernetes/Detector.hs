@@ -30,7 +30,6 @@ module OpenTelemetry.Resource.Kubernetes.Detector (
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import OpenTelemetry.Resource.Detector.Internal (lookupEnvText)
 import OpenTelemetry.Resource.Kubernetes (Cluster (..), Namespace (..), Node (..), Pod)
 import qualified OpenTelemetry.Resource.Kubernetes as K8s
 import System.Environment (lookupEnv)
@@ -114,3 +113,7 @@ detectPod = do
     Nothing -> lookupEnvText "HOSTNAME"
   mUid <- lookupEnvText "K8S_POD_UID"
   pure K8s.Pod {K8s.podName = pName, K8s.podUid = mUid}
+
+
+lookupEnvText :: String -> IO (Maybe T.Text)
+lookupEnvText key = fmap (T.pack <$>) (lookupEnv key)
