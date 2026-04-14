@@ -13,7 +13,6 @@ in rec {
   inherit pkgs;
 
   skipPackages = [
-    "hs-opentelemetry-sdk"
     "hs-opentelemetry-instrumentation-cloudflare"
     "hs-opentelemetry-instrumentation-conduit"
     "hs-opentelemetry-instrumentation-ghc-metrics"
@@ -44,6 +43,8 @@ in rec {
     hs-opentelemetry-exporter-otlp = ../exporters/otlp;
     hs-opentelemetry-propagator-b3 = ../propagators/b3;
     hs-opentelemetry-propagator-datadog = ../propagators/datadog;
+    hs-opentelemetry-propagator-jaeger = ../propagators/jaeger;
+    hs-opentelemetry-propagator-xray = ../propagators/xray;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
