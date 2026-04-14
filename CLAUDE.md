@@ -7,8 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The project uses both Cabal and Stack as build tools, with Nix for environment management:
 
 ### Build Commands
-- `make` - Build and test everything across multiple GHC versions (9.4, 9.6, 9.8, 9.10) using both Stack and Cabal
+- `make` - Build and test everything across multiple GHC versions (9.4, 9.6, 9.8, 9.10, 9.12) using both Stack and Cabal
 - `make build.all` - Build everything without running tests
+- `make all.stack-9.10` - Build and test with a specific GHC version (9.4, 9.6, 9.8, 9.10, 9.12)
 - `stack build --test --bench` - Build with Stack (default: GHC 9.10)
 - `cabal build --enable-tests --enable-benchmarks all` - Build with Cabal
 - `cabal test all` - Run all tests with Cabal
@@ -19,54 +20,109 @@ The project uses both Cabal and Stack as build tools, with Nix for environment m
 
 ### Development Environment
 - `nix develop` - Enter default development environment (GHC 9.10)
-- `nix develop .#ghc94` - Enter specific GHC version environment (9.4, 9.6, 9.8, 9.10 available)
+- `nix develop .#ghc94` - Enter specific GHC version environment (9.4, 9.6, 9.8, 9.10, 9.12 available)
 - `direnv allow` - Allow direnv to load `.envrc` for automatic environment setup
+
+### GHC Version Matrix
+Stack files exist for each supported GHC version:
+| GHC | Stack file | Resolver | Notes |
+|-----|-----------|----------|-------|
+| 9.4 | `stack-ghc-9.4.yaml` | lts-21.25 | No hw-kafka-client, no gogol |
+| 9.6 | `stack-ghc-9.6.yaml` | lts-22.44 | No gogol |
+| 9.8 | `stack-ghc-9.8.yaml` | lts-23.28 | No gogol |
+| 9.10 | `stack-ghc-9.10.yaml` | lts-24.35 | Full support |
+| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-04-04 | No persistent-mysql; proto-lens via allow-newer |
+
+Key compat notes:
+- `foldl'` moved to Prelude in GHC 9.10; older versions need `import Data.List (foldl')`
+- `proto-lens` caps at `base < 4.21`; GHC 9.12 uses `allow-newer`
+- `gogol-core` only available in LTS 24+ / nightly
+- hw-kafka-client headers API only in LTS 22+
 
 ### Testing
 - Run tests via the build commands above (`--test` flag for Stack, `cabal test` for Cabal)
 - Tests are located in `test/` directories within each package
+
+### Benchmark Regression Detection
+- `make bench.save` - Save a baseline on your machine (takes ~4 minutes)
+- `make bench.check` - Compare against baseline, fail if >20% regression
+- `make bench.check.strict` - Stricter 10% threshold for focused perf work
+- `make bench.compare` - Side-by-side comparison of baseline vs current
+- `make bench.normalize` - Show benchmarks as multiples of IORef read (hardware-portable)
+
+Baselines are machine-specific (keyed by CPU fingerprint) and stored in `benchmarks/`.
+The `normalize` mode expresses costs as "N× IORef read" which is roughly stable across
+hardware, useful for comparing numbers from different machines.
+
+The benchmark harness uses:
+- `tasty-bench --baseline` for regression detection
+- `-fproc-alignment=64` for stable cache-line alignment
+- `-N1 -A32m` RTS settings for low-noise single-threaded measurement
+- `+RTS -T` for GC allocation tracking
+- Calibration benchmarks (noop IO, IORef read/write, atomicModifyIORef', clock, FFI) as reference points
 
 ## Code Architecture
 
 This is a multi-package Haskell project implementing OpenTelemetry for Haskell. The architecture follows the OpenTelemetry specification with clear separation between API and SDK:
 
 ### Core Package Structure
+- **`api-types/`** - Leaf package with core `Attribute`/`AttributeKey` types (no internal deps)
 - **`api/`** - OpenTelemetry API types and interfaces (for library instrumentation)
 - **`sdk/`** - OpenTelemetry SDK implementation (for applications)
-- **`otlp/`** - OpenTelemetry Protocol (OTLP) implementation
+- **`otlp/`** - OpenTelemetry Protocol (OTLP) proto-lens generated types
 - **`semantic-conventions/`** - Auto-generated semantic conventions
 
 ### Instrumentation Libraries
 Located in `instrumentation/`:
-- `wai/` - WAI middleware instrumentation
+- `wai/` - WAI middleware instrumentation (traces + metrics)
 - `yesod/` - Yesod web framework instrumentation
 - `persistent/` - Persistent database library instrumentation
-- `http-client/` - HTTP client instrumentation
+- `persistent-mysql/` - MySQL-specific persistent instrumentation
+- `postgresql-simple/` - postgresql-simple instrumentation
+- `http-client/` - HTTP client instrumentation (traces + metrics)
 - `conduit/` - Conduit streaming library instrumentation
+- `hw-kafka-client/` - Kafka instrumentation (GHC 9.6+ only, requires headers API)
+- `amazonka/` - AWS (amazonka) instrumentation
+- `gogol/` - Google Cloud (gogol) instrumentation (GHC 9.10+ only)
+- `ghc-metrics/` - GHC runtime statistics as OpenTelemetry metrics
+- `hspec/` - Hspec test framework instrumentation
+- `tasty/` - Tasty test framework instrumentation
+- `katip/` - Katip logging bridge to OTel logs
+- `co-log/` - co-log logging bridge to OTel logs
+- `monad-logger/` - monad-logger bridge to OTel logs
+- `cloudflare/` - Cloudflare Workers instrumentation
 
 ### Exporters
 Located in `exporters/`:
 - `otlp/` - OTLP exporter (primary export format)
 - `handle/` - Handle-based exporter (e.g., stdout)
 - `in-memory/` - In-memory exporter for testing
+- `prometheus/` - Prometheus metrics exporter
 
 ### Propagators
 Located in `propagators/`:
 - `w3c/` - W3C trace context and baggage propagation
 - `b3/` - B3 propagation format
 - `datadog/` - Datadog propagation format
+- `jaeger/` - Jaeger propagation format
+- `xray/` - AWS X-Ray propagation format
 
 ### Key Concepts
-- **TracerProvider**: Factory for creating Tracer instances
+- **TracerProvider**: Factory for creating Tracer instances (traces)
 - **Tracer**: Creates and manages Spans
 - **Span**: Represents a unit of work in a trace
+- **MeterProvider**: Factory for creating Meter instances (metrics)
+- **Meter**: Creates instruments (Counter, Histogram, Gauge, etc.)
+- **LoggerProvider**: Factory for creating Logger instances (logs)
+- **Logger**: Emits log records (bridge API for logging libraries)
 - **Context**: Carries trace context and baggage across process boundaries
 - **Resource**: Describes the service/process generating telemetry
+- **InstrumentationScope**: Identifies the library providing instrumentation
 
 ### Important Implementation Notes
 - The API package should be used for library instrumentation
 - The SDK package should be used for application-level configuration
-- Traces are the primary focus; metrics and logs are not yet fully implemented
+- Traces, metrics, and logs are all fully implemented
 - The project supports multiple GHC versions (9.4, 9.6, 9.8, 9.10, 9.12)
 
 ### Code Style
