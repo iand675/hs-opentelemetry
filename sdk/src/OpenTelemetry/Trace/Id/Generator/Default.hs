@@ -1,41 +1,29 @@
-{-# LANGUAGE CPP #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
- Module      :  OpenTelemetry.Trace.Id.Generator.Default
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Trace.Id.Generator.Default
+Copyright   :  (c) Ian Duncan, 2021
+License     :  BSD-3
+Maintainer  :  Ian Duncan
+Stability   :  experimental
+Portability :  non-portable (GHC extensions)
 
- A reasonably performant out of the box implementation of random span and trace id generation.
+Default ID generation using thread-local xoshiro256++ seeded from the
+platform CSPRNG (arc4random_buf on macOS\/BSD, getrandom on Linux,
+BCryptGenRandom on Windows).
 -}
 module OpenTelemetry.Trace.Id.Generator.Default (
   defaultIdGenerator,
 ) where
 
 import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
-import System.IO.Unsafe (unsafePerformIO)
-import System.Random.Stateful
 
 
 {- | The default generator for trace and span ids.
 
- @since 0.1.0.0
+Uses thread-local xoshiro256++ PRNG seeded from the platform CSPRNG.
+Each OS thread gets its own state. Zero contention, zero syscalls
+after initial seed.
+
+@since 0.1.0.0
 -}
 defaultIdGenerator :: IdGenerator
-defaultIdGenerator = unsafePerformIO $ do
-  genBase <- initStdGen
-  let (spanIdGen, traceIdGen) = split genBase
-  sg <- newAtomicGenM spanIdGen
-  tg <- newAtomicGenM traceIdGen
-  pure $
-    IdGenerator
-      { generateSpanIdBytes = uniformByteStringM 8 sg
-      , generateTraceIdBytes = uniformByteStringM 16 tg
-      }
-{-# NOINLINE defaultIdGenerator #-}
+defaultIdGenerator = DefaultIdGenerator

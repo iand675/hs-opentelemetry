@@ -1,8 +1,7 @@
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
+{-# LANGUAGE TypeApplications #-}
 
 {- |
  Module      :  OpenTelemetry.Processor.Batch.Span
@@ -14,33 +13,57 @@
  Portability :  non-portable (GHC extensions)
 
  This is an implementation of the Span Processor which create batches of finished spans and passes the export-friendly span data representations to the configured Exporter.
+
+ Spec: <https://opentelemetry.io/docs/specs/otel/trace/sdk/#batching-processor>
 -}
 module OpenTelemetry.Processor.Batch.Span (
   BatchTimeoutConfig (..),
   batchTimeoutConfig,
   batchProcessor,
+  batchProcessorWithMetrics,
   -- , BatchProcessorOperations
 ) where
 
-import Control.Concurrent (rtsSupportsBoundThreads)
+import Control.Concurrent (rtsSupportsBoundThreads, threadDelay)
 import Control.Concurrent.Async
-import Control.Concurrent.STM
+import qualified Control.Concurrent.Chan.Unagi.Bounded as UChan
+import Control.Concurrent.MVar
 import Control.Exception
-import Control.Monad
+import Control.Monad (unless, void, when)
 import Control.Monad.IO.Class
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.IORef (atomicModifyIORef', newIORef, readIORef)
+import Data.IORef (atomicWriteIORef, newIORef, readIORef)
+import Data.Int (Int64)
+import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Data.Vector (Vector)
-import OpenTelemetry.Exporter.Span (SpanExporter)
+import qualified Data.Vector as V
+import OpenTelemetry.Attributes (
+  Attributes,
+  unsafeAttributesFromListIgnoringLimits,
+ )
+import OpenTelemetry.Exporter.Span (ExportResult (..), SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
+import OpenTelemetry.Internal.AtomicCounter
+import OpenTelemetry.Internal.Logging (otelLogWarning)
+import OpenTelemetry.Metric.Core (
+  Meter (..),
+  ObservableCounter (..),
+  ObservableGauge (..),
+  ObservableResult (..),
+  defaultAdvisoryParameters,
+ )
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core
-import VectorBuilder.Builder as Builder
-import VectorBuilder.Vector as Builder
+import OpenTelemetry.Util (chunksOfV)
+import System.Timeout (timeout)
 
 
--- | Configurable options for batch exporting frequence and size
+{- | Configurable options for batch exporting frequence and size
+
+@since 0.0.1.0
+-}
 data BatchTimeoutConfig = BatchTimeoutConfig
   { maxQueueSize :: Int
   -- ^ The maximum queue size. After the size is reached, spans are dropped.
@@ -57,148 +80,46 @@ data BatchTimeoutConfig = BatchTimeoutConfig
   deriving (Show)
 
 
--- | Default configuration values
+{- | Default configuration values
+
+@since 0.0.1.0
+-}
 batchTimeoutConfig :: BatchTimeoutConfig
 batchTimeoutConfig =
   BatchTimeoutConfig
-    { maxQueueSize = 1024
+    { maxQueueSize = 2048
     , scheduledDelayMillis = 5000
     , exportTimeoutMillis = 30000
     , maxExportBatchSize = 512
     }
 
 
--- type BatchProcessorOperations = ()
+-- | Shared attributes for SDK self-telemetry on the batching span processor.
+componentAttrs :: Attributes
+componentAttrs =
+  unsafeAttributesFromListIgnoringLimits
+    [ ("otel.component.type", toAttribute ("batching_span_processor" :: Text))
+    , ("otel.component.name", toAttribute ("batching_span_processor/0" :: Text))
+    ]
 
---  A multi-producer single-consumer green/blue buffer.
--- Write requests that cannot fit in the live chunk will be dropped
---
--- TODO, would be cool to use AtomicCounters for this if possible
--- data GreenBlueBuffer a = GreenBlueBuffer
---   { gbReadSection :: !(TVar Word)
---   , gbWriteGreenOrBlue :: !(TVar Word)
---   , gbPendingWrites :: !(TVar Word)
---   , gbSectionSize :: !Int
---   , gbVector :: !(M.IOVector a)
---   }
 
-{- brainstorm: Single Word64 state sketch
+droppedAttrs :: Attributes
+droppedAttrs =
+  unsafeAttributesFromListIgnoringLimits
+    [ ("otel.component.type", toAttribute ("batching_span_processor" :: Text))
+    , ("otel.component.name", toAttribute ("batching_span_processor/0" :: Text))
+    , ("error.type", toAttribute ("queue_full" :: Text))
+    ]
 
-  63 (high bit): green or blue
-  32-62: read section
-  0-32: write count
+
+{- | Control channel messages. The data channel (unagi-chan) carries spans;
+this small side-channel carries wake-up and lifecycle signals, keeping
+STM entirely out of the picture.
 -}
-
-{-
-
-Green
-    512       512       512       512
-\|---------|---------|---------|---------|
-     0         1         2         3
-
-Blue
-    512       512       512       512
-\|---------|---------|---------|---------|
-     0         1         2         3
-
-The current read section denotes one chunk of length gbSize, which gets flushed
-to the span exporter. Once the vector has been copied for export, gbReadSection
-will be incremented.
-
--}
-
--- newGreenBlueBuffer
---   :: Int  --  Max queue size (2048)
---   -> Int  --  Export batch size (512)
---   -> IO (GreenBlueBuffer a)
--- newGreenBlueBuffer maxQueueSize batchSize = do
---   let logBase2 = finiteBitSize maxQueueSize - 1 - countLeadingZeros maxQueueSize
-
---   let closestFittingPowerOfTwo = 2 * if (1 `shiftL` logBase2) == maxQueueSize
---         then maxQueueSize
---         else 1 `shiftL` (logBase2 + 1)
-
---   readSection <- newTVarIO 0
---   writeSection <- newTVarIO 0
---   writeCount <- newTVarIO 0
---   buf <- M.new closestFittingPowerOfTwo
---   pure $ GreenBlueBuffer
---     { gbSize = maxQueueSize
---     , gbVector = buf
---     , gbReadSection = readSection
---     , gbPendingWrites = writeCount
---     }
-
--- isEmpty :: GreenBlueBuffer a -> STM Bool
--- isEmpty = do
---   c <- readTVar gbPendingWrites
---   pure (c == 0)
-
--- data InsertResult = ValueDropped | ValueInserted
-
--- tryInsert :: GreenBlueBuffer a -> a -> IO InsertResult
--- tryInsert GreenBlueBuffer{..} x = atomically $ do
---   c <- readTVar gbPendingWrites
---   if c == gbMaxLength
---     then pure ValueDropped
---     else do
---       greenOrBlue <- readTVar gbWriteGreenOrBlue
---       let i = c + ((M.length gbVector `shiftR` 1) `shiftL` (greenOrBlue `mod` 2))
---       M.write gbVector i x
---       writeTVar gbPendingWrites (c + 1)
---       pure ValueInserted
-
--- Caution, single writer means that this can't be called concurrently
--- consumeChunk :: GreenBlueBuffer a -> IO (V.Vector a)
--- consumeChunk GreenBlueBuffer{..} = atomically $ do
---   r <- readTVar gbReadSection
---   w <- readTVar gbWriteSection
---   c <- readTVar gbPendingWrites
---   when (r == w) $ do
---     modifyTVar gbWriteSection (+ 1)
---     setTVar gbPendingWrites 0
---   -- TODO slice and freeze appropriate section
--- M.slice (gbSectionSize * (r .&. gbSectionMask)
-
--- TODO, counters for dropped spans, exported spans
-
-data BoundedMap a = BoundedMap
-  { itemBounds :: !Int
-  , itemMaxExportBounds :: !Int
-  , itemCount :: !Int
-  , itemMap :: HashMap InstrumentationLibrary (Builder.Builder a)
-  }
-
-
-boundedMap :: Int -> Int -> BoundedMap a
-boundedMap bounds exportBounds = BoundedMap bounds exportBounds 0 mempty
-
-
-push :: ImmutableSpan -> BoundedMap ImmutableSpan -> Maybe (BoundedMap ImmutableSpan)
-push s m =
-  if itemCount m + 1 >= itemBounds m
-    then Nothing
-    else
-      Just $!
-        m
-          { itemCount = itemCount m + 1
-          , itemMap =
-              HashMap.insertWith
-                (<>)
-                (tracerName $ spanTracer s)
-                (Builder.singleton s)
-                $ itemMap m
-          }
-
-
-buildExport :: BoundedMap a -> (BoundedMap a, HashMap InstrumentationLibrary (Vector a))
-buildExport m =
-  ( m {itemCount = 0, itemMap = mempty}
-  , Builder.build <$> itemMap m
-  )
-
-
-data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
+data CtrlMsg
+  = WakeFlush
+  | FlushAndNotify !(MVar ())
+  | ShutdownMsg
 
 
 -- note: [Unmasking Asyncs]
@@ -228,147 +149,237 @@ data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
  The batch processor accepts spans and places them into batches. Batching helps better compress the data and reduce the number of outgoing connections
  required to transmit the data. This processor supports both size and time based batching.
 
- NOTE: this function requires the program be compiled with the @-threaded@ GHC
- option and will throw an error if this is not the case.
+NOTE: this processor works best when compiled with the @-threaded@ GHC option.
+On the single-threaded RTS, blocking FFI calls in the exporter (e.g. HTTP
+requests) will block all Haskell threads. A warning is emitted if @-threaded@
+is not detected.
+
+@since 0.0.1.0
 -}
 batchProcessor :: (MonadIO m) => BatchTimeoutConfig -> SpanExporter -> m SpanProcessor
-batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
-  unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch processor does not work without the -threaded GHC flag!"
-  batch <- newIORef $ boundedMap maxQueueSize maxExportBatchSize
-  workSignal <- newEmptyTMVarIO
-  shutdownSignal <- newEmptyTMVarIO
-  let publish batchToProcess = mask_ $ do
-        -- we mask async exceptions in this, so that a buggy exporter that
-        -- catches async exceptions won't swallow them. since we use
-        -- an interruptible mask, blocking calls can still be killed, like
-        -- `threadDelay` or `putMVar` or most file I/O operations.
-        --
-        -- if we've received a shutdown, then we should be expecting
-        -- a `cancel` anytime now.
-        SpanExporter.spanExporterExport exporter batchToProcess
+batchProcessor conf exporter = liftIO $ batchProcessorInternal conf exporter Nothing
 
-  let flushQueueImmediately ret = do
-        batchToProcess <- atomicModifyIORef' batch buildExport
-        if null batchToProcess
-          then do
-            pure ret
+
+{- | Like 'batchProcessor', but registers OpenTelemetry SDK self-telemetry metrics
+ on the given 'Meter' (queue size\/capacity, processed spans by outcome, exported spans).
+
+ Applications opt in by obtaining a meter (for example for the SDK scope) and passing it here.
+
+@since 0.1.0.1
+-}
+batchProcessorWithMetrics :: (MonadIO m) => BatchTimeoutConfig -> SpanExporter -> Meter -> m SpanProcessor
+batchProcessorWithMetrics conf exporter meter = liftIO $ batchProcessorInternal conf exporter (Just meter)
+
+
+batchProcessorInternal :: BatchTimeoutConfig -> SpanExporter -> Maybe Meter -> IO SpanProcessor
+batchProcessorInternal BatchTimeoutConfig {..} exporter mMeter = do
+  unless rtsSupportsBoundThreads $
+    otelLogWarning "Batch span processor running without -threaded; blocking exporter calls may stall the application"
+  (dataIn, dataOut) <- UChan.newChan maxQueueSize
+  (ctrlIn, ctrlOut) <- UChan.newChan 64
+  droppedSpans <- newAtomicCounter 0
+  exportedSpans <- newAtomicCounter 0
+  shutdownRef <- newIORef False
+
+  case mMeter of
+    Nothing -> pure ()
+    Just meter -> do
+      let noAdv = defaultAdvisoryParameters
+      ogQ <-
+        meterCreateObservableGaugeInt64
+          meter
+          "otel.sdk.processor.span.queue.size"
+          (Just "{span}")
+          (Just "The number of spans in the queue of a given instance of an SDK span processor")
+          noAdv
+          []
+      void $
+        observableGaugeRegisterCallback ogQ $ \res -> do
+          len <- UChan.estimatedLength dataIn
+          observe res (fromIntegral len :: Int64) componentAttrs
+      ogCap <-
+        meterCreateObservableGaugeInt64
+          meter
+          "otel.sdk.processor.span.queue.capacity"
+          (Just "{span}")
+          (Just "The maximum number of spans the queue can hold")
+          noAdv
+          []
+      void $
+        observableGaugeRegisterCallback ogCap $ \res ->
+          observe res (fromIntegral maxQueueSize :: Int64) componentAttrs
+      ocProc <-
+        meterCreateObservableCounterInt64
+          meter
+          "otel.sdk.processor.span.processed"
+          (Just "{span}")
+          (Just "The number of spans for which processing has finished")
+          noAdv
+          []
+      void $
+        observableCounterRegisterCallback ocProc $ \res -> do
+          exported <- readAtomicCounter exportedSpans
+          dropped <- readAtomicCounter droppedSpans
+          observe res (fromIntegral exported) componentAttrs
+          when (dropped > 0) $
+            observe res (fromIntegral dropped) droppedAttrs
+      ocExp <-
+        meterCreateObservableCounterInt64
+          meter
+          "otel.sdk.exporter.span.exported"
+          (Just "{span}")
+          (Just "The number of spans for which the export has finished")
+          noAdv
+          []
+      void $
+        observableCounterRegisterCallback ocExp $ \res -> do
+          exported <- readAtomicCounter exportedSpans
+          observe res (fromIntegral exported) componentAttrs
+
+  -- Periodic wake-up: poke the control channel on each tick so the
+  -- consumer drains even when no burst threshold is crossed.
+  timerThread <-
+    async $
+      let loop = do
+            threadDelay (millisToMicros scheduledDelayMillis)
+            void $ UChan.tryWriteChan ctrlIn WakeFlush
+            shut <- readIORef shutdownRef
+            unless shut loop
+      in loop
+
+  let publish batchToProcess = do
+        mResult <-
+          timeout (millisToMicros exportTimeoutMillis) $
+            mask_ $
+              SpanExporter.spanExporterExport exporter batchToProcess
+        pure $ fromMaybe (Failure Nothing) mResult
+
+      -- Spec: "The processor MUST synchronize calls to SpanExporter's
+      -- Export to make sure that they are not invoked concurrently."
+      publishChunked spans = do
+        let chunks = chunksOfV maxExportBatchSize spans
+        mapM_
+          ( \chunk -> do
+              let !grouped = groupByTracer chunk
+              result <- try @SomeException $ publish grouped
+              case result of
+                Right Success -> void $ addAtomicCounter (V.length chunk) exportedSpans
+                Left ex ->
+                  otelLogWarning $ "Batch span export failed: " <> show ex
+                Right (Failure mex) ->
+                  otelLogWarning $
+                    "Batch span export failed: "
+                      <> maybe "timeout or unspecified" show mex
+          )
+          chunks
+
+      drainUpTo :: Int -> IO (Vector ImmutableSpan)
+      drainUpTo n = do
+        est <- UChan.estimatedLength dataIn
+        let !toRead = min n (max 0 est)
+        V.replicateM toRead (UChan.readChan dataOut)
+
+      -- Tight drain loop: keep pulling maxExportBatchSize chunks while
+      -- the queue has items, avoiding a round-trip through the control
+      -- channel between each batch under burst load.
+      drainLoop = do
+        batch <- drainUpTo maxExportBatchSize
+        unless (V.null batch) $ do
+          publishChunked batch
+          est <- UChan.estimatedLength dataIn
+          when (est > 0) drainLoop
+
+      flushQueueImmediately ret = do
+        batch <- drainUpTo maxQueueSize
+        if V.null batch
+          then pure ret
           else do
-            ret' <- publish batchToProcess
-            flushQueueImmediately ret'
+            publishChunked batch
+            flushQueueImmediately ret
 
-  let waiting = do
-        delay <- registerDelay (millisToMicros scheduledDelayMillis)
-        atomically $ do
-          msum
-            -- Flush every scheduled delay time, when we've reached the max export size, or when the shutdown signal is received.
-            [ ScheduledFlush <$ do
-                continue <- readTVar delay
-                check continue
-            , MaxExportFlush <$ takeTMVar workSignal
-            , Shutdown <$ takeTMVar shutdownSignal
-            ]
+      workerAction = do
+        msg <- UChan.readChan ctrlOut
+        drainLoop
+        -- Check shutdown flag as a fallback in case ShutdownMsg was
+        -- dropped by tryWriteChan (control channel full).
+        shut <- readIORef shutdownRef
+        if shut
+          then flushQueueImmediately Success
+          else case msg of
+            ShutdownMsg -> flushQueueImmediately Success
+            FlushAndNotify mv -> do
+              void $ tryPutMVar mv ()
+              workerAction
+            WakeFlush -> workerAction
 
-  let workerAction = do
-        req <- waiting
-        batchToProcess <- atomicModifyIORef' batch buildExport
-        res <- publish batchToProcess
-
-        -- if we were asked to shutdown, stop waiting and flush it all out
-        case req of
-          Shutdown ->
-            flushQueueImmediately res
-          _ ->
-            workerAction
   -- see note [Unmasking Asyncs]
   worker <- asyncWithUnmask $ \unmask -> unmask workerAction
 
   pure $
     SpanProcessor
       { spanProcessorOnStart = \_ _ -> pure ()
-      , spanProcessorOnEnd = \s -> do
-          span_ <- readIORef s
-          appendFailedOrExportNeeded <- atomicModifyIORef' batch $ \builder ->
-            case push span_ builder of
-              Nothing -> (builder, True)
-              Just b' ->
-                if itemCount b' >= itemMaxExportBounds b'
-                  then -- If the batch has grown to the maximum export size, prompt the worker to export it.
-                    (b', True)
-                  else (b', False)
-          when appendFailedOrExportNeeded $ void $ atomically $ tryPutTMVar workSignal ()
+      , spanProcessorOnEnd = \imm -> do
+          isShutdown <- readIORef shutdownRef
+          unless isShutdown $
+            when (isSampled (traceFlags (spanContext imm))) $ do
+              ok <- UChan.tryWriteChan dataIn imm
+              if ok
+                then do
+                  len <- UChan.estimatedLength dataIn
+                  when (len >= maxExportBatchSize) $
+                    void $
+                      UChan.tryWriteChan ctrlIn WakeFlush
+                else void $ incrAtomicCounter droppedSpans
       , spanProcessorForceFlush = do
-          void $ atomically $ tryPutTMVar workSignal ()
-          SpanExporter.spanExporterForceFlush exporter
-      , -- TODO where to call restore, if anywhere?
-        spanProcessorShutdown =
-          asyncWithUnmask $ \unmask -> unmask $ do
-            -- we call asyncWithUnmask here because the shutdown action is
-            -- likely to happen inside of a `finally` or `bracket`. the
-            -- @safe-exceptions@ pattern (followed by unliftio as well)
-            -- will use uninterruptibleMask in an exception cleanup. the
-            -- uninterruptibleMask state means that the `timeout` call
-            -- below will never exit, because `wait worker` will be in the
-            -- `uninterruptibleMasked` state, and the timeout async
-            -- exception will not be delivered.
-            --
-            -- see note [Unmasking Asyncs]
-            mask $ \_restore -> do
-              -- is it a little silly that we unmask and remask? seems
-              -- silly! but the `mask` here is doing an interruptible mask.
-              -- which means that async exceptions can still be delivered
-              -- if a process is blocking.
+          mv <- newEmptyMVar
+          ok <- UChan.tryWriteChan ctrlIn (FlushAndNotify mv)
+          if ok
+            then do
+              mDone <- timeout (millisToMicros exportTimeoutMillis) (takeMVar mv)
+              _ <- SpanExporter.spanExporterForceFlush exporter
+              pure $ case mDone of
+                Nothing -> FlushTimeout
+                Just () -> FlushSuccess
+            else do
+              _ <- SpanExporter.spanExporterForceFlush exporter
+              pure FlushSuccess
+      , spanProcessorShutdown = do
+          atomicWriteIORef shutdownRef True
+          void $ UChan.tryWriteChan ctrlIn ShutdownMsg
 
-              -- flush remaining messages and signal the worker to shutdown
-              void $ atomically $ putTMVar shutdownSignal ()
+          mResult <- timeout (millisToMicros exportTimeoutMillis) (waitCatch worker)
+          cancel worker
+          cancel timerThread
+          flushRes <- SpanExporter.spanExporterForceFlush exporter
+          shutRes <- SpanExporter.spanExporterShutdown exporter
 
-              -- gracefully wait for the worker to stop. we may be in
-              -- a `bracket` or responding to an async exception, so we
-              -- must be very careful not to wait too long. the following
-              -- STM action will block, so we'll be susceptible to an async
-              -- exception.
-              delay <- registerDelay (millisToMicros exportTimeoutMillis)
-              shutdownResult <-
-                atomically $
-                  msum
-                    [ Just <$> waitCatchSTM worker
-                    , Nothing <$ do
-                        shouldStop <- readTVar delay
-                        check shouldStop
-                    ]
-
-              -- make sure the worker comes down if we timed out.
-              cancel worker
-              SpanExporter.spanExporterShutdown exporter
-
-              pure $ case shutdownResult of
-                Nothing ->
-                  ShutdownTimeout
-                Just er ->
-                  case er of
-                    Left _ ->
-                      ShutdownFailure
-                    Right _ ->
-                      ShutdownSuccess
+          let !workerResult = case mResult of
+                Nothing -> ShutdownTimeout
+                Just (Left _) -> ShutdownFailure
+                Just (Right _) -> ShutdownSuccess
+              !exporterResult = case (flushRes, shutRes) of
+                (FlushError, _) -> ShutdownFailure
+                (_, ShutdownFailure) -> ShutdownFailure
+                (_, ShutdownTimeout) -> ShutdownTimeout
+                (FlushTimeout, _) -> ShutdownTimeout
+                _ -> ShutdownSuccess
+          pure $! worstShutdown workerResult exporterResult
       }
   where
     millisToMicros = (* 1000)
 
-{-
-buffer <- newGreenBlueBuffer _ _
-batchProcessorAction <- async $ forever $ do
-  -- It would be nice to do an immediate send when possible
-  chunk <- if (sendDelay == 0)
-    else consumeChunk
-    then threadDelay sendDelay >> consumeChunk
-  timeout _ $ export exporter chunk
-pure $ Processor
-  { onStart = \_ _ -> pure ()
-  , onEnd = \s -> void $ tryInsert buffer s
-  , shutdown = do
-      gracefullyShutdownBatchProcessor
 
-  , forceFlush = pure ()
-  }
-where
-  sendDelay = scheduledDelayMilis * 1_000
--}
+groupByTracer :: Vector ImmutableSpan -> HashMap InstrumentationLibrary (Vector ImmutableSpan)
+groupByTracer spans
+  | V.null spans = HashMap.empty
+  | otherwise =
+      let !first = V.unsafeIndex spans 0
+          !firstLib = tracerName (spanTracer first)
+          -- Fast path: if every span comes from the same tracer (common case),
+          -- skip the HashMap entirely.
+          allSame = V.all (\s -> tracerName (spanTracer s) == firstLib) spans
+      in if allSame
+          then HashMap.singleton firstLib spans
+          else
+            fmap V.fromList $
+              V.foldl' (\acc s -> HashMap.insertWith (flip (++)) (tracerName (spanTracer s)) [s] acc) HashMap.empty spans
