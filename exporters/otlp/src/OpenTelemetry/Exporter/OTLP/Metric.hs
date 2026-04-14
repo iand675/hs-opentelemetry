@@ -1,11 +1,38 @@
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-{- | OTLP HTTP\/Protobuf metrics exporter (@\/v1\/metrics@).
+{- |
+Module      : OpenTelemetry.Exporter.OTLP.Metric
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : OTLP metric exporter (HTTP/protobuf)
+Stability   : experimental
 
-See "OpenTelemetry.Exporter.OTLP.Span" for shared configuration ('OTLPExporterConfig').
+= Overview
+
+Exports metrics to any OTLP-compatible endpoint using HTTP with protobuf
+encoding.
+
+= Configuration
+
+Uses the same @OTEL_EXPORTER_OTLP_*@ environment variables as the span
+exporter (see "OpenTelemetry.Exporter.OTLP.Span"), with metric-specific
+overrides:
+
+* @OTEL_EXPORTER_OTLP_METRICS_ENDPOINT@ — endpoint override for metrics
+* @OTEL_EXPORTER_OTLP_METRICS_HEADERS@ — additional headers for metrics
+* @OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE@ — TLS CA cert for metrics
+* @OTEL_EXPORTER_OTLP_METRICS_INSECURE@ — disable TLS for metrics
+* @OTEL_EXPORTER_OTLP_METRICS_COMPRESSION@ — compression for metrics
+* @OTEL_EXPORTER_OTLP_METRICS_TIMEOUT@ — timeout for metrics export
+* @OTEL_EXPORTER_OTLP_METRICS_PROTOCOL@ — protocol override for metrics
+* @OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE@ — @cumulative@ (default)
+  or @delta@
 -}
 module OpenTelemetry.Exporter.OTLP.Metric (
   otlpMetricExporter,
@@ -16,21 +43,21 @@ import Codec.Compression.GZip (compress)
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
-import Data.Int (Int64)
-import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
+import Data.ProtoLens.Encoding (decodeMessage)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
-import Lens.Micro ((&), (.~))
+import Lens.Micro ((&), (.~), (^.))
 import Network.HTTP.Client
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
@@ -45,14 +72,16 @@ import OpenTelemetry.Exporter.Metric (
   MetricExemplar (..),
   MetricExport (..),
   MetricExporter (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
-import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
+import OpenTelemetry.Exporter.OTLP.Internal.Config
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
-import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest)
+import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest, ExportMetricsServiceResponse)
 import qualified Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields as MSF
 import Proto.Opentelemetry.Proto.Common.V1.Common (InstrumentationScope, KeyValue)
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
@@ -60,35 +89,43 @@ import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Rf
-import Text.Read (readMaybe)
+import System.Random (randomRIO)
 
 
--- | Default OTLP timeout (milliseconds), aligned with "OpenTelemetry.Exporter.OTLP.Span".
-defaultExporterTimeout :: Int
-defaultExporterTimeout = 10_000
-
-
-httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost (otlpEndpoint conf)
-  where
-    defaultHost = "http://localhost:4318"
-
-
-httpProtobufMimeType :: C.ByteString
-httpProtobufMimeType = "application/x-protobuf"
+#ifdef GRPC_ENABLED
+import qualified OpenTelemetry.Exporter.OTLP.GRPC
+#endif
 
 
 -- | Encode metric batches to an OTLP 'ExportMetricsServiceRequest'.
-resourceMetricsToExportRequest :: [ResourceMetricsExport] -> ExportMetricsServiceRequest
+resourceMetricsToExportRequest :: Vector ResourceMetricsExport -> ExportMetricsServiceRequest
 resourceMetricsToExportRequest rms =
   defMessage
     & MSF.vec'resourceMetrics
-      .~ V.fromList (fmap resourceMetricsExportToProto rms)
+      .~ V.map resourceMetricsExportToProto rms
 
 
--- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
+{- | Create an OTLP metric exporter, choosing transport based on the
+configured protocol (default: @http\/protobuf@).
+-}
 otlpMetricExporter :: (MonadIO m) => OTLPExporterConfig -> m MetricExporter
-otlpMetricExporter conf = liftIO $ do
+otlpMetricExporter conf = case resolvedMetricProtocol conf of
+  HttpProtobuf -> httpOtlpMetricExporter conf
+#ifdef GRPC_ENABLED
+  GRpc -> OpenTelemetry.Exporter.OTLP.GRPC.grpcOtlpMetricExporter conf resourceMetricsToExportRequest
+#endif
+
+
+resolvedMetricProtocol :: OTLPExporterConfig -> Protocol
+resolvedMetricProtocol conf =
+  case otlpMetricsProtocol conf <|> otlpProtocol conf of
+    Just p -> p
+    Nothing -> HttpProtobuf
+
+
+-- | OTLP 'MetricExporter' using HTTP\/Protobuf.
+httpOtlpMetricExporter :: (MonadIO m) => OTLPExporterConfig -> m MetricExporter
+httpOtlpMetricExporter conf = liftIO $ do
   req <- parseRequest (metricsEndpointUrl conf)
   let (encodingHeaders, encoder) = httpMetricsCompression conf
   let baseReq =
@@ -115,8 +152,6 @@ otlpMetricExporter conf = liftIO $ do
   where
     retryDelay = 100_000
     maxRetryCount = 5
-    isRetryableStatusCode status_ =
-      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
     isRetryableException = \case
       ResponseTimeout -> True
       ConnectionTimeout -> True
@@ -138,7 +173,9 @@ otlpMetricExporter conf = liftIO $ do
             if backoffCount == maxRetryCount
               then pure $ Failure Nothing
               else do
-                threadDelay (retryDelay `shiftL` backoffCount)
+                let !baseDelay = retryDelay `shiftL` backoffCount
+                jitterUs <- randomRIO (0, baseDelay)
+                threadDelay (baseDelay + jitterUs)
                 sendReq req (backoffCount + 1)
       case eResp of
         Left err@(HttpExceptionRequest req' e)
@@ -152,18 +189,40 @@ otlpMetricExporter conf = liftIO $ do
                 else pure $ Failure $ Just $ SomeException err
         Left err -> pure $ Failure $ Just $ SomeException err
         Right resp ->
-          if isRetryableStatusCode (responseStatus resp)
+          if isRetryableHttpStatus (responseStatus resp)
             then case lookup hRetryAfter $ responseHeaders resp of
               Nothing -> exponentialBackoff
-              Just retryAfter -> case readMaybe $ C.unpack retryAfter of
-                Nothing -> exponentialBackoff
-                Just seconds -> do
-                  threadDelay (seconds * 1_000_000)
-                  sendReq req (backoffCount + 1)
+              Just retryAfter -> do
+                mMicros <- parseRetryAfterMicros retryAfter
+                case mMicros of
+                  Nothing -> exponentialBackoff
+                  Just micros -> do
+                    threadDelay micros
+                    sendReq req (backoffCount + 1)
             else
               if statusCode (responseStatus resp) >= 300
-                then pure $ Failure Nothing
-                else pure Success
+                then do
+                  otelLogWarning $
+                    "OTLP metric export failed with HTTP status "
+                      <> show (statusCode (responseStatus resp))
+                      <> ": "
+                      <> C.unpack (statusMessage (responseStatus resp))
+                  pure $ Failure Nothing
+                else do
+                  let body = responseBody resp
+                  case decodeMessage body of
+                    Right (mResp :: ExportMetricsServiceResponse) -> do
+                      let ps = mResp ^. MSF.partialSuccess
+                          rejected = ps ^. MSF.rejectedDataPoints
+                          errMsg = ps ^. MSF.errorMessage
+                      when (rejected > 0) $
+                        otelLogWarning $
+                          "OTLP partial success: "
+                            <> show rejected
+                            <> " metric data points rejected"
+                            <> if T.null errMsg then "" else ": " <> T.unpack errMsg
+                      pure Success
+                    Left _ -> pure Success
 
 
 type Encoder = L.ByteString -> L.ByteString
@@ -179,41 +238,34 @@ httpMetricsCompression conf =
 httpMetricsResponseTimeout :: OTLPExporterConfig -> ResponseTimeout
 httpMetricsResponseTimeout conf = case otlpMetricsTimeout conf <|> otlpTimeout conf of
   Just timeoutMilli
-    | timeoutMilli == 0 -> responseTimeoutNone
     | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
+  -- Spec: "Export MUST NOT block indefinitely."
   _ -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
 
 
 httpMetricsBaseHeaders :: OTLPExporterConfig -> Request -> RequestHeaders
 httpMetricsBaseHeaders conf req =
   concat
-    [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
+    [ [(hContentType, httpProtobufContentType)]
+    , [(hAccept, httpProtobufContentType)]
+    , [("User-Agent", otlpUserAgent)]
     , fromMaybe [] (otlpHeaders conf)
     , fromMaybe [] (otlpMetricsHeaders conf)
     , requestHeaders req
     ]
 
 
--- | Like traces: default @http:\/\/localhost:4318\/v1\/metrics@, or 'otlpMetricsEndpoint' if set (path appended when missing).
 metricsEndpointUrl :: OTLPExporterConfig -> String
-metricsEndpointUrl conf =
-  case otlpMetricsEndpoint conf of
-    Nothing -> httpHost conf <> "/v1/metrics"
-    Just e ->
-      if "/v1/" `isInfixOf` e
-        then e
-        else trimTrailingSlash e <> "/v1/metrics"
+metricsEndpointUrl conf = httpSignalEndpointUrl (otlpMetricsEndpoint conf) conf "/v1/metrics"
 
 
-trimTrailingSlash :: String -> String
-trimTrailingSlash = reverse . dropWhile (== '/') . reverse
-
-
-anyMetricsToExport :: [ResourceMetricsExport] -> Bool
+anyMetricsToExport :: Vector ResourceMetricsExport -> Bool
 anyMetricsToExport batches =
-  flip any batches $ \rm ->
-    V.any (not . V.null . scopeMetricsExports) (resourceMetricsScopes rm)
+  V.any
+    ( \rm ->
+        V.any (not . V.null . scopeMetricsExports) (resourceMetricsScopes rm)
+    )
+    batches
 
 
 resourceMetricsExportToProto :: ResourceMetricsExport -> PM.ResourceMetrics
@@ -234,7 +286,7 @@ materializedResourceToProto r =
       & Rf.vec'attributes
         .~ attributesToProto attrs
       & Rf.droppedAttributesCount
-        .~ fromIntegral (getCount attrs)
+        .~ fromIntegral (getDropped attrs)
 
 
 scopeMetricsExportToProto :: ScopeMetricsExport -> PM.ScopeMetrics
@@ -258,7 +310,7 @@ instrumentationLibraryToProto InstrumentationLibrary {..} =
     & Common_Fields.vec'attributes
       .~ attributesToProto libraryAttributes
     & Common_Fields.droppedAttributesCount
-      .~ fromIntegral (getCount libraryAttributes)
+      .~ fromIntegral (getDropped libraryAttributes)
 
 
 temporalityToProto :: AggregationTemporality -> PM.AggregationTemporality
@@ -333,7 +385,7 @@ metricExportToProto = \case
 
 sumPointToProto :: SumDataPoint -> PM.NumberDataPoint
 sumPointToProto SumDataPoint {..} =
-  numberDataPointFromEither sumDataPointValue $
+  setNumberValue sumDataPointValue $
     defMessage
       & Mf.vec'attributes
         .~ attributesToProto sumDataPointAttributes
@@ -347,7 +399,7 @@ sumPointToProto SumDataPoint {..} =
 
 gaugePointToProto :: GaugeDataPoint -> PM.NumberDataPoint
 gaugePointToProto GaugeDataPoint {..} =
-  numberDataPointFromEither gaugeDataPointValue $
+  setNumberValue gaugeDataPointValue $
     defMessage
       & Mf.vec'attributes
         .~ attributesToProto gaugeDataPointAttributes
@@ -359,10 +411,9 @@ gaugePointToProto GaugeDataPoint {..} =
         .~ V.map metricExemplarToProto gaugeDataPointExemplars
 
 
-numberDataPointFromEither :: Either Int64 Double -> PM.NumberDataPoint -> PM.NumberDataPoint
-numberDataPointFromEither val dp = case val of
-  Left i -> dp & Mf.asInt .~ i
-  Right d -> dp & Mf.asDouble .~ d
+setNumberValue :: NumberValue -> PM.NumberDataPoint -> PM.NumberDataPoint
+setNumberValue (IntNumber i) dp = dp & Mf.asInt .~ i
+setNumberValue (DoubleNumber d) dp = dp & Mf.asDouble .~ d
 
 
 histogramPointToProto :: HistogramDataPoint -> PM.HistogramDataPoint
@@ -404,8 +455,8 @@ metricExemplarToProto MetricExemplar {..} =
     & Mf.maybe'value
       .~ fmap
         ( \case
-            Left i -> PM.Exemplar'AsInt i
-            Right d -> PM.Exemplar'AsDouble d
+            IntNumber i -> PM.Exemplar'AsInt i
+            DoubleNumber d -> PM.Exemplar'AsDouble d
         )
         metricExemplarValue
 
@@ -460,20 +511,18 @@ exponentialHistogramPointToProto ExponentialHistogramDataPoint {..} =
 
 
 attributesToProto :: Attributes -> Vector KeyValue
-attributesToProto =
-  V.fromList
-    . fmap attributeToKeyValue
-    . H.toList
-    . snd
-    . ((,) <$> getCount <*> getAttributeMap)
+attributesToProto attrs =
+  V.map (uncurry attributeToKeyValue) $
+    V.fromListN (H.size m) (H.toList m)
   where
+    m = getAttributeMap attrs
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
       BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b
       DoubleAttribute d -> defMessage & Common_Fields.doubleValue .~ d
       IntAttribute i -> defMessage & Common_Fields.intValue .~ i
-    attributeToKeyValue :: (Text, Attribute) -> KeyValue
-    attributeToKeyValue (k, v) =
+    attributeToKeyValue :: Text -> Attribute -> KeyValue
+    attributeToKeyValue k v =
       defMessage
         & Common_Fields.key
           .~ k

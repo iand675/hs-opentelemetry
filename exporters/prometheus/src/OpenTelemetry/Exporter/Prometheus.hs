@@ -17,16 +17,22 @@ module OpenTelemetry.Exporter.Prometheus (
 ) where
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
-import Data.Char (isAlphaNum)
+import qualified Data.ByteString as BS
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import qualified Data.HashMap.Strict as H
-import Data.Int (Int32, Int64)
+import Data.Int (Int32)
 import Data.List (sort)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Builder (Builder, fromText, singleton, toLazyText)
+import Data.Text.Lazy.Builder.Int (decimal)
+import Data.Text.Lazy.Builder.RealFloat (realFloat)
+import Data.Vector (Vector)
 import qualified Data.Vector as V
+import Data.Word (Word64)
 import OpenTelemetry.Attributes
 import OpenTelemetry.Exporter.Metric (
   ExponentialHistogramDataPoint (..),
@@ -34,180 +40,216 @@ import OpenTelemetry.Exporter.Metric (
   HistogramDataPoint (..),
   MetricExemplar (..),
   MetricExport (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..))
 import OpenTelemetry.Resource (getMaterializedResourcesAttributes)
-import Text.Printf (printf)
 
 
 -- | Render Prometheus text (lines separated by @\\n@, trailing newline).
-renderPrometheusText :: [ResourceMetricsExport] -> Text
-renderPrometheusText batches =
-  T.intercalate "\n" $ filter (not . T.null) $ fmap renderResource batches
+renderPrometheusText :: Vector ResourceMetricsExport -> Text
+renderPrometheusText batches
+  | V.null batches = ""
+  | otherwise =
+      TL.toStrict $
+        toLazyText $
+          V.ifoldl'
+            ( \acc i r ->
+                acc <> (if i == 0 then mempty else nl) <> renderResource r
+            )
+            mempty
+            batches
 
 
-renderResource :: ResourceMetricsExport -> Text
+renderResource :: ResourceMetricsExport -> Builder
 renderResource ResourceMetricsExport {..} =
   let resMap = attributesToLabelMap (getMaterializedResourcesAttributes resourceMetricsResource)
-  in T.intercalate "\n" $ fmap (renderScope resMap) $ V.toList resourceMetricsScopes
+  in V.ifoldl'
+      ( \acc i s ->
+          acc <> (if i == 0 then mempty else nl) <> renderScope resMap s
+      )
+      mempty
+      resourceMetricsScopes
 
 
-renderScope :: Map.Map Text Text -> ScopeMetricsExport -> Text
+renderScope :: Map.Map Text Text -> ScopeMetricsExport -> Builder
 renderScope resMap ScopeMetricsExport {..} =
   let jobMap =
         if T.null (libraryName scopeMetricsScope)
           then resMap
           else Map.insert "job" (libraryName scopeMetricsScope) resMap
-  in T.intercalate "\n" $ fmap (renderMetric jobMap) $ V.toList scopeMetricsExports
+  in V.ifoldl'
+      ( \acc i m ->
+          acc <> (if i == 0 then mempty else nl) <> renderMetric jobMap m
+      )
+      mempty
+      scopeMetricsExports
 
 
-renderMetric :: Map.Map Text Text -> MetricExport -> Text
+intersperse :: a -> [a] -> [a]
+intersperse _ [] = []
+intersperse _ [x] = [x]
+intersperse sep (x : xs) = x : sep : intersperse sep xs
+
+
+renderMetric :: Map.Map Text Text -> MetricExport -> Builder
 renderMetric baseLabels = \case
   MetricExportSum name desc _unit _lib monotonic _isInt _temp pts ->
     let typ = if monotonic then "counter" else "gauge"
         nm = sanitizeName name
-        helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
-        typeLine = mconcat ["# TYPE ", nm, " ", typ]
-        lines_ =
-          fmap
-            ( \p ->
-                T.concat
-                  [ nm
-                  , formatLabels (mergeLabels baseLabels (attributesToLabelMap (sumDataPointAttributes p)))
-                  , " "
-                  , either (T.pack . show) showDouble (sumDataPointValue p)
-                  , sumPointExemplarSuffix p
-                  ]
-            )
-            (V.toList pts)
-    in T.unlines $ helpLine : typeLine : lines_
+    in helpLine nm desc
+        <> typeLine nm typ
+        <> V.foldl'
+          ( \acc p ->
+              acc
+                <> fromText nm
+                <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (sumDataPointAttributes p)))
+                <> sp
+                <> numberValue (sumDataPointValue p)
+                <> exemplarSuffix (sumDataPointExemplars p)
+                <> nl
+          )
+          mempty
+          pts
   MetricExportGauge name desc _unit _lib _isInt pts ->
     let nm = sanitizeName name
-        helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
-        typeLine = mconcat ["# TYPE ", nm, " gauge"]
-        lines_ =
-          fmap
-            ( \p ->
-                T.concat
-                  [ nm
-                  , formatLabels (mergeLabels baseLabels (attributesToLabelMap (gaugeDataPointAttributes p)))
-                  , " "
-                  , either (T.pack . show) showDouble (gaugeDataPointValue p)
-                  , gaugePointExemplarSuffix p
-                  ]
-            )
-            (V.toList pts)
-    in T.unlines $ helpLine : typeLine : lines_
+    in helpLine nm desc
+        <> typeLine nm "gauge"
+        <> V.foldl'
+          ( \acc p ->
+              acc
+                <> fromText nm
+                <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (gaugeDataPointAttributes p)))
+                <> sp
+                <> numberValue (gaugeDataPointValue p)
+                <> exemplarSuffix (gaugeDataPointExemplars p)
+                <> nl
+          )
+          mempty
+          pts
   MetricExportHistogram name desc _unit _lib _temp pts ->
     let nm = sanitizeName name
-        helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
-        typeLine = mconcat ["# TYPE ", nm, " histogram"]
-        lines_ = concatMap (renderHistogramPoint baseLabels nm) (V.toList pts)
-    in T.unlines $ helpLine : typeLine : lines_
+    in helpLine nm desc
+        <> typeLine nm "histogram"
+        <> V.foldl' (\acc p -> acc <> renderHistogramPoint baseLabels nm p) mempty pts
   MetricExportExponentialHistogram name desc _unit _lib _temp pts ->
     let nm = sanitizeName name
-        helpLine = mconcat ["# HELP ", nm, " ", escapeHelp desc]
-        typeLine = mconcat ["# TYPE ", nm, " histogram"]
-        lines_ = concatMap (renderExponentialHistogramPoint baseLabels nm) (V.toList pts)
-    in T.unlines $ helpLine : typeLine : lines_
+    in helpLine nm desc
+        <> typeLine nm "histogram"
+        <> V.foldl' (\acc p -> acc <> renderExponentialHistogramPoint baseLabels nm p) mempty pts
 
 
-byteStringHex :: ByteString -> Text
-byteStringHex = T.pack . concatMap (printf "%02x") . B.unpack
+helpLine :: Text -> Text -> Builder
+helpLine nm desc =
+  "# HELP " <> fromText nm <> sp <> fromText (escapeHelp desc) <> nl
 
 
-exemplarComment :: MetricExemplar -> Text
-exemplarComment e =
-  T.concat
-    [ "{trace_id=\""
-    , byteStringHex (metricExemplarTraceId e)
-    , "\",span_id=\""
-    , byteStringHex (metricExemplarSpanId e)
-    , "\"}"
-    ]
+typeLine :: Text -> Builder -> Builder
+typeLine nm typ =
+  "# TYPE " <> fromText nm <> sp <> typ <> nl
 
 
-exemplarValueText :: MetricExemplar -> Text
-exemplarValueText e = case metricExemplarValue e of
+nl :: Builder
+nl = singleton '\n'
+
+
+sp :: Builder
+sp = singleton ' '
+
+
+numberValue :: NumberValue -> Builder
+numberValue (IntNumber i) = decimal i
+numberValue (DoubleNumber d) = buildDouble d
+
+
+buildDouble :: Double -> Builder
+buildDouble d
+  | isNaN d = "NaN"
+  | isInfinite d = if d > 0 then "+Inf" else "-Inf"
+  | otherwise = realFloat d
+
+
+doubleToText :: Double -> Text
+doubleToText = TL.toStrict . toLazyText . buildDouble
+
+
+buildWord64 :: Word64 -> Builder
+buildWord64 = decimal
+
+
+byteStringHex :: ByteString -> Builder
+byteStringHex = BS.foldl' (\acc w -> acc <> word8Hex w) mempty
+  where
+    word8Hex w =
+      let (hi, lo) = w `divMod` 16
+      in singleton (hexDigit hi) <> singleton (hexDigit lo)
+    hexDigit n
+      | n < 10 = toEnum (fromEnum '0' + fromIntegral n)
+      | otherwise = toEnum (fromEnum 'a' + fromIntegral n - 10)
+
+
+exemplarSuffix :: V.Vector MetricExemplar -> Builder
+exemplarSuffix exs
+  | V.null exs = mempty
+  | otherwise =
+      let e = V.head exs
+      in " # {trace_id=\""
+          <> byteStringHex (metricExemplarTraceId e)
+          <> "\",span_id=\""
+          <> byteStringHex (metricExemplarSpanId e)
+          <> "\"} "
+          <> exemplarValue e
+
+
+exemplarValue :: MetricExemplar -> Builder
+exemplarValue e = case metricExemplarValue e of
   Nothing -> "0"
-  Just (Left i) -> T.pack (show i)
-  Just (Right d) -> showDouble d
+  Just (IntNumber i) -> decimal i
+  Just (DoubleNumber d) -> buildDouble d
 
 
-sumPointExemplarSuffix :: SumDataPoint -> Text
-sumPointExemplarSuffix p =
-  if V.null (sumDataPointExemplars p)
-    then ""
-    else
-      let e = V.head (sumDataPointExemplars p)
-      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
-
-
-gaugePointExemplarSuffix :: GaugeDataPoint -> Text
-gaugePointExemplarSuffix p =
-  if V.null (gaugeDataPointExemplars p)
-    then ""
-    else
-      let e = V.head (gaugeDataPointExemplars p)
-      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
-
-
-renderHistogramPoint :: Map.Map Text Text -> Text -> HistogramDataPoint -> [Text]
+renderHistogramPoint :: Map.Map Text Text -> Text -> HistogramDataPoint -> Builder
 renderHistogramPoint baseLabels hname p =
   let lbls = mergeLabels baseLabels (attributesToLabelMap (histogramDataPointAttributes p))
       bounds = histogramDataPointExplicitBounds p
       counts = histogramDataPointBucketCounts p
       cum = V.scanl1' (+) counts
-      finiteLines =
-        fmap
-          ( \(b, c) ->
-              T.concat
-                [ hname
-                , "_bucket"
-                , formatLabels (Map.insert "le" (T.pack (show b)) lbls)
-                , " "
-                , T.pack (show c)
-                ]
+      bucketName = fromText hname <> "_bucket"
+      finiteB =
+        V.ifoldl'
+          ( \acc i b ->
+              let c = cum V.! i
+              in acc
+                  <> bucketName
+                  <> formatLabels (Map.insert "le" (doubleToText b) lbls)
+                  <> sp
+                  <> buildWord64 c
+                  <> nl
           )
-          (zip (V.toList bounds) (V.toList $ V.take (V.length bounds) cum))
-      infLine =
-        T.concat
-          [ hname
-          , "_bucket"
-          , formatLabels (Map.insert "le" "+Inf" lbls)
-          , " "
-          , T.pack (show (histogramDataPointCount p))
-          , histExemplarSuffix p
-          ]
-      sumLine =
-        T.concat
-          [ hname
-          , "_sum"
-          , formatLabels lbls
-          , " "
-          , showDouble (histogramDataPointSum p)
-          ]
-      countLine =
-        T.concat
-          [ hname
-          , "_count"
-          , formatLabels lbls
-          , " "
-          , T.pack (show (histogramDataPointCount p))
-          ]
-  in finiteLines ++ [infLine, sumLine, countLine]
-
-
-histExemplarSuffix :: HistogramDataPoint -> Text
-histExemplarSuffix p =
-  if V.null (histogramDataPointExemplars p)
-    then ""
-    else
-      let e = V.head (histogramDataPointExemplars p)
-      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
+          mempty
+          bounds
+  in finiteB
+      <> bucketName
+      <> formatLabels (Map.insert "le" "+Inf" lbls)
+      <> sp
+      <> buildWord64 (histogramDataPointCount p)
+      <> exemplarSuffix (histogramDataPointExemplars p)
+      <> nl
+      <> fromText hname
+      <> "_sum"
+      <> formatLabels lbls
+      <> sp
+      <> buildDouble (histogramDataPointSum p)
+      <> nl
+      <> fromText hname
+      <> "_count"
+      <> formatLabels lbls
+      <> sp
+      <> buildWord64 (histogramDataPointCount p)
+      <> nl
 
 
 -- | Approximate @le@ upper bound for exponential bucket index (positive side).
@@ -216,7 +258,7 @@ leUpperBoundExp scale idx =
   2 ** ((fromIntegral idx + 1) / 2 ** fromIntegral scale)
 
 
-renderExponentialHistogramPoint :: Map.Map Text Text -> Text -> ExponentialHistogramDataPoint -> [Text]
+renderExponentialHistogramPoint :: Map.Map Text Text -> Text -> ExponentialHistogramDataPoint -> Builder
 renderExponentialHistogramPoint baseLabels hname p =
   let lbls = mergeLabels baseLabels (attributesToLabelMap (exponentialHistogramDataPointAttributes p))
       sc = exponentialHistogramDataPointScale p
@@ -226,81 +268,51 @@ renderExponentialHistogramPoint baseLabels hname p =
       negCnt = exponentialHistogramDataPointNegativeBucketCounts p
       posCum = if V.null posCnt then V.empty else V.scanl1' (+) posCnt
       negCum = if V.null negCnt then V.empty else V.scanl1' (+) negCnt
-      posPairs =
-        fmap
-          ( \(i, c) ->
-              let idx = posOff + fromIntegral (i :: Int)
-                  le = leUpperBoundExp sc idx
-              in T.concat
-                  [ hname
-                  , "_bucket"
-                  , formatLabels (Map.insert "le" (T.pack (show le)) lbls)
-                  , " "
-                  , T.pack (show c)
-                  ]
+      bucketName = fromText hname <> "_bucket"
+      buildBuckets off cum negate_ =
+        V.ifoldl'
+          ( \acc i c ->
+              let idx = off + fromIntegral i
+                  le = (if negate_ then negate else id) (leUpperBoundExp sc idx)
+              in acc
+                  <> bucketName
+                  <> formatLabels (Map.insert "le" (doubleToText le) lbls)
+                  <> sp
+                  <> buildWord64 c
+                  <> nl
           )
-          (zip [0 :: Int ..] (V.toList posCum))
-      negPairs =
-        fmap
-          ( \(i, c) ->
-              let idx = negOff + fromIntegral (i :: Int)
-                  le = negate (leUpperBoundExp sc idx)
-              in T.concat
-                  [ hname
-                  , "_bucket"
-                  , formatLabels (Map.insert "le" (T.pack (show le)) lbls)
-                  , " "
-                  , T.pack (show c)
-                  ]
-          )
-          (zip [0 :: Int ..] (V.toList negCum))
-      zeroLine =
+          mempty
+          cum
+      zeroB =
         if exponentialHistogramDataPointZeroCount p == 0
-          then []
+          then mempty
           else
-            [ T.concat
-                [ hname
-                , "_bucket"
-                , formatLabels (Map.insert "le" "0" lbls)
-                , " "
-                , T.pack (show (exponentialHistogramDataPointZeroCount p))
-                ]
-            ]
-      infLine =
-        T.concat
-          [ hname
-          , "_bucket"
-          , formatLabels (Map.insert "le" "+Inf" lbls)
-          , " "
-          , T.pack (show (exponentialHistogramDataPointCount p))
-          , expHistExemplarSuffix p
-          ]
-      sumLine =
-        T.concat
-          [ hname
-          , "_sum"
-          , formatLabels lbls
-          , " "
-          , showDouble (fromMaybe 0 (exponentialHistogramDataPointSum p))
-          ]
-      countLine =
-        T.concat
-          [ hname
-          , "_count"
-          , formatLabels lbls
-          , " "
-          , T.pack (show (exponentialHistogramDataPointCount p))
-          ]
-  in zeroLine ++ negPairs ++ posPairs ++ [infLine, sumLine, countLine]
-
-
-expHistExemplarSuffix :: ExponentialHistogramDataPoint -> Text
-expHistExemplarSuffix p =
-  if V.null (exponentialHistogramDataPointExemplars p)
-    then ""
-    else
-      let e = V.head (exponentialHistogramDataPointExemplars p)
-      in T.concat [" # ", exemplarComment e, " ", exemplarValueText e]
+            bucketName
+              <> formatLabels (Map.insert "le" "0" lbls)
+              <> sp
+              <> buildWord64 (exponentialHistogramDataPointZeroCount p)
+              <> nl
+  in zeroB
+      <> buildBuckets negOff negCum True
+      <> buildBuckets posOff posCum False
+      <> bucketName
+      <> formatLabels (Map.insert "le" "+Inf" lbls)
+      <> sp
+      <> buildWord64 (exponentialHistogramDataPointCount p)
+      <> exemplarSuffix (exponentialHistogramDataPointExemplars p)
+      <> nl
+      <> fromText hname
+      <> "_sum"
+      <> formatLabels lbls
+      <> sp
+      <> buildDouble (fromMaybe 0 (exponentialHistogramDataPointSum p))
+      <> nl
+      <> fromText hname
+      <> "_count"
+      <> formatLabels lbls
+      <> sp
+      <> buildWord64 (exponentialHistogramDataPointCount p)
+      <> nl
 
 
 mergeLabels :: Map.Map Text Text -> Map.Map Text Text -> Map.Map Text Text
@@ -326,30 +338,24 @@ primitiveToText :: PrimitiveAttribute -> Text
 primitiveToText = \case
   TextAttribute t -> t
   BoolAttribute b -> if b then "true" else "false"
-  DoubleAttribute d -> showDouble d
-  IntAttribute i -> T.pack (show (i :: Int64))
-
-
-showDouble :: Double -> Text
-showDouble d = T.pack (show d)
+  DoubleAttribute d -> TL.toStrict $ toLazyText $ buildDouble d
+  IntAttribute i -> TL.toStrict $ toLazyText $ decimal i
 
 
 escapeLabelValue :: Text -> Text
 escapeLabelValue t =
   T.concatMap
-    ( \c ->
-        if c == '\\'
-          then "\\\\"
-          else
-            if c == '"'
-              then "\\\""
-              else T.singleton c
+    ( \c -> case c of
+        '\\' -> "\\\\"
+        '"' -> "\\\""
+        '\n' -> "\\n"
+        _ -> T.singleton c
     )
     t
 
 
 escapeHelp :: Text -> Text
-escapeHelp = T.replace "\\" "\\\\" . T.replace "\n" "\\n"
+escapeHelp = T.replace "\n" "\\n" . T.replace "\\" "\\\\"
 
 
 sanitizeName :: Text -> Text
@@ -360,20 +366,26 @@ sanitizeName =
       else '_'
 
 
-formatLabels :: Map.Map Text Text -> Text
-formatLabels m =
-  if Map.null m
-    then ""
-    else
+isAsciiLetter :: Char -> Bool
+isAsciiLetter c = isAsciiLower c || isAsciiUpper c
+
+
+isAsciiAlphaNum :: Char -> Bool
+isAsciiAlphaNum c = isAsciiLetter c || isDigit c
+
+
+formatLabels :: Map.Map Text Text -> Builder
+formatLabels m
+  | Map.null m = mempty
+  | otherwise =
       let pairs =
             sort $
               fmap
-                ( \(k, v) ->
-                    (sanitizeLabelName k, escapeLabelValue v)
-                )
+                (\(k, v) -> (sanitizeLabelName k, escapeLabelValue v))
                 (Map.toList m)
-          inner = T.intercalate "," $ fmap (\(k, v) -> T.concat [k, "=\"", v, "\""]) pairs
-      in T.concat ["{", inner, "}"]
+      in singleton '{'
+          <> mconcat (intersperse (singleton ',') (fmap (\(k, v) -> fromText k <> "=\"" <> fromText v <> singleton '"') pairs))
+          <> singleton '}'
 
 
 sanitizeLabelName :: Text -> Text
@@ -384,7 +396,7 @@ sanitizeLabelName t =
       let c0 = T.head t
           rest = T.tail t
           fixFirst =
-            if isAlphaNum c0 || c0 == '_'
+            if isAsciiLetter c0 || c0 == '_'
               then T.singleton c0
               else "_"
-      in fixFirst <> T.map (\c -> if isAlphaNum c || c == '_' then c else '_') rest
+      in fixFirst <> T.map (\c -> if isAsciiAlphaNum c || c == '_' then c else '_') rest

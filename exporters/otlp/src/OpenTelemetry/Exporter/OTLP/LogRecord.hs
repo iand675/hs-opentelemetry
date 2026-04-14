@@ -1,30 +1,62 @@
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
+{- |
+Module      : OpenTelemetry.Exporter.OTLP.LogRecord
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : OTLP log record exporter (HTTP/protobuf)
+Stability   : experimental
+
+= Overview
+
+Exports log records to any OTLP-compatible endpoint using HTTP with protobuf
+encoding.
+
+= Configuration
+
+Uses the same @OTEL_EXPORTER_OTLP_*@ environment variables as the span
+exporter (see "OpenTelemetry.Exporter.OTLP.Span"), with log-specific
+overrides:
+
+* @OTEL_EXPORTER_OTLP_LOGS_ENDPOINT@ — endpoint override for logs
+* @OTEL_EXPORTER_OTLP_LOGS_HEADERS@ — additional headers for logs
+* @OTEL_EXPORTER_OTLP_LOGS_CERTIFICATE@ — TLS CA cert for logs
+* @OTEL_EXPORTER_OTLP_LOGS_INSECURE@ — disable TLS for logs
+* @OTEL_EXPORTER_OTLP_LOGS_COMPRESSION@ — compression for logs
+* @OTEL_EXPORTER_OTLP_LOGS_TIMEOUT@ — timeout for log export
+* @OTEL_EXPORTER_OTLP_LOGS_PROTOCOL@ — protocol override for logs
+-}
 module OpenTelemetry.Exporter.OTLP.LogRecord (
   otlpLogRecordExporter,
   immutableLogRecordToProto,
 ) where
 
 import Codec.Compression.GZip (compress)
+import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits (shiftL)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
-import Data.List (isInfixOf)
+import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
+import Data.ProtoLens.Encoding (decodeMessage)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import Data.Word (Word64)
-import Lens.Micro ((&), (.~))
+import Lens.Micro ((&), (.~), (^.))
 import Network.HTTP.Client
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
@@ -32,37 +64,56 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
-import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
+import OpenTelemetry.Exporter.OTLP.Internal.Config
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Internal.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.LogAttributes (AnyValue (..), LogAttributes (..))
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
 import OpenTelemetry.Trace.Core (timestampNanoseconds, traceFlagsValue)
-import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest)
+import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest, ExportLogsServiceResponse)
 import qualified Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields as LSF
-import Proto.Opentelemetry.Proto.Common.V1.Common (InstrumentationScope, KeyValue)
+import Proto.Opentelemetry.Proto.Common.V1.Common (KeyValue)
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common as Common
+import qualified Proto.Opentelemetry.Proto.Common.V1.Common as ProtoCommon
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as CF
 import Proto.Opentelemetry.Proto.Logs.V1.Logs (ResourceLogs, ScopeLogs)
 import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs as PL
 import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields as LF
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as RF
-import Text.Read (readMaybe)
+import System.Random (randomRIO)
 
 
-defaultExporterTimeout :: Int
-defaultExporterTimeout = 10_000
+#ifdef GRPC_ENABLED
+import qualified OpenTelemetry.Exporter.OTLP.GRPC
+#endif
 
 
-httpProtobufMimeType :: C.ByteString
-httpProtobufMimeType = "application/x-protobuf"
-
-
+{- | Create an OTLP log record exporter, choosing transport based on the
+configured protocol (default: @http\/protobuf@).
+-}
 otlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
-otlpLogRecordExporter conf = liftIO $ do
+otlpLogRecordExporter conf = case resolvedLogProtocol conf of
+  HttpProtobuf -> httpOtlpLogRecordExporter conf
+#ifdef GRPC_ENABLED
+  GRpc -> OpenTelemetry.Exporter.OTLP.GRPC.grpcOtlpLogRecordExporter conf readableLogRecordsToProtobuf
+#endif
+
+
+resolvedLogProtocol :: OTLPExporterConfig -> Protocol
+resolvedLogProtocol conf =
+  case otlpLogsProtocol conf <|> otlpProtocol conf of
+    Just p -> p
+    Nothing -> HttpProtobuf
+
+
+-- | OTLP log record exporter using HTTP\/Protobuf.
+httpOtlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
+httpOtlpLogRecordExporter conf = liftIO $ do
   req <- parseRequest (logsEndpointUrl conf)
+  shutdownRef <- newIORef False
   let (encodingHeaders, encoder) = httpLogsCompression conf
   let baseReq =
         req
@@ -73,23 +124,27 @@ otlpLogRecordExporter conf = liftIO $ do
   mkLogRecordExporter
     LogRecordExporterArguments
       { logRecordExporterArgumentsExport = \lrs -> do
-          if V.null lrs
-            then pure Success
-            else do
-              result <- try $ exporterExportCall encoder baseReq lrs
-              case result of
-                Left err -> case fromException err of
-                  Just (SomeAsyncException _) -> throwIO err
-                  Nothing -> pure $ Failure $ Just err
-                Right ok -> pure ok
-      , logRecordExporterArgumentsForceFlush = pure ()
-      , logRecordExporterArgumentsShutdown = pure ()
+          isShutdown <- readIORef shutdownRef
+          if isShutdown
+            then pure $ Failure Nothing
+            else
+              if V.null lrs
+                then pure Success
+                else do
+                  result <- try $ exporterExportCall encoder baseReq lrs
+                  case result of
+                    Left err -> case fromException err of
+                      Just (SomeAsyncException _) -> throwIO err
+                      Nothing -> pure $ Failure $ Just err
+                    Right ok -> pure ok
+      , logRecordExporterArgumentsForceFlush = pure FlushSuccess
+      , logRecordExporterArgumentsShutdown = do
+          _ <- atomicModifyIORef' shutdownRef $ \s -> (True, s)
+          pure ()
       }
   where
     retryDelay = 100_000
     maxRetryCount = 5
-    isRetryableStatusCode status_ =
-      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
     isRetryableException = \case
       ResponseTimeout -> True
       ConnectionTimeout -> True
@@ -117,7 +172,9 @@ otlpLogRecordExporter conf = liftIO $ do
             if backoffCount == maxRetryCount
               then pure $ Failure Nothing
               else do
-                threadDelay (retryDelay `shiftL` backoffCount)
+                let !baseDelay = retryDelay `shiftL` backoffCount
+                jitterUs <- randomRIO (0, baseDelay)
+                threadDelay (baseDelay + jitterUs)
                 sendReq req (backoffCount + 1)
       case eResp of
         Left err@(HttpExceptionRequest req' e)
@@ -131,18 +188,40 @@ otlpLogRecordExporter conf = liftIO $ do
                 else pure $ Failure $ Just $ SomeException err
         Left err -> pure $ Failure $ Just $ SomeException err
         Right resp ->
-          if isRetryableStatusCode (responseStatus resp)
+          if isRetryableHttpStatus (responseStatus resp)
             then case lookup hRetryAfter $ responseHeaders resp of
               Nothing -> exponentialBackoff
-              Just retryAfter -> case readMaybe $ C.unpack retryAfter of
-                Nothing -> exponentialBackoff
-                Just seconds -> do
-                  threadDelay (seconds * 1_000_000)
-                  sendReq req (backoffCount + 1)
+              Just retryAfter -> do
+                mMicros <- parseRetryAfterMicros retryAfter
+                case mMicros of
+                  Nothing -> exponentialBackoff
+                  Just micros -> do
+                    threadDelay micros
+                    sendReq req (backoffCount + 1)
             else
               if statusCode (responseStatus resp) >= 300
-                then pure $ Failure Nothing
-                else pure Success
+                then do
+                  otelLogWarning $
+                    "OTLP log export failed with HTTP status "
+                      <> show (statusCode (responseStatus resp))
+                      <> ": "
+                      <> C.unpack (statusMessage (responseStatus resp))
+                  pure $ Failure Nothing
+                else do
+                  let body = responseBody resp
+                  case decodeMessage body of
+                    Right (lResp :: ExportLogsServiceResponse) -> do
+                      let ps = lResp ^. LSF.partialSuccess
+                          rejected = ps ^. LSF.rejectedLogRecords
+                          errMsg = ps ^. LSF.errorMessage
+                      when (rejected > 0) $
+                        otelLogWarning $
+                          "OTLP partial success: "
+                            <> show rejected
+                            <> " log records rejected"
+                            <> if T.null errMsg then "" else ": " <> T.unpack errMsg
+                      pure Success
+                    Left _ -> pure Success
 
 
 groupByScope
@@ -152,6 +231,16 @@ groupByScope
 groupByScope acc lr = do
   let scope = readLogRecordInstrumentationScope lr
   pure $ H.insertWith (++) scope [lr] acc
+
+
+-- | Convert a batch of log records into the OTLP protobuf request.
+readableLogRecordsToProtobuf :: V.Vector ReadableLogRecord -> IO ExportLogsServiceRequest
+readableLogRecordsToProtobuf lrs = do
+  rl <- buildResourceLogsFromBatch lrs
+  pure $
+    defMessage
+      & LSF.vec'resourceLogs
+        .~ V.singleton rl
 
 
 buildResourceLogsFromBatch :: V.Vector ReadableLogRecord -> IO ResourceLogs
@@ -192,13 +281,13 @@ immutableLogRecordToProto :: ImmutableLogRecord -> PL.LogRecord
 immutableLogRecordToProto ImmutableLogRecord {..} =
   defMessage
     & LF.timeUnixNano
-      .~ maybe 0 tsToNanos logRecordTimestamp
+      .~ umaybe (tsToNanos logRecordObservedTimestamp) tsToNanos logRecordTimestamp
     & LF.observedTimeUnixNano
       .~ tsToNanos logRecordObservedTimestamp
     & LF.severityNumber
-      .~ maybe PL.SEVERITY_NUMBER_UNSPECIFIED severityToProto logRecordSeverityNumber
+      .~ umaybe PL.SEVERITY_NUMBER_UNSPECIFIED severityToProto logRecordSeverityNumber
     & LF.severityText
-      .~ fromMaybe "" logRecordSeverityText
+      .~ umaybe "" id logRecordSeverityText
     & LF.maybe'body
       .~ Just (anyValueToProto logRecordBody)
     & LF.vec'attributes
@@ -206,17 +295,17 @@ immutableLogRecordToProto ImmutableLogRecord {..} =
     & LF.droppedAttributesCount
       .~ fromIntegral (attributesDropped logRecordAttributes)
     & LF.traceId
-      .~ maybe BS.empty (\(tid, _, _) -> traceIdBytes tid) logRecordTracingDetails
+      .~ umaybe BS.empty (\(tid, _, _) -> traceIdBytes tid) logRecordTracingDetails
     & LF.spanId
-      .~ maybe BS.empty (\(_, sid, _) -> spanIdBytes sid) logRecordTracingDetails
+      .~ umaybe BS.empty (\(_, sid, _) -> spanIdBytes sid) logRecordTracingDetails
     & LF.flags
-      .~ maybe 0 (\(_, _, fl) -> fromIntegral (traceFlagsValue fl)) logRecordTracingDetails
+      .~ umaybe 0 (\(_, _, fl) -> fromIntegral (traceFlagsValue fl)) logRecordTracingDetails
     & LF.eventName
-      .~ fromMaybe "" logRecordEventName
+      .~ umaybe "" id logRecordEventName
 
 
 tsToNanos :: Timestamp -> Word64
-tsToNanos = fromIntegral . timestampNanoseconds
+tsToNanos = timestampNanoseconds
 
 
 severityToProto :: SeverityNumber -> PL.SeverityNumber
@@ -245,7 +334,9 @@ severityToProto = \case
   Fatal2 -> PL.SEVERITY_NUMBER_FATAL2
   Fatal3 -> PL.SEVERITY_NUMBER_FATAL3
   Fatal4 -> PL.SEVERITY_NUMBER_FATAL4
-  Unknown n -> toEnum n
+  Unknown n
+    | n >= 0 && n <= 24 -> toEnum n
+    | otherwise -> PL.SEVERITY_NUMBER_UNSPECIFIED
 
 
 logAttributesToProto :: LogAttributes -> V.Vector KeyValue
@@ -284,32 +375,30 @@ materializedResourceToProto r =
       & RF.vec'attributes
         .~ attrsToProto attrs
       & RF.droppedAttributesCount
-        .~ fromIntegral (A.getCount attrs)
+        .~ fromIntegral (A.getDropped attrs)
 
 
-instrumentationLibraryToProto :: InstrumentationLibrary -> InstrumentationScope
+instrumentationLibraryToProto :: InstrumentationLibrary -> ProtoCommon.InstrumentationScope
 instrumentationLibraryToProto InstrumentationLibrary {..} =
   defMessage
     & CF.name .~ libraryName
     & CF.version .~ libraryVersion
     & CF.vec'attributes .~ attrsToProto libraryAttributes
-    & CF.droppedAttributesCount .~ fromIntegral (A.getCount libraryAttributes)
+    & CF.droppedAttributesCount .~ fromIntegral (A.getDropped libraryAttributes)
 
 
 attrsToProto :: A.Attributes -> V.Vector KeyValue
-attrsToProto =
-  V.fromList
-    . fmap attrToKeyValue
-    . H.toList
-    . A.getAttributeMap
+attrsToProto attrs =
+  V.fromList $
+    H.foldrWithKey' (\k v acc -> attrToKeyValue k v : acc) [] (A.getAttributeMap attrs)
   where
     primToAnyValue = \case
       A.TextAttribute t -> defMessage & CF.stringValue .~ t
       A.BoolAttribute b -> defMessage & CF.boolValue .~ b
       A.DoubleAttribute d -> defMessage & CF.doubleValue .~ d
       A.IntAttribute i -> defMessage & CF.intValue .~ i
-    attrToKeyValue :: (Text, A.Attribute) -> KeyValue
-    attrToKeyValue (k, v) =
+    attrToKeyValue :: Text -> A.Attribute -> KeyValue
+    attrToKeyValue k v =
       defMessage
         & CF.key .~ k
         & CF.value
@@ -327,38 +416,31 @@ type Encoder = L.ByteString -> L.ByteString
 
 httpLogsCompression :: OTLPExporterConfig -> ([(HeaderName, C.ByteString)], Encoder)
 httpLogsCompression conf =
-  case otlpCompression conf of
+  case otlpLogsCompression conf <|> otlpCompression conf of
     Just GZip -> ([(hContentEncoding, "gzip")], compress)
     _ -> ([], id)
 
 
 httpLogsResponseTimeout :: OTLPExporterConfig -> ResponseTimeout
-httpLogsResponseTimeout conf = case otlpTimeout conf of
-  Just timeoutMilli
-    | timeoutMilli == 0 -> responseTimeoutNone
-    | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
-  _ -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
+httpLogsResponseTimeout conf =
+  case otlpLogsTimeout conf <|> otlpTimeout conf of
+    Just timeoutMilli
+      | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
+    -- Spec: "Export MUST NOT block indefinitely."
+    _ -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
 
 
 httpLogsBaseHeaders :: OTLPExporterConfig -> Request -> RequestHeaders
 httpLogsBaseHeaders conf req =
   concat
-    [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
+    [ [(hContentType, httpProtobufContentType)]
+    , [(hAccept, httpProtobufContentType)]
+    , [("User-Agent", otlpUserAgent)]
     , fromMaybe [] (otlpHeaders conf)
+    , fromMaybe [] (otlpLogsHeaders conf)
     , requestHeaders req
     ]
 
 
 logsEndpointUrl :: OTLPExporterConfig -> String
-logsEndpointUrl conf =
-  case otlpEndpoint conf of
-    Nothing -> "http://localhost:4318/v1/logs"
-    Just e ->
-      if "/v1/" `isInfixOf` e
-        then e
-        else trimTrailingSlash e <> "/v1/logs"
-
-
-trimTrailingSlash :: String -> String
-trimTrailingSlash = reverse . dropWhile (== '/') . reverse
+logsEndpointUrl conf = httpSignalEndpointUrl (otlpLogsEndpoint conf) conf "/v1/logs"
