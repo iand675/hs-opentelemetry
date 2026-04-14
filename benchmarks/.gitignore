@@ -1,0 +1,4 @@
+# Local baselines are machine-specific — don't commit them.
+# Use `scripts/bench-regression save` to create one for your machine.
+baseline-*.csv
+current-*.csv

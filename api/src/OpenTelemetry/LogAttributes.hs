@@ -2,6 +2,11 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 
+{- |
+Module      : OpenTelemetry.LogAttributes
+Description : Re-exports of log-specific attribute types.
+Stability   : experimental
+-}
 module OpenTelemetry.LogAttributes (
   LogAttributes (..),
   emptyAttributes,
@@ -48,7 +53,8 @@ addAttribute AttributeLimits {..} LogAttributes {..} !k !v = case attributeCount
       then LogAttributes attributes attributesCount (attributesDropped + 1)
       else LogAttributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.insert k (maybe id limitLengths attributeCountLimit $ toValue v) attributes
+    value = maybe id limitLengths attributeLengthLimit (toValue v)
+    newAttrs = H.insert k value attributes
     newCount = H.size newAttrs
 {-# INLINE addAttribute #-}
 
@@ -61,7 +67,8 @@ addAttributes AttributeLimits {..} LogAttributes {..} attrs = case attributeCoun
       then LogAttributes attributes attributesCount (attributesDropped + H.size attrs)
       else LogAttributes newAttrs newCount attributesDropped
   where
-    newAttrs = H.union attributes $ H.map toValue attrs
+    limitedVal x = maybe id limitLengths attributeLengthLimit (toValue x)
+    newAttrs = H.union attributes $ H.map limitedVal attrs
     newCount = H.size newAttrs
 {-# INLINE addAttributes #-}
 

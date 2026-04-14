@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.Service
  Copyright   :  (c) Ian Duncan, 2021
@@ -17,10 +10,15 @@
 module OpenTelemetry.Resource.Service where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- | A service instance
+{- | A service instance
+
+@since 0.0.1.0
+-}
 data Service = Service
   { serviceName :: Text
   -- ^ Logical name of the service.
@@ -47,15 +45,18 @@ data Service = Service
   -- ^ The version string of the service API or implementation.
   --
   -- Example: @2.0.0@
+  , serviceCriticality :: Maybe Text
+  -- ^ Criticality of the service relative to other services.
   }
 
 
 instance ToResource Service where
-  type ResourceSchema Service = 'Nothing
   toResource Service {..} =
-    mkResource
-      [ "service.name" .= serviceName
-      , "service.namespace" .=? serviceNamespace
-      , "service.instance.id" .=? serviceInstanceId
-      , "service.version" .=? serviceVersion
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
+      [ unkey SC.service_name .= serviceName
+      , unkey SC.service_namespace .=? serviceNamespace
+      , unkey SC.service_instance_id .=? serviceInstanceId
+      , unkey SC.service_version .=? serviceVersion
+      , unkey SC.service_criticality .=? serviceCriticality
       ]

@@ -1,7 +1,7 @@
 _common/lib: !include "../package-common.yaml"
 
 name:                hs-opentelemetry-api
-version:             0.3.1.0
+version:             0.4.0.0
 
 <<: *preface
 
@@ -27,19 +27,21 @@ dependencies:
 library:
   source-dirs: src
   ghc-options: -Wall
+  c-sources:
+  - cbits/hs_otel_hex.c
+  - cbits/hs_otel_rng.c
+  - cbits/hs_otel_time.c
+  include-dirs:
+  - include
+  reexported-modules:
+  - OpenTelemetry.Attributes.Attribute
+  - OpenTelemetry.Attributes.Key
   dependencies:
   - async
-  - attoparsec
-  - binary
   - bytestring
-  - charset
-  - clock
   - hashable
-  - http-types
-  - memory
-  - mtl
-  - regex-tdfa
-  - safe-exceptions
+  - hs-opentelemetry-api-types == 0.1.*
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - template-haskell
   - text
   - thread-utils-context >= 0.3 && < 0.5
@@ -48,30 +50,69 @@ library:
   - unordered-containers
   - vault
   - vector
-  - vector-builder
   other-modules:
   - OpenTelemetry.Context.Types
-  - OpenTelemetry.Internal.Metrics.Export
-  - OpenTelemetry.Internal.Metrics.Types
+  - OpenTelemetry.Internal.Metric.Export
+  - OpenTelemetry.Internal.Metric.Types
   - OpenTelemetry.Internal.Trace.Types
+  - OpenTelemetry.Internal.UnpackedMaybe
   - Paths_hs_opentelemetry_api
+
+benchmarks:
+  hs-opentelemetry-api-bench:
+    main: Main.hs
+    source-dirs: bench
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -O2
+    dependencies:
+    - containers
+    - hs-opentelemetry-api
+    - tasty-bench
+    - text
+    - unordered-containers
+    - vector
+    - vector-builder
 
 tests:
   hs-opentelemetry-api-test:
     main:                Spec.hs
     other-modules:
-    - OpenTelemetry.MetricsSpec
+    - OpenTelemetry.AttributesSpec
+    - OpenTelemetry.BaggageSpec
+    - OpenTelemetry.Context.EnvironmentSpec
+    - OpenTelemetry.Contrib.CarryOnsSpec
+    - OpenTelemetry.Contrib.SpanTraversalsSpec
+    - OpenTelemetry.EnvironmentSpec
+    - OpenTelemetry.InstrumentationLibrarySpec
+    - OpenTelemetry.Internal.LoggingSpec
+    - OpenTelemetry.Log.CoreSpec
+    - OpenTelemetry.MetricSpec
+    - OpenTelemetry.RegistrySpec
+    - OpenTelemetry.ResourceSpec
+    - OpenTelemetry.SemanticsConfigSpec
+    - OpenTelemetry.Trace.ExceptionHandlerSpec
+    - OpenTelemetry.Trace.MonadSpec
+    - OpenTelemetry.Trace.SamplerSpec
+    - OpenTelemetry.Trace.TraceFlagsSpec
+    - OpenTelemetry.Trace.TracerSpec
+    - OpenTelemetry.Trace.UtilsSpec
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - async
+    - bytestring
+    - hedgehog
     - hs-opentelemetry-api
     - hspec
-    - mtl
+    - hspec-hedgehog
     - text
+    - transformers
     - unliftio-core
     - unordered-containers
     - vector
-    - vector-builder

@@ -1,10 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
 
 {- |
  Module      :  OpenTelemetry.Resource.Process
@@ -18,10 +12,15 @@
 module OpenTelemetry.Resource.Process where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- |  An operating system process.
+{- |  An operating system process.
+
+@since 0.0.1.0
+-}
 data Process = Process
   { processPid :: Maybe Int
   -- ^ Process identifier (PID).
@@ -55,20 +54,23 @@ data Process = Process
 
 
 instance ToResource Process where
-  type ResourceSchema Process = 'Nothing
   toResource Process {..} =
-    mkResource
-      [ "process.pid" .=? processPid
-      , "process.executable.name" .=? processExecutableName
-      , "process.executable.path" .=? processExecutablePath
-      , "process.command" .=? processCommand
-      , "process.command_line" .=? processCommandLine
-      , "process.command_args" .=? processCommandArgs
-      , "process.owner" .=? processOwner
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
+      [ unkey SC.process_pid .=? processPid
+      , unkey SC.process_executable_name .=? processExecutableName
+      , unkey SC.process_executable_path .=? processExecutablePath
+      , unkey SC.process_command .=? processCommand
+      , unkey SC.process_commandLine .=? processCommandLine
+      , unkey SC.process_commandArgs .=? processCommandArgs
+      , unkey SC.process_owner .=? processOwner
       ]
 
 
--- | The single (language) runtime instance which is monitored.
+{- | The single (language) runtime instance which is monitored.
+
+@since 0.0.1.0
+-}
 data ProcessRuntime = ProcessRuntime
   { processRuntimeName :: Maybe Text
   -- ^ The name of the runtime of this process. For compiled native binaries, this SHOULD be the name of the compiler.
@@ -86,10 +88,10 @@ data ProcessRuntime = ProcessRuntime
 
 
 instance ToResource ProcessRuntime where
-  type ResourceSchema ProcessRuntime = 'Nothing
   toResource ProcessRuntime {..} =
-    mkResource
-      [ "process.runtime.name" .=? processRuntimeName
-      , "process.runtime.version" .=? processRuntimeVersion
-      , "process.runtime.description" .=? processRuntimeDescription
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
+      [ unkey SC.process_runtime_name .=? processRuntimeName
+      , unkey SC.process_runtime_version .=? processRuntimeVersion
+      , unkey SC.process_runtime_description .=? processRuntimeDescription
       ]

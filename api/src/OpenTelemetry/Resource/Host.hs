@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.Host
  Copyright   :  (c) Ian Duncan, 2021
@@ -19,10 +12,15 @@ module OpenTelemetry.Resource.Host (
 ) where
 
 import Data.Text (Text)
-import OpenTelemetry.Resource (ToResource (..), mkResource, (.=?))
+import OpenTelemetry.Attributes.Key (unkey)
+import OpenTelemetry.Resource (ToResource (..), mkResourceWithSchema, semConvSchemaUrl, (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- | A host is defined as a general computing instance.
+{- | A host is defined as a general computing instance.
+
+@since 0.0.1.0
+-}
 data Host = Host
   { hostId :: Maybe Text
   -- ^ Unique host ID. For Cloud, this must be the instance_id assigned by the cloud provider.
@@ -38,18 +36,24 @@ data Host = Host
   -- ^ VM image ID. For Cloud, this value is from the provider.
   , hostImageVersion :: Maybe Text
   -- ^ The version string of the VM image as defined in Version Attributes.
+  , hostIp :: Maybe [Text]
+  -- ^ Host IP addresses.
+  , hostMac :: Maybe [Text]
+  -- ^ MAC addresses of the host.
   }
 
 
 instance ToResource Host where
-  type ResourceSchema Host = 'Nothing
   toResource Host {..} =
-    mkResource
-      [ "host.id" .=? hostId
-      , "host.name" .=? hostName
-      , "host.type" .=? hostType
-      , "host.arch" .=? hostArch
-      , "host.image.name" .=? hostImageName
-      , "host.image.id" .=? hostImageId
-      , "host.image.version" .=? hostImageVersion
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
+      [ unkey SC.host_id .=? hostId
+      , unkey SC.host_name .=? hostName
+      , unkey SC.host_type .=? hostType
+      , unkey SC.host_arch .=? hostArch
+      , unkey SC.host_image_name .=? hostImageName
+      , unkey SC.host_image_id .=? hostImageId
+      , unkey SC.host_image_version .=? hostImageVersion
+      , unkey SC.host_ip .=? hostIp
+      , unkey SC.host_mac .=? hostMac
       ]

@@ -42,6 +42,9 @@ module OpenTelemetry.Trace.Id (
   -- ** Creating 'SpanId's
   newSpanId,
 
+  -- ** Combined generation (root spans)
+  newTraceAndSpanId,
+
   -- ** Checking 'SpanId's for validity
   isEmptySpanId,
 
@@ -55,6 +58,14 @@ module OpenTelemetry.Trace.Id (
   spanIdBaseEncodedBuilder,
   spanIdBaseEncodedByteString,
   spanIdBaseEncodedText,
+
+  -- * Nil (all-zero) IDs
+  nilTraceId,
+  nilSpanId,
+
+  -- * Traceparent encoding/decoding
+  decodeTraceparent,
+  encodeTraceparent,
 ) where
 
 import OpenTelemetry.Internal.Trace.Id

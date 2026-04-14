@@ -1,7 +1,3 @@
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Processor.Span
  Copyright   :  (c) Ian Duncan, 2021
@@ -23,6 +19,7 @@
 -}
 module OpenTelemetry.Processor.Span (
   SpanProcessor (..),
+  FlushResult (..),
   ShutdownResult (..),
 ) where
 
