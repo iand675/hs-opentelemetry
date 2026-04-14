@@ -6,10 +6,35 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {- |
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+Module      : OpenTelemetry.Instrumentation.Yesod
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Automatic tracing for Yesod web applications
+Stability   : experimental
+
+= Overview
+
+Provides Yesod middleware that automatically creates spans for incoming
+HTTP requests. Uses Yesod's type-safe routing to produce meaningful span
+names (e.g. \"GET UserR\" instead of \"GET /users/123\").
+
+= Quick example
+
+@
+import OpenTelemetry.Instrumentation.Yesod (openTelemetryYesodMiddleware)
+
+instance Yesod App where
+  yesodMiddleware = openTelemetryYesodMiddleware . defaultYesodMiddleware
+@
+
+= What gets traced
+
+* A @Server@ span per request, named after the Yesod route type
+* Standard HTTP attributes: method, status code, path, scheme
+* Trace context extracted from incoming request headers
+
+[HTTP semantic conventions migration:](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan)
+set @OTEL_SEMCONV_STABILITY_OPT_IN@ to @http@, @http/dup@, or leave unset for legacy-only.
 -}
 module OpenTelemetry.Instrumentation.Yesod (
   -- * Middleware functionality
@@ -21,6 +46,12 @@ module OpenTelemetry.Instrumentation.Yesod (
   -- * Utilities
   rheSiteL,
   handlerEnvL,
+
+  -- * Testing helpers
+  renderPattern,
+  exceptionTypeName,
+  shouldMarkException,
+  isInternalError,
 ) where
 
 import Control.Monad (when)
@@ -30,11 +61,14 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import Data.Typeable (typeOf)
 import Language.Haskell.TH.Syntax
 import Lens.Micro
-import Network.Wai (requestHeaders)
+import Network.Wai (requestHeaders, requestMethod)
+import OpenTelemetry.Attributes.Key (unkey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Instrumentation.Wai (requestContext)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
@@ -177,14 +211,16 @@ renderPattern FlatResource {..} =
     concat
       [ if frCheck then [] else ["!"]
       , case formattedParentPieces <> concatMap routePortionSection frPieces of
-          [] -> ["/"]
+          [] -> case frDispatch of
+            Subsite {} -> []
+            _ -> ["/"]
           pieces -> pieces
       , case frDispatch of
           Methods {..} ->
             case methodsMulti of
               Nothing -> []
               Just t -> ["/+", t]
-          Subsite {} -> []
+          Subsite {} -> ["/**"]
       ]
   where
     routePortionSection :: Piece String -> [String]
@@ -204,9 +240,12 @@ data RouteRenderer site = RouteRenderer
   }
 
 
--- TODO figure out a way to get better code locations for these spans.
+{- | This middleware works best when used with `OpenTelemetry.Instrumentation.Wai` middleware.
 
--- | This middleware works best when used with `OpenTelemetry.Instrumentation.Wai` middleware.
+Note: span code locations reflect this middleware module rather than the
+Yesod handler source location. Propagating 'HasCallStack' through Yesod's
+handler monad would require upstream changes to the @yesod-core@ library.
+-}
 openTelemetryYesodMiddleware
   :: (ToTypedContent res)
   => RouteRenderer site
@@ -223,15 +262,15 @@ openTelemetryYesodMiddleware rr m = do
             : catMaybes
               [ do
                   r <- mr
-                  Just ("http.route", toAttribute $ pathRender rr r)
+                  Just (unkey SC.http_route, toAttribute $ pathRender rr r)
               , do
                   r <- mr
                   Just ("http.handler", toAttribute $ nameRender rr r)
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
                   case httpOption semanticsOptions of
-                    Stable -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
-                    StableAndOld -> Just ("client.address", toAttribute $ T.decodeUtf8 ff)
+                    Stable -> Just (unkey SC.client_address, toAttribute $ T.decodeUtf8 ff)
+                    StableAndOld -> Just (unkey SC.client_address, toAttribute $ T.decodeUtf8 ff)
                     Old -> Nothing
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
@@ -245,9 +284,13 @@ openTelemetryYesodMiddleware rr m = do
           { kind = maybe Server (const Internal) mspan
           , attributes = sharedAttributes
           }
+  let method_ = T.decodeUtf8 $ requestMethod req
+      yesodSpanName = case mr of
+        Just r -> method_ <> " " <> pathRender rr r
+        Nothing -> method_
   case mspan of
     Nothing -> do
-      eResult <- inSpan' (maybe "notFound" (nameRender rr) mr) args $ \_s -> do
+      eResult <- inSpan' yesodSpanName args $ \_s -> do
         catch (Right <$> m) $ \e -> do
           when (isInternalError e) $ throwIO e
           pure (Left (e :: HandlerContents))
@@ -262,8 +305,13 @@ openTelemetryYesodMiddleware rr m = do
       -- meaning the exception details would not be otherwise attached.
       withException m $ \ex -> do
         when (shouldMarkException ex) $ do
+          addAttributes waiSpan (H.singleton (unkey SC.error_type) (toAttribute (exceptionTypeName ex)))
           recordException waiSpan mempty Nothing ex
           setStatus waiSpan $ Error $ T.pack $ displayException ex
+
+
+exceptionTypeName :: SomeException -> Text
+exceptionTypeName (SomeException e) = T.pack $ show $ typeOf e
 
 
 shouldMarkException :: SomeException -> Bool
