@@ -26,7 +26,6 @@ module OpenTelemetry.Resource.Cloud.Detector (
 
 import qualified Data.Text as T
 import OpenTelemetry.Resource.Cloud (Cloud (..))
-import OpenTelemetry.Resource.Detector.Internal (firstEnv, lookupEnvText)
 import System.Environment (lookupEnv)
 
 
@@ -176,3 +175,16 @@ detectAzure = do
             , cloudPlatform = platform
             , cloudResourceId = Nothing
             }
+
+
+lookupEnvText :: String -> IO (Maybe T.Text)
+lookupEnvText key = fmap (T.pack <$>) (lookupEnv key)
+
+
+firstEnv :: [String] -> IO (Maybe T.Text)
+firstEnv [] = pure Nothing
+firstEnv (k : ks) = do
+  mVal <- lookupEnvText k
+  case mVal of
+    Just v -> pure (Just v)
+    Nothing -> firstEnv ks

@@ -169,7 +169,7 @@ import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Context (Context)
-import OpenTelemetry.Environment (readEnv, readEnvDefault)
+import OpenTelemetry.Environment
 import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpExporter)
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
@@ -184,10 +184,8 @@ import OpenTelemetry.Propagator (
  )
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
 import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
-import OpenTelemetry.Propagator.Jaeger (jaegerTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
-import OpenTelemetry.Propagator.XRay (xrayPropagator)
 import qualified OpenTelemetry.Registry as Registry
 import OpenTelemetry.Resource
 import qualified OpenTelemetry.Resource.Detect as ResourceDetect
@@ -195,6 +193,7 @@ import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, parentBased, parentBasedOptions, traceIdRatioBased)
 import System.Environment (lookupEnv)
+import Text.Read (readMaybe)
 
 
 {- $use
@@ -332,8 +331,7 @@ knownPropagators =
   , ("b3", b3TraceContextPropagator)
   , ("b3multi", b3MultiTraceContextPropagator)
   , ("datadog", datadogTraceContextPropagator)
-  , ("jaeger", jaegerTraceContextPropagator)
-  , ("xray", xrayPropagator)
+  , ("jaeger", error "Jaeger not yet implemented")
   ]
 
 
@@ -530,6 +528,8 @@ knownExporters =
         otlpConfig <- loadExporterEnvironmentVariables
         otlpExporter otlpConfig
     )
+  , ("jaeger", error "Jaeger exporter not implemented")
+  , ("zipkin", error "Zipkin exporter not implemented")
   ]
 
 
@@ -574,6 +574,15 @@ detectResourceAttributes = do
           map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v)) $
             H.toList $
               Baggage.values ok
+
+
+readEnvDefault :: forall a. (Read a) => String -> a -> IO a
+readEnvDefault k defaultValue =
+  fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
+
+
+readEnv :: forall a. (Read a) => String -> IO (Maybe a)
+readEnv k = (>>= readMaybe) <$> lookupEnv k
 
 
 {- | Discover resource attributes using the shared SDK implementation in

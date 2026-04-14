@@ -157,8 +157,8 @@ detectBuiltInResources = do
   where
     runDetectorSafely :: IO Resource -> IO Resource
     runDetectorSafely detector =
-      detector `catch` \(ex :: SomeException) -> do
-        otelLogWarning $ "Resource detector failed, skipping: " <> show ex
+      detector `catch` \(_ex :: SomeException) -> do
+        otelLogDebug "Resource detector failed, skipping"
         pure (mkResource [])
 
 

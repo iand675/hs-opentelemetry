@@ -26,7 +26,6 @@ module OpenTelemetry.Resource.FaaS.Detector (
 ) where
 
 import qualified Data.Text as T
-import OpenTelemetry.Resource.Detector.Internal (lookupEnvText)
 import OpenTelemetry.Resource.FaaS (FaaS (..))
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
@@ -115,3 +114,7 @@ detectAzureFunctions = do
                 , faasInstance = Nothing
                 , faasMaxMemory = Nothing
                 }
+
+
+lookupEnvText :: String -> IO (Maybe T.Text)
+lookupEnvText key = fmap (T.pack <$>) (lookupEnv key)
