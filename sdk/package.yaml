@@ -24,8 +24,14 @@ dependencies:
 
 library:
   exposed-modules:
+  - OpenTelemetry.Configuration
+  - OpenTelemetry.Configuration.Create
+  - OpenTelemetry.Configuration.Parse
+  - OpenTelemetry.Configuration.Types
+  - OpenTelemetry.Log
   - OpenTelemetry.MetricReader
   - OpenTelemetry.MeterProvider
+  - OpenTelemetry.Metric
   - OpenTelemetry.Metric.ExporterSelection
   - OpenTelemetry.Metric.View
   - OpenTelemetry.Processor.Batch
@@ -34,13 +40,27 @@ library:
   - OpenTelemetry.Processor.Simple
   - OpenTelemetry.Processor.Simple.LogRecord
   - OpenTelemetry.Processor.Simple.Span
+  - OpenTelemetry.Resource.Cloud.Detector
+  - OpenTelemetry.Resource.Container.Detector
+  - OpenTelemetry.Resource.Detect
+  - OpenTelemetry.Resource.Detector.AWS.EC2
+  - OpenTelemetry.Resource.Detector.AWS.ECS
+  - OpenTelemetry.Resource.Detector.AWS.EKS
+  - OpenTelemetry.Resource.Detector.Azure
+  - OpenTelemetry.Resource.Detector.GCP
+  - OpenTelemetry.Resource.Detector.Heroku
+  - OpenTelemetry.Resource.Detector.Metadata
+  - OpenTelemetry.Resource.FaaS.Detector
   - OpenTelemetry.Resource.Host.Detector
+  - OpenTelemetry.Resource.Kubernetes.Detector
   - OpenTelemetry.Resource.OperatingSystem.Detector
   - OpenTelemetry.Resource.Process.Detector
   - OpenTelemetry.Resource.Service.Detector
   - OpenTelemetry.Resource.Telemetry.Detector
   - OpenTelemetry.Trace
   - OpenTelemetry.Trace.Id.Generator.Default
+  other-modules:
+  - OpenTelemetry.Resource.Detector.Internal
   ghc-options: -Wall
   source-dirs: src
   when:
@@ -59,7 +79,8 @@ library:
   - hashable
   - http-types
   - network-bsd
-  - random >= 1.2.0
+    - process
+    - random >= 1.2.0
   - stm
   - text
   - unix-compat >= 0.7.1 # for getProcessID
@@ -73,6 +94,8 @@ library:
   - hs-opentelemetry-exporter-otlp ^>= 0.1
   - hs-opentelemetry-propagator-b3 ^>=0.0.1
   - hs-opentelemetry-propagator-datadog ^>=0.0.0
+  - hs-opentelemetry-propagator-jaeger ^>=0.0.1
+  - hs-opentelemetry-propagator-xray ^>=0.0.1
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage

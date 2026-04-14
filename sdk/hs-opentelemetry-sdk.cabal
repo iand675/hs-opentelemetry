@@ -29,8 +29,14 @@ source-repository head
 
 library
   exposed-modules:
+      OpenTelemetry.Configuration
+      OpenTelemetry.Configuration.Create
+      OpenTelemetry.Configuration.Parse
+      OpenTelemetry.Configuration.Types
+      OpenTelemetry.Log
       OpenTelemetry.MetricReader
       OpenTelemetry.MeterProvider
+      OpenTelemetry.Metric
       OpenTelemetry.Metric.ExporterSelection
       OpenTelemetry.Metric.View
       OpenTelemetry.Processor.Batch
@@ -39,7 +45,19 @@ library
       OpenTelemetry.Processor.Simple
       OpenTelemetry.Processor.Simple.LogRecord
       OpenTelemetry.Processor.Simple.Span
+      OpenTelemetry.Resource.Cloud.Detector
+      OpenTelemetry.Resource.Container.Detector
+      OpenTelemetry.Resource.Detect
+      OpenTelemetry.Resource.Detector.AWS.EC2
+      OpenTelemetry.Resource.Detector.AWS.ECS
+      OpenTelemetry.Resource.Detector.AWS.EKS
+      OpenTelemetry.Resource.Detector.Azure
+      OpenTelemetry.Resource.Detector.GCP
+      OpenTelemetry.Resource.Detector.Heroku
+      OpenTelemetry.Resource.Detector.Metadata
+      OpenTelemetry.Resource.FaaS.Detector
       OpenTelemetry.Resource.Host.Detector
+      OpenTelemetry.Resource.Kubernetes.Detector
       OpenTelemetry.Resource.OperatingSystem.Detector
       OpenTelemetry.Resource.Process.Detector
       OpenTelemetry.Resource.Service.Detector
@@ -47,6 +65,7 @@ library
       OpenTelemetry.Trace
       OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
+      OpenTelemetry.Resource.Detector.Internal
       Paths_hs_opentelemetry_sdk
   reexported-modules:
       OpenTelemetry.Attributes
@@ -94,9 +113,12 @@ library
     , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-datadog >=0.0.0 && <0.1
+    , hs-opentelemetry-propagator-jaeger >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
+    , hs-opentelemetry-propagator-xray >=0.0.1 && <0.1
     , http-types
     , network-bsd
+    , process
     , random >=1.2.0
     , stm
     , text
