@@ -44,7 +44,9 @@ import Control.Monad (join)
 import Control.Monad.Reader (MonadIO (..), MonadTrans (..), ReaderT (runReaderT))
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as BS8
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
 import Data.String (IsString)
 import Data.Text (Text)
@@ -112,10 +114,9 @@ newtype EnvironmentName = EnvironmentName {unEnvironmentName :: Text}
 
     This does not do any HTTP.
 
- FIXME(jadel): This should ideally fetch this from the tracer provider, but
- it's nonobvious how to architect being able to do that (requires changes in
- hs-opentelemetry-api). For now let's take a Tracer such that we
- can fix it later, then do it the obvious way.
+ Note: this reads OTLP headers from environment variables directly rather
+ than extracting them from the TracerProvider. The TracerProvider parameter
+ is accepted for forward compatibility but currently unused.
 -}
 getConfigPartsFromEnv :: (MonadIO m) => TracerProvider -> m (Maybe (Text, DatasetName))
 getConfigPartsFromEnv _ = do
@@ -220,15 +221,13 @@ makeDirectTraceLink HoneycombTarget {..} timestamp traceId =
         <> query
     Classic ds -> teamPrefix <> "/datasets/" <> (encodeUtf8 . fromDatasetName $ ds) <> "/trace" <> query
   where
-    -- XXX(jadel): I feel like there's not really any way to know what these
-    -- actual values are, even if we are omniscient of the Haskell application.
-    -- For instance, if someone else calls us, we simply don't know when the
-    -- trace started. So it's kind of a fool's errand. Let's just give ± 1hr and
-    -- call it a day.
+    -- Trace start/end times are unknown at URL generation time (the trace may
+    -- still be in progress, or originated from another service). Use ±1hr as a
+    -- reasonable window for the Honeycomb UI query.
     oneHour = secondsToNominalDiffTime 3600
     guessedStart = addUTCTime (-oneHour) timestamp
     guessedEnd = addUTCTime oneHour timestamp
-    convertTimestamp = BS8.pack . show @Integer . truncate . nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
+    convertTimestamp = BSL.toStrict . BSB.toLazyByteString . BSB.integerDec . truncate . nominalDiffTimeToSeconds . utcTimeToPOSIXSeconds
 
     teamPrefix = "https://ui.honeycomb.io/" <> encodeUtf8 (unHoneycombTeam targetTeam)
     query =

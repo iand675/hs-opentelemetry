@@ -71,24 +71,33 @@ library:
         source-dirs: src/platform/unix
         dependencies: unix # for getEffectiveUserID
   dependencies:
+  - aeson
   - async
   - bytestring
   - case-insensitive
   - clock
   - containers
+  - crypton-connection
+  - crypton-x509
+  - crypton-x509-store
   - hashable
+  - http-client
+  - http-client-tls
   - http-types
   - network-bsd
-    - process
-    - random >= 1.2.0
+  - process
+  - random >= 1.2.0
+  - scientific
   - stm
   - text
+  - tls
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
   - vector
   - vector-builder
+  - yaml
   # These are "distribution" packages
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api >= 0.3 && < 0.5
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0
   - hs-opentelemetry-exporter-handle ^>= 0.0.1
   - hs-opentelemetry-exporter-otlp ^>= 0.1
@@ -96,6 +105,7 @@ library:
   - hs-opentelemetry-propagator-datadog ^>=0.0.0
   - hs-opentelemetry-propagator-jaeger ^>=0.0.1
   - hs-opentelemetry-propagator-xray ^>=0.0.1
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
@@ -135,17 +145,37 @@ tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs
     other-modules:
+    - OpenTelemetry.BaggageSpec
+    - OpenTelemetry.ConfigurationSpec
+    - OpenTelemetry.ContextInSpanSpec
+    - OpenTelemetry.ContextSpec
+    - OpenTelemetry.LogSpec
     - OpenTelemetry.MeterProviderSpec
+    - OpenTelemetry.MetricReaderSpec
+    - OpenTelemetry.Resource.DetectorSpec
+    - OpenTelemetry.ResourceSpec
+    - OpenTelemetry.Trace.CallStackSpec
+    - OpenTelemetry.TraceSpec
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - async
+    - bytestring
     - clock
+    - containers
+    - directory
     - hs-opentelemetry-api
+    - hs-opentelemetry-exporter-in-memory
+    - hs-opentelemetry-propagator-b3
+    - hs-opentelemetry-propagator-w3c
     - hs-opentelemetry-sdk
+    - hs-opentelemetry-semantic-conventions
     - hspec
+    - process
     - text
+    - unix
     - unordered-containers
     - vector

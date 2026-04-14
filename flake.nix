@@ -94,7 +94,7 @@
                 grpc
                 haskellPackages.proto-lens-protoc
                 libffi
-                mysql80
+                mysql84
                 openssl
                 pcre
                 postgresql
@@ -134,6 +134,7 @@
         ghc96 = mkShellForGHC "ghc96";
         ghc98 = mkShellForGHC "ghc98";
         ghc910 = mkShellForGHC "ghc910";
+        ghc912 = mkShellForGHC "ghc912";
       };
 
       checks = {

@@ -46,9 +46,16 @@ packages:
       size: 1944
   original:
     hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
+- completed:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+    pantry-tree:
+      sha256: 2142ab3dfe2420073a56ab28eb2c82904f3e50da46b326fcdce8886538be9cc8
+      size: 175
+  original:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
 snapshots:
 - completed:
-    sha256: 238fa745b64f91184f9aa518fe04bdde6552533d169b0da5256670df83a0f1a9
-    size: 721141
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/44.yaml
-  original: lts-22.44
+    sha256: a81fb3877c4f9031e1325eb3935122e608d80715dc16b586eb11ddbff8671ecd
+    size: 640086
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/25.yaml
+  original: lts-21.25

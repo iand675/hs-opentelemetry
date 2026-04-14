@@ -164,7 +164,9 @@ import Data.Either (partitionEithers)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import qualified Data.CaseInsensitive as CI
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
