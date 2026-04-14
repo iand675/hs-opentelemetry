@@ -6,11 +6,16 @@ author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 license: BSD-3-Clause
 license-file: LICENSE
-category: Telemetry
-homepage: https://github.com/iand675/hs-opentelemetry
+copyright: 2024 Ian Duncan, Mercury Technologies
+category: OpenTelemetry, Telemetry, Tracing, Datadog
+homepage: https://github.com/iand675/hs-opentelemetry#readme
 bug-reports: https://github.com/iand675/hs-opentelemetry/issues
 synopsis: Datadog Propagator for OpenTelemetry
 description: This package provides a Datadog style propagator for hs-opentelemetry suite.
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
 
 common common
   build-depends: base >= 4 && < 5
@@ -25,8 +30,7 @@ library
   exposed-modules: OpenTelemetry.Propagator.Datadog
                    OpenTelemetry.Propagator.Datadog.Internal
   build-depends: bytestring,
-                 hs-opentelemetry-api ^>= 0.3,
-                 http-types,
+                 hs-opentelemetry-api ^>= 0.4,
                  primitive,
                  text
   ghc-options: -Wcompat
@@ -69,13 +73,14 @@ test-suite spec
                  OpenTelemetry.Propagator.Datadog.InternalSpec
                  Raw
                  String
-  build-depends: hs-opentelemetry-propagator-datadog,
-                 hs-opentelemetry-api,
+  build-depends: hs-opentelemetry-propagator-datadog >= 0.0.0 && < 0.1,
+                 hs-opentelemetry-api == 0.4.*,
                  bytestring,
                  hspec,
                  pretty-hex,
                  primitive,
-                 QuickCheck
+                 QuickCheck,
+                 text
   ghc-options: -threaded
                -rtsopts
                -with-rtsopts=-N
