@@ -3,6 +3,7 @@ resolver: lts-24.35
 packages:
 - api-types
 - api
+- sdk
 - otlp
 - semantic-conventions
 - exporters/handle
@@ -14,8 +15,6 @@ packages:
 - propagators/xray
 - propagators/datadog
 - propagators/w3c
-- sdk
-- utils/exceptions
 - instrumentation/cloudflare
 - instrumentation/conduit
 - instrumentation/ghc-metrics
@@ -29,6 +28,10 @@ packages:
 - instrumentation/tasty
 - instrumentation/wai
 - instrumentation/yesod
+- utils/exceptions
+- examples/hspec
+- examples/yesod-minimal
+- examples/hw-kafka-client-example
 
 extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619

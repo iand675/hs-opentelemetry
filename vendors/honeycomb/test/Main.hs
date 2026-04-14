@@ -6,7 +6,6 @@ import Test.Hspec.Runner (defaultConfig, hspecWith)
 import Prelude
 
 
--- FIXME(jadel): use the hs-opentelemetry-instrumentation-hspec example
 main :: IO ()
 main = do
   putStrLn "Begin tests"
