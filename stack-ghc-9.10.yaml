@@ -5,6 +5,10 @@ packages:
 - api
 - otlp
 - semantic-conventions
+- exporters/handle
+- exporters/in-memory
+- exporters/otlp
+- exporters/prometheus
 - propagators/b3
 - propagators/jaeger
 - propagators/xray
