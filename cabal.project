@@ -1,11 +1,11 @@
 packages:
-    api
+    api-types
+  , ../thread-utils/thread-utils-context
+  , ../thread-utils/thread-utils-finalizers
+  , api
   , sdk
   , otlp
   , semantic-conventions
-  , examples/hspec
-  , examples/hw-kafka-client-example
-  , examples/yesod-minimal
   , exporters/handle
   , exporters/in-memory
   , exporters/otlp
@@ -14,21 +14,28 @@ packages:
   , propagators/w3c
   , propagators/b3
   , instrumentation/conduit
-  , instrumentation/cloudflare
   , instrumentation/hspec
-  , instrumentation/http-client
-  , instrumentation/hw-kafka-client
-  , instrumentation/persistent
-  , instrumentation/persistent-mysql
   , instrumentation/postgresql-simple
   , instrumentation/tasty
-  , instrumentation/yesod
-  , instrumentation/wai
+  -- Updated for API 0.4 in otel-17:
+  -- , instrumentation/cloudflare
+  -- , instrumentation/http-client
+  -- , instrumentation/wai
+  -- , instrumentation/yesod
   , utils/exceptions
   , vendors/honeycomb
+  -- GHC 9.10 source incompatibilities:
+  -- , instrumentation/hw-kafka-client
+  -- , instrumentation/persistent
+  -- , instrumentation/persistent-mysql
+  -- Examples updated in otel-18:
+  -- , examples/hspec
+  -- , examples/hw-kafka-client-example
+  -- , examples/yesod-minimal
 
 allow-newer:
-    http-api-data:base
+    *:hs-opentelemetry-api
+  , http-api-data:base
   , postgresql-simple:base
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal

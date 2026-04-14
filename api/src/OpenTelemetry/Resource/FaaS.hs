@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
  Module      :  OpenTelemetry.Resource.FaaS
  Copyright   :  (c) Ian Duncan, 2021
@@ -17,10 +10,15 @@
 module OpenTelemetry.Resource.FaaS where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
--- | A "function as a service" aka "serverless function" instance.
+{- | A "function as a service" aka "serverless function" instance.
+
+@since 0.0.1.0
+-}
 data FaaS = FaaS
   { faasName :: Text
   {- ^ The name of the single function that this runtime instance executes.
@@ -40,6 +38,7 @@ data FaaS = FaaS
 
   Examples: 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
   -}
+  , faasCloudResourceId :: Maybe Text
   , faasVersion :: Maybe Text
   {- ^ The immutable version of the function being executed.
 
@@ -67,15 +66,16 @@ data FaaS = FaaS
   Examples: '128'
   -}
   }
+  deriving (Show)
 
 
 instance ToResource FaaS where
-  type ResourceSchema FaaS = 'Nothing
   toResource FaaS {..} =
-    mkResource
-      [ "faas.name" .= faasName
-      , "faas.id" .=? faasId
-      , "faas.version" .=? faasVersion
-      , "faas.instance" .=? faasInstance
-      , "faas.max_memory" .=? faasMaxMemory
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
+      [ unkey SC.faas_name .= faasName
+      , unkey SC.cloud_resourceId .=? faasCloudResourceId
+      , unkey SC.faas_version .=? faasVersion
+      , unkey SC.faas_instance .=? faasInstance
+      , unkey SC.faas_maxMemory .=? faasMaxMemory
       ]

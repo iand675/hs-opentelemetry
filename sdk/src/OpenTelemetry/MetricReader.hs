@@ -19,6 +19,7 @@ module OpenTelemetry.MetricReader (
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, waitCatch)
 import Control.Monad (forever)
+import qualified Data.Vector as V
 import OpenTelemetry.Environment (lookupMetricExportIntervalMillis)
 import OpenTelemetry.Exporter.Metric (MetricExporter (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult)
@@ -62,7 +63,7 @@ data PeriodicMetricReaderHandle = PeriodicMetricReaderHandle
 exportMetricsOnce :: SdkMeterEnv -> MetricExporter -> IO ExportResult
 exportMetricsOnce env ex = do
   batches <- collectResourceMetrics env
-  metricExporterExport ex batches
+  metricExporterExport ex (V.fromList batches)
 
 
 -- | Spawn an async loop: export on each interval until stopped.

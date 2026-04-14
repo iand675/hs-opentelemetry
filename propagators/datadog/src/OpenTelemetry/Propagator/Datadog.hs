@@ -9,6 +9,7 @@ module OpenTelemetry.Propagator.Datadog (
 ) where
 
 import qualified Data.ByteString.Char8 as BC
+import qualified Data.ByteString.Short as SB
 import qualified Data.ByteString.Short.Internal as SBI
 import Data.Primitive (ByteArray (ByteArray))
 import Data.String (IsString)
@@ -22,10 +23,12 @@ import OpenTelemetry.Context (
   lookupSpan,
  )
 import OpenTelemetry.Internal.Trace.Id (
-  SpanId (SpanId),
-  TraceId (TraceId),
+  SpanId,
+  TraceId,
+  bytesToSpanId,
+  bytesToTraceId,
  )
-import OpenTelemetry.Propagator (Propagator (Propagator, extractor, injector, propagatorNames))
+import OpenTelemetry.Propagator (Propagator (Propagator, extractor, injector, propagatorFields))
 import OpenTelemetry.Propagator.Datadog.Internal (
   indexByteArrayNbo,
   newHeaderFromSpanId,
@@ -38,6 +41,7 @@ import OpenTelemetry.Trace.Core (
   getSpanContext,
   wrapSpanContext,
  )
+import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.Trace.TraceState (TraceState (TraceState))
 import qualified OpenTelemetry.Trace.TraceState as TS
 
@@ -48,11 +52,13 @@ import qualified OpenTelemetry.Trace.TraceState as TS
 datadogTraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
 datadogTraceContextPropagator =
   Propagator
-    { propagatorNames = ["datadog trace context"]
+    { propagatorFields = ["datadog trace context"]
     , extractor = \hs c -> do
         let spanContext' = do
-              traceId <- TraceId . newTraceIdFromHeader <$> lookup traceIdKey hs
-              parentId <- SpanId . newSpanIdFromHeader <$> lookup parentIdKey hs
+              tidBs <- lookup traceIdKey hs
+              sidBs <- lookup parentIdKey hs
+              traceId <- eitherToMaybe $ bytesToTraceId $ SB.fromShort $ newTraceIdFromHeader tidBs
+              parentId <- eitherToMaybe $ bytesToSpanId $ SB.fromShort $ newSpanIdFromHeader sidBs
               samplingPriority <- T.pack . BC.unpack <$> lookup samplingPriorityKey hs
               pure $
                 SpanContext
@@ -72,8 +78,8 @@ datadogTraceContextPropagator =
           Nothing -> pure hs
           Just span' -> do
             SpanContext {traceId, spanId, traceState = TraceState traceState} <- getSpanContext span'
-            let traceIdValue = (\(TraceId b) -> newHeaderFromTraceId b) traceId
-                parentIdValue = (\(SpanId b) -> newHeaderFromSpanId b) spanId
+            let traceIdValue = newHeaderFromTraceId $ shortFromTraceId traceId
+                parentIdValue = newHeaderFromSpanId $ shortFromSpanId spanId
             samplingPriority <-
               case lookup (TS.Key samplingPriorityKey) traceState of
                 Nothing -> pure "1" -- when an origin of the trace
@@ -90,10 +96,21 @@ datadogTraceContextPropagator =
     parentIdKey = "x-datadog-parent-id"
     samplingPriorityKey = "x-datadog-sampling-priority"
 
+    eitherToMaybe :: Either e a -> Maybe a
+    eitherToMaybe = either (const Nothing) Just
+
+    shortFromTraceId :: TraceId -> SB.ShortByteString
+    shortFromTraceId = SB.toShort . traceIdBytes
+
+    shortFromSpanId :: SpanId -> SB.ShortByteString
+    shortFromSpanId = SB.toShort . spanIdBytes
+
 
 convertOpenTelemetrySpanIdToDatadogSpanId :: SpanId -> Word64
-convertOpenTelemetrySpanIdToDatadogSpanId (SpanId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 0
+convertOpenTelemetrySpanIdToDatadogSpanId s = case SB.toShort (spanIdBytes s) of
+  SBI.SBS a -> indexByteArrayNbo (ByteArray a) 0
 
 
 convertOpenTelemetryTraceIdToDatadogTraceId :: TraceId -> Word64
-convertOpenTelemetryTraceIdToDatadogTraceId (TraceId (SBI.SBS a)) = indexByteArrayNbo (ByteArray a) 1
+convertOpenTelemetryTraceIdToDatadogTraceId t = case SB.toShort (traceIdBytes t) of
+  SBI.SBS a -> indexByteArrayNbo (ByteArray a) 1

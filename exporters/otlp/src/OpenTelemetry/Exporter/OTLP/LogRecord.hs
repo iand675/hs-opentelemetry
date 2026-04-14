@@ -35,7 +35,7 @@ import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Log.Types
 import OpenTelemetry.Internal.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.LogAttributes (AnyValue (..), LogAttributes (..))
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
@@ -83,7 +83,7 @@ otlpLogRecordExporter conf = liftIO $ do
                   Just (SomeAsyncException _) -> throwIO err
                   Nothing -> pure $ Failure $ Just err
                 Right ok -> pure ok
-      , logRecordExporterArgumentsForceFlush = pure ()
+      , logRecordExporterArgumentsForceFlush = pure FlushSuccess
       , logRecordExporterArgumentsShutdown = pure ()
       }
   where
@@ -193,13 +193,13 @@ immutableLogRecordToProto :: ImmutableLogRecord -> PL.LogRecord
 immutableLogRecordToProto ImmutableLogRecord {..} =
   defMessage
     & LF.timeUnixNano
-      .~ maybe 0 tsToNanos logRecordTimestamp
+      .~ maybe 0 tsToNanos (toBaseMaybe logRecordTimestamp)
     & LF.observedTimeUnixNano
       .~ tsToNanos logRecordObservedTimestamp
     & LF.severityNumber
-      .~ maybe PL.SEVERITY_NUMBER_UNSPECIFIED severityToProto logRecordSeverityNumber
+      .~ maybe PL.SEVERITY_NUMBER_UNSPECIFIED severityToProto (toBaseMaybe logRecordSeverityNumber)
     & LF.severityText
-      .~ fromMaybe "" logRecordSeverityText
+      .~ fromMaybe "" (toBaseMaybe logRecordSeverityText)
     & LF.maybe'body
       .~ Just (anyValueToProto logRecordBody)
     & LF.vec'attributes
@@ -207,13 +207,19 @@ immutableLogRecordToProto ImmutableLogRecord {..} =
     & LF.droppedAttributesCount
       .~ fromIntegral (attributesDropped logRecordAttributes)
     & LF.traceId
-      .~ maybe BS.empty (\(tid, _, _) -> traceIdBytes tid) logRecordTracingDetails
+      .~ case logRecordTracingDetails of
+        TracingDetails tid _ _ -> traceIdBytes tid
+        NoTracingDetails -> BS.empty
     & LF.spanId
-      .~ maybe BS.empty (\(_, sid, _) -> spanIdBytes sid) logRecordTracingDetails
+      .~ case logRecordTracingDetails of
+        TracingDetails _ sid _ -> spanIdBytes sid
+        NoTracingDetails -> BS.empty
     & LF.flags
-      .~ maybe 0 (\(_, _, fl) -> fromIntegral (traceFlagsValue fl)) logRecordTracingDetails
+      .~ case logRecordTracingDetails of
+        TracingDetails _ _ fl -> fromIntegral (traceFlagsValue fl)
+        NoTracingDetails -> 0
     & LF.eventName
-      .~ fromMaybe "" logRecordEventName
+      .~ fromMaybe "" (toBaseMaybe logRecordEventName)
 
 
 tsToNanos :: Timestamp -> Word64
@@ -288,7 +294,7 @@ materializedResourceToProto r =
          .~ fromIntegral (A.getCount attrs)
 
 
-instrumentationLibraryToProto :: InstrumentationLibrary -> InstrumentationScope
+instrumentationLibraryToProto :: InstrumentationLibrary -> Common.InstrumentationScope
 instrumentationLibraryToProto InstrumentationLibrary {..} =
   defMessage
     & CF.name .~ libraryName

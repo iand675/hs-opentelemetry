@@ -31,8 +31,8 @@ library
   exposed-modules:
       OpenTelemetry.MetricReader
       OpenTelemetry.MeterProvider
-      OpenTelemetry.Metrics.ExporterSelection
-      OpenTelemetry.Metrics.View
+      OpenTelemetry.Metric.ExporterSelection
+      OpenTelemetry.Metric.View
       OpenTelemetry.Processor.Batch
       OpenTelemetry.Processor.Batch.LogRecord
       OpenTelemetry.Processor.Batch.Span
@@ -85,6 +85,7 @@ library
       async
     , base >=4.7 && <5
     , bytestring
+    , case-insensitive
     , clock
     , containers
     , hashable

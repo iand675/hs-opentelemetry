@@ -8,6 +8,7 @@ import OpenTelemetry.Exporter.Metric (
   GaugeDataPoint (..),
   HistogramDataPoint (..),
   MetricExport (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
@@ -22,7 +23,7 @@ main :: IO ()
 main = hspec $ do
   describe "OpenTelemetry.Exporter.Prometheus" $ do
     it "renders empty input as empty text" $ do
-      renderPrometheusText [] `shouldBe` ""
+      renderPrometheusText V.empty `shouldBe` ""
 
     it "includes TYPE and HELP for a gauge (startTimeUnixNano on points)" $ do
       let lib = "test-lib" :: InstrumentationLibrary
@@ -30,7 +31,7 @@ main = hspec $ do
             GaugeDataPoint
               { gaugeDataPointStartTimeUnixNano = 0
               , gaugeDataPointTimeUnixNano = 1
-              , gaugeDataPointValue = Right 2.5
+              , gaugeDataPointValue = DoubleNumber 2.5
               , gaugeDataPointAttributes = emptyAttributes
               , gaugeDataPointExemplars = V.empty
               }
@@ -41,7 +42,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       T.lines out `shouldSatisfy` \ls ->
         any (T.isPrefixOf "# TYPE my_gauge gauge") ls
           && any (T.isPrefixOf "# HELP my_gauge") ls
@@ -53,7 +54,7 @@ main = hspec $ do
             SumDataPoint
               { sumDataPointStartTimeUnixNano = 0
               , sumDataPointTimeUnixNano = 10
-              , sumDataPointValue = Right 42
+              , sumDataPointValue = DoubleNumber 42
               , sumDataPointAttributes = emptyAttributes
               , sumDataPointExemplars = V.empty
               }
@@ -64,7 +65,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       out `shouldSatisfy` T.isInfixOf "# TYPE http_requests counter"
       out `shouldSatisfy` T.isInfixOf "http_requests{job=\"test-lib\"} 42.0"
 
@@ -74,7 +75,7 @@ main = hspec $ do
             SumDataPoint
               { sumDataPointStartTimeUnixNano = 0
               , sumDataPointTimeUnixNano = 5
-              , sumDataPointValue = Left (-3)
+              , sumDataPointValue = IntNumber (-3)
               , sumDataPointAttributes = emptyAttributes
               , sumDataPointExemplars = V.empty
               }
@@ -85,7 +86,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       out `shouldSatisfy` T.isInfixOf "# TYPE queue_delta gauge"
       out `shouldSatisfy` T.isInfixOf "queue_delta{job=\"test-lib\"} -3"
 
@@ -111,7 +112,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       out `shouldSatisfy` T.isInfixOf "# TYPE latency histogram"
       out `shouldSatisfy` T.isInfixOf "latency_bucket{job=\"test-lib\",le=\"0.5\"} 1"
       out `shouldSatisfy` T.isInfixOf "latency_bucket{job=\"test-lib\",le=\"1.0\"} 3"
@@ -125,7 +126,7 @@ main = hspec $ do
             GaugeDataPoint
               { gaugeDataPointStartTimeUnixNano = 0
               , gaugeDataPointTimeUnixNano = 1
-              , gaugeDataPointValue = Right 1
+              , gaugeDataPointValue = DoubleNumber 1
               , gaugeDataPointAttributes = emptyAttributes
               , gaugeDataPointExemplars = V.empty
               }
@@ -136,7 +137,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       out `shouldSatisfy` T.isInfixOf "# TYPE com_service_metric gauge"
       out `shouldSatisfy` T.isInfixOf "# HELP com_service_metric"
       out `shouldSatisfy` T.isInfixOf "com_service_metric{job=\"test-lib\"} 1.0"
@@ -153,7 +154,7 @@ main = hspec $ do
             GaugeDataPoint
               { gaugeDataPointStartTimeUnixNano = 0
               , gaugeDataPointTimeUnixNano = 1
-              , gaugeDataPointValue = Right 0
+              , gaugeDataPointValue = DoubleNumber 0
               , gaugeDataPointAttributes = attrs'
               , gaugeDataPointExemplars = V.empty
               }
@@ -164,7 +165,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       out `shouldSatisfy` T.isInfixOf "{apple=\"a\",job=\"test-lib\",zebra=\"z\"}"
 
     it "escapes backslashes and double quotes in label values" $ do
@@ -175,7 +176,7 @@ main = hspec $ do
             GaugeDataPoint
               { gaugeDataPointStartTimeUnixNano = 0
               , gaugeDataPointTimeUnixNano = 1
-              , gaugeDataPointValue = Right 0
+              , gaugeDataPointValue = DoubleNumber 0
               , gaugeDataPointAttributes = attrsEsc
               , gaugeDataPointExemplars = V.empty
               }
@@ -186,7 +187,7 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton expEsc)
-          outEsc = renderPrometheusText [rmEsc]
+          outEsc = renderPrometheusText (V.singleton rmEsc)
       outEsc `shouldSatisfy` T.isInfixOf "k=\"say \\\"hi\\\"\\\\\""
 
     it "renders multiple gauge points with different attributes" $ do
@@ -199,7 +200,7 @@ main = hspec $ do
             GaugeDataPoint
               { gaugeDataPointStartTimeUnixNano = 0
               , gaugeDataPointTimeUnixNano = 1
-              , gaugeDataPointValue = Right 1
+              , gaugeDataPointValue = DoubleNumber 1
               , gaugeDataPointAttributes = a1
               , gaugeDataPointExemplars = V.empty
               }
@@ -207,7 +208,7 @@ main = hspec $ do
             GaugeDataPoint
               { gaugeDataPointStartTimeUnixNano = 0
               , gaugeDataPointTimeUnixNano = 2
-              , gaugeDataPointValue = Right 2
+              , gaugeDataPointValue = DoubleNumber 2
               , gaugeDataPointAttributes = a2
               , gaugeDataPointExemplars = V.empty
               }
@@ -218,6 +219,6 @@ main = hspec $ do
             ResourceMetricsExport emptyMaterializedResources $
               V.singleton $
                 ScopeMetricsExport lib (V.singleton exp)
-          out = renderPrometheusText [rm]
+          out = renderPrometheusText (V.singleton rm)
       out `shouldSatisfy` T.isInfixOf "routes_active{job=\"test-lib\",route=\"/a\"} 1.0"
       out `shouldSatisfy` T.isInfixOf "routes_active{job=\"test-lib\",route=\"/b\"} 2.0"

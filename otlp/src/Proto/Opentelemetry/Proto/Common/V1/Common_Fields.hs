@@ -146,6 +146,11 @@ maybe'stringValue ::
 maybe'stringValue = Data.ProtoLens.Field.field @"maybe'stringValue"
 
 
+maybe'stringValueStrindex ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "maybe'stringValueStrindex" a) =>
+  Lens.Family2.LensLike' f s a
 maybe'stringValueStrindex
   = Data.ProtoLens.Field.field @"maybe'stringValueStrindex"
 maybe'value ::
@@ -173,6 +178,11 @@ stringValue ::
 stringValue = Data.ProtoLens.Field.field @"stringValue"
 
 
+stringValueStrindex ::
+  forall f s a.
+  (Prelude.Functor f,
+   Data.ProtoLens.Field.HasField s "stringValueStrindex" a) =>
+  Lens.Family2.LensLike' f s a
 stringValueStrindex
   = Data.ProtoLens.Field.field @"stringValueStrindex"
 type' ::

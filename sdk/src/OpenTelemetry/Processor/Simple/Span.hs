@@ -8,13 +8,15 @@ module OpenTelemetry.Processor.Simple.Span (
 
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Control.Exception (mask_)
 import Control.Monad
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
+import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Processor.Span
 import OpenTelemetry.Trace.Core (ImmutableSpan, spanTracer, tracerName)
-import System.IO (hPutStrLn, stderr)
 
 
 data SimpleProcessorConfig = SimpleProcessorConfig
@@ -48,16 +50,15 @@ simpleProcessor SimpleProcessorConfig {..} = do
   flushReq <- newEmptyTMVarIO
   flushDone <- newEmptyTMVarIO
 
-  let exportOne spanRef = do
-        span_ <- readIORef spanRef
+  let exportOne span_ =
         mask_ (spanExporter `SpanExporter.spanExporterExport` HashMap.singleton (tracerName $ spanTracer span_) (pure span_))
 
   let drainQueue = do
-        mRef <- atomically $ tryReadTBQueue queue
-        case mRef of
+        mSpan <- atomically $ tryReadTBQueue queue
+        case mSpan of
           Nothing -> pure ()
-          Just spanRef -> do
-            _ <- exportOne spanRef
+          Just span_ -> do
+            _ <- exportOne span_
             drainQueue
 
   -- Cooperative worker: checks shutdown and flush signals via STM rather
@@ -79,8 +80,8 @@ simpleProcessor SimpleProcessorConfig {..} = do
             drainQueue
             atomically $ putTMVar flushDone ()
             workerLoop
-          Just (Just spanRef) -> do
-            _ <- exportOne spanRef
+          Just (Just span_) -> do
+            _ <- exportOne span_
             workerLoop
 
   exportWorker <- async workerLoop
@@ -89,25 +90,23 @@ simpleProcessor SimpleProcessorConfig {..} = do
     SpanProcessor
       { spanProcessorOnStart = \_ _ -> pure ()
       , spanProcessorOnEnd = \s -> do
-          written <- atomically $ tryWriteTBQueue queue s
+          written <- atomically $ do
+            full <- isFullTBQueue queue
+            if full then pure False else writeTBQueue queue s >> pure True
           unless written $ do
             n <- atomicModifyIORef' droppedRef (\c -> let c' = c + 1 in (c', c'))
             alreadyWarned <- atomicModifyIORef' warnedRef (\w -> (True, w))
-            -- TODO: otel-12 introduces OpenTelemetry.Internal.Logging (otelLogWarning)
-            -- which respects OTEL_LOG_LEVEL and the global error handler.
-            -- Replace hPutStrLn stderr with otelLogWarning once available.
             unless alreadyWarned $
-              hPutStrLn stderr $
-                "OpenTelemetry [WARN] SimpleSpanProcessor: queue full (capacity "
+              otelLogWarning $
+                "SimpleSpanProcessor: queue full (capacity "
                   <> show defaultSimpleQueueBound
                   <> "), dropping span. Total dropped so far: "
                   <> show n
       , spanProcessorShutdown = do
           atomically $ writeTVar shutdownVar True
-          async $ do
-            wait exportWorker
-            SpanExporter.spanExporterShutdown spanExporter
-            pure ShutdownSuccess
+          wait exportWorker
+          SpanExporter.spanExporterShutdown spanExporter
+          pure ShutdownSuccess
       , spanProcessorForceFlush = do
           isShut <- readTVarIO shutdownVar
           unless isShut $ do

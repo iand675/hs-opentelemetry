@@ -5,7 +5,7 @@
 
 When the environment variable is unset the default is @otlp@.
 -}
-module OpenTelemetry.Metrics.ExporterSelection (
+module OpenTelemetry.Metric.ExporterSelection (
   resolveMetricExporter,
 ) where
 

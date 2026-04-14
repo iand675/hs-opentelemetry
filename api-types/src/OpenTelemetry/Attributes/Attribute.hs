@@ -85,8 +85,8 @@ instance IsString Attribute where
 data PrimitiveAttribute
   = TextAttribute Text
   | BoolAttribute Bool
-  | DoubleAttribute Double
-  | IntAttribute Int64
+  | DoubleAttribute {-# UNPACK #-} !Double
+  | IntAttribute {-# UNPACK #-} !Int64
   deriving stock (Read, Show, Eq, Ord, Data, Generic, TH.Lift)
   deriving anyclass (Hashable)
 
@@ -109,6 +109,7 @@ class ToAttribute a where
   toAttribute :: a -> Attribute
   default toAttribute :: (ToPrimitiveAttribute a) => a -> Attribute
   toAttribute = AttributeValue . toPrimitiveAttribute
+  {-# INLINE [0] toAttribute #-}
 
 
 class FromAttribute a where
@@ -128,6 +129,7 @@ instance FromPrimitiveAttribute PrimitiveAttribute where
 
 instance ToAttribute PrimitiveAttribute where
   toAttribute = AttributeValue
+  {-# INLINE [0] toAttribute #-}
 
 
 instance FromAttribute PrimitiveAttribute where
@@ -212,6 +214,7 @@ instance FromAttribute Int
 
 instance ToAttribute Attribute where
   toAttribute = id
+  {-# INLINE [0] toAttribute #-}
 
 
 instance FromAttribute Attribute where
@@ -220,8 +223,23 @@ instance FromAttribute Attribute where
 
 instance (ToPrimitiveAttribute a) => ToAttribute [a] where
   toAttribute = AttributeArray . L.map toPrimitiveAttribute
+  {-# INLINEABLE toAttribute #-}
 
 
 instance (FromPrimitiveAttribute a) => FromAttribute [a] where
   fromAttribute (AttributeArray arr) = traverse fromPrimitiveAttribute arr
   fromAttribute _ = Nothing
+
+
+-- Bypass the two-dictionary chain (ToAttribute → ToPrimitiveAttribute → constructor)
+-- when the value type is statically known. Helps across module boundaries where GHC's
+-- specializer might not fire.
+{-# RULES
+"toAttribute/Text" forall (v :: Text). toAttribute v = AttributeValue (TextAttribute v)
+"toAttribute/Int64" forall (v :: Int64). toAttribute v = AttributeValue (IntAttribute v)
+"toAttribute/Double" forall (v :: Double). toAttribute v = AttributeValue (DoubleAttribute v)
+"toAttribute/Bool" forall (v :: Bool). toAttribute v = AttributeValue (BoolAttribute v)
+"toAttribute/Int" forall (v :: Int). toAttribute v = AttributeValue (IntAttribute (fromIntegral v))
+"toAttribute/Attribute" forall (v :: Attribute). toAttribute v = v
+"toAttribute/PrimAttr" forall (v :: PrimitiveAttribute). toAttribute v = AttributeValue v
+  #-}
