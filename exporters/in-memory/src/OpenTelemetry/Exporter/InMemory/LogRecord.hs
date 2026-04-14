@@ -1,3 +1,8 @@
+{- |
+Module      : OpenTelemetry.Exporter.InMemory.LogRecord
+Description : In-memory log record exporter for testing. Stores exported log records in an IORef.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.InMemory.LogRecord (
   inMemoryLogRecordExporter,
   getExportedLogRecords,
