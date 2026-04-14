@@ -39,6 +39,13 @@ packages:
       size: 168
   original:
     hackage: proto-lens-runtime-0.7.0.7
+- completed:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+    pantry-tree:
+      sha256: 2142ab3dfe2420073a56ab28eb2c82904f3e50da46b326fcdce8886538be9cc8
+      size: 175
+  original:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
 snapshots:
 - completed:
     sha256: 6406d8039dd538f18fc0d242f01c7066ee386d81ba3c8751b914ac1ae193ec5d
