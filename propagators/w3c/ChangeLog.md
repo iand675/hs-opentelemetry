@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `propagatorNames` renamed to `propagatorFields` and now returns actual header names (`traceparent`, `tracestate`) instead of `tracecontext`, conforming to the spec `Fields` requirement
+- Fix multi-header `tracestate` inbound: all `tracestate` headers are now combined per RFC 7230 before parsing (previously only the first was used)
+- Fix: reject `traceparent` with all-zero `trace-id` or `parent-id` (W3C spec requires these to be non-zero)
+
 ## 0.1.0.0
 
 ### Added
