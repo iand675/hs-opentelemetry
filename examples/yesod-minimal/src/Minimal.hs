@@ -9,6 +9,7 @@
 module Minimal where
 
 import Conduit
+import Control.Monad (void)
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as L
 import Data.Pool (Pool)
@@ -19,11 +20,13 @@ import Database.Persist.Sql.Raw.QQ
 import Database.Persist.SqlBackend.SqlPoolHooks
 import GHC.Stack
 import Network.Wai.Handler.Warp (run)
+import OpenTelemetry.Instrumentation.GHCMetrics (registerGHCMetrics)
 import OpenTelemetry.Instrumentation.HttpClient
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
+import OpenTelemetry.Metric.Core (getGlobalMeterProvider, getMeter)
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO hiding (Handler)
@@ -74,7 +77,8 @@ instance YesodPersist Minimal where
     app <- getYesod
     runSqlPoolWithExtensibleHooks m (minimalConnectionPool app) Nothing $
       setAlterBackend defaultSqlPoolHooks $ \conn -> do
-        -- TODO, could probably not do this on each runDB call.
+        -- Static connection attributes (server addr, port, db name) could be
+        -- cached per-pool rather than recomputed per runDB call.
         staticAttrs <- case getSimpleConn conn of
           Nothing -> pure mempty
           Just pgConn -> staticConnectionAttributes pgConn
@@ -86,9 +90,8 @@ getRootR = do
   -- Wouldn't put this here in a real app
   m <- inSpan "initialize http manager" defaultSpanArguments $ do
     liftIO $ newManager defaultManagerSettings
-  let httpConfig = httpClientInstrumentationConfig
   req <- parseUrlThrow "http://localhost:3000/api"
-  resp <- httpLbs httpConfig req m
+  resp <- httpLbs req m
   pure $ decodeUtf8 $ L.toStrict $ responseBody resp
 
 
@@ -116,8 +119,19 @@ main :: IO ()
 main = do
   bracket
     initializeGlobalTracerProvider
-    shutdownTracerProvider
+    (\tp -> void $ shutdownTracerProvider tp Nothing)
     $ \_ -> do
+      -- Register GHC runtime metrics (heap size, GC counts, etc.)
+      -- as async instruments on the global MeterProvider.
+      mp <- getGlobalMeterProvider
+      meter <- getMeter mp "yesod-minimal"
+      void $ registerGHCMetrics meter
+
+      -- Metrics are exported via OTLP (configured by OTEL_METRICS_EXPORTER).
+      -- To also expose a Prometheus scrape endpoint, set
+      -- OTEL_METRICS_EXPORTER=prometheus and the SDK will start a server
+      -- on :9464/metrics (configurable via OTEL_EXPORTER_PROMETHEUS_HOST/PORT).
+
       runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
         waiApp <- toWaiApp $ Minimal pool
         openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware

@@ -5,6 +5,9 @@ license:         BSD-3-Clause
 license-file:    LICENSE
 author:          Alberto Fanton
 maintainer:      alberto.fanton@protonmail.com
+copyright:       2024 Ian Duncan, Mercury Technologies
+homepage:        https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:     https://github.com/iand675/hs-opentelemetry/issues
 build-type:      Simple
 extra-doc-files: CHANGELOG.md
 
@@ -17,9 +20,9 @@ executable producer
   build-depends:
     , base
     , bytestring
-    , hs-opentelemetry-api
-    , hs-opentelemetry-instrumentation-hw-kafka-client
-    , hs-opentelemetry-sdk
+    , hs-opentelemetry-api == 0.4.*
+    , hs-opentelemetry-instrumentation-hw-kafka-client == 0.1.*
+    , hs-opentelemetry-sdk == 0.1.*
     , hw-kafka-client
 
   hs-source-dirs:   app/producer
@@ -32,9 +35,9 @@ executable consumer
     , base
     , bytestring
     , either
-    , hs-opentelemetry-api
-    , hs-opentelemetry-instrumentation-hw-kafka-client
-    , hs-opentelemetry-sdk
+    , hs-opentelemetry-api == 0.4.*
+    , hs-opentelemetry-instrumentation-hw-kafka-client == 0.1.*
+    , hs-opentelemetry-sdk == 0.1.*
     , hw-kafka-client
     , text
 

@@ -35,6 +35,7 @@ in rec {
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
+    hs-opentelemetry-instrumentation-ghc-metrics = ../instrumentation/ghc-metrics;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
     hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
