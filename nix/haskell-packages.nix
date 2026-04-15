@@ -12,15 +12,38 @@
 in rec {
   inherit pkgs;
 
-  skipPackagesFor = ghcVersion:
-    lib.optionals (ghcVersion == "ghc94") [
-      "hs-opentelemetry-vendor-honeycomb"
-      "hs-opentelemetry-instrumentation-hw-kafka-client"
-      "hw-kafka-client-example"
-    ];
+  skipPackages = [
+    "hs-opentelemetry-sdk"
+    "hs-opentelemetry-exporter-handle"
+    "hs-opentelemetry-exporter-in-memory"
+    "hs-opentelemetry-exporter-otlp"
+    "hs-opentelemetry-propagator-b3"
+    "hs-opentelemetry-propagator-datadog"
+    "hs-opentelemetry-propagator-w3c"
+    "hs-opentelemetry-propagator-jaeger"
+    "hs-opentelemetry-propagator-xray"
+    "hs-opentelemetry-instrumentation-cloudflare"
+    "hs-opentelemetry-instrumentation-conduit"
+    "hs-opentelemetry-instrumentation-ghc-metrics"
+    "hs-opentelemetry-instrumentation-hspec"
+    "hs-opentelemetry-instrumentation-http-client"
+    "hs-opentelemetry-instrumentation-hw-kafka-client"
+    "hs-opentelemetry-instrumentation-persistent"
+    "hs-opentelemetry-instrumentation-persistent-mysql"
+    "hs-opentelemetry-instrumentation-postgresql-simple"
+    "hs-opentelemetry-instrumentation-yesod"
+    "hs-opentelemetry-instrumentation-wai"
+    "hs-opentelemetry-instrumentation-tasty"
+    "hs-opentelemetry-utils-exceptions"
+    "hs-opentelemetry-vendor-honeycomb"
+    "hspec-example"
+    "hw-kafka-client-example"
+    "yesod-minimal"
+  ];
 
   localPackages = {
     hs-opentelemetry-api = ../api;
+    hs-opentelemetry-api-types = ../api-types;
     hs-opentelemetry-sdk = ../sdk;
     hs-opentelemetry-otlp = ../otlp;
     hs-opentelemetry-semantic-conventions = ../semantic-conventions;
@@ -50,7 +73,7 @@ in rec {
   };
 
   localPackageCabalDerivations = hfinal: let
-    baseConfig = lib.mapAttrs (name: path: hfinal.callCabal2nix name path {}) localPackages;
+    baseConfig = lib.mapAttrs (name: path: pkgs.haskell.lib.compose.doJailbreak (hfinal.callCabal2nix name path {})) localPackages;
   in
     baseConfig
     // {
@@ -90,7 +113,7 @@ in rec {
       in {
         "${k}" = pkgs.buildEnv {
           name = k;
-          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n (skipPackagesFor key)) myLocalPackages);
+          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n skipPackages) myLocalPackages);
         };
       }
     )
@@ -111,9 +134,13 @@ in rec {
     lib.filterAttrs (k: _: !builtins.hasAttr k (pluckLocalPackages hsPackageSet))
     (localDevPackageDeps hsPackageSet);
 
-  nixpkgsHaskellTweaks = _final: prev: {
+  nixpkgsHaskellTweaks = final: prev: {
     # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just
     # relax the bounds of 0.7.1.5 ourselves
     proto-lens = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens;
+    thread-utils-context = final.callCabal2nix "thread-utils-context" (builtins.fetchTarball {
+      url = "https://hackage.haskell.org/package/thread-utils-context-0.4.1.0/thread-utils-context-0.4.1.0.tar.gz";
+      sha256 = "0b5jcfnrf3rss6kbcdg7q1mhlnn4405zfd6b5w9qv3nmn7vw3mks";
+    }) {};
   };
 }

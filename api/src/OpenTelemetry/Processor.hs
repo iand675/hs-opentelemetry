@@ -1,5 +1,12 @@
 {-# LANGUAGE PatternSynonyms #-}
 
+{- |
+Module      : OpenTelemetry.Processor
+Description : Re-exports of span processor types.
+Stability   : experimental
+
+This module is deprecated; prefer 'OpenTelemetry.Processor.Span'.
+-}
 module OpenTelemetry.Processor
   {-# DEPRECATED "use OpenTelemetry.Processor.Span instead" #-} (
   Processor,
@@ -13,8 +20,6 @@ module OpenTelemetry.Processor
   ShutdownResult (..),
 ) where
 
-import Control.Concurrent.Async (Async)
-import Data.IORef (IORef)
 import OpenTelemetry.Context (Context)
 import OpenTelemetry.Internal.Trace.Types (ImmutableSpan)
 import OpenTelemetry.Processor.Span
@@ -27,10 +32,10 @@ type Processor = SpanProcessor
 
 
 pattern Processor
-  :: (IORef ImmutableSpan -> Context -> IO ())
-  -> (IORef ImmutableSpan -> IO ())
-  -> IO (Async ShutdownResult)
-  -> IO ()
+  :: (ImmutableSpan -> Context -> IO ())
+  -> (ImmutableSpan -> IO ())
+  -> IO ShutdownResult
+  -> IO FlushResult
   -> SpanProcessor
 pattern Processor {processorOnStart, processorOnEnd, processorShutdown, processorForceFlush} =
   SpanProcessor

@@ -1,10 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
 
 {- |
  Module      :  OpenTelemetry.Resource.Telemetry
@@ -19,7 +13,9 @@
 module OpenTelemetry.Resource.Telemetry where
 
 import Data.Text (Text)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 -- - id: cpp
@@ -44,7 +40,10 @@ import OpenTelemetry.Resource
 --   value: "webjs"
 -- other allowed
 
--- | The telemetry SDK used to capture data recorded by the instrumentation libraries.
+{- | The telemetry SDK used to capture data recorded by the instrumentation libraries.
+
+@since 0.0.1.0
+-}
 data Telemetry = Telemetry
   { telemetrySdkName :: Text
   -- ^ The name of the telemetry SDK as defined above.
@@ -52,17 +51,20 @@ data Telemetry = Telemetry
   -- ^ The name of the telemetry SDK as defined above.
   , telemetrySdkVersion :: Maybe Text
   -- ^ The version string of the telemetry SDK.
-  , telemetryAutoVersion :: Maybe Text
-  --- ^ The version string of the auto instrumentation agent, if used.
+  , telemetryDistroName :: Maybe Text
+  -- ^ The name of the telemetry auto instrumentation provider, if used.
+  , telemetryDistroVersion :: Maybe Text
+  -- ^ The version string of the telemetry auto instrumentation provider, if used.
   }
 
 
 instance ToResource Telemetry where
-  type ResourceSchema Telemetry = 'Nothing
   toResource Telemetry {..} =
-    mkResource
-      [ "telemetry.sdk.name" .= telemetrySdkName
-      , "telemetry.sdk.language" .=? telemetrySdkLanguage
-      , "telemetry.sdk.version" .=? telemetrySdkVersion
-      , "telemetry.auto.version" .=? telemetryAutoVersion
+    mkResourceWithSchema
+      (Just semConvSchemaUrl)
+      [ unkey SC.telemetry_sdk_name .= telemetrySdkName
+      , unkey SC.telemetry_sdk_language .=? telemetrySdkLanguage
+      , unkey SC.telemetry_sdk_version .=? telemetrySdkVersion
+      , unkey SC.telemetry_distro_name .=? telemetryDistroName
+      , unkey SC.telemetry_distro_version .=? telemetryDistroVersion
       ]

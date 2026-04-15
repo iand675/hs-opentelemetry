@@ -5,6 +5,8 @@
 *~
 client_session_key.aes
 .env.local
-dist-newstyle/
 .pre-commit-config.yaml
 .devenv/
+dist-newstyle/
+dist-ghc*/
+dist-x86/

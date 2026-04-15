@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Benchmark regression detection for hs-opentelemetry.
+#
+# Uses tasty-bench's built-in --csv / --baseline / --fail-if-slower for
+# same-machine regression detection, plus calibration benchmarks for
+# cross-hardware normalization.
+#
+# Usage:
+#   scripts/bench-regression save    [PATTERN]         Save a baseline CSV
+#   scripts/bench-regression check   [THRESHOLD] [PAT] Compare against baseline
+#   scripts/bench-regression compare [OLD] [NEW]       Side-by-side CSV diff
+#   scripts/bench-regression normalize [CSV]           Show calibration-normalized ratios
+#
+# Environment:
+#   BENCH_RTS    Extra RTS options (default: empty, harness uses -N1 -A32m)
+#   BENCH_STDEV  Target stdev % (default: 5)
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BENCH_DIR="$REPO_ROOT/benchmarks"
+BENCH_TARGET="hs-opentelemetry-api:bench:hs-opentelemetry-api-bench"
+
+STDEV="${BENCH_STDEV:-5}"
+EXTRA_RTS="${BENCH_RTS:-}"
+
+machine_fingerprint() {
+  local arch cpu_id
+  arch="$(uname -m)"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    cpu_id="$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo unknown)"
+  else
+    cpu_id="$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d: -f2 | xargs || echo unknown)"
+  fi
+  printf '%s' "${arch}-${cpu_id}" | shasum -a 256 | cut -c1-12
+}
+
+baseline_path() {
+  echo "$BENCH_DIR/baseline-$(machine_fingerprint).csv"
+}
+
+run_bench() {
+  local extra_opts="${1:-}"
+  local pattern="${2:-}"
+  local pat_flag=""
+  if [[ -n "$pattern" ]]; then
+    pat_flag="-p \"$pattern\""
+  fi
+
+  local rts_opts=""
+  if [[ -n "$EXTRA_RTS" ]]; then
+    rts_opts="+RTS $EXTRA_RTS -RTS"
+  fi
+
+  # shellcheck disable=SC2086
+  cabal bench "$BENCH_TARGET" \
+    --benchmark-options="--stdev $STDEV $extra_opts $pat_flag $rts_opts +RTS -T"
+}
+
+cmd_save() {
+  local pattern="${1:-}"
+  local out
+  out="$(baseline_path)"
+  mkdir -p "$BENCH_DIR"
+
+  echo "==> Saving baseline to $out"
+  echo "    Machine: $(machine_fingerprint)"
+  run_bench "--csv $out" "$pattern"
+  echo "==> Baseline saved: $(wc -l < "$out") benchmarks"
+}
+
+cmd_check() {
+  local threshold="${1:-20}"
+  local pattern="${2:-}"
+  local bl
+  bl="$(baseline_path)"
+
+  if [[ ! -f "$bl" ]]; then
+    echo "ERROR: No baseline found at $bl"
+    echo "       Run 'scripts/bench-regression save' first."
+    exit 1
+  fi
+
+  local current="$BENCH_DIR/current-$(machine_fingerprint).csv"
+
+  echo "==> Checking against baseline (fail if >$threshold% slower)"
+  echo "    Baseline: $bl"
+  run_bench "--baseline $bl --fail-if-slower $threshold --csv $current" "$pattern"
+  echo "==> No regressions detected (threshold: ${threshold}%)"
+}
+
+cmd_compare() {
+  local old="${1:-$(baseline_path)}"
+  local new="${2:-$BENCH_DIR/current-$(machine_fingerprint).csv}"
+
+  if [[ ! -f "$old" ]]; then
+    echo "ERROR: Old CSV not found: $old"
+    exit 1
+  fi
+  if [[ ! -f "$new" ]]; then
+    echo "ERROR: New CSV not found: $new"
+    echo "       Run 'scripts/bench-regression check' first to generate current.csv"
+    exit 1
+  fi
+
+  echo "==> Comparing: $old vs $new"
+  echo ""
+  printf "%-55s %12s %12s %8s\n" "Benchmark" "Old (ns)" "New (ns)" "Ratio"
+  printf '%.0s─' {1..90}
+  echo ""
+
+  # tasty-bench CSV: Name,Mean (ps),2*Stdev (ps)[,Allocated,Copied,Peak]
+  awk -F, '
+    FNR==1 { trueNF=NF; next }
+    NF<trueNF { next }
+    FNR==NR {
+      name=$1; for(i=2;i<=NF-trueNF+1;i++) name=name","$i
+      oldTime=$(NF-trueNF+2)+0
+      a[name]=oldTime
+      next
+    }
+    {
+      name=$1; for(i=2;i<=NF-trueNF+1;i++) name=name","$i
+      newTime=$(NF-trueNF+2)+0
+      if (a[name]) {
+        ratio=newTime/a[name]
+        color=""
+        reset=""
+        if (ratio > 1.10) { color="\033[31m"; reset="\033[0m" }
+        else if (ratio < 0.90) { color="\033[32m"; reset="\033[0m" }
+        printf "%s%-55s %12.1f %12.1f %s%7.2fx%s\n", \
+          "", name, a[name]/1e3, newTime/1e3, color, ratio, reset
+        gs+=log(ratio); gc++
+      }
+    }
+    END {
+      if (gc>0) {
+        printf "\n%55s %12s %12s %7.2fx\n", \
+          "Geometric mean", "", "", exp(gs/gc)
+      }
+    }
+  ' "$old" "$new"
+}
+
+cmd_normalize() {
+  local csv="${1:-$(baseline_path)}"
+
+  if [[ ! -f "$csv" ]]; then
+    csv="$BENCH_DIR/current-$(machine_fingerprint).csv"
+  fi
+  if [[ ! -f "$csv" ]]; then
+    echo "ERROR: No CSV found. Run 'save' first."
+    exit 1
+  fi
+
+  echo "==> Calibration-normalized costs (from $csv)"
+  echo "    Unit: multiples of IORef read time"
+  echo ""
+
+  awk -F, '
+    FNR==1 { trueNF=NF; next }
+    NF<trueNF { next }
+    {
+      name=$1; for(i=2;i<=NF-trueNF+1;i++) name=name","$i
+      mean=$(NF-trueNF+2)+0
+      times[name]=mean
+      order[++count]=name
+    }
+    END {
+      calib = times["All.calibration.IORef read"]
+      if (calib == 0) {
+        print "ERROR: calibration.IORef read not found in CSV"
+        exit 1
+      }
+      printf "Calibration: IORef read = %.1f ns\n\n", calib/1e3
+      printf "%-55s %12s %12s\n", "Benchmark", "Time (ns)", "IORef×"
+      for (i=1; i<=90; i++) printf "-"
+      printf "\n"
+
+      for (i=1; i<=count; i++) {
+        name = order[i]
+        if (index(name, "calibration.") > 0) continue
+        printf "%-55s %12.1f %11.1f×\n", name, times[name]/1e3, times[name]/calib
+      }
+    }
+  ' "$csv"
+}
+
+usage() {
+  echo "Usage: $0 {save|check|compare|normalize} [args...]"
+  echo ""
+  echo "  save    [PATTERN]          Save baseline CSV for this machine"
+  echo "  check   [THRESHOLD] [PAT]  Compare against baseline (default: 20% threshold)"
+  echo "  compare [OLD.csv] [NEW.csv] Side-by-side comparison of two CSVs"
+  echo "  normalize [CSV]            Show benchmarks as multiples of IORef read"
+  echo ""
+  echo "Environment:"
+  echo "  BENCH_STDEV=5              Target relative stdev %"
+  echo "  BENCH_RTS=                 Extra RTS options"
+}
+
+case "${1:-}" in
+  save)      shift; cmd_save "$@" ;;
+  check)     shift; cmd_check "$@" ;;
+  compare)   shift; cmd_compare "$@" ;;
+  normalize) shift; cmd_normalize "$@" ;;
+  *)         usage; exit 1 ;;
+esac

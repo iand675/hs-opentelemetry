@@ -1,5 +1,8 @@
 packages:
-    api
+    api-types
+  , api
+  , ../thread-utils/thread-utils-context
+  , ../thread-utils/thread-utils-finalizers
   , sdk
   , otlp
   , semantic-conventions
@@ -13,8 +16,14 @@ packages:
   , propagators/datadog
   , propagators/w3c
   , propagators/b3
+  , propagators/jaeger
+  , propagators/xray
+  -- amazonka 2.0 doesn't compile with GHC 9.10 (DuplicateRecordFields in amazonka-sts/sso)
+  -- , instrumentation/amazonka
+  , instrumentation/gogol
   , instrumentation/conduit
   , instrumentation/cloudflare
+  , instrumentation/ghc-metrics
   , instrumentation/hspec
   , instrumentation/http-client
   , instrumentation/hw-kafka-client
@@ -23,6 +32,9 @@ packages:
   , instrumentation/postgresql-simple
   , instrumentation/tasty
   , instrumentation/yesod
+  , instrumentation/monad-logger
+  , instrumentation/katip
+  , instrumentation/co-log
   , instrumentation/wai
   , utils/exceptions
   , vendors/honeycomb
@@ -33,3 +45,7 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
+
+-- snappy C library is not always available; disable it for grpc-spec
+package grpc-spec
+  flags: -snappy

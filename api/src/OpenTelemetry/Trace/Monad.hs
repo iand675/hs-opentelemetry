@@ -2,23 +2,46 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
------------------------------------------------------------------------------
-
------------------------------------------------------------------------------
-
 {- |
- Module      :  OpenTelemetry.Trace.Monad
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Higher-level tracing API
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Trace.Monad
+Copyright   :  (c) Ian Duncan, 2021-2026
+License     :  BSD-3
+Description :  Monadic tracing API
+Stability   :  experimental
 
- The recommended tracing interface for application developers
+= Overview
 
- See OpenTelemetry.Trace for an interface that's
- more lower-level, but more flexible.
+Higher-level tracing interface that obtains the 'Tracer' from your monad
+stack via 'MonadTracer', eliminating the need to pass it explicitly.
+
+= Quick example
+
+@
+data App = App { appTracer :: Tracer }
+
+instance MonadTracer (ReaderT App IO) where
+  getTracer = asks appTracer
+
+handleRequest :: (MonadUnliftIO m, MonadTracer m) => Request -> m Response
+handleRequest req = inSpan "handleRequest" defaultSpanArguments $ do
+  user <- inSpan "lookupUser" defaultSpanArguments $ lookupUser req
+  inSpan "buildResponse" defaultSpanArguments $ buildResponse user
+@
+
+= Variants
+
+* 'inSpan' : simple wrapper, no span access in callback
+* 'OpenTelemetry.Trace.Monad.inSpan'' : passes the 'Span' to the callback for adding attributes
+* 'OpenTelemetry.Trace.Monad.inSpan''' : raw variant, no automatic source-location capture
+
+All variants automatically end the span and record exceptions, just like
+their counterparts in "OpenTelemetry.Trace.Core".
+
+= When to use this vs Trace.Core
+
+Use this module when your application has a monad stack with a 'Tracer'
+in the environment. Use "OpenTelemetry.Trace.Core" when you have the
+'Tracer' as an explicit argument or need lower-level control.
 -}
 module OpenTelemetry.Trace.Monad (
   inSpan,
@@ -37,9 +60,9 @@ module OpenTelemetry.Trace.Monad (
 ) where
 
 import Control.Monad.IO.Unlift
-import Control.Monad.Identity (IdentityT)
-import Control.Monad.Reader (ReaderT)
-import Control.Monad.Trans (MonadTrans (lift))
+import Control.Monad.Trans.Class (MonadTrans (lift))
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.Reader (ReaderT)
 import Data.Text (Text)
 import GHC.Stack
 import OpenTelemetry.Trace.Core (
@@ -52,11 +75,15 @@ import OpenTelemetry.Trace.Core (
  )
 
 
--- | This is generally scoped by Monad stack to do different things
+{- | This is generally scoped by Monad stack to do different things
+
+@since 0.0.1.0
+-}
 class (Monad m) => MonadTracer m where
   getTracer :: m Tracer
 
 
+-- | @since 0.0.1.0
 inSpan
   :: (MonadUnliftIO m, MonadTracer m, HasCallStack)
   => Text
@@ -66,6 +93,7 @@ inSpan
 inSpan n args m = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) (const m)
 
 
+-- | @since 0.0.1.0
 inSpan'
   :: (MonadUnliftIO m, MonadTracer m, HasCallStack)
   => Text
@@ -75,6 +103,7 @@ inSpan'
 inSpan' n args f = OpenTelemetry.Trace.Monad.inSpan'' n (addAttributesToSpanArguments callerAttributes args) f
 
 
+-- | @since 0.4.0.0
 inSpan''
   :: (MonadUnliftIO m, MonadTracer m, HasCallStack)
   => Text
