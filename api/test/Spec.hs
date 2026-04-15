@@ -16,6 +16,7 @@ import qualified OpenTelemetry.BaggageSpec as Baggage
 import OpenTelemetry.Context
 import qualified OpenTelemetry.InstrumentationLibrarySpec as InstrumentationLibrary
 import qualified OpenTelemetry.Logs.CoreSpec as CoreSpec
+import qualified OpenTelemetry.MetricsSpec as MetricsSpec
 import qualified OpenTelemetry.ResourceSpec as Resource
 import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
 import OpenTelemetry.Trace.Core
@@ -66,3 +67,4 @@ main = hspec $ do
   Tracer.spec
   SemanticsConfigSpec.spec
   CoreSpec.spec
+  MetricsSpec.spec

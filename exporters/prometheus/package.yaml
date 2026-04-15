@@ -1,0 +1,45 @@
+name:                hs-opentelemetry-exporter-prometheus
+version:             0.1.0.0
+github:              "iand675/hs-opentelemetry"
+license:             BSD3
+author:              "Ian Duncan"
+maintainer:          "ian@iankduncan.com"
+copyright:           "2021 Ian Duncan"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            Prometheus text exposition for OpenTelemetry metrics export batches
+category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
+
+description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/prometheus#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  dependencies:
+  - bytestring
+  - containers
+  - hs-opentelemetry-api ^>= 0.3
+  - text
+  - unordered-containers
+  - vector
+
+tests:
+  hs-opentelemetry-exporter-prometheus-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-api ^>= 0.3
+    - hs-opentelemetry-exporter-prometheus
+    - hspec
+    - text
+    - vector
