@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Shutdown/ForceFlush propagation audit:**
+  - Batch span processor now calls `spanExporterShutdown` during processor shutdown (was missing)
+  - Batch log processor now calls `logRecordExporterShutdown` during processor shutdown
+  - `MeterProvider` shutdown now does a final collect + export + `metricExporterShutdown` when an exporter is configured
+  - `MeterProvider` forceFlush now does collect + export + `metricExporterForceFlush` when an exporter is configured
+  - `SdkMeterProviderOptions` gains `metricExporter :: Maybe MetricExporter` field
+  - Periodic metric reader stop now calls `metricExporterShutdown` after final export
+  - `forceFlushTracerProvider` exported from `OpenTelemetry.Trace` (SDK)
 - Implement `SimpleLogRecordProcessor` — processes log records inline, passes them to configured `LogRecordExporter`
 - Implement `BatchLogRecordProcessor` — batches log records with configurable queue size, export interval, and timeout
 - Batch/simple span processors now call `spanExporterForceFlush` during processor `ForceFlush`
