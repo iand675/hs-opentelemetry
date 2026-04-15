@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -25,12 +25,18 @@ source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry
 
+flag grpc
+  description: Enable gRPC export support (requires grapesy)
+  manual: True
+  default: False
+
 library
   exposed-modules:
       OpenTelemetry.Exporter.OTLP
       OpenTelemetry.Exporter.OTLP.LogRecord
       OpenTelemetry.Exporter.OTLP.Span
       OpenTelemetry.Exporter.OTLP.Metric
+      OpenTelemetry.Exporter.OTLP.Internal.Config
   other-modules:
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
@@ -40,19 +46,26 @@ library
       base >=4.7 && <5
     , bytestring
     , case-insensitive
-    , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-otlp ==0.2.*
-    , hs-opentelemetry-propagator-w3c
+    , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
     , http-client
     , http-conduit
     , http-types
     , microlens
     , proto-lens >=0.7.1.0
+    , random
     , text
+    , time
     , unordered-containers
     , vector
     , zlib
   default-language: Haskell2010
+  if flag(grpc)
+    exposed-modules:
+        OpenTelemetry.Exporter.OTLP.GRPC
+    build-depends:
+        grapesy
 
 test-suite hs-opentelemetry-exporter-otlp-test
   type: exitcode-stdio-1.0
@@ -64,12 +77,15 @@ test-suite hs-opentelemetry-exporter-otlp-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.3.*
-    , hs-opentelemetry-exporter-otlp
+    , bytestring
+    , hs-opentelemetry-api ==0.4.*
+    , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-otlp ==0.2.*
     , hspec
+    , http-types
     , microlens
     , proto-lens
     , text
+    , unordered-containers
     , vector
   default-language: Haskell2010
