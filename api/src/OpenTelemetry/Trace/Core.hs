@@ -666,11 +666,12 @@ recordException s attrs ts e = liftIO $ do
       }
 
 
--- | Returns @True@ if the @SpanContext@ has a non-zero @TraceID@ and a non-zero @SpanID@
+{- | Returns @True@ if the @SpanContext@ has a non-zero @TraceID@ and a non-zero @SpanID@.
+Spec: "true if the SpanContext has a non-zero TraceID and a non-zero SpanID".
+-}
 isValid :: SpanContext -> Bool
 isValid sc =
-  not
-    (isEmptyTraceId (traceId sc) && isEmptySpanId (spanId sc))
+  not (isEmptyTraceId (traceId sc)) && not (isEmptySpanId (spanId sc))
 
 
 {- |
