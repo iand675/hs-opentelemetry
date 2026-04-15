@@ -26,6 +26,7 @@ makeHandleExporter h f =
         mapM_ (mapM_ (\s -> f s >>= L.hPutStrLn h >> hFlush h)) fs
         pure Success
     , spanExporterShutdown = hFlush h
+    , spanExporterForceFlush = hFlush h
     }
 
 

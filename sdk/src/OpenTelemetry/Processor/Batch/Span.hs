@@ -296,7 +296,9 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
                     (b', True)
                   else (b', False)
           when appendFailedOrExportNeeded $ void $ atomically $ tryPutTMVar workSignal ()
-      , spanProcessorForceFlush = void $ atomically $ tryPutTMVar workSignal ()
+      , spanProcessorForceFlush = do
+          void $ atomically $ tryPutTMVar workSignal ()
+          SpanExporter.spanExporterForceFlush exporter
       , -- TODO where to call restore, if anywhere?
         spanProcessorShutdown =
           asyncWithUnmask $ \unmask -> unmask $ do
