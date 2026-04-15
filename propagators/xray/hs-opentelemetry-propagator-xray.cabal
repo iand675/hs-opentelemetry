@@ -1,0 +1,72 @@
+cabal-version: 2.4
+
+name:               hs-opentelemetry-propagator-xray
+version:            0.0.1.0
+synopsis:           AWS X-Ray trace context propagation for OpenTelemetry.
+description:
+  Propagator implementing the AWS X-Ray trace context format
+  (@X-Amzn-Trace-Id@ header).
+  .
+  The X-Ray format is used by AWS services such as Application Load
+  Balancer, API Gateway, and Lambda. This package lets Haskell services
+  participate in traces originated or propagated by AWS infrastructure.
+  .
+  Use alongside W3C Trace Context for mixed environments:
+  @OTEL_PROPAGATORS=tracecontext,baggage,xray@.
+  .
+  See <https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-tracingheader>.
+category:           OpenTelemetry, Tracing, AWS, Web
+homepage:           https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
+author:             Ian Duncan
+maintainer:         ian@iankduncan.com
+copyright:          2024 Ian Duncan, Mercury Technologies
+license:            BSD-3-Clause
+license-file:       LICENSE
+build-type:         Simple
+extra-source-files:
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Propagator.XRay
+      OpenTelemetry.Propagator.XRay.Internal
+  other-modules:
+      Paths_hs_opentelemetry_propagator_xray
+  autogen-modules:
+      Paths_hs_opentelemetry_propagator_xray
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api >=0.3 && <0.5
+    , text
+  default-language: Haskell2010
+
+test-suite hs-opentelemetry-propagator-xray-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      OpenTelemetry.Propagator.XRaySpec
+      Paths_hs_opentelemetry_propagator_xray
+  autogen-modules:
+      Paths_hs_opentelemetry_propagator_xray
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , hs-opentelemetry-api >=0.3 && <0.5
+    , hs-opentelemetry-propagator-xray
+    , hspec
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+  build-tool-depends: hspec-discover:hspec-discover

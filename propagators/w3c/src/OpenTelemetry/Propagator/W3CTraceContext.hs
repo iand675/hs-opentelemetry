@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -29,54 +30,28 @@
 -}
 module OpenTelemetry.Propagator.W3CTraceContext where
 
-import Data.Attoparsec.ByteString.Char8 (
-  Parser,
-  char,
-  endOfInput,
-  hexadecimal,
-  parseOnly,
-  sepBy,
-  skipSpace,
-  string,
-  takeWhile,
-  takeWhile1,
- )
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Builder as B
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C8
-import qualified Data.ByteString.Lazy as L
-import Data.Char (isHexDigit)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
-import Network.HTTP.Types (RequestHeaders)
 import qualified OpenTelemetry.Context as Ctxt
-import OpenTelemetry.Propagator (Propagator (..))
+import OpenTelemetry.Propagator (Propagator (..), TextMap, textMapInsert, textMapLookup)
+import OpenTelemetry.Registry (registerTextMapPropagator)
 import OpenTelemetry.Trace.Core (
   Span,
   SpanContext (..),
-  TraceFlags,
   getSpanContext,
   traceFlagsFromWord8,
   traceFlagsValue,
   wrapSpanContext,
  )
-import OpenTelemetry.Trace.Id (Base (..), SpanId, TraceId, baseEncodedToSpanId, baseEncodedToTraceId, spanIdBaseEncodedBuilder, traceIdBaseEncodedBuilder)
+import OpenTelemetry.Trace.Id (
+  decodeTraceparent,
+  encodeTraceparent,
+ )
 import OpenTelemetry.Trace.TraceState (Key (..), TraceState, Value (..), empty, fromList, toList)
-import Prelude hiding (takeWhile)
-
-
-{-
-TODO: test against the conformance spec:
-https://github.com/w3c/trace-context
--}
-data TraceParent = TraceParent
-  { version :: {-# UNPACK #-} !Word8
-  , traceId :: {-# UNPACK #-} !TraceId
-  , parentId :: {-# UNPACK #-} !SpanId
-  , traceFlags :: {-# UNPACK #-} !TraceFlags
-  }
-  deriving (Show)
 
 
 {- | Attempt to decode a 'SpanContext' from optional @traceparent@ and @tracestate@ header inputs.
@@ -91,129 +66,175 @@ decodeSpanContext
   -> Maybe SpanContext
 decodeSpanContext Nothing _ = Nothing
 decodeSpanContext (Just traceparentHeader) mTracestateHeader = do
-  TraceParent {..} <- decodeTraceparentHeader traceparentHeader
-  ts <- case mTracestateHeader of
-    Nothing -> pure empty
-    Just tracestateHeader -> pure $ decodeTracestateHeader tracestateHeader
-  pure $
+  (_, tid, sid, fl) <- decodeTraceparent traceparentHeader
+  let ts = case mTracestateHeader of
+        Nothing -> empty
+        Just tracestateHeader -> decodeTraceState tracestateHeader
+  pure $!
     SpanContext
-      { traceFlags = traceFlags
+      { traceFlags = traceFlagsFromWord8 fl
       , isRemote = True
-      , traceId = traceId
-      , spanId = parentId
+      , traceId = tid
+      , spanId = sid
       , traceState = ts
       }
-  where
-    decodeTraceparentHeader :: ByteString -> Maybe TraceParent
-    decodeTraceparentHeader tp = case parseOnly traceparentParser tp of
-      Left _ -> Nothing
-      Right ok -> Just ok
-
-    decodeTracestateHeader :: ByteString -> TraceState
-    decodeTracestateHeader ts = case parseOnly tracestateParser ts of
-      Left _ -> empty
-      Right ok -> ok
 
 
-traceparentParser :: Parser TraceParent
-traceparentParser = do
-  version <- hexadecimal
-  _ <- string "-"
-  traceIdBs <- takeWhile isHexDigit
-  traceId <- case baseEncodedToTraceId Base16 traceIdBs of
-    Left err -> fail err
-    Right ok -> pure ok
-  _ <- string "-"
-  parentIdBs <- takeWhile isHexDigit
-  parentId <- case baseEncodedToSpanId Base16 parentIdBs of
-    Left err -> fail err
-    Right ok -> pure ok
-  _ <- string "-"
-  traceFlags <- traceFlagsFromWord8 <$> hexadecimal
-  -- Intentionally not consuming end of input in case of version > 0
-  pure $ TraceParent {..}
+{- | Parse a W3C tracestate header value into a 'TraceState'.
 
+Format: @OWS list-member *( OWS "," OWS list-member ) OWS@
 
-{- | Parser for W3C tracestate header format
-Format: OWS list-member *( OWS "," OWS list-member ) OWS
 See: https://www.w3.org/TR/trace-context/#tracestate-header
+
+Returns 'empty' on parse failure.
+
+@since 0.1.0.0
 -}
-tracestateParser :: Parser TraceState
-tracestateParser = do
-  skipSpace
-  pairs <- tracestateEntry `sepBy` (skipSpace >> char ',' >> skipSpace)
-  skipSpace
-  endOfInput
-  -- Limit to 32 entries as per spec, take first 32 if more
-  let limitedPairs = take 32 pairs
-  pure $ fromList [(Key k, Value v) | (k, v) <- limitedPairs]
+decodeTraceState :: ByteString -> TraceState
+decodeTraceState bs = case parseTraceState bs of
+  Right ok -> ok
+  Left _ -> empty
+
+
+{- | Parse a W3C tracestate header value.
+
+Invalid list-members are skipped per W3C Trace Context §3.3.1; the result is
+always @Right ts@ (use 'empty' when nothing valid remains). The @Either@ type
+is retained for backward compatibility.
+
+@since 0.1.0.0
+-}
+parseTraceState :: ByteString -> Either String TraceState
+parseTraceState bs =
+  let !trimmed = C8.dropWhile isOWS bs
+  in if BS.null trimmed
+      then Right empty
+      else Right $! fromList (go trimmed [])
   where
-    -- Parse a single key=value entry (list-member)
-    tracestateEntry = do
-      key <- tracestateKey
-      _ <- char '='
-      value <- tracestateValue
-      pure (key, value)
+    go !remaining !acc
+      | BS.null remaining = reverse acc
+      | otherwise =
+          case scanMember remaining of
+            Right (!pair, !rest) ->
+              let !rest' = skipCommaOWS rest
+              in go rest' (pair : acc)
+            Left _err ->
+              let !rest = skipToNextMember remaining
+              in go rest acc
 
-    -- Parse tracestate key according to W3C spec
-    -- key = simple-key / multi-tenant-key
-    -- simple-key = lcalpha 0*255( lcalpha / DIGIT / "_" / "-"/ "*" / "/" )
-    -- multi-tenant-key = tenant-id "@" system-id
-    tracestateKey = do
-      keyBytes <- takeWhile1 isTracestateKeyChar
-      let keyText = TE.decodeUtf8 keyBytes
-      -- Validate key format and length (max 256 chars)
-      if T.length keyText <= 256 && isValidTracestateKey keyText
-        then pure keyText
-        else fail "Invalid tracestate key"
+    scanMember :: ByteString -> Either String ((Key, Value), ByteString)
+    scanMember !input = do
+      (!key, !afterKey) <- scanKey input
+      if BS.null afterKey || BS.index afterKey 0 /= 0x3d
+        then Left "expected '=' after key"
+        else do
+          let !valStart = BS.drop 1 afterKey
+          (!val, !afterVal) <- scanValue valStart
+          Right ((Key (TE.decodeUtf8 key), Value (TE.decodeUtf8 val)), afterVal)
 
-    -- Parse tracestate value according to W3C spec
-    -- value = 0*255(chr) nblk-chr
-    -- chr = %x20 / %x21-2B / %x2D-3C / %x3E-7E
-    -- nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
-    tracestateValue = do
-      valueBytes <- takeWhile1 isTracestateValueChar
-      let valueText = T.stripEnd $ TE.decodeUtf8 valueBytes -- Strip trailing whitespace
-      -- Validate value length (max 256 chars)
-      if T.length valueText <= 256 && not (T.null valueText)
-        then pure valueText
-        else fail "Invalid tracestate value"
+    skipToNextMember :: ByteString -> ByteString
+    skipToNextMember !input =
+      case C8.elemIndex ',' input of
+        Nothing -> BS.empty
+        Just idx -> C8.dropWhile isOWS (BS.drop (idx + 1) input)
 
-    -- Valid characters for tracestate keys
-    isTracestateKeyChar c =
-      (c >= 'a' && c <= 'z')
-        || (c >= '0' && c <= '9')
-        || c == '_'
-        || c == '-'
-        || c == '*'
-        || c == '/'
-        || c == '@'
+    scanKey :: ByteString -> Either String (ByteString, ByteString)
+    scanKey !input =
+      let !keyLen = BS.length (C8.takeWhile isTracestateKeyChar input)
+      in if keyLen == 0
+          then Left "empty tracestate key"
+          else
+            let !keyBs = BS.take keyLen input
+            in if keyLen > 256
+                then Left "tracestate key too long"
+                else validateKey keyBs >> Right (keyBs, BS.drop keyLen input)
 
-    -- Valid characters for tracestate values (chr)
-    -- %x20 / %x21-2B / %x2D-3C / %x3E-7E (excludes comma and equals)
-    isTracestateValueChar c =
-      c == ' ' || (c >= '!' && c <= '+') || (c >= '-' && c <= '<') || (c >= '>' && c <= '~')
+    validateKey :: ByteString -> Either String ()
+    validateKey !keyBs =
+      case C8.elemIndex '@' keyBs of
+        Nothing ->
+          if not (isLcAlpha (BS.index keyBs 0))
+            then Left "simple tracestate key must start with a-z"
+            else Right ()
+        Just atIdx ->
+          let !tenantPart = BS.take atIdx keyBs
+              !systemPart = BS.drop (atIdx + 1) keyBs
+          in if BS.null tenantPart
+              then Left "empty tenant-id in multi-tenant key"
+              else
+                if BS.null systemPart
+                  then Left "empty system-id in multi-tenant key"
+                  else
+                    if not (isLcAlphaOrDigit (BS.index tenantPart 0))
+                      then Left "tenant-id must start with a-z or 0-9"
+                      else
+                        if not (isLcAlpha (BS.index systemPart 0))
+                          then Left "system-id must start with a-z"
+                          else
+                            if C8.elem '@' systemPart
+                              then Left "multiple '@' in tracestate key"
+                              else
+                                if BS.length tenantPart > 241
+                                  then Left "tenant-id too long"
+                                  else
+                                    if BS.length systemPart > 14
+                                      then Left "system-id too long"
+                                      else Right ()
 
-    -- Validate tracestate key format
-    isValidTracestateKey key =
-      case T.uncons key of
-        Nothing -> False
-        Just (firstChar, rest) ->
-          -- Must start with lowercase letter or digit
-          (firstChar >= 'a' && firstChar <= 'z' || firstChar >= '0' && firstChar <= '9')
-            &&
-            -- Rest must be valid key characters
-            T.all
-              ( \c ->
-                  (c >= 'a' && c <= 'z')
-                    || (c >= '0' && c <= '9')
-                    || c == '_'
-                    || c == '-'
-                    || c == '*'
-                    || c == '/'
-                    || c == '@'
-              )
-              rest
+    isLcAlpha :: Word8 -> Bool
+    isLcAlpha w = w >= 0x61 && w <= 0x7a
+
+    isLcAlphaOrDigit :: Word8 -> Bool
+    isLcAlphaOrDigit w = isLcAlpha w || (w >= 0x30 && w <= 0x39)
+
+    scanValue :: ByteString -> Either String (ByteString, ByteString)
+    scanValue !input =
+      let !valLen = BS.length (C8.takeWhile isTracestateValueChar input)
+      in if valLen == 0
+          then Left "empty tracestate value"
+          else
+            let !raw = BS.take valLen input
+                !stripped = fst (BS.spanEnd isOWSByte raw)
+            in if BS.null stripped
+                then Left "tracestate value is only whitespace"
+                else
+                  if BS.length stripped > 256
+                    then Left "tracestate value too long"
+                    else Right (stripped, BS.drop valLen input)
+
+    skipCommaOWS :: ByteString -> ByteString
+    skipCommaOWS !input =
+      let !s1 = C8.dropWhile isOWS input
+      in if BS.null s1
+          then s1
+          else
+            if BS.index s1 0 == 0x2c -- ','
+              then C8.dropWhile isOWS (BS.drop 1 s1)
+              else s1
+
+
+isOWS :: Char -> Bool
+isOWS c = c == ' ' || c == '\t'
+
+
+isOWSByte :: Word8 -> Bool
+isOWSByte w = w == 0x20 || w == 0x09
+
+
+isTracestateKeyChar :: Char -> Bool
+isTracestateKeyChar c =
+  (c >= 'a' && c <= 'z')
+    || (c >= '0' && c <= '9')
+    || c == '_'
+    || c == '-'
+    || c == '*'
+    || c == '/'
+    || c == '@'
+
+
+isTracestateValueChar :: Char -> Bool
+isTracestateValueChar c =
+  c == ' ' || (c >= '!' && c <= '+') || (c >= '-' && c <= '<') || (c >= '>' && c <= '~')
 
 
 -- | Encode TraceState to W3C tracestate header format
@@ -278,9 +299,9 @@ encodeTraceStateMultiple maxSize ts =
     buildHeader :: Int -> [ByteString] -> [ByteString] -> (ByteString, [ByteString])
     buildHeader _ [] acc = (C8.intercalate "," (reverse acc), [])
     buildHeader limit (entry : rest) acc =
-      let currentSize = if null acc then 0 else sum (map C8.length acc) + length acc - 1 -- account for commas
+      let currentSize = if null acc then 0 else sum (map C8.length acc) + length acc - 1
           newSize = currentSize + C8.length entry + if null acc then 0 else 1
-      in if newSize <= limit || null acc -- Always include at least one entry
+      in if newSize <= limit || null acc
           then buildHeader limit rest (entry : acc)
           else (C8.intercalate "," (reverse acc), entry : rest)
 
@@ -301,9 +322,7 @@ decodeTraceStateMultiple headers =
       combinedHeader = C8.intercalate "," nonEmptyHeaders
   in if C8.null combinedHeader
       then empty
-      else case parseOnly tracestateParser combinedHeader of
-        Right ts -> ts
-        Left _ -> empty -- Fallback to empty on parse failure
+      else decodeTraceState combinedHeader
 
 
 {- | Encoded the given 'Span' into a @traceparent@, @tracestate@ tuple.
@@ -313,42 +332,42 @@ decodeTraceStateMultiple headers =
 encodeSpanContext :: Span -> IO (ByteString, ByteString)
 encodeSpanContext s = do
   ctxt <- getSpanContext s
-  pure (L.toStrict $ B.toLazyByteString $ traceparentHeader ctxt, encodeTraceState (traceState ctxt))
-  where
-    traceparentHeader SpanContext {..} =
-      -- version
-      B.word8HexFixed 0
-        <> B.char7 '-'
-        <> traceIdBaseEncodedBuilder Base16 traceId
-        <> B.char7 '-'
-        <> spanIdBaseEncodedBuilder Base16 spanId
-        <> B.char7 '-'
-        <> B.word8HexFixed (traceFlagsValue traceFlags)
+  let !tp = encodeTraceparent 0 (traceId ctxt) (spanId ctxt) (traceFlagsValue (traceFlags ctxt))
+  pure (tp, encodeTraceState (traceState ctxt))
 
 
 {- | Propagate trace context information via headers using the w3c specification format
 
  @since 0.0.1.0
 -}
-w3cTraceContextPropagator :: Propagator Ctxt.Context RequestHeaders RequestHeaders
+w3cTraceContextPropagator :: Propagator Ctxt.Context TextMap TextMap
 w3cTraceContextPropagator = Propagator {..}
   where
-    propagatorNames = ["tracecontext"]
+    propagatorFields = ["traceparent", "tracestate"]
 
-    extractor hs c = do
-      let traceParentHeader = Prelude.lookup "traceparent" hs
-          traceStateHeader = Prelude.lookup "tracestate" hs
-          mspanContext = decodeSpanContext traceParentHeader traceStateHeader
+    extractor tm c = do
+      let traceParentHeader = TE.encodeUtf8 <$> textMapLookup "traceparent" tm
+          combinedTraceState = TE.encodeUtf8 <$> textMapLookup "tracestate" tm
+          mspanContext = decodeSpanContext traceParentHeader combinedTraceState
       pure $! case mspanContext of
         Nothing -> c
         Just s -> Ctxt.insertSpan (wrapSpanContext (s {isRemote = True})) c
 
-    injector c hs = case Ctxt.lookupSpan c of
-      Nothing -> pure hs
+    injector c tm = case Ctxt.lookupSpan c of
+      Nothing -> pure tm
       Just s -> do
         (traceParentHeader, traceStateHeader) <- encodeSpanContext s
-        pure
-          ( ("traceparent", traceParentHeader)
-              : ("tracestate", traceStateHeader)
-              : hs
-          )
+        pure $
+          textMapInsert "traceparent" (TE.decodeUtf8 traceParentHeader) $
+            textMapInsert "tracestate" (TE.decodeUtf8 traceStateHeader) $
+              tm
+
+
+{- | Register the W3C Trace Context propagator under the name
+@\"tracecontext\"@ in the global registry.
+
+@since 0.1.0.0
+-}
+registerW3CTraceContextPropagator :: IO ()
+registerW3CTraceContextPropagator =
+  registerTextMapPropagator "tracecontext" w3cTraceContextPropagator
