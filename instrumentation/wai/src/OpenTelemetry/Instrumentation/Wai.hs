@@ -4,10 +4,54 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+Module      : OpenTelemetry.Instrumentation.Wai
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : WAI middleware for automatic HTTP server tracing
+Stability   : experimental
+
+= Overview
+
+Middleware that automatically creates a span for every incoming HTTP request
+handled by a WAI application. Extracts trace context from request headers
+(via the global propagator) so that spans are properly linked to upstream
+callers.
+
+= Quick example
+
+@
+import Network.Wai.Handler.Warp (run)
+import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware)
+import OpenTelemetry.Trace (withTracerProvider)
+
+main :: IO ()
+main = withTracerProvider $ \_ -> do
+  otelMiddleware <- newOpenTelemetryWaiMiddleware
+  run 8080 $ otelMiddleware myApp
+@
+
+The example imports 'OpenTelemetry.Trace.withTracerProvider' from
+@hs-opentelemetry-sdk@ (this package depends only on the API).
+
+= What gets traced
+
+Each request creates a @Server@ span with:
+
+* Span name derived from the HTTP method and route
+* @http.request.method@, @url.path@, @url.scheme@, @http.response.status_code@
+* @server.address@, @server.port@ when available
+* @user_agent.original@ from the User-Agent header
+* Span status set to Error for 5xx responses
+
+= Configuration
+
+Use 'newOpenTelemetryWaiMiddleware'' with a specific 'TracerProvider' when
+you cannot rely on the process-global tracer provider.
+
+[HTTP semantic conventions migration:](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan)
+set @OTEL_SEMCONV_STABILITY_OPT_IN@ to @http@ for stable names only, @http/dup@
+for stable and legacy, or leave unset for legacy-only (until the next major
+release of this library).
 -}
 module OpenTelemetry.Instrumentation.Wai (
   newOpenTelemetryWaiMiddleware,
@@ -17,22 +61,29 @@ module OpenTelemetry.Instrumentation.Wai (
 
 import Control.Exception (bracket)
 import Control.Monad
+import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
 import Data.IP (fromHostAddress, fromHostAddress6)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Builder (toLazyText)
+import Data.Text.Lazy.Builder.Int (decimal)
 import qualified Data.Vault.Lazy as Vault
 import GHC.Stack (HasCallStack)
 import Network.HTTP.Types
 import Network.Socket
 import Network.Wai
 import OpenTelemetry.Attributes (lookupAttribute)
+import OpenTelemetry.Attributes.Key (unkey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
-import OpenTelemetry.Propagator
+import OpenTelemetry.Propagator (emptyTextMap, extract, getGlobalTextMapPropagator, inject, textMapFromList, textMapToList)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
 import System.IO.Unsafe
+import Text.Read (readMaybe)
 
 
 newOpenTelemetryWaiMiddleware :: (HasCallStack) => IO Middleware
@@ -48,19 +99,20 @@ newOpenTelemetryWaiMiddleware' tp =
         makeTracer
           tp
           $detectInstrumentationLibrary
-          (TracerOptions Nothing)
+          tracerOptions
   in middleware waiTracer
   where
     usefulCallsite = callerAttributes
     middleware :: Tracer -> Middleware
     middleware tracer app req sendResp = do
-      let propagator = getTracerProviderPropagators $ getTracerTracerProvider tracer
+      propagator <- getGlobalTextMapPropagator
       let parentContextM = do
             ctx <- getContext
-            ctxt <- extract propagator (requestHeaders req) ctx
+            let tm = textMapFromList $ map (\(k, v) -> (T.decodeUtf8 (CI.foldedCase k), T.decodeUtf8 v)) (requestHeaders req)
+            ctxt <- extract propagator tm ctx
             attachContext ctxt
-      let path_ = T.decodeUtf8 $ rawPathInfo req
-      -- peer = remoteHost req
+      let method_ = T.decodeUtf8 $ requestMethod req
+          spanName_ = method_
 
       semanticsOptions <- getSemanticsOptions
       let args =
@@ -71,14 +123,14 @@ newOpenTelemetryWaiMiddleware' tp =
                     Stable ->
                       usefulCallsite
                         `H.union` [
-                                    ( "user_agent.original"
+                                    ( unkey SC.userAgent_original
                                     , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
                                     )
                                   ]
                     StableAndOld ->
                       usefulCallsite
                         `H.union` [
-                                    ( "user_agent.original"
+                                    ( unkey SC.userAgent_original
                                     , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
                                     )
                                   ]
@@ -88,88 +140,74 @@ newOpenTelemetryWaiMiddleware' tp =
       -- context from being inherited by any subsequent requests served by the
       -- same thread. Warp supports HTTP keep-alive/persistent connections,
       -- which means a thread can handle multiple requests before exiting.
-      bracket parentContextM (const $ void detachContext) $ \_ -> inSpan'' tracer path_ args $ \requestSpan -> do
+      bracket parentContextM detachContext $ \_ -> inSpan'' tracer spanName_ args $ \requestSpan -> do
         ctxt <- getContext
 
         let addStableAttributes = do
-              addAttributes
-                requestSpan
-                [ ("http.request.method", toAttribute $ T.decodeUtf8 $ requestMethod req)
-                , -- , ( "url.full",
-                  --     toAttribute $
-                  --     T.decodeUtf8
-                  --     ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
-                  --   )
-                  ("url.path", toAttribute $ T.decodeUtf8 $ rawPathInfo req)
-                , ("url.query", toAttribute $ T.decodeUtf8 $ rawQueryString req)
-                , -- , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
-                  -- , ( "url.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
-
-                  ( "network.protocol.version"
-                  , toAttribute $ case httpVersion req of
-                      (HttpVersion major minor) ->
-                        T.pack $
-                          if minor == 0
-                            then show major
-                            else show major <> "." <> show minor
-                  )
-                , -- TODO HTTP/3 will require detecting this dynamically
-                  ("net.transport", toAttribute ("ip_tcp" :: T.Text))
-                ]
-
-              addAttributes requestSpan $ case remoteHost req of
-                SockAddrInet port addr ->
-                  [ ("server.port", toAttribute (fromIntegral port :: Int))
-                  , ("server.address", toAttribute $ T.pack $ show $ fromHostAddress addr)
+              let hostAttrs = case lookup "Host" $ requestHeaders req of
+                    Nothing -> []
+                    Just hostHeader ->
+                      let hostText = T.decodeUtf8 hostHeader
+                          (hostName, portSuffix) = T.breakOn ":" hostText
+                          portAttr = case T.stripPrefix ":" portSuffix of
+                            Just portStr | not (T.null portStr) ->
+                              case readMaybe (T.unpack portStr) :: Maybe Int of
+                                Just p -> [(unkey SC.server_port, toAttribute p)]
+                                Nothing -> [(unkey SC.server_port, toAttribute (if isSecure req then 443 :: Int else 80))]
+                            _ -> [(unkey SC.server_port, toAttribute (if isSecure req then 443 :: Int else 80))]
+                      in (unkey SC.server_address, toAttribute hostName) : portAttr
+                  clientAttrs = case remoteHost req of
+                    SockAddrInet port addr ->
+                      [ (unkey SC.client_port, toAttribute (fromIntegral port :: Int))
+                      , (unkey SC.client_address, toAttribute $ T.pack $ show $ fromHostAddress addr)
+                      ]
+                    SockAddrInet6 port _ addr _ ->
+                      [ (unkey SC.client_port, toAttribute (fromIntegral port :: Int))
+                      , (unkey SC.client_address, toAttribute $ T.pack $ show $ fromHostAddress6 addr)
+                      ]
+                    SockAddrUnix path ->
+                      [ (unkey SC.client_address, toAttribute $ T.pack path)
+                      ]
+              addAttributes requestSpan $
+                H.fromList $
+                  [ (unkey SC.http_request_method, toAttribute method_)
+                  , (unkey SC.url_path, toAttribute $ T.decodeUtf8 $ rawPathInfo req)
+                  , (unkey SC.url_query, toAttribute $ T.decodeUtf8 $ rawQueryString req)
+                  , (unkey SC.url_scheme, toAttribute (if isSecure req then "https" :: T.Text else "http"))
+                  ,
+                    ( unkey SC.network_protocol_version
+                    , toAttribute $ case httpVersion req of
+                        (HttpVersion major minor) ->
+                          T.pack $
+                            if minor == 0
+                              then show major
+                              else show major <> "." <> show minor
+                    )
                   ]
-                SockAddrInet6 port _ addr _ ->
-                  [ ("server.port", toAttribute (fromIntegral port :: Int))
-                  , ("server.address", toAttribute $ T.pack $ show $ fromHostAddress6 addr)
-                  ]
-                SockAddrUnix path ->
-                  [ ("server.address", toAttribute $ T.pack path)
-                  ]
+                    <> hostAttrs
+                    <> clientAttrs
             addOldAttributes = do
-              addAttributes
-                requestSpan
-                [ ("http.method", toAttribute $ T.decodeUtf8 $ requestMethod req)
-                , -- , ( "http.url",
-                  --     toAttribute $
-                  --     T.decodeUtf8
-                  --     ((if secure req then "https://" else "http://") <> host req <> ":" <> B.pack (show $ port req) <> path req <> queryString req)
-                  --   )
-                  ("http.target", toAttribute $ T.decodeUtf8 (rawPathInfo req <> rawQueryString req))
-                , -- , ( "http.host", toAttribute $ T.decodeUtf8 $ host req)
-                  -- , ( "http.scheme", toAttribute $ TextAttribute $ if secure req then "https" else "http")
-
-                  ( "http.flavor"
-                  , toAttribute $ case httpVersion req of
-                      (HttpVersion major minor) -> T.pack (show major <> "." <> show minor)
-                  )
-                ,
-                  ( "http.user_agent"
-                  , toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req)
-                  )
-                , -- TODO HTTP/3 will require detecting this dynamically
-                  ("net.transport", toAttribute ("ip_tcp" :: T.Text))
-                ]
-
-              -- TODO this is warp dependent, probably.
-              -- , ( "net.host.ip")
-              -- , ( "net.host.port")
-              -- , ( "net.host.name")
-              addAttributes requestSpan $ case remoteHost req of
-                SockAddrInet port addr ->
-                  [ ("net.peer.port", toAttribute (fromIntegral port :: Int))
-                  , ("net.peer.ip", toAttribute $ T.pack $ show $ fromHostAddress addr)
+              let peerAttrs = case remoteHost req of
+                    SockAddrInet port addr ->
+                      [ (unkey SC.net_peer_port, toAttribute (fromIntegral port :: Int))
+                      , (unkey SC.net_peer_ip, toAttribute $ T.pack $ show $ fromHostAddress addr)
+                      ]
+                    SockAddrInet6 port _ addr _ ->
+                      [ (unkey SC.net_peer_port, toAttribute (fromIntegral port :: Int))
+                      , (unkey SC.net_peer_ip, toAttribute $ T.pack $ show $ fromHostAddress6 addr)
+                      ]
+                    SockAddrUnix path ->
+                      [ (unkey SC.net_peer_name, toAttribute $ T.pack path)
+                      ]
+              addAttributes requestSpan $
+                H.fromList $
+                  [ (unkey SC.http_method, toAttribute $ T.decodeUtf8 $ requestMethod req)
+                  , (unkey SC.http_target, toAttribute $ T.decodeUtf8 (rawPathInfo req <> rawQueryString req))
+                  , (unkey SC.http_flavor, toAttribute $ httpVersionText (httpVersion req))
+                  , (unkey SC.http_userAgent, toAttribute $ maybe "" T.decodeUtf8 (lookup hUserAgent $ requestHeaders req))
+                  , (unkey SC.net_transport, toAttribute ("ip_tcp" :: T.Text))
                   ]
-                SockAddrInet6 port _ addr _ ->
-                  [ ("net.peer.port", toAttribute (fromIntegral port :: Int))
-                  , ("net.peer.ip", toAttribute $ T.pack $ show $ fromHostAddress6 addr)
-                  ]
-                SockAddrUnix path ->
-                  [ ("net.peer.name", toAttribute $ T.pack path)
-                  ]
+                    <> peerAttrs
 
         case httpOption semanticsOptions of
           Stable -> addStableAttributes
@@ -186,31 +224,37 @@ newOpenTelemetryWaiMiddleware' tp =
                 }
         app req' $ \resp -> do
           ctxt' <- getContext
-          hs <- inject propagator (Context.insertSpan requestSpan ctxt') []
+          tm <- inject propagator (Context.insertSpan requestSpan ctxt') emptyTextMap
+          let hs = map (\(k, v) -> (CI.mk (T.encodeUtf8 k), T.encodeUtf8 v)) (textMapToList tm)
           let resp' = mapResponseHeaders (hs ++) resp
           attrs <- spanGetAttributes requestSpan
-          forM_ (lookupAttribute attrs "http.route") $ \case
-            AttributeValue (TextAttribute route) -> updateName requestSpan route
+          forM_ (lookupAttribute attrs (unkey SC.http_route)) $ \case
+            AttributeValue (TextAttribute route) -> updateName requestSpan (method_ <> " " <> route)
             _ -> pure ()
 
+          let sc = statusCode (responseStatus resp)
+              errorAttrs
+                | sc >= 500 = [(unkey SC.error_type, toAttribute (T.pack $ show sc))]
+                | otherwise = []
           case httpOption semanticsOptions of
             Stable ->
-              addAttributes
-                requestSpan
-                [ ("http.response.status_code", toAttribute $ statusCode $ responseStatus resp)
-                ]
+              addAttributes requestSpan $
+                H.fromList $
+                  (unkey SC.http_response_statusCode, toAttribute sc)
+                    : errorAttrs
             StableAndOld ->
-              addAttributes
-                requestSpan
-                [ ("http.response.status_code", toAttribute $ statusCode $ responseStatus resp)
-                , ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
-                ]
+              addAttributes requestSpan $
+                H.fromList $
+                  [ (unkey SC.http_response_statusCode, toAttribute sc)
+                  , (unkey SC.http_statusCode, toAttribute sc)
+                  ]
+                    <> errorAttrs
             Old ->
-              addAttributes
-                requestSpan
-                [ ("http.status_code", toAttribute $ statusCode $ responseStatus resp)
-                ]
-          when (statusCode (responseStatus resp) >= 500) $ do
+              addAttributes requestSpan $
+                H.fromList $
+                  (unkey SC.http_statusCode, toAttribute sc)
+                    : errorAttrs
+          when (sc >= 500) $
             setStatus requestSpan (Error "")
           respReceived <- sendResp resp'
           ts <- getTimestamp
@@ -227,3 +271,8 @@ requestContext :: Request -> Maybe Context.Context
 requestContext =
   Vault.lookup contextKey
     . vault
+
+
+httpVersionText :: HttpVersion -> T.Text
+httpVersionText (HttpVersion major minor) =
+  TL.toStrict $ toLazyText $ decimal major <> "." <> decimal minor

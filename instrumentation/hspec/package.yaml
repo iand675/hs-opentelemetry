@@ -10,8 +10,8 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis: OpenTelemetry instrumentation for Hspec test suites
+category: OpenTelemetry, Testing
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -25,13 +25,12 @@ library:
   # ghc-options: -Wall
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
   - hspec-core >= 2.9.4
   - text
   - mtl
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-hspec-test:
     main:                Spec.hs
     source-dirs:         test
@@ -40,4 +39,10 @@ _tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-hspec
+    - hs-opentelemetry-instrumentation-hspec >= 0.0.1 && < 0.1
+    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hspec
+    - hspec-core
+    - text

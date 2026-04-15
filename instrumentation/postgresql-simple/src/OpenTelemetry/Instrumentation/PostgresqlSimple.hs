@@ -3,9 +3,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {- |
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
+[Database semantic conventions have been declared stable.](https://opentelemetry.io/docs/specs/semconv/non-normative/db-migration/) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
+- "database" - to use the stable conventions
+- "database/dup" - to emit both the old and the stable conventions
 Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
 -}
 module OpenTelemetry.Instrumentation.PostgresqlSimple (
@@ -47,6 +47,9 @@ module OpenTelemetry.Instrumentation.PostgresqlSimple (
 
   -- * Utility functions
   pgsSpan,
+
+  -- * Span naming helpers (exported for testing)
+  extractOperationName,
 ) where
 
 import Control.Monad.IO.Class
@@ -57,7 +60,6 @@ import Data.IP
 import Data.Int (Int64)
 import Data.List
 import Data.Maybe (catMaybes)
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Database.PostgreSQL.LibPQ as LibPQ
@@ -91,10 +93,11 @@ import Database.PostgreSQL.Simple.Internal (
   withConnection,
  )
 import GHC.Stack
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource ((.=), (.=?))
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core as TC
-import OpenTelemetry.Trace.Monad
 import Text.Read (readMaybe)
 import UnliftIO
 
@@ -110,42 +113,44 @@ staticConnectionAttributes Connection {connectionHandle} = liftIO $ do
       <*> LibPQ.port pqConn
 
   let stableMaybeAttributes =
-        [ "db.system" .= toAttribute ("postgresql" :: T.Text)
-        , "db.user" .=? (TE.decodeUtf8 <$> mUser)
-        , "db.name" .=? (TE.decodeUtf8 <$> mDb)
-        , "server.port"
-            .=? ( do
-                    port <- TE.decodeUtf8 <$> mPort
-                    (readMaybe $ T.unpack port) :: Maybe Int
-                )
+        [ unkey SC.db_system_name .= toAttribute ("postgresql" :: T.Text)
+        , unkey SC.db_namespace .=? (TE.decodeUtf8 <$> mDb)
+        , unkey SC.server_port
+            .=? (mPort >>= fmap fst . C.readInt)
         , case (readMaybe . C.unpack) =<< mHost of
-            Nothing -> "server.address" .=? (TE.decodeUtf8 <$> mHost)
-            Just (IPv4 ipv4) -> "server.address" .= T.pack (show ipv4)
-            Just (IPv6 ipv6) -> "server.address" .= T.pack (show ipv6)
+            Nothing -> unkey SC.server_address .=? (TE.decodeUtf8 <$> mHost)
+            Just (IPv4 ipv4) -> unkey SC.server_address .= T.pack (show ipv4)
+            Just (IPv6 ipv6) -> unkey SC.server_address .= T.pack (show ipv6)
         ]
       oldMaybeAttributes =
-        [ "db.system" .= toAttribute ("postgresql" :: T.Text)
-        , "db.user" .=? (TE.decodeUtf8 <$> mUser)
-        , "db.name" .=? (TE.decodeUtf8 <$> mDb)
-        , "net.peer.port"
-            .=? ( do
-                    port <- TE.decodeUtf8 <$> mPort
-                    (readMaybe $ T.unpack port) :: Maybe Int
-                )
+        [ unkey SC.db_system .= toAttribute ("postgresql" :: T.Text)
+        , unkey SC.db_user .=? (TE.decodeUtf8 <$> mUser)
+        , unkey SC.db_name .=? (TE.decodeUtf8 <$> mDb)
+        , unkey SC.net_peer_port
+            .=? (mPort >>= fmap fst . C.readInt)
         , case (readMaybe . C.unpack) =<< mHost of
-            Nothing -> "net.peer.name" .=? (TE.decodeUtf8 <$> mHost)
-            Just (IPv4 ipv4) -> "net.peer.ip" .= T.pack (show ipv4)
-            Just (IPv6 ipv6) -> "net.peer.ip" .= T.pack (show ipv6)
+            Nothing -> unkey SC.net_peer_name .=? (TE.decodeUtf8 <$> mHost)
+            Just (IPv4 ipv4) -> unkey SC.net_peer_ip .= T.pack (show ipv4)
+            Just (IPv6 ipv6) -> unkey SC.net_peer_ip .= T.pack (show ipv6)
         ]
 
   semanticsOptions <- getSemanticsOptions
   pure $
     H.fromList $
       catMaybes $
-        case httpOption semanticsOptions of
+        case databaseOption semanticsOptions of
           Stable -> stableMaybeAttributes
           StableAndOld -> stableMaybeAttributes `union` oldMaybeAttributes
           Old -> oldMaybeAttributes
+
+
+extractOperationName :: C.ByteString -> Maybe T.Text
+extractOperationName stmt =
+  let trimmed = C.dropWhile (\c -> c == ' ' || c == '\n' || c == '\r' || c == '\t') stmt
+      keyword = C.takeWhile (\c -> c /= ' ' && c /= '\n' && c /= '\r' && c /= '\t' && c /= '(') trimmed
+  in if C.null keyword
+      then Nothing
+      else Just $ T.toUpper $ TE.decodeUtf8 keyword
 
 
 -- | Function to help with wrapping functions in postgresql-simple
@@ -153,12 +158,26 @@ pgsSpan :: HasCallStack => Connection -> C.ByteString -> IO a -> IO a
 pgsSpan conn statement f = do
   connAttr <- staticConnectionAttributes conn
   dbName <- maybe "unknown db" TE.decodeUtf8 <$> withConnection conn LibPQ.db
-  let callAttr = H.fromList [("db.statement", toAttribute $ TE.decodeUtf8 statement)]
+  opts <- getSemanticsOptions
+  let stmtText = TE.decodeUtf8 statement
+      mOpName = extractOperationName statement
+      stableAttrs =
+        H.fromList $
+          (unkey SC.db_query_text, toAttribute stmtText)
+            : maybe [] (\op -> [(unkey SC.db_operation_name, toAttribute op)]) mOpName
+      oldAttrs = H.fromList [(unkey SC.db_statement, toAttribute stmtText)]
+      callAttr = case databaseOption opts of
+        Stable -> stableAttrs
+        StableAndOld -> stableAttrs <> oldAttrs
+        Old -> oldAttrs
       attrs = connAttr <> callAttr
+      spanName = case mOpName of
+        Just op -> op <> " " <> dbName
+        Nothing -> dbName
       spanArgs = SpanArguments Client attrs [] Nothing
   tracerProvider <- getGlobalTracerProvider
   let tracer = makeTracer tracerProvider $detectInstrumentationLibrary tracerOptions
-  TC.inSpan tracer dbName spanArgs f
+  TC.inSpan tracer spanName spanArgs f
 
 
 -- | Instrumented version of 'Simple.query'

@@ -12,25 +12,12 @@
 in rec {
   inherit pkgs;
 
-  skipPackages = [
-    "hs-opentelemetry-instrumentation-cloudflare"
-    "hs-opentelemetry-instrumentation-conduit"
-    "hs-opentelemetry-instrumentation-ghc-metrics"
-    "hs-opentelemetry-instrumentation-hspec"
-    "hs-opentelemetry-instrumentation-http-client"
-    "hs-opentelemetry-instrumentation-hw-kafka-client"
-    "hs-opentelemetry-instrumentation-persistent"
-    "hs-opentelemetry-instrumentation-persistent-mysql"
-    "hs-opentelemetry-instrumentation-postgresql-simple"
-    "hs-opentelemetry-instrumentation-yesod"
-    "hs-opentelemetry-instrumentation-wai"
-    "hs-opentelemetry-instrumentation-tasty"
-    "hs-opentelemetry-utils-exceptions"
-    "hs-opentelemetry-vendor-honeycomb"
-    "hspec-example"
-    "hw-kafka-client-example"
-    "yesod-minimal"
-  ];
+  skipPackagesFor = ghcVersion:
+    lib.optionals (ghcVersion == "ghc94") [
+      "hs-opentelemetry-vendor-honeycomb"
+      "hs-opentelemetry-instrumentation-hw-kafka-client"
+      "hw-kafka-client-example"
+    ];
 
   localPackages = {
     hs-opentelemetry-api = ../api;
@@ -106,7 +93,7 @@ in rec {
       in {
         "${k}" = pkgs.buildEnv {
           name = k;
-          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n skipPackages) myLocalPackages);
+          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n (skipPackagesFor key)) myLocalPackages);
         };
       }
     )

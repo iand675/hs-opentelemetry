@@ -6,10 +6,18 @@ license:         BSD-3-Clause
 license-file:    LICENSE
 author:          Alberto Fanton
 maintainer:      alberto.fanton@protonmail.com
+copyright:       2024 Ian Duncan, Mercury Technologies
+homepage:        https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:     https://github.com/iand675/hs-opentelemetry/issues
+category:        OpenTelemetry, Telemetry, Kafka
 build-type:      Simple
 extra-doc-files: CHANGELOG.md
 
 -- extra-source-files:
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
 
 common warnings
   ghc-options: -Wall
@@ -25,12 +33,28 @@ library
     , containers
     , text
     , bytestring
-    , hs-opentelemetry-api
-    , hs-opentelemetry-semantic-conventions
+    , hs-opentelemetry-api == 0.4.*
+    , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     , hw-kafka-client
     , unliftio-core
-    , case-insensitive
-    , http-types
 
   hs-source-dirs:   src
   default-language: Haskell2010
+
+test-suite hs-opentelemetry-instrumentation-hw-kafka-client-test
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  main-is:          Spec.hs
+  hs-source-dirs:   test
+  default-language: Haskell2010
+  ghc-options:      -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+    , base                  >=4.7 && <5
+    , hs-opentelemetry-instrumentation-hw-kafka-client == 0.1.*
+    , hs-opentelemetry-api == 0.4.*
+    , hspec
+    , text
+    , bytestring
+    , hw-kafka-client
+    , containers
+    , unordered-containers
