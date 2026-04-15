@@ -1,26 +1,37 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 
+{- |
+Module      : OpenTelemetry.Processor.Batch.LogRecord
+Description : Batch log record processor. Buffers log records and exports them in batches on a configurable schedule.
+Stability   : experimental
+-}
 module OpenTelemetry.Processor.Batch.LogRecord (
   BatchLogRecordProcessorConfig (..),
   defaultBatchLogRecordProcessorConfig,
   batchLogRecordProcessor,
 ) where
 
-import Control.Concurrent (rtsSupportsBoundThreads)
+import Control.Concurrent (rtsSupportsBoundThreads, threadDelay)
 import Control.Concurrent.Async
-import Control.Concurrent.STM
+import qualified Control.Concurrent.Chan.Unagi.Bounded as UChan
+import Control.Concurrent.MVar
 import Control.Exception
-import Control.Monad
+import Control.Monad (unless, void, when)
 import Control.Monad.IO.Class
-import Data.IORef (atomicModifyIORef', newIORef)
+import Data.IORef (atomicModifyIORef', atomicWriteIORef, newIORef, readIORef)
+import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
-import OpenTelemetry.Internal.Logs.Types
-import VectorBuilder.Builder as Builder
-import VectorBuilder.Vector as Builder
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..), worstShutdown)
+import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Internal.Logging (otelLogDebug, otelLogWarning)
+import OpenTelemetry.Util (chunksOfV)
+import System.Timeout (timeout)
 
 
+-- | @since 0.0.1.0
 data BatchLogRecordProcessorConfig = BatchLogRecordProcessorConfig
   { batchLogExporter :: !LogRecordExporter
   , batchLogMaxQueueSize :: !Int
@@ -30,6 +41,7 @@ data BatchLogRecordProcessorConfig = BatchLogRecordProcessorConfig
   }
 
 
+-- | @since 0.0.1.0
 defaultBatchLogRecordProcessorConfig :: LogRecordExporter -> BatchLogRecordProcessorConfig
 defaultBatchLogRecordProcessorConfig e =
   BatchLogRecordProcessorConfig
@@ -41,114 +53,137 @@ defaultBatchLogRecordProcessorConfig e =
     }
 
 
-data BoundedBuffer = BoundedBuffer
-  { bufBounds :: !Int
-  , bufExportBounds :: !Int
-  , bufCount :: !Int
-  , bufItems :: !(Builder.Builder ReadableLogRecord)
-  }
+data CtrlMsg
+  = WakeFlush
+  | FlushAndNotify !(MVar ())
+  | ShutdownMsg
 
 
-emptyBuffer :: Int -> Int -> BoundedBuffer
-emptyBuffer bounds exportBounds = BoundedBuffer bounds exportBounds 0 mempty
-
-
-pushBuffer :: ReadableLogRecord -> BoundedBuffer -> Maybe BoundedBuffer
-pushBuffer lr buf
-  | bufCount buf + 1 >= bufBounds buf = Nothing
-  | otherwise =
-      Just $!
-        buf
-          { bufCount = bufCount buf + 1
-          , bufItems = bufItems buf <> Builder.singleton lr
-          }
-
-
-buildExportBatch :: BoundedBuffer -> (BoundedBuffer, Vector ReadableLogRecord)
-buildExportBatch buf =
-  ( buf {bufCount = 0, bufItems = mempty}
-  , Builder.build (bufItems buf)
-  )
-
-
-data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
-
-
+-- | @since 0.0.1.0
 batchLogRecordProcessor :: (MonadIO m) => BatchLogRecordProcessorConfig -> m LogRecordProcessor
 batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
-  unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch log record processor requires -threaded"
-  batch <- newIORef $ emptyBuffer batchLogMaxQueueSize batchLogMaxExportBatchSize
-  workSignal <- newEmptyTMVarIO
-  shutdownSignal <- newEmptyTMVarIO
+  unless rtsSupportsBoundThreads $
+    otelLogWarning "Batch log record processor running without -threaded; blocking exporter calls may stall the application"
+  (dataIn, dataOut) <- UChan.newChan batchLogMaxQueueSize
+  (ctrlIn, ctrlOut) <- UChan.newChan 64
+  shutdownRef <- newIORef False
+  droppedLogs <- newIORef (0 :: Int)
 
-  let publish batchToExport =
-        mask_ $
-          logRecordExporterExport batchLogExporter batchToExport
+  timerThread <-
+    async $
+      let loop = do
+            threadDelay (millisToMicros batchLogScheduledDelayMillis)
+            void $ UChan.tryWriteChan ctrlIn WakeFlush
+            shut <- readIORef shutdownRef
+            unless shut loop
+      in loop
 
-  let flushQueueImmediately ret = do
-        batchToExport <- atomicModifyIORef' batch buildExportBatch
-        if V.null batchToExport
+  let publish batchToExport = do
+        mResult <-
+          timeout (millisToMicros batchLogExportTimeoutMillis) $
+            mask_ $
+              logRecordExporterExport batchLogExporter batchToExport
+        pure $ fromMaybe (Failure Nothing) mResult
+
+      -- Spec: "The processor MUST synchronize calls to LogRecordExporter's
+      -- Export to make sure that they are not invoked concurrently."
+      publishChunked allRecords = do
+        let chunks = chunksOfV batchLogMaxExportBatchSize allRecords
+        mapM_
+          ( \chunk -> do
+              result <- try @SomeException $ publish chunk
+              case result of
+                Right Success -> pure ()
+                Left ex ->
+                  otelLogWarning $ "Batch log record export failed: " <> show ex
+                Right (Failure mex) ->
+                  otelLogWarning $
+                    "Batch log record export failed: "
+                      <> maybe "timeout or unspecified" show mex
+          )
+          chunks
+
+      drainUpTo :: Int -> IO (Vector ReadableLogRecord)
+      drainUpTo n = do
+        est <- UChan.estimatedLength dataIn
+        let !toRead = min n (max 0 est)
+        V.replicateM toRead (UChan.readChan dataOut)
+
+      drainLoop = do
+        batch <- drainUpTo batchLogMaxExportBatchSize
+        unless (V.null batch) $ do
+          publishChunked batch
+          est <- UChan.estimatedLength dataIn
+          when (est > 0) drainLoop
+
+      flushQueueImmediately ret = do
+        batch <- drainUpTo batchLogMaxQueueSize
+        if V.null batch
           then pure ret
           else do
-            ret' <- publish batchToExport
-            flushQueueImmediately ret'
+            publishChunked batch
+            flushQueueImmediately ret
 
-  let waiting = do
-        delay <- registerDelay (millisToMicros batchLogScheduledDelayMillis)
-        atomically $
-          msum
-            [ ScheduledFlush <$ do
-                continue <- readTVar delay
-                check continue
-            , MaxExportFlush <$ takeTMVar workSignal
-            , Shutdown <$ takeTMVar shutdownSignal
-            ]
-
-  let workerAction = do
-        req <- waiting
-        batchToExport <- atomicModifyIORef' batch buildExportBatch
-        res <- publish batchToExport
-        case req of
-          Shutdown -> flushQueueImmediately res
-          _ -> workerAction
+      workerAction = do
+        msg <- UChan.readChan ctrlOut
+        drainLoop
+        shut <- readIORef shutdownRef
+        if shut
+          then flushQueueImmediately Success
+          else case msg of
+            ShutdownMsg -> flushQueueImmediately Success
+            FlushAndNotify mv -> do
+              void $ tryPutMVar mv ()
+              workerAction
+            WakeFlush -> workerAction
 
   worker <- asyncWithUnmask $ \unmask -> unmask workerAction
 
   pure
     LogRecordProcessor
       { logRecordProcessorOnEmit = \lr _ctxt -> do
-          let readable = mkReadableLogRecord lr
-          needsFlush <- atomicModifyIORef' batch $ \buf ->
-            case pushBuffer readable buf of
-              Nothing -> (buf, True)
-              Just b' ->
-                if bufCount b' >= bufExportBounds b'
-                  then (b', True)
-                  else (b', False)
-          when needsFlush $ void $ atomically $ tryPutTMVar workSignal ()
+          isShutdown <- readIORef shutdownRef
+          unless isShutdown $ do
+            readable <- mkReadableLogRecord lr
+            ok <- UChan.tryWriteChan dataIn readable
+            if ok
+              then do
+                len <- UChan.estimatedLength dataIn
+                when (len >= batchLogMaxExportBatchSize) $
+                  void $
+                    UChan.tryWriteChan ctrlIn WakeFlush
+              else do
+                n <- atomicModifyIORef' droppedLogs (\c -> let !c' = c + 1 in (c', c'))
+                when (n == 1 || n `mod` 1000 == 0) $
+                  otelLogDebug ("Batch log processor queue full, dropped " <> show n <> " log record(s) so far")
       , logRecordProcessorForceFlush = do
-          void $ atomically $ tryPutTMVar workSignal ()
-          logRecordExporterForceFlush batchLogExporter
-      , logRecordProcessorShutdown =
-          asyncWithUnmask $ \unmask -> unmask $ do
-            mask $ \_restore -> do
-              void $ atomically $ putTMVar shutdownSignal ()
-              delay <- registerDelay (millisToMicros batchLogExportTimeoutMillis)
-              shutdownResult <-
-                atomically $
-                  msum
-                    [ Just <$> waitCatchSTM worker
-                    , Nothing <$ do
-                        shouldStop <- readTVar delay
-                        check shouldStop
-                    ]
-              cancel worker
-              logRecordExporterShutdown batchLogExporter
+          mv <- newEmptyMVar
+          ok <- UChan.tryWriteChan ctrlIn (FlushAndNotify mv)
+          if ok
+            then do
+              mDone <- timeout (millisToMicros batchLogExportTimeoutMillis) (takeMVar mv)
+              logRecordExporterForceFlush batchLogExporter
+              pure $ case mDone of
+                Nothing -> FlushTimeout
+                Just () -> FlushSuccess
+            else do
+              logRecordExporterForceFlush batchLogExporter
+              pure FlushSuccess
+      , logRecordProcessorShutdown = do
+          atomicWriteIORef shutdownRef True
+          void $ UChan.tryWriteChan ctrlIn ShutdownMsg
 
-              pure $ case shutdownResult of
+          mResult <- timeout (millisToMicros batchLogExportTimeoutMillis) (waitCatch worker)
+          cancel worker
+          cancel timerThread
+          _ <- logRecordExporterForceFlush batchLogExporter
+          logRecordExporterShutdown batchLogExporter
+
+          let !workerResult = case mResult of
                 Nothing -> ShutdownTimeout
                 Just (Left _) -> ShutdownFailure
                 Just (Right _) -> ShutdownSuccess
+          pure $! worstShutdown workerResult ShutdownSuccess
       }
   where
     millisToMicros = (* 1000)

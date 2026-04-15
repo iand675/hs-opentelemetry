@@ -24,7 +24,7 @@ detectProcess = do
     <$> (Just . fromIntegral <$> getProcessID)
     <*> (Just . T.pack <$> getProgName)
     <*> (Just . T.pack <$> getExecutablePath)
-    <*> pure Nothing
+    <*> (Just . T.pack <$> getProgName)
     <*> pure Nothing
     <*> (Just . map T.pack <$> getArgs)
     <*> tryGetUser
@@ -40,5 +40,6 @@ detectProcessRuntime =
   ProcessRuntime
     { processRuntimeName = Just $ T.pack compilerName
     , processRuntimeVersion = Just $ T.pack $ showVersion compilerVersion
-    , processRuntimeDescription = Nothing
+    , processRuntimeDescription =
+        Just $ T.pack $ compilerName <> " " <> showVersion compilerVersion
     }

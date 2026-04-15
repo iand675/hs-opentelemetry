@@ -1,55 +1,101 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 -----------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
 
 {- |
- Module      :  OpenTelemetry.Trace
- Copyright   :  (c) Ian Duncan, 2021
- License     :  BSD-3
- Description :  Application Tracing API
- Maintainer  :  Ian Duncan
- Stability   :  experimental
- Portability :  non-portable (GHC extensions)
+Module      :  OpenTelemetry.Trace
+Copyright   :  (c) Ian Duncan, 2021-2026
+License     :  BSD-3
+Description :  Application tracing setup and initialization
+Maintainer  :  Ian Duncan
+Stability   :  experimental
+Portability :  non-portable (GHC extensions)
 
- Traces track the progression of a single request, called a trace, as it is handled
- by services that make up an application. The request may be initiated by a user or
- an application. Distributed tracing is a form of tracing that traverses process, network
- and security boundaries. Each unit of work in a trace is called a span; a trace is a tree of spans.
- Spans are objects that represent the work being done by individual services or components involved in a request as it flows through a system. A span contains a span context, which is a set of globally unique identifiers that represent the unique request that each span is a part of.
- A span provides Request, Error and Duration (RED) metrics that can be used to debug availability as well as performance issues.
+= Getting started
 
- Here is a visualization of the relationship between traces and spans:
+This is the main entry point for adding distributed tracing to your Haskell
+application. Here is a complete minimal example:
 
- <<docs/img/traces_spans.png>>
+@
+{\-# LANGUAGE OverloadedStrings #-\}
+module Main where
 
- A trace contains a single root span which encapsulates the end-to-end latency for the entire request. You can think of this as a single logical operation, such as clicking a button in a web application to add a product to a shopping cart. The root span would measure the time it took from an end-user clicking that button to the operation being completed or failing (so, the item is added to the cart or some error occurs) and the result being displayed to the user. A trace is comprised of the single root span and any number of child spans, which represent operations taking place as part of the request. Each span contains metadata about the operation, such as its name, start and end timestamps, attributes (which represent additonal user-defined metadata about a span), events, and status.
+import OpenTelemetry.Trace
 
- To create and manage spans in OpenTelemetry, the OpenTelemetry API provides the tracer interface. This object is responsible for tracking the active span in your process, and allows you to access the current span in order to perform operations on it such as adding attributes, events, and finishing it when the work it tracks is complete. One or more tracer objects can be created in a process through the tracer provider, a factory interface that allows for multiple tracers to be instantiated in a single process with different options.
+main :: IO ()
+main = withTracerProvider $ \tp -> do
+  tracer <- getTracer tp "my-service" tracerOptions
+  inSpan tracer "main" defaultSpanArguments $ do
+    putStrLn "Hello, traced world!"
+@
 
- Generally, the lifecycle of a span resembles the following:
+That's it! 'withTracerProvider' reads configuration from environment variables,
+sets up processors and exporters, and ensures everything is flushed on shutdown
+(including @SIGTERM@). 'getTracer' creates a 'Tracer' scoped to your service,
+and 'inSpan' wraps your code in a trace span.
 
- - A request is received by a service. The span context is extracted from the request headers, if it exists.
- - A new span is created as a child of the extracted span context; if none exists, a new root span is created.
- - The service handles the request. Additional attributes and events are added to the span that are useful for understanding the context of the request, such as the hostname of the machine handling the request, or customer identifiers.
- - New spans may be created to represent work being done by sub-components of the service.
- - When the service makes a remote call to another service, the current span context is serialized and forwarded to the next service by injecting the span context into the headers or message envelope.
- - The work being done by the service completes, successfully or not. The span status is appropriately set, and the span is marked finished.
- - For more information, see the traces specification, which covers concepts including: trace, span, parent/child relationship, span context, attributes, events and links.
+= What you get out of the box
 
+* __OTLP export__: Spans are exported via OTLP (to an OpenTelemetry Collector or
+  any OTLP-compatible backend) by default. Set @OTEL_EXPORTER_OTLP_ENDPOINT@ to
+  point at your collector.
+* __Batch processing__: Spans are batched for efficient export.
+* __W3C propagation__: @traceparent@ and @baggage@ headers are propagated automatically.
+* __Resource detection__: Host, OS, process, container, and cloud metadata are
+  auto-detected and attached to every span.
+* __Sampling__: Parent-based always-on sampling by default; configurable via
+  @OTEL_TRACES_SAMPLER@.
+* __YAML configuration__: Set @OTEL_CONFIG_FILE@ to configure all providers from
+  a single file (see "OpenTelemetry.Configuration").
 
- This module implements eveything required to conform to the trace & span public interface described
- by the OpenTelemetry specification.
+= Creating spans in your code
 
- See "OpenTelemetry.Trace.Monad" for an implementation of 'inSpan' variants that are
- slightly easier to use in idiomatic Haskell monadic code.
+@
+-- Simple: wrap an action
+inSpan tracer "myOperation" defaultSpanArguments $ do
+  doSomething
+
+-- With span access: add attributes during execution
+inSpan' tracer "fetchUser" defaultSpanArguments $ \span -> do
+  user <- lookupUser uid
+  addAttribute span "user.id" (toAttribute uid)
+  pure user
+
+-- With custom span kind (e.g. for HTTP clients):
+let args = defaultSpanArguments { kind = Client }
+inSpan tracer "GET /api/users" args $ do
+  httpRequest ...
+@
+
+= Adding instrumentation to libraries
+
+Pre-built instrumentation is available for common libraries:
+
+* @hs-opentelemetry-instrumentation-wai@ : WAI middleware
+* @hs-opentelemetry-instrumentation-http-client@ : HTTP client requests
+* @hs-opentelemetry-instrumentation-persistent@ : Database queries (Persistent)
+* @hs-opentelemetry-instrumentation-yesod@ : Yesod web framework
+* @hs-opentelemetry-instrumentation-conduit@ : Conduit pipelines
+
+See <https://hackage.haskell.org/packages/search?terms=hs-opentelemetry-instrumentation Hackage>
+for the full list.
+
+= Monadic interface
+
+For cleaner code in a monad stack, see "OpenTelemetry.Trace.Monad" which
+provides 'MonadTracer'-based variants that obtain the 'Tracer' from your
+environment automatically.
+
+= Spec reference
+
+<https://opentelemetry.io/docs/specs/otel/trace/api/>
 -}
 module OpenTelemetry.Trace (
   -- * How to use this library
@@ -85,15 +131,25 @@ module OpenTelemetry.Trace (
   --
   -- There are a number of other exporters <https://hackage.haskell.org/packages/search?terms=hs-opentelemetry-exporter available on hackage>, including
   -- an in-memory exporter for testing.
+  --
+  -- Third-party exporters can register themselves with the global
+  -- registry (see "OpenTelemetry.Registry") so that
+  -- @OTEL_TRACES_EXPORTER@ can reference them by name.  Likewise,
+  -- custom propagators can be registered for @OTEL_PROPAGATORS@
+  -- resolution.  Registrations made before 'initializeGlobalTracerProvider'
+  -- take precedence over built-in defaults.
 
   -- * 'TracerProvider' operations
   -- $tracerProvider
   TracerProvider,
+  withTracerProvider,
   initializeGlobalTracerProvider,
   initializeTracerProvider,
   getTracerProviderInitializationOptions,
   getTracerProviderInitializationOptions',
+  detectBatchProcessorConfig,
   shutdownTracerProvider,
+  shutdownGlobalProviders,
   forceFlushTracerProvider,
 
   -- ** Getting / setting the global 'TracerProvider'
@@ -109,6 +165,9 @@ module OpenTelemetry.Trace (
   tracerOptions,
   HasTracer (..),
   InstrumentationLibrary (..),
+  instrumentationLibrary,
+  withSchemaUrl,
+  withLibraryAttributes,
   detectInstrumentationLibrary,
 
   -- * 'Span' operations
@@ -130,6 +189,13 @@ module OpenTelemetry.Trace (
   addEvent,
   inSpan'',
 
+  -- ** Exception handling
+  ExceptionClassification (..),
+  ExceptionResponse (..),
+  ExceptionHandler,
+  defaultExceptionResponse,
+  resolveException,
+
   -- * Primitive span and tracing operations
 
   -- ** Alternative 'TracerProvider' initialization
@@ -137,7 +203,18 @@ module OpenTelemetry.Trace (
   TracerProviderOptions (..),
   emptyTracerProviderOptions,
   detectBuiltInResources,
+  registerBuiltinResourceDetectors,
   detectSampler,
+  detectSpanLimits,
+
+  -- ** Sampling
+  Sampler,
+  alwaysOn,
+  alwaysOff,
+  alwaysRecord,
+  parentBased,
+  parentBasedOptions,
+  traceIdRatioBased,
   createSpan,
   createSpanWithoutCallStack,
   endSpan,
@@ -149,189 +226,414 @@ module OpenTelemetry.Trace (
   Link,
   Event,
   SpanContext (..),
-  -- TODO, don't remember if this is okay with the spec or not
+  -- Exporters need field access to serialize span data per the spec
   ImmutableSpan (..),
+
+  -- * SDK diagnostic output
+  setGlobalErrorHandler,
+  getGlobalErrorHandler,
 ) where
 
-import qualified Data.ByteString.Char8 as B
+import Control.Concurrent (ThreadId, myThreadId)
+import Control.Exception (Exception, bracket, throwTo)
+import Control.Monad (when)
 import Data.Either (partitionEithers)
 import qualified Data.HashMap.Strict as H
+import Data.IORef (IORef, atomicModifyIORef', newIORef)
+import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
-import Network.HTTP.Types.Header
+import qualified Data.Text.Read as TR
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
-import OpenTelemetry.Baggage (decodeBaggageHeader)
-import qualified OpenTelemetry.Baggage as Baggage
-import OpenTelemetry.Context (Context)
+import OpenTelemetry.Attributes.Key (unkey)
+import OpenTelemetry.Configuration (OTelComponents (..), initializeFromConfigFile)
 import OpenTelemetry.Environment
 import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpExporter)
 import OpenTelemetry.Exporter.Span (SpanExporter)
+import OpenTelemetry.Internal.Logging (getGlobalErrorHandler, otelLogWarning, setGlobalErrorHandler)
+import OpenTelemetry.Log (initializeGlobalLoggerProvider)
+import OpenTelemetry.Log.Core (setGlobalLoggerProvider, shutdownLoggerProvider)
+import OpenTelemetry.Metric.Core (MeterProvider (..), setGlobalMeterProvider)
 import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Processor.Span (SpanProcessor)
-import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Propagator (TextMapPropagator, setGlobalTextMapPropagator)
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
 import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
+import OpenTelemetry.Propagator.Jaeger (jaegerPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
+import OpenTelemetry.Propagator.XRay (xrayPropagator)
+import qualified OpenTelemetry.Registry as Registry
 import OpenTelemetry.Resource
-import OpenTelemetry.Resource.Host.Detector (detectHost)
-import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
-import OpenTelemetry.Resource.Process.Detector (detectProcess, detectProcessRuntime)
-import OpenTelemetry.Resource.Service.Detector (detectService)
-import OpenTelemetry.Resource.Telemetry.Detector (detectTelemetry)
+import OpenTelemetry.Resource.Detect (detectBuiltInResources, detectResourceAttributes, registerBuiltinResourceDetectors)
+import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
-import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, parentBased, parentBasedOptions, traceIdRatioBased)
+import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, alwaysRecord, parentBased, parentBasedOptions, traceIdRatioBased)
 import System.Environment (lookupEnv)
+import System.IO.Unsafe (unsafePerformIO)
 import Text.Read (readMaybe)
+
+
+#if !defined(mingw32_HOST_OS)
+import System.Posix.Signals (installHandler, sigTERM, Handler(CatchOnce))
+#endif
 
 
 {- $use
 
- 1. Initialize a 'TracerProvider'.
- 2. Create a 'Tracer' for your system.
- 3. Add <https://hackage.haskell.org/packages/search?terms=hs-opentelemetry-instrumentation relevant pre-made instrumentation>
- 4. Annotate your internal functions using the 'inSpan' function or one of its variants.
+=== Step 1: Initialize
+
+@
+main :: IO ()
+main = withTracerProvider $ \tp -> do
+  ...
+@
+
+'withTracerProvider' handles setup and teardown. It reads @OTEL_*@ environment
+variables, starts batch processors, installs a SIGTERM handler for graceful
+shutdown, and flushes pending spans when your application exits.
+
+=== Step 2: Get a Tracer
+
+@
+tracer <- getTracer tp "my-service" tracerOptions
+@
+
+The first argument is your 'TracerProvider'. The second is the name of your
+service or library (this appears in trace data). 'tracerOptions' provides
+defaults.
+
+=== Step 3: Instrument your code
+
+@
+inSpan tracer "handleRequest" defaultSpanArguments $ do
+  -- your code here
+  pure result
+@
+
+=== Step 4: Add pre-built instrumentation
+
+Install instrumentation packages for the libraries you use (WAI, http-client,
+persistent, etc.). These automatically create spans for HTTP requests, database
+queries, and other operations.
 -}
 
 
 {- $tracerProvider
 
- A `TracerProvider` is key to using OpenTelemetry tracing. It is the data structure responsible for designating how spans are processed and exported
+A 'TracerProvider' holds the configuration for how spans are processed and
+exported. You typically create one at application startup and shut it down on
+exit.
 
- You will generally only need to call 'initializeGlobalTracerProvider' on initialization,
- and 'shutdownTracerProvider' when your application exits.
+=== Recommended: bracket-style
 
- @
+@
+main :: IO ()
+main = withTracerProvider $ \tp -> do
+  tracer <- getTracer tp "my-service" tracerOptions
+  -- ... your application ...
+@
 
- main :: IO ()
- main = withTracer $ \tracer -> do
-   -- your existing code here...
-   pure ()
-   where
-     withTracer f = bracket
-       -- Install the SDK, pulling configuration from the environment
-       initializeGlobalTracerProvider
-       -- Ensure that any spans that haven't been exported yet are flushed
-       shutdownTracerProvider
-       (\tracerProvider -> do
-         -- Get a tracer so you can create spans
-         tracer <- getTracer tracerProvider "your-app-name-or-subsystem"
-         f tracer
-       )
+'withTracerProvider' handles SIGTERM, flushes in-flight spans, and shuts down
+all co-created providers (logs, metrics) automatically.
 
- @
+=== Manual: init + shutdown
+
+@
+main :: IO ()
+main = do
+  tp <- initializeGlobalTracerProvider
+  tracer <- getTracer tp "my-service" tracerOptions
+  -- ... your application ...
+  shutdownTracerProvider tp Nothing
+@
+
+Use the manual approach when you need to integrate with your own signal
+handling or lifecycle management.
 -}
 
 
 {- $envGeneral
 
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | Name                      | Description                                                                                                   | Default                                                                                                                                        | Notes                                                                                                                                                                                                                                                                                    |
- +===========================+===============================================================================================================+================================================================================================================================================+==========================================================================================================================================================================================================================================================================================+
- | OTEL_SDK_DISABLED         | Disable the SDK for all signals                                                                               | false                                                                                                                                          | Boolean value. If “true”, a no-op SDK implementation will be used for all telemetry signals. Any other value or absence of the variable will have no effect and the SDK will remain enabled. This setting has no effect on propagators configured through the OTEL_PROPAGATORS variable. |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_RESOURCE_ATTRIBUTES  | Key-value pairs to be used as resource attributes                                                             | See [Resource semantic conventions](resource/semantic_conventions/README.md#semantic-attributes-with-sdk-provided-default-value) for details.  | See [Resource SDK](./resource/sdk.md#specifying-resource-information-via-an-environment-variable) for more details.                                                                                                                                                                      |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_SERVICE_NAME         | Sets the value of the [`service.name`](./resource/semantic_conventions/README.md#service) resource attribute  |                                                                                                                                                | If `service.name` is also provided in `OTEL_RESOURCE_ATTRIBUTES`, then `OTEL_SERVICE_NAME` takes precedence.                                                                                                                                                                             |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_LOG_LEVEL            | Log level used by the SDK logger                                                                              | "info"                                                                                                                                         |                                                                                                                                                                                                                                                                                          |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_PROPAGATORS          | Propagators to be used as a comma-separated list                                                              | "tracecontext,baggage"                                                                                                                         | Values MUST be deduplicated in order to register a `Propagator` only once.                                                                                                                                                                                                               |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_TRACES_SAMPLER       | Sampler to be used for traces                                                                                 | "parentbased_always_on"                                                                                                                        | See [Sampling](./trace/sdk.md#sampling)                                                                                                                                                                                                                                                  |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
- | OTEL_TRACES_SAMPLER_ARG   | String value to be used as the sampler argument                                                               |                                                                                                                                                | The specified value will only be used if OTEL_TRACES_SAMPLER is set. Each Sampler type defines its own expected input, if any. Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the SDK MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.            |
- +---------------------------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+=== General
+
+* @OTEL_SDK_DISABLED@ (default: @false@) — if @"true"@, a no-op SDK is used
+  for all signals. Propagators configured via @OTEL_PROPAGATORS@ still work.
+* @OTEL_CONFIG_FILE@ / @OTEL_EXPERIMENTAL_CONFIG_FILE@ — path to a YAML
+  configuration file. When set, all providers are configured from the file
+  (see "OpenTelemetry.Configuration"). @OTEL_SDK_DISABLED@ takes precedence.
+* @OTEL_RESOURCE_ATTRIBUTES@ — comma-separated key=value pairs for resource
+  attributes.
+* @OTEL_SERVICE_NAME@ — sets @service.name@; takes precedence over
+  @OTEL_RESOURCE_ATTRIBUTES@.
+* @OTEL_RESOURCE_DETECTORS@ — comma-separated list of resource detector names
+  (default: all built-in detectors).
+* @OTEL_LOG_LEVEL@ (default: @"info"@) — internal SDK log level.
+* @OTEL_SEMCONV_STABILITY_OPT_IN@ — controls semantic convention migration.
+  Values: @"code"@ (stable names), @"code\/dup"@ (both old and stable).
+
+=== Traces
+
+* @OTEL_TRACES_EXPORTER@ (default: @"otlp"@) — exporter name. Values:
+  @"otlp"@, @"console"@, @"none"@. Custom exporters can be registered
+  via "OpenTelemetry.Registry".
+* @OTEL_PROPAGATORS@ (default: @"tracecontext,baggage"@) — comma-separated
+  list of propagator names. Values MUST be deduplicated.
+* @OTEL_TRACES_SAMPLER@ (default: @"parentbased_always_on"@) — sampler name.
+  Matched case-insensitively. See
+  <https://opentelemetry.io/docs/specs/otel/trace/sdk/#sampling>.
+* @OTEL_TRACES_SAMPLER_ARG@ — sampler argument (e.g. ratio for
+  @trace_id_ratio_based@). Only used when @OTEL_TRACES_SAMPLER@ is set.
 -}
 
 
 {- $envBsp
- +---------------------------------+-------------------------------------------------+----------+--------------------------------------------------------+
- | Name                            | Description                                     | Default  | Notes                                                  |
- +=================================+=================================================+==========+========================================================+
- | OTEL_BSP_SCHEDULE_DELAY         | Delay interval between two consecutive exports  | 5000     |                                                        |
- +---------------------------------+-------------------------------------------------+----------+--------------------------------------------------------+
- | OTEL_BSP_EXPORT_TIMEOUT         | Maximum allowed time to export data             | 30000    |                                                        |
- +---------------------------------+-------------------------------------------------+----------+--------------------------------------------------------+
- | OTEL_BSP_MAX_QUEUE_SIZE         | Maximum queue size                              | 2048     |                                                        |
- +---------------------------------+-------------------------------------------------+----------+--------------------------------------------------------+
- | OTEL_BSP_MAX_EXPORT_BATCH_SIZE  | Maximum batch size                              | 512      | Must be less than or equal to OTEL_BSP_MAX_QUEUE_SIZE  |
- +---------------------------------+-------------------------------------------------+----------+--------------------------------------------------------+
+
+* @OTEL_BSP_SCHEDULE_DELAY_MILLIS@ (default: @5000@) — delay between
+  consecutive exports, in milliseconds. Legacy alias: @OTEL_BSP_SCHEDULE_DELAY@.
+* @OTEL_BSP_EXPORT_TIMEOUT_MILLIS@ (default: @30000@) — maximum time for a
+  single export, in milliseconds. Legacy alias: @OTEL_BSP_EXPORT_TIMEOUT@.
+* @OTEL_BSP_MAX_QUEUE_SIZE@ (default: @2048@) — maximum number of spans in the
+  queue.
+* @OTEL_BSP_MAX_EXPORT_BATCH_SIZE@ (default: @512@) — maximum batch size per
+  export. Clamped to @OTEL_BSP_MAX_QUEUE_SIZE@ if larger.
 -}
 
 
 {- $envAttributeLimits
- +------------------------------------+---------------------------------------+----------+-----------------------------------------------------------------------------------+
- | Name                               | Description                           | Default  | Notes                                                                             |
- +====================================+=======================================+==========+===================================================================================+
- | OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT  | Maximum allowed attribute value size  |          | Empty value is treated as infinity. Non-integer and negative values are invalid.  |
- +------------------------------------+---------------------------------------+----------+-----------------------------------------------------------------------------------+
- | OTEL_ATTRIBUTE_COUNT_LIMIT         | Maximum allowed span attribute count  | 128      |                                                                                   |
- +------------------------------------+---------------------------------------+----------+-----------------------------------------------------------------------------------+
+
+* @OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT@ (default: no limit) — maximum allowed
+  attribute value size. Empty value is treated as infinity.
+* @OTEL_ATTRIBUTE_COUNT_LIMIT@ (default: @128@) — maximum allowed attribute
+  count per span.
 -}
 
 
 {- $envSpanLimits
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
- | Name                                    | Description                                     | Default  | Notes                                                                             |
- +=========================================+=================================================+==========+===================================================================================+
- | OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT  | Maximum allowed attribute value size            |          | Empty value is treated as infinity. Non-integer and negative values are invalid.  |
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
- | OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT         | Maximum allowed span attribute count            | 128      |                                                                                   |
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
- | OTEL_SPAN_EVENT_COUNT_LIMIT             | Maximum allowed span event count                | 128      |                                                                                   |
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
- | OTEL_SPAN_LINK_COUNT_LIMIT              | Maximum allowed span link count                 | 128      |                                                                                   |
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
- | OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT        | Maximum allowed attribute per span event count  | 128      |                                                                                   |
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
- | OTEL_LINK_ATTRIBUTE_COUNT_LIMIT         | Maximum allowed attribute per span link count   | 128      |                                                                                   |
- +-----------------------------------------+-------------------------------------------------+----------+-----------------------------------------------------------------------------------+
+
+These override the general @OTEL_ATTRIBUTE_*@ limits for spans specifically:
+
+* @OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT@ (default: no limit) — max attribute
+  value size on spans.
+* @OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT@ (default: @128@) — max attribute count per
+  span.
+* @OTEL_SPAN_EVENT_COUNT_LIMIT@ (default: @128@) — max events per span.
+* @OTEL_SPAN_LINK_COUNT_LIMIT@ (default: @128@) — max links per span.
+* @OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT@ (default: @128@) — max attributes per
+  span event.
+* @OTEL_LINK_ATTRIBUTE_COUNT_LIMIT@ (default: @128@) — max attributes per span
+  link.
 -}
 
 
-knownPropagators :: [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
-knownPropagators =
-  [ ("tracecontext", w3cTraceContextPropagator)
-  , ("baggage", w3cBaggagePropagator)
-  , ("b3", b3TraceContextPropagator)
-  , ("b3multi", b3MultiTraceContextPropagator)
-  , ("datadog", datadogTraceContextPropagator)
-  , ("jaeger", error "Jaeger not yet implemented")
-  ]
+registerBuiltinPropagators :: IO ()
+registerBuiltinPropagators = do
+  _ <- Registry.registerTextMapPropagatorIfAbsent "tracecontext" w3cTraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "baggage" w3cBaggagePropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "b3" b3TraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "b3multi" b3MultiTraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "datadog" datadogTraceContextPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "jaeger" jaegerPropagator
+  _ <- Registry.registerTextMapPropagatorIfAbsent "xray" xrayPropagator
+  pure ()
 
 
--- TODO, actually implement a registry systme
-readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
-readRegisteredPropagators = pure knownPropagators
+{- | Stores the composite shutdown action from YAML-based initialization so
+that 'withTracerProvider' and 'shutdownGlobalProviders' can shut down
+meter + logger providers that were co-created alongside the tracer.
+-}
+globalExtraShutdown :: IORef (IO ())
+globalExtraShutdown = unsafePerformIO $ newIORef (pure ())
+{-# NOINLINE globalExtraShutdown #-}
+
+
+{- | Shut down all providers that were registered via
+'initializeGlobalTracerProvider' (YAML config path).
+
+When the YAML config path is used, 'initializeGlobalTracerProvider' registers
+the 'MeterProvider' and 'LoggerProvider' globally and stores their composite
+shutdown. This function runs that shutdown after 'shutdownTracerProvider'.
+
+@since 0.0.1.0
+-}
+shutdownGlobalProviders :: TracerProvider -> IO ()
+shutdownGlobalProviders tp = do
+  _ <- shutdownTracerProvider tp Nothing
+  extra <- atomicModifyIORef' globalExtraShutdown $ \act -> (pure (), act)
+  extra
 
 
 {- | Create a new 'TracerProvider' and set it as the global
- tracer provider. This pulls all configuration from environment
- variables. The full list of environment variables supported is
- specified in the configuration section of this module's documentation.
+ tracer provider.
+
+ If @OTEL_CONFIG_FILE@ is set, the provider is configured from that
+ YAML file (see "OpenTelemetry.Configuration").  Otherwise, configuration
+ is pulled from individual @OTEL_*@ environment variables as documented
+ in this module.
+
+ When using YAML configuration, this also sets the global 'MeterProvider'
+ and 'LoggerProvider' so that 'getGlobalMeterProvider' and
+ 'getGlobalLoggerProvider' return the YAML-configured providers.
+ Shutdown of all three providers is coordinated automatically when using
+ 'withTracerProvider' or 'shutdownGlobalProviders'.
 
  Note however, that 3rd-party span processors, exporters, sampling strategies,
  etc. may have their own set of environment-based configuration values that they
  utilize.
+
+@since 0.0.1.0
 -}
 initializeGlobalTracerProvider :: IO TracerProvider
 initializeGlobalTracerProvider = do
-  t <- initializeTracerProvider
-  setGlobalTracerProvider t
-  pure t
+  disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
+  if disabled
+    then do
+      -- Spec: OTEL_SDK_DISABLED overrides all configuration including config files.
+      -- Propagators MUST still be configured (see 'getTracerProviderInitializationOptions').
+      t <- initializeTracerProvider
+      setGlobalTracerProvider t
+      _ <- initializeGlobalLoggerProvider
+      pure t
+    else do
+      mConfigComponents <- initializeFromConfigFile
+      case mConfigComponents of
+        Just components -> do
+          let tp = otelTracerProvider components
+          setGlobalTracerProvider tp
+          setGlobalMeterProvider (otelMeterProvider components)
+          setGlobalLoggerProvider (otelLoggerProvider components)
+          atomicModifyIORef' globalExtraShutdown $ \_ ->
+            ( do
+                _ <- meterProviderShutdown (otelMeterProvider components)
+                _ <- shutdownLoggerProvider (otelLoggerProvider components) Nothing
+                pure ()
+            , ()
+            )
+          pure tp
+        Nothing -> do
+          t <- initializeTracerProvider
+          setGlobalTracerProvider t
+          lp <- initializeGlobalLoggerProvider
+          atomicModifyIORef' globalExtraShutdown $ \_ ->
+            ( do
+                _ <- shutdownLoggerProvider lp Nothing
+                pure ()
+            , ()
+            )
+          pure t
 
 
+-- | @since 0.0.1.0
 initializeTracerProvider :: IO TracerProvider
 initializeTracerProvider = do
   (processors, opts) <- getTracerProviderInitializationOptions
   createTracerProvider processors opts
 
 
+{- | Initialize the global 'TracerProvider', run an action, then shut down
+the provider, including on @SIGTERM@ and @SIGINT@.
+
+This is the recommended entry point for applications. It mirrors the
+bracket pattern used by Go (@defer tp.Shutdown(ctx)@) and Python
+(@atexit@) SDKs, and ensures in-flight spans are flushed on container
+kills and Ctrl-C.
+
+@
+main :: IO ()
+main = withTracerProvider $ \\tp -> do
+  tracer <- getTracer tp "my-service" tracerOptions
+  -- ... application code ...
+@
+
+=== How shutdown works
+
+Shutdown relies on GHC's async-exception mechanism:
+
+* __SIGINT__ (Ctrl-C): GHC's runtime already throws 'Control.Exception.UserInterrupt'
+  to the main thread. 'bracket' catches it, @shutdownTracerProvider@ runs.
+* __SIGTERM__ (container kill): By default the process terminates
+  immediately with no cleanup. 'withTracerProvider' installs a handler
+  that throws 'ShutdownBySignal' to the main thread, so 'bracket'
+  catches it and @shutdownTracerProvider@ runs.
+
+=== Signal handler caveats
+
+On Unix, signal handlers are process-global and last-writer-wins.
+
+* If you install your own @SIGTERM@ handler /after/ entering
+  'withTracerProvider', the OTel handler is replaced and graceful
+  shutdown on @SIGTERM@ will not happen automatically. You are then
+  responsible for ensuring @shutdownTracerProvider@ is called.
+* If another library installs a @SIGTERM@ handler (e.g. a web
+  framework's graceful-stop hook), the same applies. In that case,
+  use 'initializeGlobalTracerProvider' and 'shutdownTracerProvider'
+  directly inside your own shutdown logic rather than
+  'withTracerProvider'.
+* @SIGINT@ is not touched. GHC's default @UserInterrupt@ handler is
+  left in place.
+
+If you need full control over signal handling, use the lower-level API:
+
+@
+main :: IO ()
+main = bracket initializeGlobalTracerProvider (\\tp -> shutdownTracerProvider tp Nothing >> pure ()) $ \\tp -> do
+  -- install your own signal handlers here
+  ...
+@
+
+On Windows, signal handling is a no-op; shutdown runs only via the
+normal 'bracket' path (exception or return).
+
+@since 0.1.1.0
+-}
+withTracerProvider :: (TracerProvider -> IO a) -> IO a
+withTracerProvider body = do
+  mainTid <- myThreadId
+  bracket
+    ( do
+        tp <- initializeGlobalTracerProvider
+        oldHandler <- installSigtermHandler mainTid
+        pure (tp, oldHandler)
+    )
+    ( \(tp, oldHandler) -> do
+        restoreSigtermHandler oldHandler
+        shutdownGlobalProviders tp
+    )
+    (\(tp, _) -> body tp)
+
+
+{- | Thrown to the main thread when SIGTERM is received inside
+'withTracerProvider'. Caught by 'bracket' to trigger graceful shutdown.
+-}
+data ShutdownBySignal = ShutdownBySignal
+  deriving (Show)
+
+
+instance Exception ShutdownBySignal
+
+#if !defined(mingw32_HOST_OS)
+installSigtermHandler :: ThreadId -> IO Handler
+installSigtermHandler mainTid =
+  installHandler sigTERM (CatchOnce (throwTo mainTid ShutdownBySignal)) Nothing
+
+
+restoreSigtermHandler :: Handler -> IO ()
+restoreSigtermHandler old = do
+  _ <- installHandler sigTERM old Nothing
+  pure ()
+#else
+installSigtermHandler :: ThreadId -> IO ()
+installSigtermHandler _ = pure ()
+
+restoreSigtermHandler :: () -> IO ()
+restoreSigtermHandler _ = pure ()
+#endif
+
+
+-- | @since 0.0.1.0
 getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
-getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
+getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' mempty
 
 
 {- | Detect options for initializing a tracer provider from the app environment, taking additional supported resources as well.
@@ -339,31 +641,31 @@ getTracerProviderInitializationOptions = getTracerProviderInitializationOptions'
  @since 0.0.3.1
 -}
 getTracerProviderInitializationOptions'
-  :: forall schema
-   . (MaterializeResource schema)
-  => Resource schema
+  :: Resource
   -> IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions' rs = do
   disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
+  -- Spec: propagators MUST still be configured even when the SDK is disabled
+  propagators <- detectPropagators
   if disabled
-    then pure ([], emptyTracerProviderOptions)
+    then pure ([], emptyTracerProviderOptions {tracerProviderOptionsPropagators = propagators})
     else do
       sampler <- detectSampler
       attrLimits <- detectAttributeLimits
       spanLimits <- detectSpanLimits
-      propagators <- detectPropagators
       processorConf <- detectBatchProcessorConfig
       exporters <- detectExporters
       builtInRs <- detectBuiltInResources
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
-      let
-        -- NB: Resource merge prioritizes the left value on attribute key conflict.
-        allRs = mergeResources rs (envVarRs <> builtInRs)
-      processors <- case exporters of
-        [] -> do
-          pure []
-        e : _ -> do
-          pure <$> batchProcessor processorConf e
+      -- Spec: OTEL_SERVICE_NAME takes precedence over ALL other sources for service.name
+      mSvcName <- lookupEnv "OTEL_SERVICE_NAME"
+      let svcOverride :: Resource
+          svcOverride = case mSvcName of
+            Nothing -> mempty
+            Just sn -> mkResource [unkey SC.service_name .= T.pack sn]
+          baseRs = mergeResources rs (envVarRs <> builtInRs)
+          allRs = mergeResources svcOverride baseRs
+      processors <- mapM (batchProcessor processorConf) exporters
       let providerOpts =
             emptyTracerProviderOptions
               { tracerProviderOptionsIdGenerator = defaultIdGenerator
@@ -376,18 +678,26 @@ getTracerProviderInitializationOptions' rs = do
       pure (processors, providerOpts)
 
 
-detectPropagators :: IO (Propagator Context RequestHeaders RequestHeaders)
+detectPropagators :: IO TextMapPropagator
 detectPropagators = do
-  registeredPropagators <- readRegisteredPropagators
-  propagatorsInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_PROPAGATORS"
-  if propagatorsInEnv == Just ["none"]
-    then pure mempty
-    else do
-      let envPropagators = fromMaybe ["tracecontext", "baggage"] propagatorsInEnv
-          propagatorsAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k registeredPropagators) envPropagators
-          (_notFound, propagators) = partitionEithers propagatorsAndRegistryEntry
-      -- TODO log warn notFound
-      pure $ mconcat propagators
+  registerBuiltinPropagators
+  allPropagators <- Registry.registeredTextMapPropagators
+  rawPropEnv <- lookupEnv "OTEL_PROPAGATORS"
+  let propagatorsInEnv = case rawPropEnv of
+        Nothing -> Nothing
+        Just "" -> Nothing
+        Just v -> Just $ filter (not . T.null) $ map T.strip $ T.splitOn "," $ T.pack v
+  propagator <-
+    if propagatorsInEnv == Just ["none"]
+      then pure mempty
+      else do
+        let envPropagators = nub $ fromMaybe ["tracecontext", "baggage"] propagatorsInEnv
+            propagatorsAndRegistryEntry = map (\k -> maybe (Left k) Right $ H.lookup k allPropagators) envPropagators
+            (notFound, propagators) = partitionEithers propagatorsAndRegistryEntry
+        mapM_ (\k -> otelLogWarning $ "Unknown propagator '" <> T.unpack k <> "' in OTEL_PROPAGATORS, ignoring") notFound
+        pure $ mconcat propagators
+  setGlobalTextMapPropagator propagator
+  pure propagator
 
 
 knownSamplers :: [(T.Text, Maybe T.Text -> Maybe Sampler)]
@@ -398,9 +708,9 @@ knownSamplers =
     ( "traceidratio"
     , \case
         Nothing -> Nothing
-        Just val -> case readMaybe (T.unpack val) of
-          Nothing -> Nothing
-          Just ratioVal -> pure $ traceIdRatioBased ratioVal
+        Just val -> case TR.rational val of
+          Right (ratioVal, _) -> pure $ traceIdRatioBased ratioVal
+          Left _ -> Nothing
     )
   , ("parentbased_always_on", const $ pure $ parentBased $ parentBasedOptions alwaysOn)
   , ("parentbased_always_off", const $ pure $ parentBased $ parentBasedOptions alwaysOff)
@@ -408,14 +718,12 @@ knownSamplers =
     ( "parentbased_traceidratio"
     , \case
         Nothing -> Nothing
-        Just val -> case readMaybe (T.unpack val) of
-          Nothing -> Nothing
-          Just ratioVal -> pure $ parentBased $ parentBasedOptions $ traceIdRatioBased ratioVal
+        Just val -> case TR.rational val of
+          Right (ratioVal, _) -> pure $ parentBased $ parentBasedOptions $ traceIdRatioBased ratioVal
+          Left _ -> Nothing
     )
   ]
 
-
--- TODO MUST log invalid arg
 
 {- | Detect a sampler from the app environment. If no sampler is specified,
  the parentbased sampler is used.
@@ -426,20 +734,30 @@ detectSampler :: IO Sampler
 detectSampler = do
   envSampler <- lookupEnv "OTEL_TRACES_SAMPLER"
   envArg <- lookupEnv "OTEL_TRACES_SAMPLER_ARG"
-  let sampler = fromMaybe (parentBased $ parentBasedOptions alwaysOn) $ do
-        samplerName <- envSampler
-        samplerConstructor <- lookup (T.pack samplerName) knownSamplers
-        samplerConstructor (T.pack <$> envArg)
-  pure sampler
+  case envSampler of
+    Nothing -> pure (parentBased $ parentBasedOptions alwaysOn)
+    Just samplerName -> case lookup (T.toLower $ T.pack samplerName) knownSamplers of
+      Nothing -> do
+        otelLogWarning $ "Unknown sampler '" <> samplerName <> "', falling back to parentbased_always_on"
+        pure (parentBased $ parentBasedOptions alwaysOn)
+      Just ctor -> case ctor (T.pack <$> envArg) of
+        Nothing -> do
+          otelLogWarning $ "Invalid OTEL_TRACES_SAMPLER_ARG for sampler '" <> samplerName <> "', falling back to parentbased_always_on"
+          pure (parentBased $ parentBasedOptions alwaysOn)
+        Just sampler -> pure sampler
 
 
+-- | @since 0.0.1.0
 detectBatchProcessorConfig :: IO BatchTimeoutConfig
-detectBatchProcessorConfig =
-  BatchTimeoutConfig
-    <$> readEnvDefault "OTEL_BSP_MAX_QUEUE_SIZE" (maxQueueSize batchTimeoutConfig)
-    <*> readEnvDefault "OTEL_BSP_SCHEDULE_DELAY" (scheduledDelayMillis batchTimeoutConfig)
-    <*> readEnvDefault "OTEL_BSP_EXPORT_TIMEOUT" (exportTimeoutMillis batchTimeoutConfig)
-    <*> readEnvDefault "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" (maxExportBatchSize batchTimeoutConfig)
+detectBatchProcessorConfig = do
+  queueSize <- readEnvDefault "OTEL_BSP_MAX_QUEUE_SIZE" (maxQueueSize batchTimeoutConfig)
+  delay <- readEnvDefaultWithAlias "OTEL_BSP_SCHEDULE_DELAY_MILLIS" "OTEL_BSP_SCHEDULE_DELAY" (scheduledDelayMillis batchTimeoutConfig)
+  exportTimeout <- readEnvDefaultWithAlias "OTEL_BSP_EXPORT_TIMEOUT_MILLIS" "OTEL_BSP_EXPORT_TIMEOUT" (exportTimeoutMillis batchTimeoutConfig)
+  rawBatchSize <- readEnvDefault "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" (maxExportBatchSize batchTimeoutConfig)
+  let batchSize = min rawBatchSize queueSize
+  when (rawBatchSize > queueSize) $
+    otelLogWarning ("OTEL_BSP_MAX_EXPORT_BATCH_SIZE (" <> show rawBatchSize <> ") exceeds OTEL_BSP_MAX_QUEUE_SIZE (" <> show queueSize <> "), clamping to " <> show batchSize)
+  pure (BatchTimeoutConfig queueSize delay exportTimeout batchSize)
 
 
 detectAttributeLimits :: IO AttributeLimits
@@ -449,62 +767,44 @@ detectAttributeLimits =
     <*> ((>>= readMaybe) <$> lookupEnv "OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT")
 
 
+-- | @since 0.0.1.0
 detectSpanLimits :: IO SpanLimits
 detectSpanLimits =
   SpanLimits
     <$> readEnv "OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT"
     <*> readEnv "OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT"
     <*> readEnv "OTEL_SPAN_EVENT_COUNT_LIMIT"
-    <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
     <*> readEnv "OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT"
+    <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
     <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
 
 
-knownExporters :: [(T.Text, IO SpanExporter)]
-knownExporters =
-  [
-    ( "otlp"
-    , do
-        otlpConfig <- loadExporterEnvironmentVariables
-        otlpExporter otlpConfig
-    )
-  , ("jaeger", error "Jaeger exporter not implemented")
-  , ("zipkin", error "Zipkin exporter not implemented")
-  ]
+registerBuiltinExporters :: IO ()
+registerBuiltinExporters = do
+  _ <-
+    Registry.registerSpanExporterFactoryIfAbsent "otlp" $ do
+      otlpConfig <- loadExporterEnvironmentVariables
+      otlpExporter otlpConfig
+  pure ()
 
 
--- TODO, support multiple exporters
 detectExporters :: IO [SpanExporter]
 detectExporters = do
-  exportersInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_TRACES_EXPORTER"
+  registerBuiltinExporters
+  allExporters <- Registry.registeredSpanExporterFactories
+  rawExpEnv <- lookupEnv "OTEL_TRACES_EXPORTER"
+  let exportersInEnv = case rawExpEnv of
+        Nothing -> Nothing
+        Just "" -> Nothing
+        Just v -> Just $ filter (not . T.null) $ map T.strip $ T.splitOn "," $ T.pack v
   if exportersInEnv == Just ["none"]
     then pure []
     else do
       let envExporters = fromMaybe ["otlp"] exportersInEnv
-          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k knownExporters) envExporters
-          (_notFound, exporterIntializers) = partitionEithers exportersAndRegistryEntry
-      -- TODO, notFound logging
-      sequence exporterIntializers
-
-
--- -- detectMetricsExporterSelection :: _
--- -- TODO other metrics stuff
-
-detectResourceAttributes :: IO [(T.Text, Attribute)]
-detectResourceAttributes = do
-  mEnv <- lookupEnv "OTEL_RESOURCE_ATTRIBUTES"
-  case mEnv of
-    Nothing -> pure []
-    Just envVar -> case decodeBaggageHeader $ B.pack envVar of
-      Left err -> do
-        -- TODO logError
-        putStrLn err
-        pure []
-      Right ok ->
-        pure $
-          map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v)) $
-            H.toList $
-              Baggage.values ok
+          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ H.lookup k allExporters) envExporters
+          (notFound, exporterInitializers) = partitionEithers exportersAndRegistryEntry
+      mapM_ (\k -> otelLogWarning $ "Unknown exporter '" <> T.unpack k <> "' in OTEL_TRACES_EXPORTER, ignoring") notFound
+      sequence exporterInitializers
 
 
 readEnvDefault :: forall a. (Read a) => String -> a -> IO a
@@ -512,36 +812,13 @@ readEnvDefault k defaultValue =
   fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
 
 
+readEnvDefaultWithAlias :: forall a. (Read a) => String -> String -> a -> IO a
+readEnvDefaultWithAlias primary fallback defaultValue = do
+  mv <- lookupEnv primary
+  case mv >>= readMaybe of
+    Just v -> pure v
+    Nothing -> readEnvDefault fallback defaultValue
+
+
 readEnv :: forall a. (Read a) => String -> IO (Maybe a)
 readEnv k = (>>= readMaybe) <$> lookupEnv k
-
-
-{- | Use all built-in resource detectors to populate resource information.
-
- Currently used detectors include:
-
- - 'detectService'
- - 'detectProcess'
- - 'detectOperatingSystem'
- - 'detectHost'
- - 'detectTelemetry'
- - 'detectProcessRuntime'
-
- This list will grow in the future as more detectors are implemented.
-
- @since 0.0.1.0
--}
-detectBuiltInResources :: IO (Resource 'Nothing)
-detectBuiltInResources = do
-  svc <- detectService
-  processInfo <- detectProcess
-  osInfo <- detectOperatingSystem
-  host <- detectHost
-  let rs =
-        toResource svc
-          `mergeResources` toResource detectTelemetry
-          `mergeResources` toResource detectProcessRuntime
-          `mergeResources` toResource processInfo
-          `mergeResources` toResource osInfo
-          `mergeResources` toResource host
-  pure rs

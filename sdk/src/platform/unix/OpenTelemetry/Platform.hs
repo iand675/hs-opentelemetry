@@ -1,3 +1,8 @@
+{- |
+Module      : OpenTelemetry.Platform
+Description : Unix-specific platform utilities for the OpenTelemetry SDK.
+Stability   : experimental
+-}
 module OpenTelemetry.Platform where
 
 import Control.Exception (throwIO, try)

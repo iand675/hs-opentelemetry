@@ -1,52 +1,81 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
+{- |
+Module      : OpenTelemetry.Processor.Simple.LogRecord
+Description : Simple log record processor. Immediately forwards each log record to the exporter.
+Stability   : experimental
+-}
 module OpenTelemetry.Processor.Simple.LogRecord (
   SimpleLogRecordProcessorConfig (..),
   simpleLogRecordProcessor,
 ) where
 
-import Control.Concurrent.Async
-import Control.Concurrent.Chan.Unagi
+import Control.Concurrent.MVar
 import Control.Exception
-import Control.Monad
 import Data.IORef
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Internal.Logging (otelLogWarning)
+import System.Timeout (timeout)
 
 
-newtype SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
+-- | @since 0.0.1.0
+data SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
   { simpleLogRecordExporter :: LogRecordExporter
+  , simpleLogRecordExportTimeoutMicros :: !Int
+  -- ^ Export timeout in microseconds, defaults to 30,000,000 (30s)
   }
 
 
+{- | Simple log record processor that exports each log record synchronously in
+ @onEmit@.
+
+ Per the OTel specification, the simple processor passes log records directly
+ to the exporter. This means @onEmit@ blocks until the export completes,
+ matching Go, Java, .NET, C++, Rust, and Python SDKs.
+
+ Export calls are serialized via an internal MVar so that the exporter is
+ never invoked concurrently, per the spec requirement that a processor MUST
+ NOT invoke the exporter concurrently.
+
+ Use 'OpenTelemetry.Processor.Batch.LogRecord.batchLogRecordProcessor' for
+ non-blocking, production-grade log processing.
+
+ @since 0.4.0.0
+-}
 simpleLogRecordProcessor :: SimpleLogRecordProcessorConfig -> IO LogRecordProcessor
 simpleLogRecordProcessor SimpleLogRecordProcessorConfig {..} = do
-  (inChan :: InChan ReadWriteLogRecord, outChan :: OutChan ReadWriteLogRecord) <- newChan
-  exportWorker <- async $ forever $ do
-    rw <- readChanOnException outChan (>>= writeChan inChan)
-    let readable = mkReadableLogRecord rw
-    mask_ (logRecordExporterExport simpleLogRecordExporter (V.singleton readable))
-
+  shutdownRef <- newIORef False
+  exportLock <- newMVar ()
   pure
     LogRecordProcessor
-      { logRecordProcessorOnEmit = \lr _ctxt -> writeChan inChan lr
-      , logRecordProcessorShutdown = async $ mask $ \restore -> do
-          cancel exportWorker
-          restore $ do
-            drainAndExport outChan `finally` logRecordExporterShutdown simpleLogRecordExporter
+      { logRecordProcessorOnEmit = \lr _ctxt -> do
+          isShutdown <- readIORef shutdownRef
+          if isShutdown
+            then pure ()
+            else do
+              readable <- mkReadableLogRecord lr
+              withMVar exportLock $ \_ -> do
+                er <-
+                  try @SomeException $
+                    fromMaybe (Failure Nothing)
+                      <$> timeout simpleLogRecordExportTimeoutMicros (logRecordExporterExport simpleLogRecordExporter (V.singleton readable))
+                case er of
+                  Left ex ->
+                    otelLogWarning $ "Simple log record export failed: " <> show ex
+                  Right Success -> pure ()
+                  Right (Failure mex) ->
+                    otelLogWarning $
+                      "Simple log record export failed: "
+                        <> maybe "timeout or unspecified" show mex
+      , logRecordProcessorShutdown = do
+          atomicWriteIORef shutdownRef True
+          _ <- logRecordExporterForceFlush simpleLogRecordExporter
+          logRecordExporterShutdown simpleLogRecordExporter
           pure ShutdownSuccess
-      , logRecordProcessorForceFlush = logRecordExporterForceFlush simpleLogRecordExporter
+      , logRecordProcessorForceFlush = logRecordExporterForceFlush simpleLogRecordExporter >> pure FlushSuccess
       }
-  where
-    drainAndExport :: OutChan ReadWriteLogRecord -> IO ()
-    drainAndExport outChan = do
-      (Element m, _) <- tryReadChan outChan
-      mLr <- m
-      case mLr of
-        Nothing -> pure ()
-        Just rw -> do
-          let readable = mkReadableLogRecord rw
-          _ <- logRecordExporterExport simpleLogRecordExporter (V.singleton readable)
-          drainAndExport outChan
