@@ -77,6 +77,8 @@ plus protocol propagators.
 - Run the full benchmark suite: `make bench`
 - Run a shorter quick pass: `make bench.quick`
 - Output files are written to `benchmark-results/` as one JSON and one CSV per benchmark component.
+- The benchmark CLI contract lives in `scripts/run-benchmarks` (`--help` shows all options).
+- Component membership is defined in `benchmarks/components.txt`.
 
 ## Contributing
 
