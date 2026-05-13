@@ -46,18 +46,18 @@ main = do
   C.defaultMain
     [ C.bgroup
         "attributes"
-        [ C.bench "addAttributes-8" $ C.whnf (Attributes.addAttributes defaultAttributeLimits emptyAttributes) smallAttrs
-        , C.bench "addAttributes-64" $ C.whnf (Attributes.addAttributes defaultAttributeLimits emptyAttributes) mediumAttrs
-        , C.bench "addAttributes-256" $ C.whnf (Attributes.addAttributes defaultAttributeLimits emptyAttributes) largeAttrs
+        [ C.bench "addAttributes-small" $ C.whnf (Attributes.addAttributes defaultAttributeLimits emptyAttributes) smallAttrs
+        , C.bench "addAttributes-medium" $ C.whnf (Attributes.addAttributes defaultAttributeLimits emptyAttributes) mediumAttrs
+        , C.bench "addAttributes-large" $ C.whnf (Attributes.addAttributes defaultAttributeLimits emptyAttributes) largeAttrs
         ]
     , C.bgroup
         "baggage"
-        [ C.bench "encode-4" $ C.whnf encodeBaggageHeader baggageSmall
-        , C.bench "encode-32" $ C.whnf encodeBaggageHeader baggageMedium
-        , C.bench "encode-128" $ C.whnf encodeBaggageHeader baggageLarge
-        , C.bench "decode-4" $ C.whnf (decodedOk decodeBaggageHeader) encodedSmall
-        , C.bench "decode-32" $ C.whnf (decodedOk decodeBaggageHeader) encodedMedium
-        , C.bench "decode-128" $ C.whnf (decodedOk decodeBaggageHeader) encodedLarge
+        [ C.bench "encode-small" $ C.whnf encodeBaggageHeader baggageSmall
+        , C.bench "encode-medium" $ C.whnf encodeBaggageHeader baggageMedium
+        , C.bench "encode-large" $ C.whnf encodeBaggageHeader baggageLarge
+        , C.bench "decode-small" $ C.whnf (decodedOk decodeBaggageHeader) encodedSmall
+        , C.bench "decode-medium" $ C.whnf (decodedOk decodeBaggageHeader) encodedMedium
+        , C.bench "decode-large" $ C.whnf (decodedOk decodeBaggageHeader) encodedLarge
         ]
     , C.bgroup
         "span-lifecycle"

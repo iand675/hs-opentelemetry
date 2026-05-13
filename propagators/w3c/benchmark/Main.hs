@@ -28,10 +28,10 @@ main = do
         ]
     , C.bgroup
         "encodeTraceState"
-        [ C.bench "single-header-8" $ C.whnf encodeTraceState tsSmall
-        , C.bench "single-header-32" $ C.whnf encodeTraceState tsLarge
-        , C.bench "multi-header-8" $ C.whnf (encodeTraceStateMultiple 512) tsSmall
-        , C.bench "multi-header-32" $ C.whnf (encodeTraceStateMultiple 512) tsLarge
+        [ C.bench "single-header-small" $ C.whnf encodeTraceState tsSmall
+        , C.bench "single-header-large" $ C.whnf encodeTraceState tsLarge
+        , C.bench "multi-header-small" $ C.whnf (encodeTraceStateMultiple 512) tsSmall
+        , C.bench "multi-header-large" $ C.whnf (encodeTraceStateMultiple 512) tsLarge
         ]
     ]
 

@@ -79,6 +79,7 @@ plus protocol propagators.
 - Output files are written to `benchmark-results/` as one JSON and one CSV per benchmark component.
 - The benchmark CLI contract lives in `scripts/run-benchmarks` (`--help` shows all options).
 - Component membership is defined in `benchmarks/components.txt`.
+- Shared benchmark naming conventions are documented in `benchmarks/README.md`.
 
 ## Contributing
 
