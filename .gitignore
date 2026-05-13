@@ -7,8 +7,3 @@ client_session_key.aes
 .env.local
 dist-newstyle/
 .pre-commit-config.yaml
-/.do-results.json
-.devenv/
-
-# APM dependencies
-apm_modules/
