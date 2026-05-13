@@ -1,0 +1,5 @@
+hs-opentelemetry-api:bench:hs-opentelemetry-api-bench
+hs-opentelemetry-sdk:bench:hs-opentelemetry-sdk-bench
+hs-opentelemetry-propagator-w3c:bench:hs-opentelemetry-propagator-w3c-bench
+hs-opentelemetry-propagator-b3:bench:hs-opentelemetry-propagator-b3-bench
+hs-opentelemetry-propagator-datadog:bench:header-codec

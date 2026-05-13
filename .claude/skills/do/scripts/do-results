@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# Generic step-results recorder. Manages a workflow's lifecycle state +
+# step-record list in a JSON file, with all mutations done in bash+jq so the
+# caller doesn't burn LLM tokens on JSON arithmetic.
+#
+# The script knows only about workflow lifecycle (active, status), step records
+# (name, status, verification, timestamps, optional reason), and arbitrary
+# top-level fields the caller wants to remember. It does NOT know about any
+# workflow-specific concepts (e.g. forge or noGit are /do's business — the
+# /do workflow stashes them via `set` after init, not as init arguments).
+#
+# Usage:
+#   do-results init                           — create the lifecycle skeleton
+#   do-results step-start <name>              — stamp pendingStep with now; call at step start
+#   do-results step-end <status> <verif> [reason]
+#                                             — pop pendingStep, append with completedAt=now
+#   do-results step <name> <status> <verif> <startedAt> <completedAt> [reason]
+#                                             — append a completed step with explicit timestamps
+#                                               (use when startedAt comes from a single-shell caller)
+#                                               pass "now" for startedAt/completedAt to auto-generate UTC timestamp
+#   do-results set <field> <value>            — set/update an arbitrary top-level field
+#
+# Every mutation echoes a one-line confirmation on stdout so the caller can
+# trust the write succeeded without re-reading the JSON. Format:
+#   init       — init: startedAt=<ts>
+#   step-start — pending: <name>
+#   step-end   — recorded: <name> <status> (steps=<count>, pending=<none|name>)
+#   step       — recorded: <name> <status> (steps=<count>)
+#   set        — set: <field>=<value>
+
+set -euo pipefail
+
+# Resolve jq, falling back to nix if not on PATH
+if command -v jq &>/dev/null; then
+  JQ=jq
+else
+  JQ="nix run nixpkgs#jq --"
+fi
+
+FILE=".do-results.json"
+
+cmd="${1:?Usage: do-results <init|step-start|step-end|step|set> ...}"
+shift
+
+case "$cmd" in
+  init)
+    startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    cat > "$FILE" <<ENDJSON
+{
+  "workflow": "do",
+  "startedAt": "$startedAt",
+  "active": "working",
+  "status": "running",
+  "steps": []
+}
+ENDJSON
+    echo "init: startedAt=$startedAt"
+    ;;
+
+  step-start)
+    name="${1:?name required}"
+    startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    existing="$($JQ -r '.pendingStep.name // empty' "$FILE")"
+    if [ -n "$existing" ]; then
+      echo "do-results: pendingStep '$existing' already active — call step-end before starting '$name'" >&2
+      exit 1
+    fi
+    $JQ --arg n "$name" --arg sa "$startedAt" \
+       '.pendingStep = {"name":$n,"startedAt":$sa}' \
+       "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    echo "pending: $name"
+    ;;
+
+  step-end)
+    status="${1:?status required (passed|failed|skipped)}"
+    verif="${2:?verification required}"
+    reason="${3:-}"
+    completedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+    name="$($JQ -r '.pendingStep.name // empty' "$FILE")"
+    startedAt="$($JQ -r '.pendingStep.startedAt // empty' "$FILE")"
+    if [ -z "$name" ] || [ -z "$startedAt" ]; then
+      echo "do-results: no pendingStep — call step-start first" >&2
+      exit 1
+    fi
+
+    if [ -n "$reason" ]; then
+      $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
+         --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
+         '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}] | del(.pendingStep)' \
+         "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    else
+      $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
+         --arg sa "$startedAt" --arg ca "$completedAt" \
+         '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}] | del(.pendingStep)' \
+         "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    fi
+    count="$($JQ -r '.steps | length' "$FILE")"
+    pending="$($JQ -r '.pendingStep.name // "none"' "$FILE")"
+    echo "recorded: $name $status (steps=$count, pending=$pending)"
+    ;;
+
+  step)
+    name="${1:?name required}"
+    status="${2:?status required (passed|failed|skipped)}"
+    verif="${3:?verification required}"
+    startedAt="${4:?startedAt required}"
+    completedAt="${5:?completedAt required}"
+    reason="${6:-}"
+
+    # Resolve "now" sentinel to current UTC timestamp
+    [[ "$startedAt" == "now" ]] && startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    [[ "$completedAt" == "now" ]] && completedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+    if [ -n "$reason" ]; then
+      $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
+         --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
+         '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}]' \
+         "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    else
+      $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
+         --arg sa "$startedAt" --arg ca "$completedAt" \
+         '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}]' \
+         "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    fi
+    count="$($JQ -r '.steps | length' "$FILE")"
+    echo "recorded: $name $status (steps=$count)"
+    ;;
+
+  set)
+    field="${1:?field required}"
+    value="${2:?value required}"
+    # Handle booleans and strings
+    if [ "$value" = "true" ] || [ "$value" = "false" ]; then
+      $JQ --arg f "$field" --argjson v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    else
+      $JQ --arg f "$field" --arg v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    fi
+    echo "set: $field=$value"
+    ;;
+
+  *)
+    echo "Unknown command: $cmd" >&2
+    echo "Usage: do-results <init|step-start|step-end|step|set> ..." >&2
+    exit 1
+    ;;
+esac

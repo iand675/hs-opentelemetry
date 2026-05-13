@@ -1,0 +1,11 @@
+name: hs-opentelemetry
+version: 1.0.0
+type: hybrid
+
+targets:
+  - claude
+  - opencode
+
+dependencies:
+  apm:
+    - srid/agency#master

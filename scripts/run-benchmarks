@@ -4,15 +4,38 @@ set -euo pipefail
 
 output_dir="benchmark-results"
 quick="false"
+manifest_file="benchmarks/components.txt"
+components=()
+
+print_help() {
+  cat <<'EOF'
+Usage: ./scripts/run-benchmarks [--quick] [--output-dir DIR] [--component COMPONENT]
+
+Options:
+  --quick                 Enable Criterion quick mode.
+  --output-dir DIR        Directory for JSON/CSV benchmark outputs (default: benchmark-results).
+  --component COMPONENT   Run only the given benchmark component. Repeatable.
+
+When no --component options are provided, components are read from benchmarks/components.txt.
+EOF
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --help|-h)
+      print_help
+      exit 0
+      ;;
     --quick)
       quick="true"
       shift
       ;;
     --output-dir)
       output_dir="$2"
+      shift 2
+      ;;
+    --component)
+      components+=("$2")
       shift 2
       ;;
     *)
@@ -24,13 +47,19 @@ done
 
 mkdir -p "$output_dir"
 
-components=(
-  "hs-opentelemetry-api:bench:hs-opentelemetry-api-bench"
-  "hs-opentelemetry-sdk:bench:hs-opentelemetry-sdk-bench"
-  "hs-opentelemetry-propagator-w3c:bench:hs-opentelemetry-propagator-w3c-bench"
-  "hs-opentelemetry-propagator-b3:bench:hs-opentelemetry-propagator-b3-bench"
-  "hs-opentelemetry-propagator-datadog:bench:header-codec"
-)
+if [[ ${#components[@]} -eq 0 ]]; then
+  if [[ ! -f "$manifest_file" ]]; then
+    echo "Missing benchmark manifest: $manifest_file" >&2
+    exit 1
+  fi
+
+  while IFS= read -r component; do
+    if [[ -z "$component" || "$component" == \#* ]]; then
+      continue
+    fi
+    components+=("$component")
+  done < "$manifest_file"
+fi
 
 for component in "${components[@]}"; do
   slug="${component//:/-}"

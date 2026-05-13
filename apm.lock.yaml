@@ -1,0 +1,46 @@
+lockfile_version: '1'
+generated_at: '2026-05-13T20:08:18.777770+00:00'
+apm_version: 0.12.4
+dependencies:
+- repo_url: srid/agency
+  host: github.com
+  resolved_commit: bd39f372e9835505d814773e9756277ce1cc9711
+  resolved_ref: master
+  package_type: apm_package
+  deployed_files:
+  - .agents/skills/code-police
+  - .agents/skills/do
+  - .agents/skills/elegance
+  - .agents/skills/fact-check
+  - .agents/skills/forge-pr
+  - .agents/skills/hickey
+  - .agents/skills/lowy
+  - .agents/skills/ralph
+  - .agents/skills/talk
+  - .claude/agents/hickey.md
+  - .claude/agents/lowy.md
+  - .claude/hooks/agency/scripts/do-stop-guard.sh
+  - .claude/rules/apm-sources.md
+  - .claude/skills/code-police
+  - .claude/skills/do
+  - .claude/skills/elegance
+  - .claude/skills/fact-check
+  - .claude/skills/forge-pr
+  - .claude/skills/hickey
+  - .claude/skills/lowy
+  - .claude/skills/ralph
+  - .claude/skills/talk
+  - .opencode/agents/hickey.md
+  - .opencode/agents/lowy.md
+  deployed_file_hashes:
+    .claude/agents/hickey.md: sha256:10d9a4350a85752dc6658af8e0efb3d8be41803a2b6c73464e3d5b7a840435ad
+    .claude/agents/lowy.md: sha256:05aff7f6a91149a42c1fb9a3ca382a6f77bc39ac8a8d45436d443dd3349fb11e
+    .claude/hooks/agency/scripts/do-stop-guard.sh: sha256:cb033f86c15ffd3d09d8e4b74a61f55a70def4cc4131cc013b7368a2d23f3f33
+    .claude/rules/apm-sources.md: sha256:65640c481c347cc4edf50603f784d0b448b6395acc43419a4f8ad0c53de2db4b
+    .opencode/agents/hickey.md: sha256:10d9a4350a85752dc6658af8e0efb3d8be41803a2b6c73464e3d5b7a840435ad
+    .opencode/agents/lowy.md: sha256:05aff7f6a91149a42c1fb9a3ca382a6f77bc39ac8a8d45436d443dd3349fb11e
+  content_hash: sha256:19e7eb86aeecb85a70f361fa3bb838e98c687d162e9541cb5a2a651ab7871bbb
+local_deployed_files:
+- .claude/rules/conventions.md
+local_deployed_file_hashes:
+  .claude/rules/conventions.md: sha256:47284ae3c41d8892457f40ce5297db5e46405ac41449774182daf376d8d1d85a
