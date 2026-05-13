@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+output_dir="benchmark-results"
+quick="false"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --quick)
+      quick="true"
+      shift
+      ;;
+    --output-dir)
+      output_dir="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+mkdir -p "$output_dir"
+
+components=(
+  "hs-opentelemetry-api:bench:hs-opentelemetry-api-bench"
+  "hs-opentelemetry-sdk:bench:hs-opentelemetry-sdk-bench"
+  "hs-opentelemetry-propagator-w3c:bench:hs-opentelemetry-propagator-w3c-bench"
+  "hs-opentelemetry-propagator-b3:bench:hs-opentelemetry-propagator-b3-bench"
+  "hs-opentelemetry-propagator-datadog:bench:header-codec"
+)
+
+for component in "${components[@]}"; do
+  slug="${component//:/-}"
+  options="--csv=${output_dir}/${slug}.csv --json=${output_dir}/${slug}.json"
+  if [[ "$quick" == "true" ]]; then
+    options="${options} --quick"
+  fi
+
+  cabal bench "$component" --benchmark-options="$options"
+done

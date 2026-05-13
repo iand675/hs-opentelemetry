@@ -69,6 +69,15 @@ Fully instrumented application examples are available in the [examples](examples
 | Jaeger          | [hs-opentelemetry-propagator-jaeger](propagators/jaeger)   | OpenTelemetry.Propagator.Jaeger          | Not implemented.   |
 | Datadog         | [hs-opentelemetry-propagator-datadog](propagators/datadog) | OpenTelemetry.Propagator.Datadog         | :white_check_mark: |
 
+## Benchmarking
+
+This repository includes Criterion benchmark suites for core API and SDK paths,
+plus protocol propagators.
+
+- Run the full benchmark suite: `make bench`
+- Run a shorter quick pass: `make bench.quick`
+- Output files are written to `benchmark-results/` as one JSON and one CSV per benchmark component.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

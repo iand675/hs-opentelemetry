@@ -43,3 +43,17 @@ _tests:
     - -with-rtsopts=-N
     dependencies:
     - hs-opentelemetry-propagator-b3
+
+benchmarks:
+  hs-opentelemetry-propagator-b3-bench:
+    main:                Main.hs
+    source-dirs:         benchmark
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - bytestring
+    - criterion
+    - hs-opentelemetry-api
+    - hs-opentelemetry-propagator-b3

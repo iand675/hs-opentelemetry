@@ -54,6 +54,14 @@ format:
 format.check:
 	fourmolu --mode check $$(git ls-files '*.hs' ':!:otlp/' ':!:semantic-conventions/src/OpenTelemetry/SemanticConventions.hs')
 
+.PHONY: bench
+bench:
+	./scripts/run-benchmarks
+
+.PHONY: bench.quick
+bench.quick:
+	./scripts/run-benchmarks --quick
+
 
 # Hack https://www.gnu.org/software/make/manual/html_node/Force-Targets.html
 FORCE:

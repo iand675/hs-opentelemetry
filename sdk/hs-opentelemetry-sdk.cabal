@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -130,4 +130,19 @@ test-suite hs-opentelemetry-sdk-test
     , hspec
     , text
     , unordered-containers
+  default-language: Haskell2010
+
+benchmark hs-opentelemetry-sdk-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_hs_opentelemetry_sdk
+  hs-source-dirs:
+      benchmark
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , criterion
+    , hs-opentelemetry-api
+    , hs-opentelemetry-sdk
   default-language: Haskell2010
