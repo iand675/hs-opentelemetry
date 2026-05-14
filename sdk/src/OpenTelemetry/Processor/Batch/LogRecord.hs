@@ -76,11 +76,15 @@ data ProcessorMessage = ScheduledFlush | MaxExportFlush | Shutdown
 
 batchLogRecordProcessor :: (MonadIO m) => BatchLogRecordProcessorConfig -> m LogRecordProcessor
 batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
-  unless rtsSupportsBoundThreads $ error "The hs-opentelemetry batch log record processor requires -threaded"
+  unless rtsSupportsBoundThreads $
+    throwIO $
+      userError "The hs-opentelemetry batch log record processor requires -threaded"
   batch <- newIORef $ emptyBuffer batchLogMaxQueueSize batchLogMaxExportBatchSize
   workSignal <- newEmptyTMVarIO
   shutdownSignal <- newEmptyTMVarIO
 
+  -- mask_ ensures the export cannot be interrupted by an async exception
+  -- mid-flight, which would lose the batch without reporting an error.
   let publish batchToExport =
         mask_ $
           logRecordExporterExport batchLogExporter batchToExport

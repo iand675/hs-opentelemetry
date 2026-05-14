@@ -27,12 +27,16 @@ simpleLogRecordProcessor SimpleLogRecordProcessorConfig {..} = do
   exportWorker <- async $ forever $ do
     rw <- readChanOnException outChan (>>= writeChan inChan)
     let readable = mkReadableLogRecord rw
+    -- mask_ prevents async exceptions from interrupting a single-record export mid-flight.
     mask_ (logRecordExporterExport simpleLogRecordExporter (V.singleton readable))
 
   pure
     LogRecordProcessor
       { logRecordProcessorOnEmit = \lr _ctxt -> writeChan inChan lr
       , logRecordProcessorShutdown = async $ mask $ \restore -> do
+          -- Cancel the export loop first, then drain remaining records.
+          -- mask/restore ensures we always run the exporter shutdown even
+          -- if drainAndExport throws.
           cancel exportWorker
           restore $ do
             drainAndExport outChan `finally` logRecordExporterShutdown simpleLogRecordExporter
