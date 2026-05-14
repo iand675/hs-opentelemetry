@@ -112,13 +112,18 @@ tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs
     other-modules:
+    - OpenTelemetry.BaggageSpec
+    - OpenTelemetry.ContextSpec
     - OpenTelemetry.MeterProviderSpec
+    - OpenTelemetry.ResourceSpec
+    - OpenTelemetry.TraceSpec
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - async
     - clock
     - hs-opentelemetry-api
     - hs-opentelemetry-sdk
