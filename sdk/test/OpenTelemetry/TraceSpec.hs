@@ -6,6 +6,7 @@
 
 module OpenTelemetry.TraceSpec where
 
+import Control.Concurrent.Async (async, mapConcurrently_)
 import Control.Monad
 import Data.Foldable (traverse_)
 import qualified Data.HashMap.Strict as HM
@@ -14,9 +15,12 @@ import Data.Int
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Vector as V
 import GHC.Stack (withFrozenCallStack)
-import OpenTelemetry.Attributes (AttributeLimits (..), Attributes, defaultAttributeLimits, lookupAttribute)
+import OpenTelemetry.Attributes (AttributeLimits (..), Attributes, defaultAttributeLimits, getCount, getDropped, lookupAttribute)
 import qualified OpenTelemetry.Context as Context
+import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
+import OpenTelemetry.Processor.Span (SpanProcessor (..))
 import OpenTelemetry.Resource
 import OpenTelemetry.Trace
 import OpenTelemetry.Trace.Core
@@ -24,12 +28,26 @@ import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Id.Generator
 import OpenTelemetry.Trace.Id.Generator.Default
 import qualified OpenTelemetry.Trace.TraceState as TraceState
+import OpenTelemetry.Util (appendOnlyBoundedCollectionSize, appendOnlyBoundedCollectionValues)
 import System.Clock
 import Test.Hspec
 
 
 asIO :: IO a -> IO a
 asIO = id
+
+
+{- | A no-op span processor that does nothing. Useful for creating a TracerProvider
+that actually records spans (a provider with no processors drops all spans).
+-}
+noopProcessor :: SpanProcessor
+noopProcessor =
+  SpanProcessor
+    { spanProcessorOnStart = \_ _ -> pure ()
+    , spanProcessorOnEnd = \_ -> pure ()
+    , spanProcessorShutdown = async (pure ShutdownSuccess)
+    , spanProcessorForceFlush = pure ()
+    }
 
 
 pattern HostName :: Text
@@ -60,9 +78,35 @@ spec = describe "Trace" $ do
     -- specify "Get a Tracer with schema_url" $ asIO $ do
     --   p <- getGlobalTracerProvider
     --   void $ getTracer p "woo" (tracerOptions { tracerSchema = Just "https://woo.com" })
-    specify "Safe for concurrent calls" pending
-    specify "Shutdown" pending
-    specify "ForceFlush" pending
+    specify "Safe for concurrent calls" $ do
+      p <- getGlobalTracerProvider
+      mapConcurrently_
+        ( \i -> do
+            let t = makeTracer p "concurrent-tracer" tracerOptions
+            s <- createSpan t Context.empty "concurrent_span" defaultSpanArguments
+            addAttribute s "index" (i :: Int)
+            endSpan s Nothing
+        )
+        [1 :: Int .. 100]
+    specify "Shutdown" $ do
+      -- Use the global provider which has processors, so spans are actually recorded
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "test" tracerOptions
+      s1 <- createSpan t Context.empty "before_shutdown" defaultSpanArguments
+      rec1 <- isRecording s1
+      rec1 `shouldBe` True
+      endSpan s1 Nothing
+      -- Create a fresh provider to test shutdown without disturbing the global one
+      p2 <- createTracerProvider [] (emptyTracerProviderOptions :: TracerProviderOptions)
+      -- Shutdown should complete without throwing
+      shutdownTracerProvider p2
+      -- ForceFlush after shutdown should still succeed (gracefully)
+      result <- forceFlushTracerProvider p2 Nothing
+      result `shouldBe` FlushSuccess
+    specify "ForceFlush" $ do
+      p <- getGlobalTracerProvider
+      result <- forceFlushTracerProvider p Nothing
+      result `shouldBe` FlushSuccess
     specify "Resource initialization prioritizes user override, then OTEL_RESOURCE_ATTRIBUTES env var" $ do
       let getInitialResourceAttrs :: Resource 'Nothing -> IO Attributes
           getInitialResourceAttrs resource = do
@@ -139,8 +183,39 @@ spec = describe "Trace" $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
       void $ createSpan t Context.empty "create_root_span" defaultSpanArguments
-    specify "Create with default parent (active span)" pending
-    specify "Create with parent from Context" pending
+    specify "Create with default parent (active span)" $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      parentSpan <- createSpan t Context.empty "parent_span" defaultSpanArguments
+      parentSC <- getSpanContext parentSpan
+      -- Insert parent span into context, simulating "active span"
+      let ctxt = Context.insertSpan parentSpan Context.empty
+      childSpan <- createSpan t ctxt "child_span" defaultSpanArguments
+      childIS <- unsafeReadSpan childSpan
+      -- The child's parent should be set and should match the parent span's context
+      spanParent childIS `shouldSatisfy` isJust
+      parentSC' <- getSpanContext (let Just p' = spanParent childIS in p')
+      traceId parentSC' `shouldBe` traceId parentSC
+      spanId parentSC' `shouldBe` spanId parentSC
+      -- Parent and child should share the same trace ID
+      childSC <- getSpanContext childSpan
+      traceId childSC `shouldBe` traceId parentSC
+    specify "Create with parent from Context" $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      parentSpan <- createSpan t Context.empty "parent_span" defaultSpanArguments
+      parentSC <- getSpanContext parentSpan
+      -- Explicitly construct context with the parent span
+      let ctxt = Context.insertSpan parentSpan Context.empty
+      childSpan <- createSpan t ctxt "child_span" defaultSpanArguments
+      childIS <- unsafeReadSpan childSpan
+      -- Verify parent linkage
+      spanParent childIS `shouldSatisfy` isJust
+      childSC <- getSpanContext childSpan
+      -- Child should inherit the trace ID from the parent
+      traceId childSC `shouldBe` traceId parentSC
+      -- Child should have a different span ID
+      spanId childSC `shouldNotBe` spanId parentSC
     -- specify "No explict parent from Span/SpanContext allowed" pending
     specify "Processor.OnStart receives parent Context" pending
     specify "UpdateName" $ asIO $ do
@@ -148,7 +223,13 @@ spec = describe "Trace" $ do
       let t = makeTracer p "woo" tracerOptions
       s <- createSpan t Context.empty "create_root_span" defaultSpanArguments
       updateName s "renamed_span"
-    specify "User-defined start timestamp" pending
+    specify "User-defined start timestamp" $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      ts <- getTimestamp
+      s <- createSpan t Context.empty "custom_start" defaultSpanArguments {startTime = Just ts}
+      is <- unsafeReadSpan s
+      spanStart is `shouldBe` ts
     specify "End" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
@@ -197,8 +278,44 @@ spec = describe "Trace" $ do
         spanStatus i `shouldBe` Ok
 
     specify "Safe for concurrent calls" pending
-    specify "events collection size limit" pending
-    specify "attribute collection size limit" pending
+    specify "events collection size limit" $ do
+      let eventLimit = 5
+          opts =
+            emptyTracerProviderOptions
+              { tracerProviderOptionsSpanLimits = defaultSpanLimits {eventCountLimit = Just eventLimit}
+              , tracerProviderOptionsIdGenerator = defaultIdGenerator
+              }
+      p <- createTracerProvider [noopProcessor] opts
+      let t = makeTracer p "woo" tracerOptions
+      s <- createSpan t Context.empty "limited_events_span" defaultSpanArguments
+      -- Add more events than the limit
+      forM_ [1 :: Int .. 10] $ \i ->
+        addEvent s $
+          NewEvent
+            { newEventName = "event-" <> Text.pack (show i)
+            , newEventAttributes = mempty
+            , newEventTimestamp = Nothing
+            }
+      is <- unsafeReadSpan s
+      appendOnlyBoundedCollectionSize (spanEvents is) `shouldBe` eventLimit
+    specify "attribute collection size limit" $ do
+      let attrLimit = 5
+          opts =
+            emptyTracerProviderOptions
+              { tracerProviderOptionsAttributeLimits = defaultAttributeLimits {attributeCountLimit = Just attrLimit}
+              , tracerProviderOptionsIdGenerator = defaultIdGenerator
+              }
+      p <- createTracerProvider [noopProcessor] opts
+      let t = makeTracer p "woo" tracerOptions
+      s <- createSpan t Context.empty "limited_attrs_span" defaultSpanArguments
+      -- Add more attributes than the limit allows
+      -- Note: the span already has some built-in attributes (thread.id, code.* etc.)
+      forM_ [1 :: Int .. 20] $ \i ->
+        addAttribute s ("attr-" <> Text.pack (show i)) i
+      is <- unsafeReadSpan s
+      -- The count of stored attributes should not exceed the limit.
+      getCount (spanAttributes is) `shouldSatisfy` (<= attrLimit)
+      getDropped (spanAttributes is) `shouldSatisfy` (> 0)
     specify "links collection size limit" pending
 
   describe "Span attributes" $ do
@@ -307,11 +424,37 @@ spec = describe "Trace" $ do
           , newEventAttributes = mempty
           , newEventTimestamp = Nothing
           }
-    specify "Add order preserved" pending
+    specify "Add order preserved" $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- createSpan t Context.empty "ordered_events_span" defaultSpanArguments
+      let eventNames = ["first", "second", "third", "fourth"]
+      forM_ eventNames $ \name ->
+        addEvent s $
+          NewEvent
+            { newEventName = name
+            , newEventAttributes = mempty
+            , newEventTimestamp = Nothing
+            }
+      is <- unsafeReadSpan s
+      let recordedNames = V.toList $ V.map eventName $ appendOnlyBoundedCollectionValues (spanEvents is)
+      recordedNames `shouldBe` eventNames
     specify "Safe for concurrent calls" pending
 
   describe "Span exceptions" $ do
-    specify "RecordException" pending
+    specify "RecordException" $ do
+      p <- getGlobalTracerProvider
+      let t = makeTracer p "woo" tracerOptions
+      s <- createSpan t Context.empty "exception_span" defaultSpanArguments
+      let err = userError "test exception"
+      recordException s mempty Nothing err
+      is <- unsafeReadSpan s
+      let events = V.toList $ appendOnlyBoundedCollectionValues (spanEvents is)
+      length events `shouldBe` 1
+      let ev = head events
+      eventName ev `shouldBe` "exception"
+      -- Verify the exception attributes are present
+      lookupAttribute (eventAttributes ev) "exception.message" `shouldSatisfy` isJust
     specify "RecordException with extra parameters" pending
 
   describe "Sampling" $ do

@@ -122,12 +122,17 @@ test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.BaggageSpec
+      OpenTelemetry.ContextSpec
       OpenTelemetry.MeterProviderSpec
+      OpenTelemetry.ResourceSpec
+      OpenTelemetry.TraceSpec
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      async
+    , base >=4.7 && <5
     , clock
     , hs-opentelemetry-api
     , hs-opentelemetry-sdk
