@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-instrumentation-yesod
 
+## 0.1.1.1
+
+- Relax `hs-opentelemetry-api` bounds to support 0.3.x
+
 ## 0.1.1.0
 
 - Set exception details when using WAI and Yesod instrumentation together (#121).
