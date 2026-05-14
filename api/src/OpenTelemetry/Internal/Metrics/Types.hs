@@ -47,9 +47,9 @@ data InstrumentKind
 
 -- | Histogram aggregation chosen for an instrument (explicit bounds vs exponential).
 data HistogramAggregation
-  = HistogramAggregationExplicit !(Vector Double)
+  = HistogramAggregationExplicit (Vector Double)
   | -- | Exponential histogram scale (OTel mapping index uses @2^scale@).
-    HistogramAggregationExponential !Int32
+    HistogramAggregationExponential Int32
   deriving stock (Eq, Show, Generic)
 
 
@@ -62,11 +62,11 @@ instance Hashable HistogramAggregation where
 
 -- | Advisory parameters (spec: implementations MAY ignore; SDK SHOULD honor where defined).
 data AdvisoryParameters = AdvisoryParameters
-  { advisoryExplicitBucketBoundaries :: !(Maybe [Double])
+  { advisoryExplicitBucketBoundaries :: Maybe [Double]
   -- ^ Histogram explicit bucket boundaries (sorted ascending in SDK when applied).
-  , advisoryAttributeKeys :: !(Maybe [Text])
+  , advisoryAttributeKeys :: Maybe [Text]
   -- ^ Recommended attribute keys for the resulting metric stream (development in spec).
-  , advisoryHistogramAggregation :: !(Maybe HistogramAggregation)
+  , advisoryHistogramAggregation :: Maybe HistogramAggregation
   -- ^ Prefer explicit buckets or exponential histogram when set; views may override.
   }
   deriving stock (Eq, Show, Generic)
@@ -83,29 +83,29 @@ defaultAdvisoryParameters =
 
 -- | Synchronous counter (non-negative increments). @a@ is 'Int64' or 'Double'.
 data Counter a = Counter
-  { counterAdd :: !(a -> Attributes -> IO ())
-  , counterEnabled :: !(IO Bool)
+  { counterAdd :: a -> Attributes -> IO ()
+  , counterEnabled :: IO Bool
   }
 
 
 -- | Synchronous additive instrument that may increase or decrease.
 data UpDownCounter a = UpDownCounter
-  { upDownCounterAdd :: !(a -> Attributes -> IO ())
-  , upDownCounterEnabled :: !(IO Bool)
+  { upDownCounterAdd :: a -> Attributes -> IO ()
+  , upDownCounterEnabled :: IO Bool
   }
 
 
 -- | Synchronous histogram (records 'Double' measurements).
 data Histogram = Histogram
-  { histogramRecord :: !(Double -> Attributes -> IO ())
-  , histogramEnabled :: !(IO Bool)
+  { histogramRecord :: Double -> Attributes -> IO ()
+  , histogramEnabled :: IO Bool
   }
 
 
 -- | Synchronous gauge (last value wins per collect cycle semantics in SDK).
 data Gauge a = Gauge
-  { gaugeRecord :: !(a -> Attributes -> IO ())
-  , gaugeEnabled :: !(IO Bool)
+  { gaugeRecord :: a -> Attributes -> IO ()
+  , gaugeEnabled :: IO Bool
   }
 
 
@@ -123,53 +123,53 @@ newtype ObservableCallbackHandle = ObservableCallbackHandle
 
 -- | Asynchronous counter: monotonic cumulative values observed per collection.
 data ObservableCounter a = ObservableCounter
-  { observableCounterRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
-  , observableCounterInstrumentScope :: !InstrumentationLibrary
-  , observableCounterInstrumentName :: !Text
-  , observableCounterEnabled :: !(IO Bool)
+  { observableCounterRegisterCallback :: (ObservableResult a -> IO ()) -> IO ObservableCallbackHandle
+  , observableCounterInstrumentScope :: InstrumentationLibrary
+  , observableCounterInstrumentName :: Text
+  , observableCounterEnabled :: IO Bool
   }
 
 
 -- | Asynchronous up-down counter.
 data ObservableUpDownCounter a = ObservableUpDownCounter
-  { observableUpDownCounterRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
-  , observableUpDownCounterInstrumentScope :: !InstrumentationLibrary
-  , observableUpDownCounterInstrumentName :: !Text
-  , observableUpDownCounterEnabled :: !(IO Bool)
+  { observableUpDownCounterRegisterCallback :: (ObservableResult a -> IO ()) -> IO ObservableCallbackHandle
+  , observableUpDownCounterInstrumentScope :: InstrumentationLibrary
+  , observableUpDownCounterInstrumentName :: Text
+  , observableUpDownCounterEnabled :: IO Bool
   }
 
 
 -- | Asynchronous gauge.
 data ObservableGauge a = ObservableGauge
-  { observableGaugeRegisterCallback :: !((ObservableResult a -> IO ()) -> IO ObservableCallbackHandle)
-  , observableGaugeInstrumentScope :: !InstrumentationLibrary
-  , observableGaugeInstrumentName :: !Text
-  , observableGaugeEnabled :: !(IO Bool)
+  { observableGaugeRegisterCallback :: (ObservableResult a -> IO ()) -> IO ObservableCallbackHandle
+  , observableGaugeInstrumentScope :: InstrumentationLibrary
+  , observableGaugeInstrumentName :: Text
+  , observableGaugeEnabled :: IO Bool
   }
 
 
 -- | Creates instruments for a single instrumentation scope.
 data Meter = Meter
-  { meterInstrumentationScope :: !InstrumentationLibrary
-  , meterCreateCounterInt64 :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Int64))
-  , meterCreateCounterDouble :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Double))
-  , meterCreateUpDownCounterInt64 :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter Int64))
-  , meterCreateUpDownCounterDouble :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter Double))
-  , meterCreateHistogram :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO Histogram)
-  , meterCreateGaugeInt64 :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Int64))
-  , meterCreateGaugeDouble :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Double))
-  , meterCreateObservableCounterInt64 :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64))
-  , meterCreateObservableCounterDouble :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double))
-  , meterCreateObservableUpDownCounterInt64 :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64))
-  , meterCreateObservableUpDownCounterDouble :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double))
-  , meterCreateObservableGaugeInt64 :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64))
-  , meterCreateObservableGaugeDouble :: !(Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double))
+  { meterInstrumentationScope :: InstrumentationLibrary
+  , meterCreateCounterInt64 :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Int64)
+  , meterCreateCounterDouble :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Double)
+  , meterCreateUpDownCounterInt64 :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter Int64)
+  , meterCreateUpDownCounterDouble :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter Double)
+  , meterCreateHistogram :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO Histogram
+  , meterCreateGaugeInt64 :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Int64)
+  , meterCreateGaugeDouble :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Double)
+  , meterCreateObservableCounterInt64 :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+  , meterCreateObservableCounterDouble :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+  , meterCreateObservableUpDownCounterInt64 :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+  , meterCreateObservableUpDownCounterDouble :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+  , meterCreateObservableGaugeInt64 :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+  , meterCreateObservableGaugeDouble :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
   }
 
 
 -- | Entry point for metrics API (spec: global default SHOULD exist).
 data MeterProvider = MeterProvider
-  { meterProviderGetMeter :: !(InstrumentationLibrary -> IO Meter)
-  , meterProviderShutdown :: !(IO ShutdownResult)
-  , meterProviderForceFlush :: !(IO FlushResult)
+  { meterProviderGetMeter :: InstrumentationLibrary -> IO Meter
+  , meterProviderShutdown :: IO ShutdownResult
+  , meterProviderForceFlush :: IO FlushResult
   }

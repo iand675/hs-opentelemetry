@@ -82,9 +82,9 @@ defaultAttributeLimits =
 
 
 data Attributes = Attributes
-  { attributeMap :: !Map.AttributeMap
-  , attributesCount :: {-# UNPACK #-} !Int
-  , attributesDropped :: {-# UNPACK #-} !Int
+  { attributeMap :: Map.AttributeMap
+  , attributesCount :: {-# UNPACK #-} Int
+  , attributesDropped :: {-# UNPACK #-} Int
   }
   deriving stock (Show, Generic, Eq, Ord, TH.Lift)
 

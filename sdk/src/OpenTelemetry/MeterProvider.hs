@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -23,9 +22,9 @@ module OpenTelemetry.MeterProvider (
   collectResourceMetrics,
 ) where
 
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
-import Data.Foldable (toList)
 import qualified Data.HashMap.Strict as H
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef, writeIORef)
@@ -82,9 +81,9 @@ import System.Clock (Clock (Realtime), getTime, toNanoSecs)
 
 
 data SdkMeterExemplarOptions = SdkMeterExemplarOptions
-  { exemplarFilter :: !MetricsExemplarFilter
+  { exemplarFilter :: MetricsExemplarFilter
   -- ^ Spec default is TraceBased. Configured via OTEL_METRICS_EXEMPLAR_FILTER or explicit option.
-  , exemplarReservoirLimit :: !Int
+  , exemplarReservoirLimit :: Int
   }
 
 
@@ -97,10 +96,10 @@ defaultSdkMeterExemplarOptions =
 
 
 data SdkMeterProviderOptions = SdkMeterProviderOptions
-  { cardinalityLimit :: !Int
-  , aggregationTemporality :: !AggregationTemporality
-  , views :: ![View]
-  , exemplarOptions :: !SdkMeterExemplarOptions
+  { cardinalityLimit :: Int
+  , aggregationTemporality :: AggregationTemporality
+  , views :: [View]
+  , exemplarOptions :: SdkMeterExemplarOptions
   }
 
 
@@ -115,8 +114,8 @@ defaultSdkMeterProviderOptions =
 
 
 data SdkMeterStorageState = SdkMeterStorageState
-  { storageCells :: !(H.HashMap DimKey Cell)
-  , seriesCountByDims :: !(H.HashMap InstrumentDims Int)
+  { storageCells :: H.HashMap DimKey Cell
+  , seriesCountByDims :: H.HashMap InstrumentDims Int
   }
 
 
@@ -129,26 +128,26 @@ emptyStorageState =
 
 
 data SdkMeterEnv = SdkMeterEnv
-  { sdkMeterStorage :: !(IORef SdkMeterStorageState)
-  , sdkMeterCollectCallbacks :: !(IORef (Seq (IO ())))
-  , sdkMeterResource :: !MaterializedResources
-  , sdkMeterShutdown :: !(IORef Bool)
-  , sdkMeterCardinalityLimit :: !Int
-  , sdkMeterAggregationTemporality :: !AggregationTemporality
-  , sdkMeterViews :: ![View]
-  , sdkMeterExemplarOptions :: !SdkMeterExemplarOptions
-  , sdkMeterStartTimeNanos :: !Word64
+  { sdkMeterStorage :: IORef SdkMeterStorageState
+  , sdkMeterCollectCallbacks :: IORef (Seq (IO ()))
+  , sdkMeterResource :: MaterializedResources
+  , sdkMeterShutdown :: IORef Bool
+  , sdkMeterCardinalityLimit :: Int
+  , sdkMeterAggregationTemporality :: AggregationTemporality
+  , sdkMeterViews :: [View]
+  , sdkMeterExemplarOptions :: SdkMeterExemplarOptions
+  , sdkMeterStartTimeNanos :: Word64
   }
 
 
 data InstrumentDims = InstrumentDims
-  { dimScope :: !InstrumentationLibrary
-  , dimName :: !Text
-  , dimKind :: !InstrumentKind
-  , dimUnit :: !Text
-  , dimDescription :: !Text
-  , dimHistogramAggregation :: !(Maybe HistogramAggregation)
-  , dimExportAttributeKeys :: !(Maybe [Text])
+  { dimScope :: InstrumentationLibrary
+  , dimName :: Text
+  , dimKind :: InstrumentKind
+  , dimUnit :: Text
+  , dimDescription :: Text
+  , dimHistogramAggregation :: Maybe HistogramAggregation
+  , dimExportAttributeKeys :: Maybe [Text]
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Hashable)
@@ -158,49 +157,49 @@ type DimKey = (InstrumentDims, Attributes)
 
 
 data SumCell = SumCell
-  { scValue :: !Double
-  , scMonotonic :: !Bool
-  , scIsInt :: !Bool
-  , scExemplars :: !(Vector MetricExemplar)
+  { scValue :: Double
+  , scMonotonic :: Bool
+  , scIsInt :: Bool
+  , scExemplars :: Vector MetricExemplar
   }
 
 
 data HistCell = HistCell
-  { hcBuckets :: !(Vector Word64)
-  , hcBounds :: !(Vector Double)
-  , hcSum :: !Double
-  , hcCount :: !Word64
-  , hcMin :: !(Maybe Double)
-  , hcMax :: !(Maybe Double)
-  , hcExemplars :: !(Vector MetricExemplar)
+  { hcBuckets :: Vector Word64
+  , hcBounds :: Vector Double
+  , hcSum :: Double
+  , hcCount :: Word64
+  , hcMin :: Maybe Double
+  , hcMax :: Maybe Double
+  , hcExemplars :: Vector MetricExemplar
   }
 
 
 data ExpHistCell = ExpHistCell
-  { ehcScale :: !Int32
-  , ehcPositive :: !(IM.IntMap Word64)
-  , ehcNegative :: !(IM.IntMap Word64)
-  , ehcZeroCount :: !Word64
-  , ehcSum :: !Double
-  , ehcCount :: !Word64
-  , ehcMin :: !(Maybe Double)
-  , ehcMax :: !(Maybe Double)
-  , ehcExemplars :: !(Vector MetricExemplar)
+  { ehcScale :: Int32
+  , ehcPositive :: IM.IntMap Word64
+  , ehcNegative :: IM.IntMap Word64
+  , ehcZeroCount :: Word64
+  , ehcSum :: Double
+  , ehcCount :: Word64
+  , ehcMin :: Maybe Double
+  , ehcMax :: Maybe Double
+  , ehcExemplars :: Vector MetricExemplar
   }
 
 
 data GaugeCell = GaugeCell
-  { gcValue :: !(Either Int64 Double)
-  , gcTimeUnixNano :: !Word64
-  , gcExemplars :: !(Vector MetricExemplar)
+  { gcValue :: Either Int64 Double
+  , gcTimeUnixNano :: Word64
+  , gcExemplars :: Vector MetricExemplar
   }
 
 
 data Cell
-  = CsSum !SumCell
-  | CsHist !HistCell
-  | CsExpHist !ExpHistCell
-  | CsGauge !GaugeCell
+  = CsSum SumCell
+  | CsHist HistCell
+  | CsExpHist ExpHistCell
+  | CsGauge GaugeCell
 
 
 nowNanos :: IO Word64
@@ -1041,17 +1040,16 @@ top-level entry per resource when forwarding to an exporter.
 collectResourceMetrics :: (MonadIO m) => SdkMeterEnv -> m [ResourceMetricsExport]
 collectResourceMetrics env = liftIO $ do
   cbs <- readIORef (sdkMeterCollectCallbacks env)
-  mapM_ id (toList cbs)
+  sequence_ cbs
   st <- readIORef (sdkMeterStorage env)
   t <- nowNanos
   let temp = sdkMeterAggregationTemporality env
       snap = storageCells st
       startT = sdkMeterStartTimeNanos env
       rme = buildResourceExport (sdkMeterResource env) startT t temp snap
-  _ <-
-    if temp == AggregationDelta
-      then atomicModifyIORef' (sdkMeterStorage env) $ \s -> (applyDeltaReset s, ())
-      else pure ()
+  when (temp == AggregationDelta) $
+    atomicModifyIORef' (sdkMeterStorage env) $
+      \s -> (applyDeltaReset s, ())
   pure [rme]
 
 
@@ -1109,24 +1107,23 @@ buildMetricExports startT t temp dims series =
     KindGauge -> gaugeExport False
     KindAsyncGauge -> gaugeExport True
   where
+    -- Fold over series, keeping only cells that match the expected constructor.
+    foldCells :: ((Attributes, Cell, InstrumentDims) -> Maybe a) -> Vector a
+    foldCells f = V.fromList $ foldr (\trip acc -> maybe acc (: acc) (f trip)) [] series
+
     sumExport mon =
       let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsSum sc ->
-                      SumDataPoint
-                        { sumDataPointStartTimeUnixNano = startT
-                        , sumDataPointTimeUnixNano = t
-                        , sumDataPointValue = if scIsInt sc then Left (round (scValue sc)) else Right (scValue sc)
-                        , sumDataPointAttributes = applyDimAttrs d attrs
-                        , sumDataPointExemplars = scExemplars sc
-                        }
-                        : acc
-                    _ -> acc
-                )
-                []
-                series
+            foldCells $ \(attrs, cell, d) -> case cell of
+              CsSum sc ->
+                Just
+                  SumDataPoint
+                    { sumDataPointStartTimeUnixNano = startT
+                    , sumDataPointTimeUnixNano = t
+                    , sumDataPointValue = if scIsInt sc then Left (round (scValue sc)) else Right (scValue sc)
+                    , sumDataPointAttributes = applyDimAttrs d attrs
+                    , sumDataPointExemplars = scExemplars sc
+                    }
+              _ -> Nothing
           isInt =
             any
               ( \(_, cell, _) ->
@@ -1140,62 +1137,47 @@ buildMetricExports startT t temp dims series =
 
     histExport =
       let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsHist hc ->
-                      HistogramDataPoint
-                        { histogramDataPointStartTimeUnixNano = startT
-                        , histogramDataPointTimeUnixNano = t
-                        , histogramDataPointCount = hcCount hc
-                        , histogramDataPointSum = hcSum hc
-                        , histogramDataPointBucketCounts = hcBuckets hc
-                        , histogramDataPointExplicitBounds = hcBounds hc
-                        , histogramDataPointAttributes = applyDimAttrs d attrs
-                        , histogramDataPointMin = hcMin hc
-                        , histogramDataPointMax = hcMax hc
-                        , histogramDataPointExemplars = hcExemplars hc
-                        }
-                        : acc
-                    _ -> acc
-                )
-                []
-                series
+            foldCells $ \(attrs, cell, d) -> case cell of
+              CsHist hc ->
+                Just
+                  HistogramDataPoint
+                    { histogramDataPointStartTimeUnixNano = startT
+                    , histogramDataPointTimeUnixNano = t
+                    , histogramDataPointCount = hcCount hc
+                    , histogramDataPointSum = hcSum hc
+                    , histogramDataPointBucketCounts = hcBuckets hc
+                    , histogramDataPointExplicitBounds = hcBounds hc
+                    , histogramDataPointAttributes = applyDimAttrs d attrs
+                    , histogramDataPointMin = hcMin hc
+                    , histogramDataPointMax = hcMax hc
+                    , histogramDataPointExemplars = hcExemplars hc
+                    }
+              _ -> Nothing
       in [ MetricExportHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp points
          ]
 
     expHistExport =
       let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsExpHist ehc ->
-                      expHistToDataPoint startT t (applyDimAttrs d attrs) ehc : acc
-                    _ -> acc
-                )
-                []
-                series
+            foldCells $ \(attrs, cell, d) -> case cell of
+              CsExpHist ehc ->
+                Just $ expHistToDataPoint startT t (applyDimAttrs d attrs) ehc
+              _ -> Nothing
       in [ MetricExportExponentialHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp points
          ]
 
     gaugeExport _isAsync =
       let points =
-            V.fromList $
-              foldr
-                ( \(attrs, cell, d) acc -> case cell of
-                    CsGauge gc ->
-                      GaugeDataPoint
-                        { gaugeDataPointStartTimeUnixNano = startT
-                        , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
-                        , gaugeDataPointValue = gcValue gc
-                        , gaugeDataPointAttributes = applyDimAttrs d attrs
-                        , gaugeDataPointExemplars = gcExemplars gc
-                        }
-                        : acc
-                    _ -> acc
-                )
-                []
-                series
+            foldCells $ \(attrs, cell, d) -> case cell of
+              CsGauge gc ->
+                Just
+                  GaugeDataPoint
+                    { gaugeDataPointStartTimeUnixNano = startT
+                    , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
+                    , gaugeDataPointValue = gcValue gc
+                    , gaugeDataPointAttributes = applyDimAttrs d attrs
+                    , gaugeDataPointExemplars = gcExemplars gc
+                    }
+              _ -> Nothing
           isInt = case series of
             (_, CsGauge gc, _) : _ -> case gcValue gc of
               Left _ -> True
