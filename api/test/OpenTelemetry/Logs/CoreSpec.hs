@@ -34,7 +34,7 @@ spec = describe "Core" $ do
       let lp =
             createLoggerProvider [] $
               LoggerProviderOptions
-                { loggerProviderOptionsResource =
+                { loggerProviderOptionsResources =
                     materializeResources $
                       toResource
                         OperatingSystem

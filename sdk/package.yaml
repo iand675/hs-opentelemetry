@@ -98,6 +98,7 @@ tests:
     - clock
     - hs-opentelemetry-api
     - hs-opentelemetry-sdk
+    - hs-opentelemetry-exporter-in-memory
     - hspec
     - text
     - unordered-containers

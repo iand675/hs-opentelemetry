@@ -7,7 +7,6 @@ import Control.Monad.IO.Class
 import qualified Data.HashMap.Strict as H
 import Data.IORef (modifyIORef')
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
 import qualified OpenTelemetry.Attributes as Attributes
 import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Context

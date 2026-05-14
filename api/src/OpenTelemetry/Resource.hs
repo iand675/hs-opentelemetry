@@ -1,9 +1,8 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 -----------------------------------------------------------------------------
 
@@ -45,9 +44,11 @@ module OpenTelemetry.Resource (
   getMaterializedResourcesAttributes,
 ) where
 
+import Data.Hashable (Hashable)
 import Data.Maybe (catMaybes)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import GHC.TypeLits
 import OpenTelemetry.Attributes
 
@@ -178,7 +179,10 @@ data MaterializedResources = MaterializedResources
   { materializedResourcesSchema :: Maybe String
   , materializedResourcesAttributes :: Attributes
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+
+instance Hashable MaterializedResources
 
 
 {- | A placeholder for 'MaterializedResources' when no resource information is

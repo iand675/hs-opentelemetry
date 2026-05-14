@@ -105,6 +105,7 @@ module OpenTelemetry.Trace.Core (
   addEvent,
 
   -- ** Enriching @Span@s with additional information
+  alterFlags,
   updateName,
   OpenTelemetry.Trace.Core.addAttribute,
   OpenTelemetry.Trace.Core.addAttributes,
@@ -693,7 +694,7 @@ spanIsRemote (Dropped _) = pure False
 unsafeReadSpan :: (MonadIO m) => Span -> m ImmutableSpan
 unsafeReadSpan s =
   toImmutableSpan s >>= \case
-    Right span -> pure span
+    Right span' -> pure span'
     Left frozenOrDropped -> case frozenOrDropped of
       SpanFrozen -> error "This span is from another process"
       SpanDropped -> error "This span was dropped"

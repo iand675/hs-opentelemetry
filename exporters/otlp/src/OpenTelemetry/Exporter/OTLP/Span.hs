@@ -2,7 +2,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -----------------------------------------------------------------------------
@@ -35,7 +34,6 @@ module OpenTelemetry.Exporter.OTLP.Span (
   otlpExporter,
 
   -- * Configuring the exporter
-  OTLPExporterConfig (..),
   CompressionFormat (..),
   Protocol (..),
   loadExporterEnvironmentVariables,
@@ -45,7 +43,6 @@ module OpenTelemetry.Exporter.OTLP.Span (
   otlpExporterGRpcEndpoint,
 ) where
 
-import Codec.Compression.GZip
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
@@ -53,11 +50,8 @@ import Control.Monad.IO.Class
 import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
-import qualified Data.CaseInsensitive as CI
-import Data.Char (toLower)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
-import Data.Maybe
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
 import Data.Text (Text)
@@ -72,11 +66,10 @@ import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
-import qualified OpenTelemetry.Baggage as Baggage
-import OpenTelemetry.Environment
+import OpenTelemetry.Exporter.OTLP.Config
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
-import OpenTelemetry.Resource
+import OpenTelemetry.Resource hiding (Resource)
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
 import qualified OpenTelemetry.Trace.Core as OT
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
@@ -84,168 +77,16 @@ import OpenTelemetry.Util
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import Proto.Opentelemetry.Proto.Common.V1.Common
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
+import Proto.Opentelemetry.Proto.Resource.V1.Resource
+import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Resource_Fields
 import Proto.Opentelemetry.Proto.Trace.V1.Trace
 import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Trace_Fields
-import System.Environment
-import qualified System.IO as IO
 import Text.Read (readMaybe)
 
 
 -- | Initial the OTLP 'Exporter'
 otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
-otlpExporter conf = httpOtlpExporter conf
-
-
---------------------------------------------------------------------------------
--- OTLP Exporter configuration.
---------------------------------------------------------------------------------
-
-data OTLPExporterConfig = OTLPExporterConfig
-  { otlpEndpoint :: Maybe String
-  , otlpTracesEndpoint :: Maybe String
-  , otlpMetricsEndpoint :: Maybe String
-  , otlpInsecure :: Bool
-  , otlpSpanInsecure :: Bool
-  , otlpMetricInsecure :: Bool
-  , otlpCertificate :: Maybe FilePath
-  , otlpTracesCertificate :: Maybe FilePath
-  , otlpMetricCertificate :: Maybe FilePath
-  , otlpHeaders :: Maybe [Header]
-  , otlpTracesHeaders :: Maybe [Header]
-  , otlpMetricsHeaders :: Maybe [Header]
-  , otlpCompression :: Maybe CompressionFormat
-  , otlpTracesCompression :: Maybe CompressionFormat
-  , otlpMetricsCompression :: Maybe CompressionFormat
-  , otlpTimeout :: Maybe Int
-  -- ^ Measured in milliseconds.
-  , otlpTracesTimeout :: Maybe Int
-  -- ^ Measured in milliseconds.
-  , otlpMetricsTimeout :: Maybe Int
-  -- ^ Measured in milliseconds.
-  , otlpProtocol :: Maybe Protocol
-  , otlpTracesProtocol :: Maybe Protocol
-  , otlpMetricsProtocol :: Maybe Protocol
-  }
-
-
-loadExporterEnvironmentVariables :: (MonadIO m) => m OTLPExporterConfig
-loadExporterEnvironmentVariables = liftIO $ do
-  OTLPExporterConfig
-    <$> lookupEnv "OTEL_EXPORTER_OTLP_ENDPOINT"
-    <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
-    <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT"
-    <*> lookupBooleanEnv "OTEL_EXPORTER_OTLP_INSECURE"
-    <*> lookupBooleanEnv "OTEL_EXPORTER_OTLP_SPAN_INSECURE"
-    <*> lookupBooleanEnv "OTEL_EXPORTER_OTLP_METRIC_INSECURE"
-    <*> lookupEnv "OTEL_EXPORTER_OTLP_CERTIFICATE"
-    <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE"
-    <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE"
-    <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_HEADERS")
-    <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_HEADERS")
-    <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_HEADERS")
-    <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_COMPRESSION")
-    <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION")
-    <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_COMPRESSION")
-    <*> (traverse readTimeout =<< lookupEnv "OTEL_EXPORTER_OTLP_TIMEOUT")
-    <*> (traverse readTimeout =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_TIMEOUT")
-    <*> (traverse readTimeout =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_TIMEOUT")
-    <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_PROTOCOL")
-    <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL")
-    <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")
-  where
-    decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
-      Left _ -> mempty
-      Right baggageFmt ->
-        (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
-
-
-{- |
-The OpenTelemetry Protocol Compression Format.
--}
-data CompressionFormat
-  = None
-  | GZip
-
-
-{- |
-Internal helper.
-Read the `CompressionFormat` from a `String`.
-Defaults to `None` for unsupported values.
--}
-readCompressionFormat :: (MonadIO m) => String -> m CompressionFormat
-readCompressionFormat compressionFormat =
-  compressionFormat & fmap toLower & \case
-    "gzip" -> pure GZip
-    "none" -> pure None
-    _ -> do
-      putWarningLn $ "Warning: unsupported compression format '" <> compressionFormat <> "'"
-      pure None
-
-
-{- |
-The OpenTelemetry Protocol. Either HTTP/Protobuf or gRPC.
-
-Note: gRPC and HTTP/JSON will likely be supported eventually, but not yet.
--}
-data Protocol {- GRpc | HttpJson | -}
-  = HttpProtobuf
-
-
-{- |
-Internal helper.
-Read a `Protocol` from a `String`.
-Defaults to `HttpProtobuf` for unsupported values.
--}
-readProtocol :: (MonadIO m) => String -> m Protocol
-readProtocol protocol =
-  protocol & fmap toLower & \case
-    "http/protobuf" -> pure HttpProtobuf
-    _ -> do
-      putWarningLn $ "Warning: unsupported protocol '" <> protocol <> "'"
-      pure HttpProtobuf
-
-
-{- |
-Internal helper.
-Read a timeout from a `String`.
--}
-readTimeout :: (MonadIO m) => String -> m Int
-readTimeout timeout =
-  case readMaybe timeout of
-    Just timeoutInt | timeoutInt >= 0 -> pure timeoutInt
-    _otherwise -> do
-      putWarningLn $ "Warning: unsupported timeout '" <> timeout <> "'"
-      pure defaultExporterTimeout
-
-
-{- |
-Internal helper.
-The default OTLP timeout in milliseconds.
--}
-defaultExporterTimeout :: Int
-defaultExporterTimeout = 10_000
-
-
-{- |
-The default OTLP HTTP endpoint.
--}
-otlpExporterHttpEndpoint :: C.ByteString
-otlpExporterHttpEndpoint = "http://localhost:4318"
-
-
-{- |
-The default OTLP gRPC endpoint.
--}
-otlpExporterGRpcEndpoint :: C.ByteString
-otlpExporterGRpcEndpoint = "http://localhost:4317"
-
-
-{- |
-Internal helper.
-Print a warning to stderr
--}
-putWarningLn :: (MonadIO m) => String -> m ()
-putWarningLn = liftIO . IO.hPutStrLn IO.stderr
+otlpExporter = httpOtlpExporter
 
 
 --------------------------------------------------------------------------------
@@ -368,61 +209,19 @@ httpTracesResponseTimeout conf = case otlpTracesTimeout conf <|> otlpTimeout con
     responseTimeoutMilli = responseTimeoutMicro . (* 1_000)
 
 
-{- |
-Internal helper.
-Get the HTTP host from the `OTLPExporterConfig`.
--}
-httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost $ otlpEndpoint conf
-  where
-    -- TODO shouldn't this be http://localhost:4317 ?
-    defaultHost = "http://localhost:4318"
-
-
-{- |
-Internal helper.
-The type of `L.ByteString` encoders.
--}
-type Encoder = L.ByteString -> L.ByteString
-
-
-{- |
-Internal helper.
-Get a function that adds the compression header to the HTTP headers and a function that performs the compression.
--}
-httpCompression :: OTLPExporterConfig -> ([(HeaderName, C.ByteString)], Encoder)
-httpCompression conf =
-  case otlpTracesCompression conf <|> otlpCompression conf of
-    Just GZip -> ([(hContentEncoding, "gzip")], compress)
-    _otherwise -> ([], id)
-
-
-{- |
-Internal helper.
-The mimetype used by HTTP/Protobuf.
--}
-httpProtobufMimeType :: C.ByteString
-httpProtobufMimeType = "application/x-protobuf"
-
-
-{- |
-Internal helper.
-Get the base HTTP headers for the request.
--}
-httpBaseHeaders :: OTLPExporterConfig -> Request -> [(HeaderName, C.ByteString)]
-httpBaseHeaders conf req =
-  concat
-    [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
-    , fromMaybe [] (otlpHeaders conf)
-    , fromMaybe [] (otlpTracesHeaders conf)
-    , requestHeaders req
-    ]
-
-
 --------------------------------------------------------------------------------
 -- Convert from `hs-opentelemetry-api` data model into OTLP Protobuf.
 --------------------------------------------------------------------------------
+
+makeResourceProto :: MaterializedResources -> Resource
+makeResourceProto r =
+  defMessage
+    & Resource_Fields.vec'attributes
+      .~ attributesToProto (getMaterializedResourcesAttributes r)
+    -- TODO
+    & Resource_Fields.droppedAttributesCount
+      .~ 0
+
 
 {- |
 Translate a collection of `OT.ImmutableSpan` spans to an OTLP `ExportTraceServiceRequest`.
@@ -435,14 +234,7 @@ immutableSpansToProtobuf completedSpans = do
       & Trace_Fields.vec'resourceSpans
         .~ Vector.singleton
           ( defMessage
-              & Trace_Fields.resource
-                .~ ( defMessage
-                      & Trace_Fields.vec'attributes
-                        .~ attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
-                      -- TODO
-                      & Trace_Fields.droppedAttributesCount
-                        .~ 0
-                   )
+              & Trace_Fields.resource .~ makeResourceProto someResourceGroup
               -- TODO, seems like spans need to be emitted via an API
               -- that lets us keep them grouped by instrumentation originator
               & Trace_Fields.scopeSpans
@@ -594,8 +386,7 @@ attributesToProto =
   V.fromList
     . fmap attributeToKeyValue
     . H.toList
-    . snd
-    . ((,) <$> getCount <*> getAttributeMap)
+    . getAttributeMap
   where
     primAttributeToAnyValue = \case
       TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
