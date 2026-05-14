@@ -674,114 +674,75 @@ mkMeter :: SdkMeterEnv -> InstrumentationLibrary -> Meter
 mkMeter env scope =
   Meter
     { meterInstrumentationScope = scope
-    , meterCreateCounterInt64 = mkCounterI64 env scope KindCounter True True
-    , meterCreateCounterDouble = mkCounterDbl env scope KindCounter True False
-    , meterCreateUpDownCounterInt64 = mkUpDownI64 env scope
-    , meterCreateUpDownCounterDouble = mkUpDownDbl env scope
-    , meterCreateHistogram = mkHistogram env scope
-    , meterCreateGaugeInt64 = mkGaugeI64 env scope
-    , meterCreateGaugeDouble = mkGaugeDbl env scope
-    , meterCreateObservableCounterInt64 = mkObsCounterI64 env scope
-    , meterCreateObservableCounterDouble = mkObsCounterDbl env scope
-    , meterCreateObservableUpDownCounterInt64 = mkObsUDCI64 env scope
-    , meterCreateObservableUpDownCounterDouble = mkObsUDCDbl env scope
-    , meterCreateObservableGaugeInt64 = mkObsGaugeI64 env scope
-    , meterCreateObservableGaugeDouble = mkObsGaugeDbl env scope
+    , meterCreateCounterInt64 = mkSyncSum KindCounter True True (\n -> (fromIntegral n, Just (Left n)))
+    , meterCreateCounterDouble = mkSyncSum KindCounter True False (\v -> (v, Just (Right v)))
+    , meterCreateUpDownCounterInt64 = mkUpDown True (\n -> (fromIntegral n, Just (Left n)))
+    , meterCreateUpDownCounterDouble = mkUpDown False (\v -> (v, Just (Right v)))
+    , meterCreateHistogram = mkHistogram
+    , meterCreateGaugeInt64 = mkGauge (\n -> (Left n, Just (Left n)))
+    , meterCreateGaugeDouble = mkGauge (\v -> (Right v, Just (Right v)))
+    , meterCreateObservableCounterInt64 = mkObsSum KindAsyncCounter True True (\n -> (fromIntegral n, Just (Left n)))
+    , meterCreateObservableCounterDouble = mkObsSum KindAsyncCounter True False (\v -> (v, Just (Right v)))
+    , meterCreateObservableUpDownCounterInt64 = mkObsUDC True (\n -> (fromIntegral n, Just (Left n)))
+    , meterCreateObservableUpDownCounterDouble = mkObsUDC False (\v -> (v, Just (Right v)))
+    , meterCreateObservableGaugeInt64 = mkObsGauge (\n -> (Left n, Just (Left n)))
+    , meterCreateObservableGaugeDouble = mkObsGauge (\v -> (Right v, Just (Right v)))
     }
   where
     views = sdkMeterViews env
     exOpts = sdkMeterExemplarOptions env
+    ref = sdkMeterStorage env
+    lim = sdkMeterCardinalityLimit env
 
-    mkCounterI64 :: SdkMeterEnv -> InstrumentationLibrary -> InstrumentKind -> Bool -> Bool -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Int64)
-    mkCounterI64 e sc k mono isInt name mUnit mDesc adv = do
+    resolveDims :: InstrumentKind -> Text -> Maybe Text -> Maybe Text -> Maybe HistogramAggregation -> AdvisoryParameters -> InstrumentDims
+    resolveDims k name mUnit mDesc mAgg adv =
+      let vName = viewOverrideName views k name
+          vDesc = viewOverrideDescription views k name mDesc
+      in dimsFrom scope vName k mUnit vDesc mAgg (exportKeysFor views k name adv)
+
+    -- \| Common guard: drop instrument if views say so, or if validation fails.
+    -- On success, returns the resolved dims; on failure, returns Nothing.
+    guardInstrument :: InstrumentKind -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Maybe InstrumentDims)
+    guardInstrument k name mUnit mDesc adv = do
       if shouldDropInstrument views k name
-        then pure $ Counter (\_ _ -> pure ()) (pure False)
+        then pure Nothing
         else do
           ok <- validateOrNoop name mUnit
-          if ok
-            then do
-              let vName = viewOverrideName views k name
-                  vDesc = viewOverrideDescription views k name mDesc
-                  dims =
-                    dimsFrom sc vName k mUnit vDesc Nothing (exportKeysFor views k name adv)
-                  ref = sdkMeterStorage e
-                  lim = sdkMeterCardinalityLimit e
-              pure $
-                Counter
-                  { counterAdd = \n attrs ->
-                      addSum (fromIntegral n) mono isInt (Just (Left n)) (dims, attrs) ref lim exOpts
-                  , counterEnabled = pure True
-                  }
-            else pure $ Counter (\_ _ -> pure ()) (pure False)
+          pure $ if ok then Just (resolveDims k name mUnit mDesc Nothing adv) else Nothing
 
-    mkCounterDbl :: SdkMeterEnv -> InstrumentationLibrary -> InstrumentKind -> Bool -> Bool -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Double)
-    mkCounterDbl e sc k mono isInt name mUnit mDesc adv = do
-      if shouldDropInstrument views k name
-        then pure $ Counter (\_ _ -> pure ()) (pure False)
-        else do
-          ok <- validateOrNoop name mUnit
-          if ok
-            then do
-              let vName = viewOverrideName views k name
-                  vDesc = viewOverrideDescription views k name mDesc
-                  dims =
-                    dimsFrom sc vName k mUnit vDesc Nothing (exportKeysFor views k name adv)
-                  ref = sdkMeterStorage e
-                  lim = sdkMeterCardinalityLimit e
-              pure $
-                Counter
-                  { counterAdd = \v attrs ->
-                      addSum v mono isInt (Just (Right v)) (dims, attrs) ref lim exOpts
-                  , counterEnabled = pure True
-                  }
-            else pure $ Counter (\_ _ -> pure ()) (pure False)
+    -- Synchronous sum instruments (Counter Int64, Counter Double)
+    mkSyncSum :: InstrumentKind -> Bool -> Bool -> (a -> (Double, Maybe (Either Int64 Double))) -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter a)
+    mkSyncSum k mono isInt convert name mUnit mDesc adv = do
+      mDims <- guardInstrument k name mUnit mDesc adv
+      case mDims of
+        Nothing -> pure $ Counter (\_ _ -> pure ()) (pure False)
+        Just dims ->
+          pure $
+            Counter
+              { counterAdd = \val attrs ->
+                  let (dbl, ex) = convert val
+                  in addSum dbl mono isInt ex (dims, attrs) ref lim exOpts
+              , counterEnabled = pure True
+              }
 
-    mkUpDownI64 :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter Int64)
-    mkUpDownI64 e sc name mUnit mDesc adv = do
-      if shouldDropInstrument views KindUpDownCounter name
-        then pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
-        else do
-          ok <- validateOrNoop name mUnit
-          if ok
-            then do
-              let vName = viewOverrideName views KindUpDownCounter name
-                  vDesc = viewOverrideDescription views KindUpDownCounter name mDesc
-                  dims =
-                    dimsFrom sc vName KindUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindUpDownCounter name adv)
-                  ref = sdkMeterStorage e
-                  lim = sdkMeterCardinalityLimit e
-              pure $
-                UpDownCounter
-                  { upDownCounterAdd = \n attrs ->
-                      addSum (fromIntegral n) False True (Just (Left n)) (dims, attrs) ref lim exOpts
-                  , upDownCounterEnabled = pure True
-                  }
-            else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
+    -- UpDownCounter (non-monotonic sum)
+    mkUpDown :: Bool -> (a -> (Double, Maybe (Either Int64 Double))) -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter a)
+    mkUpDown isInt convert name mUnit mDesc adv = do
+      mDims <- guardInstrument KindUpDownCounter name mUnit mDesc adv
+      case mDims of
+        Nothing -> pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
+        Just dims ->
+          pure $
+            UpDownCounter
+              { upDownCounterAdd = \val attrs ->
+                  let (dbl, ex) = convert val
+                  in addSum dbl False isInt ex (dims, attrs) ref lim exOpts
+              , upDownCounterEnabled = pure True
+              }
 
-    mkUpDownDbl :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (UpDownCounter Double)
-    mkUpDownDbl e sc name mUnit mDesc adv = do
-      if shouldDropInstrument views KindUpDownCounter name
-        then pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
-        else do
-          ok <- validateOrNoop name mUnit
-          if ok
-            then do
-              let vName = viewOverrideName views KindUpDownCounter name
-                  vDesc = viewOverrideDescription views KindUpDownCounter name mDesc
-                  dims =
-                    dimsFrom sc vName KindUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindUpDownCounter name adv)
-                  ref = sdkMeterStorage e
-                  lim = sdkMeterCardinalityLimit e
-              pure $
-                UpDownCounter
-                  { upDownCounterAdd = \v attrs ->
-                      addSum v False False (Just (Right v)) (dims, attrs) ref lim exOpts
-                  , upDownCounterEnabled = pure True
-                  }
-            else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
-
-    mkHistogram :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO Histogram
-    mkHistogram e sc name mUnit mDesc adv = do
+    -- Histogram (explicit or exponential aggregation)
+    mkHistogram :: Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO Histogram
+    mkHistogram name mUnit mDesc adv = do
       if shouldDropInstrument views KindHistogram name
         then pure $ Histogram (\_ _ -> pure ()) (pure False)
         else do
@@ -791,241 +752,137 @@ mkMeter env scope =
             else case resolveHistogramAggregation views name adv of
               Left () -> pure $ Histogram (\_ _ -> pure ()) (pure False)
               Right agg -> do
-                let vName = viewOverrideName views KindHistogram name
-                    vDesc = viewOverrideDescription views KindHistogram name mDesc
-                    dimsBase =
-                      dimsFrom sc vName KindHistogram mUnit vDesc (Just agg) (exportKeysFor views KindHistogram name adv)
-                    ref = sdkMeterStorage e
-                    lim = sdkMeterCardinalityLimit e
+                let dims = resolveDims KindHistogram name mUnit mDesc (Just agg) adv
                 case agg of
                   HistogramAggregationExplicit bounds ->
                     pure $
                       Histogram
                         { histogramRecord = \v attrs ->
-                            recordHist bounds v (Just v) (dimsBase, attrs) ref lim exOpts
+                            recordHist bounds v (Just v) (dims, attrs) ref lim exOpts
                         , histogramEnabled = pure True
                         }
                   HistogramAggregationExponential scale ->
                     pure $
                       Histogram
                         { histogramRecord = \v attrs ->
-                            recordExpHist scale v (Just v) (dimsBase, attrs) ref lim exOpts
+                            recordExpHist scale v (Just v) (dims, attrs) ref lim exOpts
                         , histogramEnabled = pure True
                         }
 
-    mkGaugeI64 :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Int64)
-    mkGaugeI64 e sc name mUnit mDesc adv = do
-      if shouldDropInstrument views KindGauge name
-        then pure $ Gauge (\_ _ -> pure ()) (pure False)
-        else do
-          ok <- validateOrNoop name mUnit
-          if ok
-            then do
-              let vName = viewOverrideName views KindGauge name
-                  vDesc = viewOverrideDescription views KindGauge name mDesc
-                  dims =
-                    dimsFrom sc vName KindGauge mUnit vDesc Nothing (exportKeysFor views KindGauge name adv)
-                  ref = sdkMeterStorage e
-                  lim = sdkMeterCardinalityLimit e
-              pure $
-                Gauge
-                  { gaugeRecord = \n attrs -> do
-                      t <- nowNanos
-                      recordGauge (Left n) t (Just (Left n)) (dims, attrs) ref lim exOpts
-                  , gaugeEnabled = pure True
-                  }
-            else pure $ Gauge (\_ _ -> pure ()) (pure False)
-
-    mkGaugeDbl :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge Double)
-    mkGaugeDbl e sc name mUnit mDesc adv = do
-      if shouldDropInstrument views KindGauge name
-        then pure $ Gauge (\_ _ -> pure ()) (pure False)
-        else do
-          ok <- validateOrNoop name mUnit
-          if ok
-            then do
-              let vName = viewOverrideName views KindGauge name
-                  vDesc = viewOverrideDescription views KindGauge name mDesc
-                  dims =
-                    dimsFrom sc vName KindGauge mUnit vDesc Nothing (exportKeysFor views KindGauge name adv)
-                  ref = sdkMeterStorage e
-                  lim = sdkMeterCardinalityLimit e
-              pure $
-                Gauge
-                  { gaugeRecord = \v attrs -> do
-                      t <- nowNanos
-                      recordGauge (Right v) t (Just (Right v)) (dims, attrs) ref lim exOpts
-                  , gaugeEnabled = pure True
-                  }
-            else pure $ Gauge (\_ _ -> pure ()) (pure False)
+    -- Synchronous gauge
+    mkGauge :: (a -> (Either Int64 Double, Maybe (Either Int64 Double))) -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Gauge a)
+    mkGauge convert name mUnit mDesc adv = do
+      mDims <- guardInstrument KindGauge name mUnit mDesc adv
+      case mDims of
+        Nothing -> pure $ Gauge (\_ _ -> pure ()) (pure False)
+        Just dims ->
+          pure $
+            Gauge
+              { gaugeRecord = \val attrs -> do
+                  t <- nowNanos
+                  let (gv, ex) = convert val
+                  recordGauge gv t ex (dims, attrs) ref lim exOpts
+              , gaugeEnabled = pure True
+              }
 
     registerCollect :: IO () -> IO ()
     registerCollect act =
       atomicModifyIORef' (sdkMeterCollectCallbacks env) $ \s -> (s Seq.|> act, ())
 
-    obsEnabled :: InstrumentKind -> Text -> IO Bool
-    obsEnabled k name = pure $ not (shouldDropInstrument views k name)
-
-    mkObsCounterI64 :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
-    mkObsCounterI64 e sc name mUnit mDesc adv cbs = do
+    -- Observable sum instruments (ObservableCounter, ObservableUpDownCounter)
+    mkObsSum
+      :: InstrumentKind
+      -> Bool
+      -> Bool
+      -> (a -> (Double, Maybe (Either Int64 Double)))
+      -> Text
+      -> Maybe Text
+      -> Maybe Text
+      -> AdvisoryParameters
+      -> [ObservableResult a -> IO ()]
+      -> IO (ObservableCounter a)
+    mkObsSum k mono isInt convert name mUnit mDesc adv cbs = do
       ok <- validateOrNoop name mUnit
       if not ok
-        then pure $ ObservableCounter (\_ -> pure (ObservableCallbackHandle (pure ()))) sc name (pure False)
+        then pure $ ObservableCounter (\_ -> pure (ObservableCallbackHandle (pure ()))) scope name (pure False)
         else do
-          let vName = viewOverrideName views KindAsyncCounter name
-              vDesc = viewOverrideDescription views KindAsyncCounter name mDesc
-              dims =
-                dimsFrom sc vName KindAsyncCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncCounter name adv)
-              ref = sdkMeterStorage e
-              lim = sdkMeterCardinalityLimit e
-              res = ObservableResult $ \n attrs ->
-                addSum (fromIntegral n) True True (Just (Left n)) (dims, attrs) ref lim exOpts
+          let dims = resolveDims k name mUnit mDesc Nothing adv
+              res = ObservableResult $ \val attrs ->
+                let (dbl, ex) = convert val
+                in addSum dbl mono isInt ex (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
-          en <- obsEnabled KindAsyncCounter name
+          let en = not (shouldDropInstrument views k name)
           pure $
             ObservableCounter
               { observableCounterRegisterCallback = \cb -> do
                   registerCollect (cb res)
                   pure (ObservableCallbackHandle (pure ()))
-              , observableCounterInstrumentScope = sc
+              , observableCounterInstrumentScope = scope
               , observableCounterInstrumentName = name
               , observableCounterEnabled = pure en
               }
 
-    mkObsCounterDbl :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
-    mkObsCounterDbl e sc name mUnit mDesc adv cbs = do
+    -- Observable up-down counter
+    mkObsUDC
+      :: Bool
+      -> (a -> (Double, Maybe (Either Int64 Double)))
+      -> Text
+      -> Maybe Text
+      -> Maybe Text
+      -> AdvisoryParameters
+      -> [ObservableResult a -> IO ()]
+      -> IO (ObservableUpDownCounter a)
+    mkObsUDC isInt convert name mUnit mDesc adv cbs = do
       ok <- validateOrNoop name mUnit
       if not ok
-        then pure $ ObservableCounter (\_ -> pure (ObservableCallbackHandle (pure ()))) sc name (pure False)
+        then pure $ ObservableUpDownCounter (\_ -> pure (ObservableCallbackHandle (pure ()))) scope name (pure False)
         else do
-          let vName = viewOverrideName views KindAsyncCounter name
-              vDesc = viewOverrideDescription views KindAsyncCounter name mDesc
-              dims =
-                dimsFrom sc vName KindAsyncCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncCounter name adv)
-              ref = sdkMeterStorage e
-              lim = sdkMeterCardinalityLimit e
-              res = ObservableResult $ \v attrs ->
-                addSum v True False (Just (Right v)) (dims, attrs) ref lim exOpts
+          let dims = resolveDims KindAsyncUpDownCounter name mUnit mDesc Nothing adv
+              res = ObservableResult $ \val attrs ->
+                let (dbl, ex) = convert val
+                in addSum dbl False isInt ex (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
-          en <- obsEnabled KindAsyncCounter name
-          pure $
-            ObservableCounter
-              { observableCounterRegisterCallback = \cb -> do
-                  registerCollect (cb res)
-                  pure (ObservableCallbackHandle (pure ()))
-              , observableCounterInstrumentScope = sc
-              , observableCounterInstrumentName = name
-              , observableCounterEnabled = pure en
-              }
-
-    mkObsUDCI64 :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
-    mkObsUDCI64 e sc name mUnit mDesc adv cbs = do
-      ok <- validateOrNoop name mUnit
-      if not ok
-        then pure $ ObservableUpDownCounter (\_ -> pure (ObservableCallbackHandle (pure ()))) sc name (pure False)
-        else do
-          let vName = viewOverrideName views KindAsyncUpDownCounter name
-              vDesc = viewOverrideDescription views KindAsyncUpDownCounter name mDesc
-              dims =
-                dimsFrom sc vName KindAsyncUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncUpDownCounter name adv)
-              ref = sdkMeterStorage e
-              lim = sdkMeterCardinalityLimit e
-              res = ObservableResult $ \n attrs ->
-                addSum (fromIntegral n) False True (Just (Left n)) (dims, attrs) ref lim exOpts
-              run = mapM_ ($ res) cbs
-          registerCollect run
-          en <- obsEnabled KindAsyncUpDownCounter name
+          let en = not (shouldDropInstrument views KindAsyncUpDownCounter name)
           pure $
             ObservableUpDownCounter
               { observableUpDownCounterRegisterCallback = \cb -> do
                   registerCollect (cb res)
                   pure (ObservableCallbackHandle (pure ()))
-              , observableUpDownCounterInstrumentScope = sc
+              , observableUpDownCounterInstrumentScope = scope
               , observableUpDownCounterInstrumentName = name
               , observableUpDownCounterEnabled = pure en
               }
 
-    mkObsUDCDbl :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
-    mkObsUDCDbl e sc name mUnit mDesc adv cbs = do
+    -- Observable gauge
+    mkObsGauge
+      :: (a -> (Either Int64 Double, Maybe (Either Int64 Double)))
+      -> Text
+      -> Maybe Text
+      -> Maybe Text
+      -> AdvisoryParameters
+      -> [ObservableResult a -> IO ()]
+      -> IO (ObservableGauge a)
+    mkObsGauge convert name mUnit mDesc adv cbs = do
       ok <- validateOrNoop name mUnit
       if not ok
-        then pure $ ObservableUpDownCounter (\_ -> pure (ObservableCallbackHandle (pure ()))) sc name (pure False)
+        then pure $ ObservableGauge (\_ -> pure (ObservableCallbackHandle (pure ()))) scope name (pure False)
         else do
-          let vName = viewOverrideName views KindAsyncUpDownCounter name
-              vDesc = viewOverrideDescription views KindAsyncUpDownCounter name mDesc
-              dims =
-                dimsFrom sc vName KindAsyncUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncUpDownCounter name adv)
-              ref = sdkMeterStorage e
-              lim = sdkMeterCardinalityLimit e
-              res = ObservableResult $ \v attrs ->
-                addSum v False False (Just (Right v)) (dims, attrs) ref lim exOpts
-              run = mapM_ ($ res) cbs
-          registerCollect run
-          en <- obsEnabled KindAsyncUpDownCounter name
-          pure $
-            ObservableUpDownCounter
-              { observableUpDownCounterRegisterCallback = \cb -> do
-                  registerCollect (cb res)
-                  pure (ObservableCallbackHandle (pure ()))
-              , observableUpDownCounterInstrumentScope = sc
-              , observableUpDownCounterInstrumentName = name
-              , observableUpDownCounterEnabled = pure en
-              }
-
-    mkObsGaugeI64 :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
-    mkObsGaugeI64 e sc name mUnit mDesc adv cbs = do
-      ok <- validateOrNoop name mUnit
-      if not ok
-        then pure $ ObservableGauge (\_ -> pure (ObservableCallbackHandle (pure ()))) sc name (pure False)
-        else do
-          let vName = viewOverrideName views KindAsyncGauge name
-              vDesc = viewOverrideDescription views KindAsyncGauge name mDesc
-              dims =
-                dimsFrom sc vName KindAsyncGauge mUnit vDesc Nothing (exportKeysFor views KindAsyncGauge name adv)
-              ref = sdkMeterStorage e
-              lim = sdkMeterCardinalityLimit e
-              res = ObservableResult $ \n attrs -> do
+          let dims = resolveDims KindAsyncGauge name mUnit mDesc Nothing adv
+              res = ObservableResult $ \val attrs -> do
                 t <- nowNanos
-                recordGauge (Left n) t (Just (Left n)) (dims, attrs) ref lim exOpts
+                let (gv, ex) = convert val
+                recordGauge gv t ex (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
-          en <- obsEnabled KindAsyncGauge name
+          let en = not (shouldDropInstrument views KindAsyncGauge name)
           pure $
             ObservableGauge
               { observableGaugeRegisterCallback = \cb -> do
                   registerCollect (cb res)
                   pure (ObservableCallbackHandle (pure ()))
-              , observableGaugeInstrumentScope = sc
-              , observableGaugeInstrumentName = name
-              , observableGaugeEnabled = pure en
-              }
-
-    mkObsGaugeDbl :: SdkMeterEnv -> InstrumentationLibrary -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
-    mkObsGaugeDbl e sc name mUnit mDesc adv cbs = do
-      ok <- validateOrNoop name mUnit
-      if not ok
-        then pure $ ObservableGauge (\_ -> pure (ObservableCallbackHandle (pure ()))) sc name (pure False)
-        else do
-          let vName = viewOverrideName views KindAsyncGauge name
-              vDesc = viewOverrideDescription views KindAsyncGauge name mDesc
-              dims =
-                dimsFrom sc vName KindAsyncGauge mUnit vDesc Nothing (exportKeysFor views KindAsyncGauge name adv)
-              ref = sdkMeterStorage e
-              lim = sdkMeterCardinalityLimit e
-              res = ObservableResult $ \v attrs -> do
-                t <- nowNanos
-                recordGauge (Right v) t (Just (Right v)) (dims, attrs) ref lim exOpts
-              run = mapM_ ($ res) cbs
-          registerCollect run
-          en <- obsEnabled KindAsyncGauge name
-          pure $
-            ObservableGauge
-              { observableGaugeRegisterCallback = \cb -> do
-                  registerCollect (cb res)
-                  pure (ObservableCallbackHandle (pure ()))
-              , observableGaugeInstrumentScope = sc
+              , observableGaugeInstrumentScope = scope
               , observableGaugeInstrumentName = name
               , observableGaugeEnabled = pure en
               }

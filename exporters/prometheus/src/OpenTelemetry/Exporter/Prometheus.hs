@@ -198,11 +198,9 @@ exemplarValue e = case metricExemplarValue e of
 
 
 renderHistogramPoint :: Map.Map Text Text -> Text -> HistogramDataPoint -> Builder
-renderHistogramPoint baseLabels hname p =
-  let lbls = mergeLabels baseLabels (attributesToLabelMap (histogramDataPointAttributes p))
-      bounds = histogramDataPointExplicitBounds p
-      counts = histogramDataPointBucketCounts p
-      cum = V.scanl1' (+) counts
+renderHistogramPoint baseLabels hname HistogramDataPoint {..} =
+  let lbls = mergeLabels baseLabels (attributesToLabelMap histogramDataPointAttributes)
+      cum = V.scanl1' (+) histogramDataPointBucketCounts
       bucketName = fromText hname <> "_bucket"
       finiteB =
         V.ifoldl'
@@ -216,25 +214,25 @@ renderHistogramPoint baseLabels hname p =
                   <> nl
           )
           mempty
-          bounds
+          histogramDataPointExplicitBounds
   in finiteB
       <> bucketName
       <> formatLabels (Map.insert "le" "+Inf" lbls)
       <> sp
-      <> buildWord64 (histogramDataPointCount p)
-      <> exemplarSuffix (histogramDataPointExemplars p)
+      <> buildWord64 histogramDataPointCount
+      <> exemplarSuffix histogramDataPointExemplars
       <> nl
       <> fromText hname
       <> "_sum"
       <> formatLabels lbls
       <> sp
-      <> buildDouble (histogramDataPointSum p)
+      <> buildDouble histogramDataPointSum
       <> nl
       <> fromText hname
       <> "_count"
       <> formatLabels lbls
       <> sp
-      <> buildWord64 (histogramDataPointCount p)
+      <> buildWord64 histogramDataPointCount
       <> nl
 
 
@@ -245,21 +243,16 @@ leUpperBoundExp scale idx =
 
 
 renderExponentialHistogramPoint :: Map.Map Text Text -> Text -> ExponentialHistogramDataPoint -> Builder
-renderExponentialHistogramPoint baseLabels hname p =
-  let lbls = mergeLabels baseLabels (attributesToLabelMap (exponentialHistogramDataPointAttributes p))
-      sc = exponentialHistogramDataPointScale p
-      posOff = exponentialHistogramDataPointPositiveOffset p
-      posCnt = exponentialHistogramDataPointPositiveBucketCounts p
-      negOff = exponentialHistogramDataPointNegativeOffset p
-      negCnt = exponentialHistogramDataPointNegativeBucketCounts p
-      posCum = if V.null posCnt then V.empty else V.scanl1' (+) posCnt
-      negCum = if V.null negCnt then V.empty else V.scanl1' (+) negCnt
+renderExponentialHistogramPoint baseLabels hname ExponentialHistogramDataPoint {..} =
+  let lbls = mergeLabels baseLabels (attributesToLabelMap exponentialHistogramDataPointAttributes)
+      posCum = if V.null exponentialHistogramDataPointPositiveBucketCounts then V.empty else V.scanl1' (+) exponentialHistogramDataPointPositiveBucketCounts
+      negCum = if V.null exponentialHistogramDataPointNegativeBucketCounts then V.empty else V.scanl1' (+) exponentialHistogramDataPointNegativeBucketCounts
       bucketName = fromText hname <> "_bucket"
       buildBuckets off cum negate_ =
         V.ifoldl'
           ( \acc i c ->
               let idx = off + fromIntegral i
-                  le = (if negate_ then negate else id) (leUpperBoundExp sc idx)
+                  le = (if negate_ then negate else id) (leUpperBoundExp exponentialHistogramDataPointScale idx)
               in acc
                   <> bucketName
                   <> formatLabels (Map.insert "le" (doubleToText le) lbls)
@@ -270,34 +263,34 @@ renderExponentialHistogramPoint baseLabels hname p =
           mempty
           cum
       zeroB =
-        if exponentialHistogramDataPointZeroCount p == 0
+        if exponentialHistogramDataPointZeroCount == 0
           then mempty
           else
             bucketName
               <> formatLabels (Map.insert "le" "0" lbls)
               <> sp
-              <> buildWord64 (exponentialHistogramDataPointZeroCount p)
+              <> buildWord64 exponentialHistogramDataPointZeroCount
               <> nl
   in zeroB
-      <> buildBuckets negOff negCum True
-      <> buildBuckets posOff posCum False
+      <> buildBuckets exponentialHistogramDataPointNegativeOffset negCum True
+      <> buildBuckets exponentialHistogramDataPointPositiveOffset posCum False
       <> bucketName
       <> formatLabels (Map.insert "le" "+Inf" lbls)
       <> sp
-      <> buildWord64 (exponentialHistogramDataPointCount p)
-      <> exemplarSuffix (exponentialHistogramDataPointExemplars p)
+      <> buildWord64 exponentialHistogramDataPointCount
+      <> exemplarSuffix exponentialHistogramDataPointExemplars
       <> nl
       <> fromText hname
       <> "_sum"
       <> formatLabels lbls
       <> sp
-      <> buildDouble (fromMaybe 0 (exponentialHistogramDataPointSum p))
+      <> buildDouble (fromMaybe 0 exponentialHistogramDataPointSum)
       <> nl
       <> fromText hname
       <> "_count"
       <> formatLabels lbls
       <> sp
-      <> buildWord64 (exponentialHistogramDataPointCount p)
+      <> buildWord64 exponentialHistogramDataPointCount
       <> nl
 
 
