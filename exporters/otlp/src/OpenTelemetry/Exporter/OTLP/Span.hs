@@ -55,7 +55,6 @@ import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.CaseInsensitive as CI
 import Data.Char (toLower)
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe
 import Data.ProtoLens.Encoding
@@ -64,27 +63,29 @@ import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import qualified Data.Vector as Vector
 import Lens.Micro
 import Network.HTTP.Client
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
-import Network.HTTP.Types.Status
+import Network.HTTP.Types.Status hiding (Status)
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
+import OpenTelemetry.Common (TraceFlags (..), timestampToNano)
 import OpenTelemetry.Environment
-import OpenTelemetry.Exporter.Span
+import OpenTelemetry.Exporter.Span (ExportResult (..), SpanExporter (..))
+import qualified OpenTelemetry.Exporter.Span as OT
+import OpenTelemetry.Internal.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
-import OpenTelemetry.Resource
+import OpenTelemetry.Resource (getMaterializedResourcesAttributes)
+import qualified OpenTelemetry.Resource as OT
 import OpenTelemetry.Trace.Core (timestampNanoseconds)
 import qualified OpenTelemetry.Trace.Core as OT
-import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
-import OpenTelemetry.Util
 import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
-import Proto.Opentelemetry.Proto.Common.V1.Common
+import Proto.Opentelemetry.Proto.Common.V1.Common (InstrumentationScope, KeyValue)
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
-import Proto.Opentelemetry.Proto.Trace.V1.Trace
+import Proto.Opentelemetry.Proto.Resource.V1.Resource (Resource)
+import Proto.Opentelemetry.Proto.Trace.V1.Trace (ResourceSpans, ScopeSpans, Span, Span'Event, Span'Link, Span'SpanKind (..), Status, Status'StatusCode (..))
 import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Trace_Fields
 import System.Environment
 import qualified System.IO as IO
@@ -271,8 +272,7 @@ httpOtlpExporter conf = do
   pure $
     SpanExporter
       { spanExporterExport = \spans_ -> do
-          let anySpansToExport = H.size spans_ /= 0 && not (all V.null $ H.elems spans_)
-          if anySpansToExport
+          if not (V.null spans_)
             then do
               result <- try $ exporterExportCall encoder baseReq spans_
               case result of
@@ -303,7 +303,7 @@ httpOtlpExporter conf = do
       _ -> False
 
     exporterExportCall encoder baseReq spans_ = do
-      msg <- encodeMessage <$> immutableSpansToProtobuf spans_
+      let msg = encodeMessage (makeExportTraceServiceRequest spans_)
       -- TODO handle server disconnect
       let req =
             baseReq
@@ -424,137 +424,112 @@ httpBaseHeaders conf req =
 -- Convert from `hs-opentelemetry-api` data model into OTLP Protobuf.
 --------------------------------------------------------------------------------
 
-{- |
-Translate a collection of `OT.ImmutableSpan` spans to an OTLP `ExportTraceServiceRequest`.
--}
-immutableSpansToProtobuf :: (MonadIO m) => HashMap OT.InstrumentationLibrary (Vector OT.ImmutableSpan) -> m ExportTraceServiceRequest
-immutableSpansToProtobuf completedSpans = do
-  spansByLibrary <- mapM makeScopeSpans spanGroupList
-  pure $
-    defMessage
-      & Trace_Fields.vec'resourceSpans
-        .~ Vector.singleton
-          ( defMessage
-              & Trace_Fields.resource
-                .~ ( defMessage
-                      & Trace_Fields.vec'attributes
-                        .~ attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
-                      -- TODO
-                      & Trace_Fields.droppedAttributesCount
-                        .~ 0
-                   )
-              -- TODO, seems like spans need to be emitted via an API
-              -- that lets us keep them grouped by instrumentation originator
-              & Trace_Fields.scopeSpans
-                .~ spansByLibrary
-          )
-  where
-    -- TODO this won't work right if multiple TracerProviders are exporting to a single OTLP exporter with different resources
-    someResourceGroup = case spanGroupList of
-      [] -> emptyMaterializedResources
-      ((_, r) : _) -> case r V.!? 0 of
-        Nothing -> emptyMaterializedResources
-        Just s -> OT.getTracerProviderResources $ OT.getTracerTracerProvider $ OT.spanTracer s
-
-    spanGroupList = H.toList completedSpans
+makeExportTraceServiceRequest :: Vector OT.MaterializedResourceSpans -> ExportTraceServiceRequest
+makeExportTraceServiceRequest materializedResourceSpans =
+  defMessage
+    & Trace_Fields.vec'resourceSpans
+      .~ fmap resourceSpansToProto materializedResourceSpans
 
 
-{- |
-Internal helper.
-Translate a collection of `OT.ImmutableSpan` spans to OTLP `ScopeSpans`.
--}
-makeScopeSpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m ScopeSpans
-makeScopeSpans (library, completedSpans_) = do
-  spans_ <- mapM makeSpan completedSpans_
-  pure $
-    defMessage
-      & Trace_Fields.scope
-        .~ ( defMessage
-              & Trace_Fields.name
-                .~ OT.libraryName library
-              & Common_Fields.version
-                .~ OT.libraryVersion library
-           )
-      & Trace_Fields.vec'spans
-        .~ spans_
+resourceSpansToProto :: OT.MaterializedResourceSpans -> ResourceSpans
+resourceSpansToProto OT.MaterializedResourceSpans {..} =
+  defMessage
+    & maybe id ((Trace_Fields.resource .~) . resourceToProto) materializedResource
+    & Trace_Fields.vec'scopeSpans
+      .~ fmap scopeSpansToProto materializedScopeSpans
 
 
--- & schemaUrl .~ "" -- TODO
+resourceToProto :: OT.MaterializedResources -> Resource
+resourceToProto materializedResource =
+  defMessage
+    & Trace_Fields.vec'attributes
+      .~ attributesToProto (getMaterializedResourcesAttributes materializedResource)
+    -- TODO
+    & Trace_Fields.droppedAttributesCount
+      .~ 0
 
-{- |
-Internal helper.
-Translate an `OT.ImmutableSpan` span to an OTLP `Span`.
--}
-makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m Span
-makeSpan completedSpan = do
-  let startTime = timestampNanoseconds (OT.spanStart completedSpan)
-  parentSpanF <- do
-    case OT.spanParent completedSpan of
-      Nothing -> pure id
-      Just s -> do
-        spanCtxt <- OT.spanId <$> OT.getSpanContext s
-        pure (\otlpSpan -> otlpSpan & Trace_Fields.parentSpanId .~ spanIdBytes spanCtxt)
 
-  pure $
-    defMessage
+scopeSpansToProto :: OT.MaterializedScopeSpans -> ScopeSpans
+scopeSpansToProto OT.MaterializedScopeSpans {..} =
+  -- TODO: Trace_Fields.schemaUrl
+  defMessage
+    & maybe id ((Trace_Fields.scope .~) . scopeToProto) materializedScope
+    & Trace_Fields.vec'spans
+      .~ fmap materializedSpanToProto materializedSpans
+
+
+scopeToProto :: OT.InstrumentationLibrary -> InstrumentationScope
+scopeToProto instrumentationLibrary =
+  defMessage
+    & Trace_Fields.name
+      .~ OT.libraryName instrumentationLibrary
+    & Common_Fields.version
+      .~ OT.libraryVersion instrumentationLibrary
+
+
+materializedSpanToProto :: OT.MaterializedSpan -> Span
+materializedSpanToProto OT.MaterializedSpan {..} =
+  let TraceFlags flags = OT.traceFlags materializedContext
+  in defMessage
       & Trace_Fields.traceId
-        .~ traceIdBytes (OT.traceId $ OT.spanContext completedSpan)
+        .~ traceIdBytes (OT.traceId materializedContext)
       & Trace_Fields.spanId
-        .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
+        .~ spanIdBytes (OT.spanId materializedContext)
       & Trace_Fields.traceState
-        .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
+        .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState materializedContext)
+      & Trace_Fields.flags
+        .~ fromIntegral flags
       & Trace_Fields.name
-        .~ OT.spanName completedSpan
+        .~ materializedName
       & Trace_Fields.kind
-        .~ ( case OT.spanKind completedSpan of
+        .~ ( case materializedKind of
               OT.Server -> Span'SPAN_KIND_SERVER
               OT.Client -> Span'SPAN_KIND_CLIENT
               OT.Producer -> Span'SPAN_KIND_PRODUCER
               OT.Consumer -> Span'SPAN_KIND_CONSUMER
               OT.Internal -> Span'SPAN_KIND_INTERNAL
            )
+      & Trace_Fields.parentSpanId
+        .~ materializedParentSpanId
       & Trace_Fields.startTimeUnixNano
-        .~ startTime
+        .~ timestampToNano materializedStartTimeUnixNano
       & Trace_Fields.endTimeUnixNano
-        .~ maybe startTime timestampNanoseconds (OT.spanEnd completedSpan)
+        .~ timestampToNano materializedEndTimeUnixNano
       & Trace_Fields.vec'attributes
-        .~ attributesToProto (OT.spanAttributes completedSpan)
+        .~ attributesToProto materializedAttributes
       & Trace_Fields.droppedAttributesCount
-        .~ fromIntegral (getCount $ OT.spanAttributes completedSpan)
+        .~ fromIntegral materializedDroppedAttributesCount
       & Trace_Fields.vec'events
-        .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.spanEvents completedSpan)
+        .~ fmap spanEventToProto materializedEvents
       & Trace_Fields.droppedEventsCount
-        .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanEvents completedSpan))
+        .~ materializedDroppedEventsCount
       & Trace_Fields.vec'links
-        .~ fmap makeLink (appendOnlyBoundedCollectionValues $ OT.spanLinks completedSpan)
+        .~ fmap spanLinkToProto materializedLinks
       & Trace_Fields.droppedLinksCount
-        .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanLinks completedSpan))
-      & Trace_Fields.status
-        .~ ( case OT.spanStatus completedSpan of
-              OT.Unset ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_UNSET
-              OT.Ok ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_OK
-              (OT.Error e) ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_ERROR
-                  & Trace_Fields.message
-                    .~ e
-           )
-      & parentSpanF
+        .~ materializedDroppedLinksCount
+      & maybe id ((Trace_Fields.status .~) . spanStatusToProto) materializedStatus
 
 
-{- |
-Internal helper.
-Translate an `OT.Event` to an OTLP `Span'Event`.
--}
-makeEvent :: OT.Event -> Span'Event
-makeEvent e =
+spanStatusToProto :: OT.SpanStatus -> Status
+spanStatusToProto = \case
+  OT.Unset ->
+    defMessage
+      & Trace_Fields.code
+        .~ Status'STATUS_CODE_UNSET
+  OT.Ok ->
+    defMessage
+      & Trace_Fields.code
+        .~ Status'STATUS_CODE_OK
+  (OT.Error e) ->
+    defMessage
+      & Trace_Fields.code
+        .~ Status'STATUS_CODE_ERROR
+      & Trace_Fields.message
+        .~ e
+
+
+spanEventToProto :: OT.Event -> Span'Event
+spanEventToProto e =
   defMessage
     & Trace_Fields.timeUnixNano
       .~ timestampNanoseconds (OT.eventTimestamp e)
@@ -566,12 +541,8 @@ makeEvent e =
       .~ fromIntegral (getCount $ OT.eventAttributes e)
 
 
-{- |
-Internal helper.
-Translate an `OT.Link` to an OTLP `Span'Link`.
--}
-makeLink :: OT.Link -> Span'Link
-makeLink l =
+spanLinkToProto :: OT.Link -> Span'Link
+spanLinkToProto l =
   defMessage
     & Trace_Fields.traceId
       .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
@@ -585,10 +556,6 @@ makeLink l =
       .~ fromIntegral (getCount $ OT.frozenLinkAttributes l)
 
 
-{- |
-Internal helper.
-Translate a collection of `Attributes` to a vector of OTLP `KeyValue` pairs.
--}
 attributesToProto :: Attributes -> Vector KeyValue
 attributesToProto =
   V.fromList

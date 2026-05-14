@@ -44,6 +44,7 @@ library
       OpenTelemetry.Internal.Common.Types
       OpenTelemetry.Internal.Logs.Core
       OpenTelemetry.Internal.Logs.Types
+      OpenTelemetry.Internal.Trace.Exporter
       OpenTelemetry.Internal.Trace.Id
       OpenTelemetry.LogAttributes
       OpenTelemetry.Logs.Core
