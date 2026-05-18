@@ -9,6 +9,7 @@ packages:
   , exporters/handle
   , exporters/in-memory
   , exporters/otlp
+  , exporters/prometheus
   , propagators/datadog
   , propagators/w3c
   , propagators/b3
@@ -32,3 +33,7 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
+
+-- snappy C library is not always available; disable it for grpc-spec
+package grpc-spec
+  flags: -snappy

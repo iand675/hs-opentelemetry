@@ -57,9 +57,10 @@ class FromPrimitiveAttribute a where
 data Attribute
   = -- | An attribute representing a single primitive value
     AttributeValue PrimitiveAttribute
-  | -- | An attribute representing an array of primitive values.
-    --
-    -- All values in the array MUST be of the same primitive attribute type.
+  | {- | An attribute representing an array of primitive values.
+
+    All values in the array MUST be of the same primitive attribute type.
+    -}
     AttributeArray [PrimitiveAttribute]
   deriving stock (Read, Show, Eq, Ord, Data, Generic, TH.Lift)
   deriving anyclass (Hashable)

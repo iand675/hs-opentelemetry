@@ -23,6 +23,24 @@ dependencies:
 - base >= 4.7 && < 5
 
 library:
+  exposed-modules:
+  - OpenTelemetry.MetricReader
+  - OpenTelemetry.MeterProvider
+  - OpenTelemetry.Metrics.ExporterSelection
+  - OpenTelemetry.Metrics.View
+  - OpenTelemetry.Processor.Batch
+  - OpenTelemetry.Processor.Batch.LogRecord
+  - OpenTelemetry.Processor.Batch.Span
+  - OpenTelemetry.Processor.Simple
+  - OpenTelemetry.Processor.Simple.LogRecord
+  - OpenTelemetry.Processor.Simple.Span
+  - OpenTelemetry.Resource.Host.Detector
+  - OpenTelemetry.Resource.OperatingSystem.Detector
+  - OpenTelemetry.Resource.Process.Detector
+  - OpenTelemetry.Resource.Service.Detector
+  - OpenTelemetry.Resource.Telemetry.Detector
+  - OpenTelemetry.Trace
+  - OpenTelemetry.Trace.Id.Generator.Default
   ghc-options: -Wall
   source-dirs: src
   when:
@@ -35,6 +53,9 @@ library:
   dependencies:
   - async
   - bytestring
+  - clock
+  - containers
+  - hashable
   - http-types
   - network-bsd
   - random >= 1.2.0
@@ -48,6 +69,7 @@ library:
   # These are "distribution" packages
   - hs-opentelemetry-api ^>= 0.3
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0
+  - hs-opentelemetry-exporter-handle ^>= 0.0.1
   - hs-opentelemetry-exporter-otlp ^>= 0.1
   - hs-opentelemetry-propagator-b3 ^>=0.0.1
   - hs-opentelemetry-propagator-datadog ^>=0.0.0
@@ -89,6 +111,8 @@ library:
 tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs
+    other-modules:
+    - OpenTelemetry.MeterProviderSpec
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -101,3 +125,4 @@ tests:
     - hspec
     - text
     - unordered-containers
+    - vector

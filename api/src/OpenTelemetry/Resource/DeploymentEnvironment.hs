@@ -28,9 +28,10 @@ import OpenTelemetry.Resource
 -}
 newtype DeploymentEnvironment = DeploymentEnvironment
   { deploymentEnvironment :: Maybe Text
-  -- ^ Name of the deployment environment (aka deployment tier).
-  --
-  -- Examples: @staging@, @production@
+  {- ^ Name of the deployment environment (aka deployment tier).
+
+  Examples: @staging@, @production@
+  -}
   }
 
 

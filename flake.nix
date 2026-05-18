@@ -39,7 +39,7 @@
             "^semantic-conventions/src/OpenTelemetry/SemanticConventions\\.hs$"
           ];
       };
-    pre-commit-hooks = {
+    mkPreCommitHooks = fourmoluPkg: {
       # General hooks
       end-of-file-fixer = ignoreGeneratedFiles {
         enable = true;
@@ -54,6 +54,7 @@
       # Haskell hooks
       fourmolu = ignoreGeneratedFiles {
         enable = true;
+        package = fourmoluPkg;
       };
       hpack = {
         enable = false;
@@ -115,7 +116,7 @@
               };
 
               # Use a consistent hpack version across shells.
-              pre-commit.hooks = pre-commit-hooks;
+              pre-commit.hooks = mkPreCommitHooks pkgs.haskellPackages.fourmolu;
             })
           ];
         };
@@ -137,7 +138,7 @@
       checks = {
         pre-commit-check = devenv.inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
-          hooks = pre-commit-hooks;
+          hooks = mkPreCommitHooks pkgs.haskellPackages.fourmolu;
         };
       };
     });

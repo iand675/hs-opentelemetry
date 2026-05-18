@@ -23,9 +23,10 @@ import OpenTelemetry.Resource
 -- | A container instance.
 data Container = Container
   { containerName :: Maybe Text
-  -- ^ Container name used by container runtime.
-  --
-  -- Examples: 'opentelemetry-autoconf'
+  {- ^ Container name used by container runtime.
+
+  Examples: 'opentelemetry-autoconf'
+  -}
   , containerId :: Maybe Text
   -- ^ Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated.
   , containerRuntime :: Maybe Text

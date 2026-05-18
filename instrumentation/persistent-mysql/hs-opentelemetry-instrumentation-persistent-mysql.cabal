@@ -2,6 +2,8 @@ cabal-version: 2.4
 
 name: hs-opentelemetry-instrumentation-persistent-mysql
 version: 0.0.0.0
+synopsis: OpenTelemetry instrumentation for persistent-mysql
+license: BSD-3-Clause
 author: Kazuki Okamoto (岡本和樹)
 maintainer: kazuki.okamoto@herp.co.jp
 
