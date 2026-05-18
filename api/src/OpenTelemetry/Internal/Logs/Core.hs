@@ -11,6 +11,7 @@ module OpenTelemetry.Internal.Logs.Core (
   shutdownLoggerProvider,
   forceFlushLoggerProvider,
   makeLogger,
+  loggerIsEnabled,
   emitLogRecord,
   addAttribute,
   addAttributes,
@@ -157,6 +158,20 @@ makeLogger
 makeLogger loggerLoggerProvider loggerInstrumentationScope = Logger {..}
 
 
+{- | Whether this logger\'s provider will process emitted records (@True@ when at least
+ one processor is registered).
+
+ Per the OpenTelemetry Logs API, @Logger@ @Enabled@ is defined at the specification
+ surface to default to enabling emission unless the SDK or configuration disables
+ collection — so a standalone API no-op logger can still conceptually count as \"enabled.\"
+ Here we report practicality for Haskell apps: @False@ when the provider has no processors
+ (including the default global no-op \'LoggerProvider\'), until the SDK attaches exporters.
+-}
+loggerIsEnabled :: Logger -> Bool
+loggerIsEnabled Logger {loggerLoggerProvider = LoggerProvider {loggerProviderProcessors}} =
+  not (V.null loggerProviderProcessors)
+
+
 createImmutableLogRecord
   :: (MonadIO m)
   => LA.AttributeLimits
@@ -189,6 +204,7 @@ createImmutableLogRecord attributeLimits LogRecordArguments {..} = do
       , logRecordSeverityText = severityText <|> (toShortName =<< severityNumber)
       , logRecordBody = body
       , logRecordAttributes
+      , logRecordEventName = eventName
       }
 
 
