@@ -23,7 +23,6 @@ module OpenTelemetry.MeterProvider (
   collectResourceMetrics,
 ) where
 
-import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
 import Data.Foldable (toList)
@@ -159,9 +158,8 @@ type DimKey = (InstrumentDims, Attributes)
 
 
 data SumCell = SumCell
-  { scValue :: !Double
+  { scValue :: !(Either Int64 Double)
   , scMonotonic :: !Bool
-  , scIsInt :: !Bool
   , scExemplars :: !(Vector MetricExemplar)
   }
 
@@ -483,9 +481,8 @@ captureMetricExemplar opts mVal =
             }
 
 
-addSum
-  :: Double
-  -> Bool
+addSumInt
+  :: Int64
   -> Bool
   -> Maybe (Either Int64 Double)
   -> DimKey
@@ -493,7 +490,7 @@ addSum
   -> Int
   -> SdkMeterExemplarOptions
   -> IO ()
-addSum delta isMonotonic isInt mExVal k ref lim exOpts = do
+addSumInt delta isMonotonic mExVal k ref lim exOpts = do
   mex <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
   atomicModifyIORef' ref $ \st ->
@@ -504,26 +501,73 @@ addSum delta isMonotonic isInt mExVal k ref lim exOpts = do
              Nothing ->
                CsSum $
                  SumCell
-                   { scValue = delta
+                   { scValue = Left delta
                    , scMonotonic = isMonotonic
-                   , scIsInt = isInt
                    , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
                    }
              Just (CsSum sc) ->
                CsSum $
                  sc
-                   { scValue = scValue sc + delta
+                   { scValue = addEither (scValue sc) (Left delta)
                    , scExemplars = case mex of
                        Nothing -> scExemplars sc
                        Just e -> pushExemplar cap e (scExemplars sc)
                    }
              Just _ ->
                CsSum $
-                 SumCell delta isMonotonic isInt (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
+                 SumCell (Left delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
            isNew = not (H.member effectiveK m)
            m' = H.insert effectiveK newCell m
            sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
        in (SdkMeterStorageState m' sc', ())
+
+
+addSumDbl
+  :: Double
+  -> Bool
+  -> Maybe (Either Int64 Double)
+  -> DimKey
+  -> IORef SdkMeterStorageState
+  -> Int
+  -> SdkMeterExemplarOptions
+  -> IO ()
+addSumDbl delta isMonotonic mExVal k ref lim exOpts = do
+  mex <- captureMetricExemplar exOpts mExVal
+  let cap = exemplarReservoirLimit exOpts
+  atomicModifyIORef' ref $ \st ->
+    let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
+    in let m = storageCells st
+           scount = seriesCountByDims st
+           newCell = case H.lookup effectiveK m of
+             Nothing ->
+               CsSum $
+                 SumCell
+                   { scValue = Right delta
+                   , scMonotonic = isMonotonic
+                   , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                   }
+             Just (CsSum sc) ->
+               CsSum $
+                 sc
+                   { scValue = addEither (scValue sc) (Right delta)
+                   , scExemplars = case mex of
+                       Nothing -> scExemplars sc
+                       Just e -> pushExemplar cap e (scExemplars sc)
+                   }
+             Just _ ->
+               CsSum $
+                 SumCell (Right delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
+           isNew = not (H.member effectiveK m)
+           m' = H.insert effectiveK newCell m
+           sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
+       in (SdkMeterStorageState m' sc', ())
+
+
+addEither :: Either Int64 Double -> Either Int64 Double -> Either Int64 Double
+addEither (Left a) (Left b) = Left (a + b)
+addEither (Left a) (Right b) = Right (fromIntegral a + b)
+addEither (Right a) (Left b) = Right (a + fromIntegral b)
+addEither (Right a) (Right b) = Right (a + b)
 
 
 mergeHist :: HistCell -> Double -> HistCell
@@ -711,7 +755,7 @@ mkMeter env scope =
               pure $
                 Counter
                   { counterAdd = \n attrs ->
-                      addSum (fromIntegral n) mono isInt (Just (Left n)) (dims, attrs) ref lim exOpts
+                      addSumInt n mono (Just (Left n)) (dims, attrs) ref lim exOpts
                   , counterEnabled = pure True
                   }
             else pure $ Counter (\_ _ -> pure ()) (pure False)
@@ -733,7 +777,7 @@ mkMeter env scope =
               pure $
                 Counter
                   { counterAdd = \v attrs ->
-                      addSum v mono isInt (Just (Right v)) (dims, attrs) ref lim exOpts
+                      addSumDbl v mono (Just (Right v)) (dims, attrs) ref lim exOpts
                   , counterEnabled = pure True
                   }
             else pure $ Counter (\_ _ -> pure ()) (pure False)
@@ -755,7 +799,7 @@ mkMeter env scope =
               pure $
                 UpDownCounter
                   { upDownCounterAdd = \n attrs ->
-                      addSum (fromIntegral n) False True (Just (Left n)) (dims, attrs) ref lim exOpts
+                      addSumInt n False (Just (Left n)) (dims, attrs) ref lim exOpts
                   , upDownCounterEnabled = pure True
                   }
             else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
@@ -777,7 +821,7 @@ mkMeter env scope =
               pure $
                 UpDownCounter
                   { upDownCounterAdd = \v attrs ->
-                      addSum v False False (Just (Right v)) (dims, attrs) ref lim exOpts
+                      addSumDbl v False (Just (Right v)) (dims, attrs) ref lim exOpts
                   , upDownCounterEnabled = pure True
                   }
             else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
@@ -881,7 +925,7 @@ mkMeter env scope =
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \n attrs ->
-                addSum (fromIntegral n) True True (Just (Left n)) (dims, attrs) ref lim exOpts
+                addSumInt n True (Just (Left n)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncCounter name
@@ -908,7 +952,7 @@ mkMeter env scope =
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \v attrs ->
-                addSum v True False (Just (Right v)) (dims, attrs) ref lim exOpts
+                addSumDbl v True (Just (Right v)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncCounter name
@@ -935,7 +979,7 @@ mkMeter env scope =
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \n attrs ->
-                addSum (fromIntegral n) False True (Just (Left n)) (dims, attrs) ref lim exOpts
+                addSumInt n False (Just (Left n)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncUpDownCounter name
@@ -962,7 +1006,7 @@ mkMeter env scope =
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \v attrs ->
-                addSum v False False (Just (Right v)) (dims, attrs) ref lim exOpts
+                addSumDbl v False (Just (Right v)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncUpDownCounter name
@@ -1043,14 +1087,17 @@ collectResourceMetrics :: (MonadIO m) => SdkMeterEnv -> m [ResourceMetricsExport
 collectResourceMetrics env = liftIO $ do
   cbs <- readIORef (sdkMeterCollectCallbacks env)
   mapM_ id (toList cbs)
-  st <- readIORef (sdkMeterStorage env)
   t <- nowNanos
   let temp = sdkMeterAggregationTemporality env
-      snap = storageCells st
       startT = sdkMeterStartTimeNanos env
-      rme = buildResourceExport (sdkMeterResource env) startT t temp snap
-  when (temp == AggregationDelta) $ do
-    atomicModifyIORef' (sdkMeterStorage env) $ \s -> (applyDeltaReset s, ())
+  -- For delta temporality, snapshot and reset must be atomic so concurrent
+  -- record* calls between read and reset cannot be silently dropped.
+  st <- case temp of
+    AggregationDelta ->
+      atomicModifyIORef' (sdkMeterStorage env) $ \s -> (applyDeltaReset s, s)
+    AggregationCumulative ->
+      readIORef (sdkMeterStorage env)
+  let rme = buildResourceExport (sdkMeterResource env) startT t temp (storageCells st)
   pure [rme]
 
 
@@ -1119,7 +1166,7 @@ buildMetricExports startT t temp dims series =
                   SumDataPoint
                     { sumDataPointStartTimeUnixNano = startT
                     , sumDataPointTimeUnixNano = t
-                    , sumDataPointValue = if scIsInt sc then Left (round (scValue sc)) else Right (scValue sc)
+                    , sumDataPointValue = scValue sc
                     , sumDataPointAttributes = applyDimAttrs d attrs
                     , sumDataPointExemplars = scExemplars sc
                     }
@@ -1128,7 +1175,9 @@ buildMetricExports startT t temp dims series =
             any
               ( \(_, cell, _) ->
                   case cell of
-                    CsSum sc -> scIsInt sc
+                    CsSum sc -> case scValue sc of
+                      Left _ -> True
+                      Right _ -> False
                     _ -> False
               )
               series
