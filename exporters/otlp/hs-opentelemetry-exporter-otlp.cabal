@@ -40,6 +40,7 @@ library
       base >=4.7 && <5
     , bytestring
     , case-insensitive
+    , grapesy >=1.1.1
     , hs-opentelemetry-api ==0.3.*
     , hs-opentelemetry-otlp ==0.2.*
     , hs-opentelemetry-propagator-w3c
@@ -47,6 +48,7 @@ library
     , http-conduit
     , http-types
     , microlens
+    , network-uri
     , proto-lens >=0.7.1.0
     , text
     , unordered-containers
