@@ -1,10 +1,11 @@
 # OpenTelemetry API for Haskell
 
-This package provides an interface for instrumentors to use when instrumenting
-a library directly or implementing a wrapper API around an existing project.
+[![hs-opentelemetry-api](https://img.shields.io/hackage/v/hs-opentelemetry-api?style=flat-square&logo=haskell&label=hs-opentelemetry-api&labelColor=5D4F85)](https://hackage.haskell.org/package/hs-opentelemetry-api)
 
-The methods in this package can be safely called by libraries or end-user applications regardless of
-whether the application has registered an OpenTelemetry SDK configuration or not.
+This package provides an interface for instrumentors to use when instrumenting a library directly or implementing a wrapper API around an existing project.
+
+The methods in this package can be safely called by libraries or end-user applications regardless of whether the application has registered an OpenTelemetry SDK configuration or not.
+
 When the OpenTelemetry SDK has not registered a tracer provider with any span processors, there API incurs minimal performance overhead, as most of the core interface performs no-ops.
 
 In order to generate and export telemetry data, you will also need to use the [OpenTelemetry Haskell SDK](https://github.com/iand675/hs-opentelemetry/blob/main/sdk/README.md).
