@@ -94,6 +94,7 @@ module OpenTelemetry.Trace (
   getTracerProviderInitializationOptions,
   getTracerProviderInitializationOptions',
   shutdownTracerProvider,
+  forceFlushTracerProvider,
 
   -- ** Getting / setting the global 'TracerProvider'
   getGlobalTracerProvider,
