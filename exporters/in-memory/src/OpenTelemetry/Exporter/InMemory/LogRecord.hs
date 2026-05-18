@@ -1,2 +1,30 @@
-module OpenTelemetry.Exporter.InMemory.LogRecord () where
+module OpenTelemetry.Exporter.InMemory.LogRecord (
+  inMemoryLogRecordExporter,
+  getExportedLogRecords,
+) where
 
+import Control.Monad.IO.Class
+import Data.IORef
+import qualified Data.Vector as V
+import OpenTelemetry.Internal.Common.Types (ExportResult (..))
+import OpenTelemetry.Internal.Logs.Types
+
+
+inMemoryLogRecordExporter :: (MonadIO m) => m (LogRecordExporter, IORef [ReadableLogRecord])
+inMemoryLogRecordExporter = liftIO $ do
+  ref <- newIORef []
+  exporter <-
+    mkLogRecordExporter
+      LogRecordExporterArguments
+        { logRecordExporterArgumentsExport = \lrs -> do
+            let newRecords = V.toList lrs
+            atomicModifyIORef ref (\existing -> (newRecords ++ existing, ()))
+            pure Success
+        , logRecordExporterArgumentsForceFlush = pure ()
+        , logRecordExporterArgumentsShutdown = pure ()
+        }
+  pure (exporter, ref)
+
+
+getExportedLogRecords :: (MonadIO m) => IORef [ReadableLogRecord] -> m [ReadableLogRecord]
+getExportedLogRecords = liftIO . readIORef

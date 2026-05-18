@@ -27,12 +27,14 @@ library:
   source-dirs: src
   exposed-modules:
   - OpenTelemetry.Exporter.InMemory
+  - OpenTelemetry.Exporter.InMemory.LogRecord
   - OpenTelemetry.Exporter.InMemory.Metric
   - OpenTelemetry.Exporter.InMemory.Span
   dependencies:
   - hs-opentelemetry-api ^>= 0.3
   - async
   - unagi-chan
+  - vector
 
 # Test suite not yet implemented
 _tests:
