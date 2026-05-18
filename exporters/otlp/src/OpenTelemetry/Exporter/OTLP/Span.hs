@@ -437,11 +437,11 @@ immutableSpansToProtobuf completedSpans = do
           ( defMessage
               & Trace_Fields.resource
                 .~ ( defMessage
-                      & Trace_Fields.vec'attributes
-                        .~ attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
-                      -- TODO
-                      & Trace_Fields.droppedAttributesCount
-                        .~ 0
+                       & Trace_Fields.vec'attributes
+                         .~ attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
+                       -- TODO
+                       & Trace_Fields.droppedAttributesCount
+                         .~ 0
                    )
               -- TODO, seems like spans need to be emitted via an API
               -- that lets us keep them grouped by instrumentation originator
@@ -470,10 +470,10 @@ makeScopeSpans (library, completedSpans_) = do
     defMessage
       & Trace_Fields.scope
         .~ ( defMessage
-              & Trace_Fields.name
-                .~ OT.libraryName library
-              & Common_Fields.version
-                .~ OT.libraryVersion library
+               & Trace_Fields.name
+                 .~ OT.libraryName library
+               & Common_Fields.version
+                 .~ OT.libraryVersion library
            )
       & Trace_Fields.vec'spans
         .~ spans_
@@ -507,11 +507,11 @@ makeSpan completedSpan = do
         .~ OT.spanName completedSpan
       & Trace_Fields.kind
         .~ ( case OT.spanKind completedSpan of
-              OT.Server -> Span'SPAN_KIND_SERVER
-              OT.Client -> Span'SPAN_KIND_CLIENT
-              OT.Producer -> Span'SPAN_KIND_PRODUCER
-              OT.Consumer -> Span'SPAN_KIND_CONSUMER
-              OT.Internal -> Span'SPAN_KIND_INTERNAL
+               OT.Server -> Span'SPAN_KIND_SERVER
+               OT.Client -> Span'SPAN_KIND_CLIENT
+               OT.Producer -> Span'SPAN_KIND_PRODUCER
+               OT.Consumer -> Span'SPAN_KIND_CONSUMER
+               OT.Internal -> Span'SPAN_KIND_INTERNAL
            )
       & Trace_Fields.startTimeUnixNano
         .~ startTime
@@ -531,20 +531,20 @@ makeSpan completedSpan = do
         .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.spanLinks completedSpan))
       & Trace_Fields.status
         .~ ( case OT.spanStatus completedSpan of
-              OT.Unset ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_UNSET
-              OT.Ok ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_OK
-              (OT.Error e) ->
-                defMessage
-                  & Trace_Fields.code
-                    .~ Status'STATUS_CODE_ERROR
-                  & Trace_Fields.message
-                    .~ e
+               OT.Unset ->
+                 defMessage
+                   & Trace_Fields.code
+                     .~ Status'STATUS_CODE_UNSET
+               OT.Ok ->
+                 defMessage
+                   & Trace_Fields.code
+                     .~ Status'STATUS_CODE_OK
+               (OT.Error e) ->
+                 defMessage
+                   & Trace_Fields.code
+                     .~ Status'STATUS_CODE_ERROR
+                   & Trace_Fields.message
+                     .~ e
            )
       & parentSpanF
 
@@ -609,9 +609,9 @@ attributesToProto =
           .~ k
         & Common_Fields.value
           .~ ( case v of
-                AttributeValue a -> primAttributeToAnyValue a
-                AttributeArray a ->
-                  defMessage
-                    & Common_Fields.arrayValue
-                      .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
+                 AttributeValue a -> primAttributeToAnyValue a
+                 AttributeArray a ->
+                   defMessage
+                     & Common_Fields.arrayValue
+                       .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
              )

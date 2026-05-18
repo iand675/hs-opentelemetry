@@ -12,6 +12,13 @@
 in rec {
   inherit pkgs;
 
+  skipPackagesFor = ghcVersion:
+    lib.optionals (ghcVersion == "ghc94") [
+      "hs-opentelemetry-vendor-honeycomb"
+      "hs-opentelemetry-instrumentation-hw-kafka-client"
+      "hw-kafka-client-example"
+    ];
+
   localPackages = {
     hs-opentelemetry-api = ../api;
     hs-opentelemetry-sdk = ../sdk;
@@ -83,7 +90,7 @@ in rec {
       in {
         "${k}" = pkgs.buildEnv {
           name = k;
-          paths = lib.attrValues myLocalPackages;
+          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n (skipPackagesFor key)) myLocalPackages);
         };
       }
     )

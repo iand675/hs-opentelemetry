@@ -266,18 +266,18 @@ addAttribute :: (IsReadWriteLogRecord r, MonadIO m, ToValue a) => r -> Text -> a
 addAttribute lr k v =
   let attributeLimits = readLogRecordAttributeLimits lr
   in liftIO $
-      modifyLogRecord
-        lr
-        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
-            ilr
-              { logRecordAttributes =
-                  LA.addAttribute
-                    attributeLimits
-                    logRecordAttributes
-                    k
-                    v
-              }
-        )
+       modifyLogRecord
+         lr
+         ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+             ilr
+               { logRecordAttributes =
+                   LA.addAttribute
+                     attributeLimits
+                     logRecordAttributes
+                     k
+                     v
+               }
+         )
 
 
 {- | A convenience function related to 'addAttribute' that adds multiple attributes to a @LogRecord@ at the same time.
@@ -290,17 +290,17 @@ addAttributes :: (IsReadWriteLogRecord r, MonadIO m, ToValue a) => r -> HashMap 
 addAttributes lr attrs =
   let attributeLimits = readLogRecordAttributeLimits lr
   in liftIO $
-      modifyLogRecord
-        lr
-        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
-            ilr
-              { logRecordAttributes =
-                  LA.addAttributes
-                    attributeLimits
-                    logRecordAttributes
-                    attrs
-              }
-        )
+       modifyLogRecord
+         lr
+         ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+             ilr
+               { logRecordAttributes =
+                   LA.addAttributes
+                     attributeLimits
+                     logRecordAttributes
+                     attrs
+               }
+         )
 
 
 {- | This can be useful for pulling data for attributes and

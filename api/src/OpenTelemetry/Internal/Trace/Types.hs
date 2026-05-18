@@ -41,25 +41,27 @@ data SpanProcessor = SpanProcessor
   , spanProcessorOnEnd :: IORef ImmutableSpan -> IO ()
   -- ^ Called after a span is ended (i.e., the end timestamp is already set). This method is called synchronously within the 'OpenTelemetry.Trace.endSpan' API, therefore it should not block or throw an exception.
   , spanProcessorShutdown :: IO (Async ShutdownResult)
-  -- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
-  --
-  -- Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
-  --
-  -- Shutdown SHOULD let the caller know whether it succeeded, failed or timed out.
-  --
-  -- Shutdown MUST include the effects of ForceFlush.
-  --
-  -- Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
+  {- ^ Shuts down the processor. Called when SDK is shut down. This is an opportunity for processor to do any cleanup required.
+
+  Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.
+
+  Shutdown SHOULD let the caller know whether it succeeded, failed or timed out.
+
+  Shutdown MUST include the effects of ForceFlush.
+
+  Shutdown SHOULD complete or abort within some timeout. Shutdown can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the shutdown timeout configurable.
+  -}
   , spanProcessorForceFlush :: IO ()
-  -- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
-  --
-  -- In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
-  --
-  -- ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-  --
-  -- ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans.
-  --
-  -- ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
+  {- ^ This is a hint to ensure that any tasks associated with Spans for which the SpanProcessor had already received events prior to the call to ForceFlush SHOULD be completed as soon as possible, preferably before returning from this method.
+
+  In particular, if any Processor has any associated exporter, it SHOULD try to call the exporter's Export with all spans for which this was not already done and then invoke ForceFlush on it. The built-in SpanProcessors MUST do so. If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. It MAY skip or abort some or all Export or ForceFlush calls it has made to achieve this goal.
+
+  ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+
+  ForceFlush SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans.
+
+  ForceFlush SHOULD complete or abort within some timeout. ForceFlush can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. OpenTelemetry client authors can decide if they want to make the flush timeout configurable.
+  -}
   }
 
 
@@ -84,13 +86,15 @@ data TracerProvider = TracerProvider
 -}
 data Tracer = Tracer
   { tracerName :: {-# UNPACK #-} !InstrumentationLibrary
-  -- ^ Get the name of the 'Tracer'
-  --
-  -- @since 0.0.10
+  {- ^ Get the name of the 'Tracer'
+
+  @since 0.0.10
+  -}
   , tracerProvider :: !TracerProvider
-  -- ^ Get the TracerProvider from which the 'Tracer' was created
-  --
-  -- @since 0.0.10
+  {- ^ Get the TracerProvider from which the 'Tracer' was created
+
+  @since 0.0.10
+  -}
   }
 
 
@@ -161,12 +165,14 @@ data Link = Link
 -- | Non-name fields that may be set on initial creation of a 'Span'.
 data SpanArguments = SpanArguments
   { kind :: SpanKind
-  -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
-  -- of the various values that may be specified.
+  {- ^ The kind of the span. See 'SpanKind's documentation for the semantics
+  of the various values that may be specified.
+  -}
   , attributes :: AttributeMap
-  -- ^ An initial set of attributes that may be set on initial 'Span' creation.
-  -- These attributes are provided to 'Processor's, so they may be useful in some
-  -- scenarios where calling `addAttribute` or `addAttributes` is too late.
+  {- ^ An initial set of attributes that may be set on initial 'Span' creation.
+  These attributes are provided to 'Processor's, so they may be useful in some
+  scenarios where calling `addAttribute` or `addAttributes` is too late.
+  -}
   , links :: [NewLink]
   -- ^ A collection of `Link`s that point to causally related 'Span's.
   , startTime :: Maybe Timestamp
@@ -200,21 +206,25 @@ To summarize the interpretation of these kinds
 +-------------+--------------+---------------+------------------+------------------+
 -}
 data SpanKind
-  = -- | Indicates that the span covers server-side handling of a synchronous RPC or other remote request.
-    -- This span is the child of a remote @Client@ span that was expected to wait for a response.
+  = {- | Indicates that the span covers server-side handling of a synchronous RPC or other remote request.
+    This span is the child of a remote @Client@ span that was expected to wait for a response.
+    -}
     Server
-  | -- | Indicates that the span describes a synchronous request to some remote service.
-    -- This span is the parent of a remote @Server@ span and waits for its response.
+  | {- | Indicates that the span describes a synchronous request to some remote service.
+    This span is the parent of a remote @Server@ span and waits for its response.
+    -}
     Client
-  | -- | Indicates that the span describes the parent of an asynchronous request.
-    -- This parent span is expected to end before the corresponding child @Producer@ span,
-    -- possibly even before the child span starts. In messaging scenarios with batching,
-    -- tracing individual messages requires a new @Producer@ span per message to be created.
+  | {- | Indicates that the span describes the parent of an asynchronous request.
+    This parent span is expected to end before the corresponding child @Producer@ span,
+    possibly even before the child span starts. In messaging scenarios with batching,
+    tracing individual messages requires a new @Producer@ span per message to be created.
+    -}
     Producer
   | -- | Indicates that the span describes the child of an asynchronous @Producer@ request.
     Consumer
-  | -- |  Default value. Indicates that the span represents an internal operation within an application,
-    -- as opposed to an operations with remote parents or children.
+  | {- | Default value. Indicates that the span represents an internal operation within an application,
+    as opposed to an operations with remote parents or children.
+    -}
     Internal
   deriving (Show)
 
@@ -256,11 +266,13 @@ data ImmutableSpan = ImmutableSpan
   -- ^ A name identifying the role of the span (like function or method name).
   , spanParent :: Maybe Span
   , spanContext :: SpanContext
-  -- ^ A `SpanContext` represents the portion of a `Span` which must be serialized and
-  -- propagated along side of a distributed context. `SpanContext`s are immutable.
+  {- ^ A `SpanContext` represents the portion of a `Span` which must be serialized and
+  propagated along side of a distributed context. `SpanContext`s are immutable.
+  -}
   , spanKind :: SpanKind
-  -- ^ The kind of the span. See 'SpanKind's documentation for the semantics
-  -- of the various values that may be specified.
+  {- ^ The kind of the span. See 'SpanKind's documentation for the semantics
+  of the various values that may be specified.
+  -}
   , spanStart :: Timestamp
   -- ^ A timestamp that corresponds to the start of the span
   , spanEnd :: Maybe Timestamp
@@ -411,9 +423,10 @@ data NewEvent = NewEvent
   , newEventAttributes :: AttributeMap
   -- ^ Additional context or metadata related to the event, (stack traces, callsites, etc.).
   , newEventTimestamp :: Maybe Timestamp
-  -- ^ The time that the event occurred.
-  --
-  -- If not specified, 'OpenTelemetry.Trace.getTimestamp' will be used to get a timestamp.
+  {- ^ The time that the event occurred.
+
+  If not specified, 'OpenTelemetry.Trace.getTimestamp' will be used to get a timestamp.
+  -}
   }
 
 
@@ -434,9 +447,10 @@ data Event = Event
 
 -- | Utility class to format arbitrary values to events.
 class ToEvent a where
-  -- | Convert a value to an 'Event'
-  --
-  -- @since 0.0.1.0
+  {- | Convert a value to an 'Event'
+
+  @since 0.0.1.0
+  -}
   toEvent :: a -> Event
 
 

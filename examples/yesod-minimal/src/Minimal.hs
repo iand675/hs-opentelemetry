@@ -46,17 +46,17 @@ data Minimal = Minimal
 
 
 $( do
-    let routes =
-          [parseRoutes|
+     let routes =
+           [parseRoutes|
           / RootR GET
           /api ApiR GET
         |]
-    Prelude.concat
-      <$> Prelude.sequence
-        [ mkRouteToRenderer ''Minimal routes
-        , mkRouteToPattern ''Minimal routes
-        , mkYesod "Minimal" routes
-        ]
+     Prelude.concat
+       <$> Prelude.sequence
+         [ mkRouteToRenderer ''Minimal routes
+         , mkRouteToPattern ''Minimal routes
+         , mkYesod "Minimal" routes
+         ]
  )
 
 
