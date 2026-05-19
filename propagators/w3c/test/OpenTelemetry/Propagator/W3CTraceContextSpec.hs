@@ -130,12 +130,12 @@ spec = describe "W3C TraceContext TraceState" $ do
       let ts = insert (Key "vendor1") (Value "value1") empty
       encodeTraceStateFull ts `shouldBe` "vendor1=value1"
 
-    it "preserves all entries beyond 32 limit" $ do
+    it "encodes at most 32 entries (W3C list-member limit via fromList)" $ do
       let pairs = [(Key $ T.pack $ "key" ++ show i, Value $ T.pack $ "value" ++ show i) | i <- [1 .. 40]]
           ts = fromList pairs
           encoded = encodeTraceStateFull ts
           entryCount = length $ filter (== '=') $ C8.unpack encoded
-      entryCount `shouldBe` 40 -- Should preserve all 40 entries
+      entryCount `shouldBe` 32 -- fromList truncates to 32 per W3C spec
     it "does not filter oversized entries" $ do
       let longValue = T.replicate 200 "x" -- Much longer than 128 char limit
           ts = insert (Key "longentry") (Value longValue) empty

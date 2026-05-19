@@ -14,6 +14,7 @@ import OpenTelemetry.Exporter.Metric (
   GaugeDataPoint (..),
   HistogramDataPoint (..),
   MetricExport (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
@@ -29,7 +30,8 @@ import Test.Hspec
 
 
 decodeExport :: [ResourceMetricsExport] -> Either String ExportMetricsServiceRequest
-decodeExport rms = decodeMessage (encodeMessage (resourceMetricsToExportRequest rms))
+decodeExport rms =
+  decodeMessage (encodeMessage (resourceMetricsToExportRequest (V.fromList rms)))
 
 
 main :: IO ()
@@ -37,7 +39,14 @@ main = hspec $ do
   describe "resourceMetricsToExportRequest" $ do
     it "round-trips SumDataPoint through protobuf decode" $ do
       let lib = "lib" :: InstrumentationLibrary
-          pt = SumDataPoint 0 1 (Right 3) emptyAttributes V.empty
+          pt =
+            SumDataPoint
+              { sumDataPointStartTimeUnixNano = 0
+              , sumDataPointTimeUnixNano = 1
+              , sumDataPointValue = DoubleNumber 3
+              , sumDataPointAttributes = emptyAttributes
+              , sumDataPointExemplars = V.empty
+              }
           exp =
             MetricExportSum "c" "d" "By" lib True False AggregationCumulative $
               V.singleton pt
@@ -96,7 +105,14 @@ main = hspec $ do
 
     it "round-trips GaugeDataPoint (Int)" $ do
       let lib = "lib" :: InstrumentationLibrary
-          gdp = GaugeDataPoint 5 6 (Left (42 :: Int64)) emptyAttributes V.empty
+          gdp =
+            GaugeDataPoint
+              { gaugeDataPointStartTimeUnixNano = 5
+              , gaugeDataPointTimeUnixNano = 6
+              , gaugeDataPointValue = IntNumber 42
+              , gaugeDataPointAttributes = emptyAttributes
+              , gaugeDataPointExemplars = V.empty
+              }
           exp = MetricExportGauge "g" "" "" lib True $ V.singleton gdp
           rm =
             ResourceMetricsExport emptyMaterializedResources $
@@ -113,7 +129,14 @@ main = hspec $ do
 
     it "round-trips GaugeDataPoint (Double)" $ do
       let lib = "lib" :: InstrumentationLibrary
-          gdp = GaugeDataPoint 7 8 (Right 2.718) emptyAttributes V.empty
+          gdp =
+            GaugeDataPoint
+              { gaugeDataPointStartTimeUnixNano = 7
+              , gaugeDataPointTimeUnixNano = 8
+              , gaugeDataPointValue = DoubleNumber 2.718
+              , gaugeDataPointAttributes = emptyAttributes
+              , gaugeDataPointExemplars = V.empty
+              }
           exp = MetricExportGauge "g2" "" "" lib False $ V.singleton gdp
           rm =
             ResourceMetricsExport emptyMaterializedResources $
@@ -181,7 +204,14 @@ main = hspec $ do
 
     it "serializes AggregationDelta on Sum" $ do
       let lib = "lib" :: InstrumentationLibrary
-          pt = SumDataPoint 0 0 (Left 0) emptyAttributes V.empty
+          pt =
+            SumDataPoint
+              { sumDataPointStartTimeUnixNano = 0
+              , sumDataPointTimeUnixNano = 0
+              , sumDataPointValue = IntNumber 0
+              , sumDataPointAttributes = emptyAttributes
+              , sumDataPointExemplars = V.empty
+              }
           exp =
             MetricExportSum "s" "" "" lib False False AggregationDelta $
               V.singleton pt
@@ -237,7 +267,14 @@ main = hspec $ do
                 ScopeMetricsExport lib $
                   V.singleton $
                     MetricExportSum name "" "" lib True False AggregationCumulative $
-                      V.singleton (SumDataPoint 0 0 (Right 0) emptyAttributes V.empty)
+                      V.singleton
+                        SumDataPoint
+                          { sumDataPointStartTimeUnixNano = 0
+                          , sumDataPointTimeUnixNano = 0
+                          , sumDataPointValue = DoubleNumber 0
+                          , sumDataPointAttributes = emptyAttributes
+                          , sumDataPointExemplars = V.empty
+                          }
           rmA = mkRm "metric-a"
           rmB = mkRm "metric-b"
       case decodeExport [rmA, rmB] of

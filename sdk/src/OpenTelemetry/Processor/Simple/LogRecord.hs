@@ -8,12 +8,13 @@ module OpenTelemetry.Processor.Simple.LogRecord (
 
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Control.Exception (mask_)
 import Control.Monad
 import Data.IORef
 import qualified Data.Vector as V
 import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
-import OpenTelemetry.Internal.Logs.Types
-import System.IO (hPutStrLn, stderr)
+import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 
 
 data SimpleLogRecordProcessorConfig = SimpleLogRecordProcessorConfig
@@ -37,7 +38,7 @@ simpleLogRecordProcessor SimpleLogRecordProcessorConfig {..} = do
   flushDone <- newEmptyTMVarIO
 
   let exportOne rw = do
-        let readable = mkReadableLogRecord rw
+        readable <- mkReadableLogRecord rw
         mask_ (logRecordExporterExport simpleLogRecordExporter (V.singleton readable))
 
   let drainQueue = do
@@ -73,25 +74,23 @@ simpleLogRecordProcessor SimpleLogRecordProcessorConfig {..} = do
   pure
     LogRecordProcessor
       { logRecordProcessorOnEmit = \lr _ctxt -> do
-          written <- atomically $ tryWriteTBQueue queue lr
+          written <- atomically $ do
+            full <- isFullTBQueue queue
+            if full then pure False else writeTBQueue queue lr >> pure True
           unless written $ do
             n <- atomicModifyIORef' droppedRef (\c -> let c' = c + 1 in (c', c'))
             alreadyWarned <- atomicModifyIORef' warnedRef (\w -> (True, w))
-            -- TODO: otel-12 introduces OpenTelemetry.Internal.Logging (otelLogWarning)
-            -- which respects OTEL_LOG_LEVEL and the global error handler.
-            -- Replace hPutStrLn stderr with otelLogWarning once available.
             unless alreadyWarned $
-              hPutStrLn stderr $
-                "OpenTelemetry [WARN] SimpleLogRecordProcessor: queue full (capacity "
+              otelLogWarning $
+                "SimpleLogRecordProcessor: queue full (capacity "
                   <> show defaultSimpleQueueBound
                   <> "), dropping log record. Total dropped so far: "
                   <> show n
       , logRecordProcessorShutdown = do
           atomically $ writeTVar shutdownVar True
-          async $ do
-            wait exportWorker
-            logRecordExporterShutdown simpleLogRecordExporter
-            pure ShutdownSuccess
+          wait exportWorker
+          logRecordExporterShutdown simpleLogRecordExporter
+          pure ShutdownSuccess
       , logRecordProcessorForceFlush = do
           isShut <- readTVarIO shutdownVar
           unless isShut $ do

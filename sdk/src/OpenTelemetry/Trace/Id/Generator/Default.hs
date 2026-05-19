@@ -19,8 +19,6 @@ module OpenTelemetry.Trace.Id.Generator.Default (
 ) where
 
 import OpenTelemetry.Trace.Id.Generator (IdGenerator (..))
-import System.IO.Unsafe (unsafePerformIO)
-import System.Random.Stateful
 
 
 {- | The default generator for trace and span ids.
@@ -28,14 +26,4 @@ import System.Random.Stateful
  @since 0.1.0.0
 -}
 defaultIdGenerator :: IdGenerator
-defaultIdGenerator = unsafePerformIO $ do
-  genBase <- initStdGen
-  let (spanIdGen, traceIdGen) = split genBase
-  sg <- newAtomicGenM spanIdGen
-  tg <- newAtomicGenM traceIdGen
-  pure $
-    IdGenerator
-      { generateSpanIdBytes = uniformByteStringM 8 sg
-      , generateTraceIdBytes = uniformByteStringM 16 tg
-      }
-{-# NOINLINE defaultIdGenerator #-}
+defaultIdGenerator = DefaultIdGenerator

@@ -45,6 +45,7 @@ import OpenTelemetry.Exporter.Metric (
   MetricExemplar (..),
   MetricExport (..),
   MetricExporter (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
@@ -79,11 +80,11 @@ httpProtobufMimeType = "application/x-protobuf"
 
 
 -- | Encode metric batches to an OTLP 'ExportMetricsServiceRequest'.
-resourceMetricsToExportRequest :: [ResourceMetricsExport] -> ExportMetricsServiceRequest
+resourceMetricsToExportRequest :: Vector ResourceMetricsExport -> ExportMetricsServiceRequest
 resourceMetricsToExportRequest rms =
   defMessage
     & MSF.vec'resourceMetrics
-      .~ V.fromList (fmap resourceMetricsExportToProto rms)
+      .~ V.map resourceMetricsExportToProto rms
 
 
 -- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
@@ -210,10 +211,9 @@ trimTrailingSlash :: String -> String
 trimTrailingSlash = reverse . dropWhile (== '/') . reverse
 
 
-anyMetricsToExport :: [ResourceMetricsExport] -> Bool
+anyMetricsToExport :: Vector ResourceMetricsExport -> Bool
 anyMetricsToExport batches =
-  flip any batches $ \rm ->
-    V.any (not . V.null . scopeMetricsExports) (resourceMetricsScopes rm)
+  V.any (\rm -> V.any (not . V.null . scopeMetricsExports) (resourceMetricsScopes rm)) batches
 
 
 resourceMetricsExportToProto :: ResourceMetricsExport -> PM.ResourceMetrics
@@ -333,7 +333,7 @@ metricExportToProto = \case
 
 sumPointToProto :: SumDataPoint -> PM.NumberDataPoint
 sumPointToProto SumDataPoint {..} =
-  numberDataPointFromEither sumDataPointValue $
+  numberDataPointFromValue sumDataPointValue $
     defMessage
       & Mf.vec'attributes
         .~ attributesToProto sumDataPointAttributes
@@ -347,7 +347,7 @@ sumPointToProto SumDataPoint {..} =
 
 gaugePointToProto :: GaugeDataPoint -> PM.NumberDataPoint
 gaugePointToProto GaugeDataPoint {..} =
-  numberDataPointFromEither gaugeDataPointValue $
+  numberDataPointFromValue gaugeDataPointValue $
     defMessage
       & Mf.vec'attributes
         .~ attributesToProto gaugeDataPointAttributes
@@ -359,10 +359,10 @@ gaugePointToProto GaugeDataPoint {..} =
         .~ V.map metricExemplarToProto gaugeDataPointExemplars
 
 
-numberDataPointFromEither :: Either Int64 Double -> PM.NumberDataPoint -> PM.NumberDataPoint
-numberDataPointFromEither val dp = case val of
-  Left i -> dp & Mf.asInt .~ i
-  Right d -> dp & Mf.asDouble .~ d
+numberDataPointFromValue :: NumberValue -> PM.NumberDataPoint -> PM.NumberDataPoint
+numberDataPointFromValue val dp = case val of
+  IntNumber i -> dp & Mf.asInt .~ i
+  DoubleNumber d -> dp & Mf.asDouble .~ d
 
 
 histogramPointToProto :: HistogramDataPoint -> PM.HistogramDataPoint
@@ -404,8 +404,8 @@ metricExemplarToProto MetricExemplar {..} =
     & Mf.maybe'value
       .~ fmap
         ( \case
-            Left i -> PM.Exemplar'AsInt i
-            Right d -> PM.Exemplar'AsDouble d
+            IntNumber i -> PM.Exemplar'AsInt i
+            DoubleNumber d -> PM.Exemplar'AsDouble d
         )
         metricExemplarValue
 

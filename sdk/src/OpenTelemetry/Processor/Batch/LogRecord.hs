@@ -16,8 +16,8 @@ import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), ShutdownResult (..))
-import OpenTelemetry.Internal.Logs.Types
-import System.IO (hPutStrLn, stderr)
+import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import System.Timeout (timeout)
 import VectorBuilder.Builder as Builder
 import VectorBuilder.Vector as Builder
@@ -149,7 +149,7 @@ batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
   pure
     LogRecordProcessor
       { logRecordProcessorOnEmit = \lr _ctxt -> do
-          let readable = mkReadableLogRecord lr
+          readable <- mkReadableLogRecord lr
           (dropped, exportNeeded) <- atomicModifyIORef' batch $ \buf ->
             case pushBuffer readable buf of
               Nothing -> (buf, (True, True))
@@ -164,24 +164,23 @@ batchLogRecordProcessor BatchLogRecordProcessorConfig {..} = liftIO $ do
           atomically $ takeTMVar flushDoneSignal
           logRecordExporterForceFlush batchLogExporter
       , logRecordProcessorShutdown =
-          asyncWithUnmask $ \unmask -> unmask $ do
-            mask $ \_restore -> do
-              void $ atomically $ putTMVar shutdownSignal ()
-              delay <- registerDelay (millisToMicros batchLogExportTimeoutMillis)
-              shutdownResult <-
-                atomically $
-                  msum
-                    [ Just <$> waitCatchSTM worker
-                    , Nothing <$ do
-                        shouldStop <- readTVar delay
-                        check shouldStop
-                    ]
-              cancel worker
-              logRecordExporterShutdown batchLogExporter
-              pure $ case shutdownResult of
-                Nothing -> ShutdownTimeout
-                Just (Left _) -> ShutdownFailure
-                Just (Right _) -> ShutdownSuccess
+          mask $ \_restore -> do
+            void $ atomically $ putTMVar shutdownSignal ()
+            delay <- registerDelay (millisToMicros batchLogExportTimeoutMillis)
+            shutdownResult <-
+              atomically $
+                msum
+                  [ Just <$> waitCatchSTM worker
+                  , Nothing <$ do
+                      shouldStop <- readTVar delay
+                      check shouldStop
+                  ]
+            cancel worker
+            logRecordExporterShutdown batchLogExporter
+            pure $ case shutdownResult of
+              Nothing -> ShutdownTimeout
+              Just (Left _) -> ShutdownFailure
+              Just (Right _) -> ShutdownSuccess
       }
   where
     millisToMicros = (* 1000)
@@ -192,9 +191,8 @@ warnOnDrop droppedRef warnedRef capacity processorName = do
   n <- atomicModifyIORef' droppedRef (\c -> let c' = c + 1 in (c', c'))
   alreadyWarned <- atomicModifyIORef' warnedRef (\w -> (True, w))
   unless alreadyWarned $
-    hPutStrLn stderr $
-      "OpenTelemetry [WARN] "
-        <> processorName
+    otelLogWarning $
+      processorName
         <> ": queue full (capacity "
         <> show capacity
         <> "), dropping log record. Total dropped so far: "

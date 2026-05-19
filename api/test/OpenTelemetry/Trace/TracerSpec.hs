@@ -1,6 +1,7 @@
 module OpenTelemetry.Trace.TracerSpec where
 
 import qualified OpenTelemetry.Attributes as A
+import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
 import OpenTelemetry.Processor.Span (SpanProcessor (..))
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Sampler
@@ -21,8 +22,8 @@ spec = describe "Tracer" $ do
             SpanProcessor
               { spanProcessorOnStart = \_ _ -> pure ()
               , spanProcessorOnEnd = \_ -> pure ()
-              , spanProcessorShutdown = error "not implemented in test"
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
       tp <- createTracerProvider [dummyProcessor] emptyTracerProviderOptions
       let instrLib = InstrumentationLibrary "test" "1.0.0" "" A.emptyAttributes
@@ -34,15 +35,15 @@ spec = describe "Tracer" $ do
             SpanProcessor
               { spanProcessorOnStart = \_ _ -> pure ()
               , spanProcessorOnEnd = \_ -> pure ()
-              , spanProcessorShutdown = error "not implemented in test"
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
           dummyProcessor2 =
             SpanProcessor
               { spanProcessorOnStart = \_ _ -> pure ()
               , spanProcessorOnEnd = \_ -> pure ()
-              , spanProcessorShutdown = error "not implemented in test"
-              , spanProcessorForceFlush = pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
               }
       tp <- createTracerProvider [dummyProcessor1, dummyProcessor2] emptyTracerProviderOptions
       let instrLib = InstrumentationLibrary "test" "1.0.0" "" A.emptyAttributes

@@ -5,8 +5,8 @@ module OpenTelemetry.MetricsSpec (spec) where
 import Data.Maybe (isJust)
 import OpenTelemetry.Attributes (emptyAttributes)
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
-import OpenTelemetry.Metrics
-import OpenTelemetry.Metrics.InstrumentName (validateInstrumentName, validateInstrumentUnit)
+import OpenTelemetry.Metric.Core
+import OpenTelemetry.Metric.InstrumentName (validateInstrumentName, validateInstrumentUnit)
 import Test.Hspec
 
 

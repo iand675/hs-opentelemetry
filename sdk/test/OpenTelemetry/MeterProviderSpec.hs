@@ -14,13 +14,14 @@ import OpenTelemetry.Exporter.Metric (
   GaugeDataPoint (..),
   HistogramDataPoint (..),
   MetricExport (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.MeterProvider
-import OpenTelemetry.Metrics (
+import OpenTelemetry.Metric.Core (
   AdvisoryParameters (..),
   Counter (..),
   Gauge (..),
@@ -35,7 +36,7 @@ import OpenTelemetry.Metrics (
   getMeter,
   shutdownMeterProvider,
  )
-import OpenTelemetry.Metrics.View (View (..), ViewAggregation (..), ViewSelector (..))
+import OpenTelemetry.Metric.View (View (..), ViewAggregation (..), ViewSelector (..))
 import OpenTelemetry.Resource (emptyMaterializedResources)
 import Test.Hspec
 
@@ -86,7 +87,7 @@ spec = do
           mono `shouldBe` True
           isInt `shouldBe` True
           V.length pts `shouldBe` 1
-          sumDataPointValue (V.head pts) `shouldBe` Left (10 :: Int64)
+          sumDataPointValue (V.head pts) `shouldBe` IntNumber 10
         _ -> expectationFailure "expected MetricExportSum"
 
     -- Counter (Double)
@@ -100,7 +101,7 @@ spec = do
       case firstMetric batches of
         MetricExportSum {mesSumPoints = pts, mesIsInt = isInt} -> do
           isInt `shouldBe` False
-          sumDataPointValue (V.head pts) `shouldBe` Right (4.0 :: Double)
+          sumDataPointValue (V.head pts) `shouldBe` DoubleNumber 4.0
         _ -> expectationFailure "expected MetricExportSum"
 
     -- UpDownCounter (Int64)
@@ -114,7 +115,7 @@ spec = do
       case firstMetric batches of
         MetricExportSum {mesSumPoints = pts, mesMonotonic = mono} -> do
           mono `shouldBe` False
-          sumDataPointValue (V.head pts) `shouldBe` Left (7 :: Int64)
+          sumDataPointValue (V.head pts) `shouldBe` IntNumber 7
         _ -> expectationFailure "expected MetricExportSum"
 
     -- UpDownCounter (Double)
@@ -130,8 +131,8 @@ spec = do
           mono `shouldBe` False
           isInt `shouldBe` False
           case sumDataPointValue (V.head pts) of
-            Right d -> abs (d - 3.8) `shouldSatisfy` (< 0.001)
-            Left _ -> expectationFailure "expected Double"
+            DoubleNumber d -> abs (d - 3.8) `shouldSatisfy` (< 0.001)
+            _ -> expectationFailure "expected Double"
         _ -> expectationFailure "expected MetricExportSum"
 
     -- Histogram (explicit bounds)
@@ -183,7 +184,7 @@ spec = do
       case firstMetric batches of
         MetricExportGauge {megGaugePoints = pts, megIsInt = isInt} -> do
           isInt `shouldBe` True
-          gaugeDataPointValue (V.head pts) `shouldBe` Left (200 :: Int64)
+          gaugeDataPointValue (V.head pts) `shouldBe` IntNumber 200
         _ -> expectationFailure "expected MetricExportGauge"
 
     -- Gauge (Double)
@@ -196,7 +197,7 @@ spec = do
       batches <- collectResourceMetrics env
       case firstMetric batches of
         MetricExportGauge {megGaugePoints = pts} ->
-          gaugeDataPointValue (V.head pts) `shouldBe` Right (0.42 :: Double)
+          gaugeDataPointValue (V.head pts) `shouldBe` DoubleNumber 0.42
         _ -> expectationFailure "expected MetricExportGauge"
 
     -- Exponential histogram
@@ -245,7 +246,7 @@ spec = do
         MetricExportSum {mesSumPoints = pts, mesName = nm, mesMonotonic = mono} -> do
           nm `shouldBe` "obs.counter"
           mono `shouldBe` True
-          sumDataPointValue (V.head pts) `shouldBe` Left (42 :: Int64)
+          sumDataPointValue (V.head pts) `shouldBe` IntNumber 42
         _ -> expectationFailure "expected MetricExportSum"
 
     -- Observable gauge
@@ -258,7 +259,7 @@ spec = do
       case firstMetric batches of
         MetricExportGauge {megGaugePoints = pts, megName = nm} -> do
           nm `shouldBe` "obs.gauge"
-          gaugeDataPointValue (V.head pts) `shouldBe` Right (3.14 :: Double)
+          gaugeDataPointValue (V.head pts) `shouldBe` DoubleNumber 3.14
         _ -> expectationFailure "expected MetricExportGauge"
 
     -- Observable up-down counter
@@ -271,7 +272,7 @@ spec = do
       case firstMetric batches of
         MetricExportSum {mesSumPoints = pts, mesMonotonic = mono} -> do
           mono `shouldBe` False
-          sumDataPointValue (V.head pts) `shouldBe` Left (-10 :: Int64)
+          sumDataPointValue (V.head pts) `shouldBe` IntNumber (-10)
         _ -> expectationFailure "expected MetricExportSum"
 
     -- Cardinality limit — excess goes to overflow bucket (otel.metric.overflow=true)
@@ -291,7 +292,7 @@ spec = do
           V.length pts `shouldBe` 2
           let overflow = V.filter (\p -> lookupAttribute (sumDataPointAttributes p) "otel.metric.overflow" == Just (AttributeValue (BoolAttribute True))) pts
           V.length overflow `shouldBe` 1
-          sumDataPointValue (V.head overflow) `shouldBe` Left (100 :: Int64)
+          sumDataPointValue (V.head overflow) `shouldBe` IntNumber 100
         _ -> expectationFailure "expected MetricExportSum"
 
     -- View drop
@@ -394,13 +395,13 @@ spec = do
       case firstMetric b1 of
         MetricExportSum {mesSumPoints = pts, mesAggregationTemporality = temp} -> do
           temp `shouldBe` AggregationDelta
-          sumDataPointValue (V.head pts) `shouldBe` Left (5 :: Int64)
+          sumDataPointValue (V.head pts) `shouldBe` IntNumber 5
         _ -> expectationFailure "expected MetricExportSum"
       counterAdd c 3 emptyAttributes
       b2 <- collectResourceMetrics env
       case firstMetric b2 of
         MetricExportSum {mesSumPoints = pts} ->
-          sumDataPointValue (V.head pts) `shouldBe` Left (3 :: Int64)
+          sumDataPointValue (V.head pts) `shouldBe` IntNumber 3
         _ -> expectationFailure "expected MetricExportSum"
 
     -- Delta temporality for histogram
@@ -467,7 +468,7 @@ spec = do
     -- ForceFlush triggers a collect
     it "forceFlush succeeds" $ do
       (provider, _env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
-      result <- forceFlushMeterProvider provider
+      result <- forceFlushMeterProvider provider Nothing
       result `shouldBe` FlushSuccess
 
     -- Invalid instrument name produces noop

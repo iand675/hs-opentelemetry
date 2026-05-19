@@ -1,0 +1,36 @@
+cabal-version: 2.4
+
+name:        hs-opentelemetry-api-types
+version:     0.1.0.0
+synopsis:    Core attribute types for hs-opentelemetry
+description:
+  Leaf package containing 'Attribute', 'PrimitiveAttribute', and 'AttributeKey'
+  — the foundational value types of the OpenTelemetry API. Extracted so that
+  @hs-opentelemetry-semantic-conventions@ and @hs-opentelemetry-api@ can both
+  depend on these types without creating a circular dependency.
+
+homepage:    https://github.com/iand675/hs-opentelemetry#readme
+bug-reports: https://github.com/iand675/hs-opentelemetry/issues
+author:      Ian Duncan
+maintainer:  ian@iankduncan.com
+copyright:   2024 Ian Duncan, Mercury Technologies
+license:     BSD-3-Clause
+license-file: LICENSE
+build-type:  Simple
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Attributes.Attribute
+      OpenTelemetry.Attributes.Key
+  hs-source-dirs: src
+  default-language: Haskell2010
+  ghc-options: -Wall
+  build-depends:
+      base >= 4.7 && < 5
+    , hashable
+    , template-haskell
+    , text

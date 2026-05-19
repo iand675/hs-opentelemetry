@@ -5,8 +5,7 @@
 module OpenTelemetry.Propagator.DatadogSpec where
 
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Short as SB
-import OpenTelemetry.Internal.Trace.Id
+import OpenTelemetry.Internal.Trace.Id (bytesToSpanId, bytesToTraceId)
 import OpenTelemetry.Propagator.Datadog
 import Test.Hspec
 import Test.QuickCheck
@@ -16,7 +15,7 @@ spec :: Spec
 spec = do
   context "convertOpenTelemetrySpanIdToDatadogSpanId" $ do
     it "can conert values" $
-      property $ \(x1, x2, x3, x4, x5, x6, x7, x8) -> do
+      property $ \(x1, x2, x3, x4, x5, x6, x7, x8) ->
         let v =
               fromIntegral x1 * (2 ^ 8) ^ 7
                 + fromIntegral x2 * (2 ^ 8) ^ 6
@@ -26,12 +25,15 @@ spec = do
                 + fromIntegral x6 * (2 ^ 8) ^ 2
                 + fromIntegral x7 * (2 ^ 8) ^ 1
                 + fromIntegral x8
-            spanId = SpanId $ SB.toShort $ B.pack [x1, x2, x3, x4, x5, x6, x7, x8]
-        convertOpenTelemetrySpanIdToDatadogSpanId spanId `shouldBe` v
+            otelSpanId =
+              case bytesToSpanId (B.pack [x1, x2, x3, x4, x5, x6, x7, x8]) of
+                Right sid -> sid
+                Left err -> error err
+         in convertOpenTelemetrySpanIdToDatadogSpanId otelSpanId == v
 
   context "convertOpenTelemetryTraceIdToDatadogTraceId" $ do
     it "can conert values" $
-      property $ \(x1, x2, x3, x4, x5, x6, x7, x8) -> do
+      property $ \(x1, x2, x3, x4, x5, x6, x7, x8) ->
         let v =
               fromIntegral x1 * (2 ^ 8) ^ 7
                 + fromIntegral x2 * (2 ^ 8) ^ 6
@@ -41,5 +43,8 @@ spec = do
                 + fromIntegral x6 * (2 ^ 8) ^ 2
                 + fromIntegral x7 * (2 ^ 8) ^ 1
                 + fromIntegral x8
-            traceId = TraceId $ SB.toShort $ B.pack $ replicate 8 0 ++ [x1, x2, x3, x4, x5, x6, x7, x8]
-        convertOpenTelemetryTraceIdToDatadogTraceId traceId `shouldBe` v
+            otelTraceId =
+              case bytesToTraceId (B.pack (replicate 8 0 ++ [x1, x2, x3, x4, x5, x6, x7, x8])) of
+                Right tid -> tid
+                Left err -> error err
+         in convertOpenTelemetryTraceIdToDatadogTraceId otelTraceId == v

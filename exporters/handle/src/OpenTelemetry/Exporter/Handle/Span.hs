@@ -2,6 +2,27 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
+{- |
+Module      : OpenTelemetry.Exporter.Handle.Span
+Copyright   : (c) Ian Duncan, 2021-2026
+License     : BSD-3
+Description : Export spans as text to a file handle (stdout/stderr)
+Stability   : experimental
+
+= Overview
+
+Writes spans as human-readable text to a file handle. Useful for local
+development and debugging.
+
+= Quick example
+
+@
+import OpenTelemetry.Exporter.Handle.Span (stdoutExporter')
+
+exporter <- stdoutExporter'
+-- Spans will be printed to stdout as they complete
+@
+-}
 module OpenTelemetry.Exporter.Handle.Span (
   makeHandleExporter,
   -- $
@@ -13,9 +34,12 @@ module OpenTelemetry.Exporter.Handle.Span (
 
 import Data.IORef
 import qualified Data.Text.Lazy as L
+import Data.Text.Lazy.Builder (fromString, fromText, toLazyText)
 import qualified Data.Text.Lazy.IO as L
 import OpenTelemetry.Exporter.Span
+import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
 import OpenTelemetry.Trace.Core
+import OpenTelemetry.Trace.Id (Base (..), spanIdBaseEncodedText, traceIdBaseEncodedText)
 import System.IO (Handle, hFlush, stderr, stdout)
 
 
@@ -25,8 +49,8 @@ makeHandleExporter h f =
     { spanExporterExport = \fs -> do
         mapM_ (mapM_ (\s -> f s >>= L.hPutStrLn h >> hFlush h)) fs
         pure Success
-    , spanExporterShutdown = hFlush h
-    , spanExporterForceFlush = hFlush h
+    , spanExporterShutdown = hFlush h >> pure ShutdownSuccess
+    , spanExporterForceFlush = hFlush h >> pure FlushSuccess
     }
 
 
@@ -38,12 +62,16 @@ stderrExporter' :: (ImmutableSpan -> IO L.Text) -> SpanExporter
 stderrExporter' = makeHandleExporter stderr
 
 
-defaultFormatter :: ImmutableSpan -> L.Text
-defaultFormatter ImmutableSpan {..} =
-  L.intercalate
-    " "
-    [ L.pack $ show $ traceId spanContext
-    , L.pack $ show $ spanId spanContext
-    , L.pack $ show spanStart
-    , L.fromStrict spanName
-    ]
+defaultFormatter :: ImmutableSpan -> IO L.Text
+defaultFormatter imm = do
+  hot <- readIORef (spanHot imm)
+  let ctx = spanContext imm
+  pure $!
+    toLazyText $
+      fromText (traceIdBaseEncodedText Base16 (traceId ctx))
+        <> " "
+        <> fromText (spanIdBaseEncodedText Base16 (spanId ctx))
+        <> " "
+        <> fromString (show (spanStart imm))
+        <> " "
+        <> fromText (hotName hot)

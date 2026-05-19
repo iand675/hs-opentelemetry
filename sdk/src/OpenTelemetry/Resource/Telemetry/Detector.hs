@@ -15,5 +15,6 @@ detectTelemetry =
     { telemetrySdkName = "hs-opentelemetry-sdk"
     , telemetrySdkLanguage = Just "haskell"
     , telemetrySdkVersion = Just $ T.pack $ showVersion version
-    , telemetryAutoVersion = Nothing
+    , telemetryDistroName = Nothing
+    , telemetryDistroVersion = Nothing
     }

@@ -8,7 +8,6 @@
 module OpenTelemetry.Instrumentation.Tasty.Tests (tests) where
 
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.Async (async)
 import Control.Exception (bracket)
 import Data.Functor (void)
 import Data.IORef (atomicModifyIORef, newIORef, readIORef)
@@ -18,9 +17,9 @@ import Data.Maybe (fromMaybe)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import OpenTelemetry.Instrumentation.Tasty (instrumentTestTree)
-import OpenTelemetry.Processor.Span (ShutdownResult (ShutdownSuccess), SpanProcessor, spanProcessorForceFlush, spanProcessorOnEnd, spanProcessorOnStart, spanProcessorShutdown, pattern SpanProcessor)
-import OpenTelemetry.Trace (ImmutableSpan (ImmutableSpan, spanName, spanParent), createTracerProvider, defaultSpanArguments, emptyTracerProviderOptions, getGlobalTracerProvider, inSpan, makeTracer, setGlobalTracerProvider, shutdownTracerProvider, tracerOptions)
-import OpenTelemetry.Trace.Core (unsafeReadSpan)
+import OpenTelemetry.Processor.Span (FlushResult (FlushSuccess), ShutdownResult (ShutdownSuccess), SpanProcessor (..))
+import OpenTelemetry.Trace (ImmutableSpan (..), createTracerProvider, defaultSpanArguments, emptyTracerProviderOptions, getGlobalTracerProvider, inSpan, makeTracer, setGlobalTracerProvider, shutdownTracerProvider, tracerOptions)
+import OpenTelemetry.Trace.Core (hotName, spanHot, unsafeReadSpan)
 import Test.Tasty (DependencyType (AllFinish), TestTree, sequentialTestGroup, testGroup, withResource)
 import Test.Tasty.HUnit (testCase, (@?=))
 import Test.Tasty.Ingredients (tryIngredients)
@@ -130,7 +129,7 @@ data Tree a = Branch a (Set.Set (Tree a)) | Leaf a
 spanTrees :: IO a -> IO (a, Set.Set (Tree Text))
 spanTrees act = do
   (processor, readSpans) <- recordingProcessor
-  res <- bracket (setup processor) shutdownTracerProvider $ \_ -> do
+  res <- bracket (setup processor) (`shutdownTracerProvider` Nothing) $ \_ -> do
     act
   spans <- readSpans
   trees <- spansToTrees spans
@@ -142,14 +141,21 @@ spanTrees act = do
       pure tp
 
 
+immutableSpanName :: ImmutableSpan -> IO Text
+immutableSpanName imm = hotName <$> readIORef (spanHot imm)
+
+
 toChildMap :: [ImmutableSpan] -> ([Text], Map Text [Text]) -> IO ([Text], Map Text [Text])
 toChildMap [] acc = pure acc
-toChildMap (ImmutableSpan {spanParent, spanName} : spans) (accRoots, accChildren) = case spanParent of
-  Just parent -> do
-    ImmutableSpan {spanName = parentName} <- unsafeReadSpan parent
-    let existingChildren = fromMaybe mempty $ Map.lookup parentName accChildren
-    toChildMap spans (accRoots, Map.insert parentName (existingChildren ++ [spanName]) accChildren)
-  Nothing -> toChildMap spans (spanName : accRoots, accChildren)
+toChildMap (imm : spans) (accRoots, accChildren) = do
+  name <- immutableSpanName imm
+  case spanParent imm of
+    Just parent -> do
+      parentImm <- unsafeReadSpan parent
+      parentName <- immutableSpanName parentImm
+      let existingChildren = fromMaybe mempty $ Map.lookup parentName accChildren
+      toChildMap spans (accRoots, Map.insert parentName (existingChildren ++ [name]) accChildren)
+    Nothing -> toChildMap spans (name : accRoots, accChildren)
 
 
 toTree :: (Ord a) => Map a [a] -> a -> Tree a
@@ -174,12 +180,11 @@ recordingProcessor = do
 
   let processor =
         SpanProcessor
-          { spanProcessorOnStart = mempty
-          , spanProcessorOnEnd = \spanRef -> do
-              immutableSpan <- readIORef spanRef
+          { spanProcessorOnStart = \_ _ -> pure ()
+          , spanProcessorOnEnd = \immutableSpan ->
               atomicModifyIORef spans $ \soFar -> (soFar ++ [immutableSpan], ())
-          , spanProcessorShutdown = async $ pure ShutdownSuccess
-          , spanProcessorForceFlush = mempty
+          , spanProcessorShutdown = pure ShutdownSuccess
+          , spanProcessorForceFlush = pure FlushSuccess
           }
 
   setGlobalTracerProvider

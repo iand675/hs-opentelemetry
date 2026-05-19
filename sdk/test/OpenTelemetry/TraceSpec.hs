@@ -33,6 +33,14 @@ asIO :: IO a -> IO a
 asIO = id
 
 
+immutableSpanStatus :: ImmutableSpan -> IO SpanStatus
+immutableSpanStatus imm = hotStatus <$> readIORef (spanHot imm)
+
+
+immutableSpanAttributes :: ImmutableSpan -> IO Attributes
+immutableSpanAttributes imm = hotAttributes <$> readIORef (spanHot imm)
+
+
 pattern HostName :: Text
 pattern HostName = "host.name"
 
@@ -65,7 +73,7 @@ spec = describe "Trace" $ do
     specify "Shutdown" pending
     specify "ForceFlush" pending
     specify "Resource initialization prioritizes user override, then OTEL_RESOURCE_ATTRIBUTES env var" $ do
-      let getInitialResourceAttrs :: Resource 'Nothing -> IO Attributes
+      let getInitialResourceAttrs :: Resource -> IO Attributes
           getInitialResourceAttrs resource = do
             opts <- snd <$> getTracerProviderInitializationOptions' resource
             pure . getMaterializedResourcesAttributes $ tracerProviderOptionsResources opts
@@ -82,7 +90,7 @@ spec = describe "Trace" $ do
         ]
       attrsFromUser <-
         getInitialResourceAttrs $
-          mkResource @'Nothing
+          mkResource
             [ HostName .= toAttribute @Text "user_host_name"
             , TelemetrySdkLanguage .= toAttribute @Text "GHC2021"
             , ExampleCount .= toAttribute @Int 11
@@ -190,15 +198,15 @@ spec = describe "Trace" $ do
       setStatus s $ Error "woo"
       do
         i <- unsafeReadSpan s
-        spanStatus i `shouldBe` Error "woo"
+        immutableSpanStatus i `shouldReturn` Error "woo"
       setStatus s $ Ok
       do
         i <- unsafeReadSpan s
-        spanStatus i `shouldBe` Ok
+        immutableSpanStatus i `shouldReturn` Ok
       setStatus s $ Error "woo"
       do
         i <- unsafeReadSpan s
-        spanStatus i `shouldBe` Ok
+        immutableSpanStatus i `shouldReturn` Ok
 
     specify "Safe for concurrent calls" pending
     specify "events collection size limit" pending
@@ -253,36 +261,36 @@ spec = describe "Trace" $ do
     specify "Source code attributes are added correctly" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
-      s <- unsafeReadSpan =<< f t
-      spanAttributes s `shouldSatisfy` \attrs ->
-        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "f")
-          && (lookupAttribute attrs "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
-          && isJust (lookupAttribute attrs "code.lineno")
+      attrs <- immutableSpanAttributes =<< unsafeReadSpan =<< f t
+      attrs `shouldSatisfy` \a ->
+        (lookupAttribute a "code.function") == Just (toAttribute @Text "f")
+          && (lookupAttribute a "code.namespace") == Just (toAttribute @Text "OpenTelemetry.TraceSpec")
+          && isJust (lookupAttribute a "code.lineno")
 
     specify "Source code attributes are not added in the presence of frozen call stacks" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
-      s <- unsafeReadSpan =<< g3 t
-      spanAttributes s `shouldSatisfy` \attrs ->
-        (lookupAttribute attrs "code.function") == Nothing
-          && (lookupAttribute attrs "code.namespace") == Nothing
-          && (lookupAttribute attrs "code.lineno") == Nothing
+      attrs <- immutableSpanAttributes =<< unsafeReadSpan =<< g3 t
+      attrs `shouldSatisfy` \a ->
+        (lookupAttribute a "code.function") == Nothing
+          && (lookupAttribute a "code.namespace") == Nothing
+          && (lookupAttribute a "code.lineno") == Nothing
 
     specify "Source code attributes are not added if source attributes are already present" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
-      s <- unsafeReadSpan =<< h t
-      spanAttributes s `shouldSatisfy` \attrs ->
-        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "something")
-          && (lookupAttribute attrs "code.namespace") == Nothing
-          && (lookupAttribute attrs "code.lineno") == Nothing
+      attrs <- immutableSpanAttributes =<< unsafeReadSpan =<< h t
+      attrs `shouldSatisfy` \a ->
+        (lookupAttribute a "code.function") == Just (toAttribute @Text "something")
+          && (lookupAttribute a "code.namespace") == Nothing
+          && (lookupAttribute a "code.lineno") == Nothing
 
     specify "Source code attributes can be added for span creation wrappers" $ asIO $ do
       p <- getGlobalTracerProvider
       let t = makeTracer p "woo" tracerOptions
-      s <- unsafeReadSpan =<< useSpanHelper t
-      spanAttributes s `shouldSatisfy` \attrs ->
-        (lookupAttribute attrs "code.function") == Just (toAttribute @Text "useSpanHelper")
+      attrs <- immutableSpanAttributes =<< unsafeReadSpan =<< useSpanHelper t
+      attrs `shouldSatisfy` \a ->
+        (lookupAttribute a "code.function") == Just (toAttribute @Text "useSpanHelper")
 
     specify "Attribute length limit is respected" $ asIO $ do
       p <- getGlobalTracerProvider
@@ -297,8 +305,9 @@ spec = describe "Trace" $ do
       addAttributes s (HM.singleton "attr2" (toAttribute longAttribute))
       s <- unsafeReadSpan s
 
-      lookupAttribute (spanAttributes s) "attr1" `shouldBe` Just (toAttribute truncatedAttribute)
-      lookupAttribute (spanAttributes s) "attr2" `shouldBe` Just (toAttribute truncatedAttribute)
+      attrs <- immutableSpanAttributes s
+      lookupAttribute attrs "attr1" `shouldBe` Just (toAttribute truncatedAttribute)
+      lookupAttribute attrs "attr2" `shouldBe` Just (toAttribute truncatedAttribute)
 
   describe "Span events" $ do
     specify "AddEvent" $ asIO $ do

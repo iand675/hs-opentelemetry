@@ -15,8 +15,8 @@ import qualified Data.Text.Lazy.Builder as LB
 import Data.Text.Lazy.Builder.Int (decimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import qualified Data.Vector as V
-import OpenTelemetry.Internal.Common.Types (ExportResult (..), InstrumentationLibrary (..))
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..))
+import OpenTelemetry.Internal.Log.Types
 import OpenTelemetry.LogAttributes (AnyValue (..), LogAttributes (..))
 import System.IO (Handle, hFlush, stderr, stdout)
 
@@ -40,7 +40,7 @@ makeHandleLogRecordExporter h formatter =
       { logRecordExporterArgumentsExport = \lrs -> do
           V.mapM_ (\lr -> formatter lr >>= T.hPutStrLn h >> hFlush h) lrs
           pure Success
-      , logRecordExporterArgumentsForceFlush = hFlush h
+      , logRecordExporterArgumentsForceFlush = hFlush h >> pure FlushSuccess
       , logRecordExporterArgumentsShutdown = hFlush h
       }
 
@@ -58,8 +58,8 @@ defaultLogRecordFormatter lr = do
   ImmutableLogRecord {..} <- readLogRecord lr
   let scope_ = readLogRecordInstrumentationScope lr
   let sevText = case logRecordSeverityText of
-        Just s -> s
-        Nothing -> "UNSET"
+        UJust s -> s
+        UNothing -> "UNSET"
   let bodyText = case logRecordBody of
         TextValue t -> t
         IntValue i -> textIntegral i
@@ -68,16 +68,16 @@ defaultLogRecordFormatter lr = do
         NullValue -> ""
         _ -> T.pack (show logRecordBody)
   let traceInfo = case logRecordTracingDetails of
-        Just (tid, sid, _flags) -> " trace=" <> T.pack (show tid) <> " span=" <> T.pack (show sid)
-        Nothing -> ""
+        TracingDetails tid sid _flags -> " trace=" <> T.pack (show tid) <> " span=" <> T.pack (show sid)
+        NoTracingDetails -> ""
   let LogAttributes {attributesCount = attrCount, attributesDropped = droppedCount} = logRecordAttributes
   let attrInfo =
         if attrCount > 0
           then " attrs=" <> textIntegral attrCount <> if droppedCount > 0 then " dropped=" <> textIntegral droppedCount else ""
           else ""
   let eventInfo = case logRecordEventName of
-        Just en -> " event=" <> en
-        Nothing -> ""
+        UJust en -> " event=" <> en
+        UNothing -> ""
   pure $
     T.concat
       [ T.pack (show logRecordObservedTimestamp)
