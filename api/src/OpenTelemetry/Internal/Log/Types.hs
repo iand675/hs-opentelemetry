@@ -363,6 +363,7 @@ data TracingDetails
       {-# UNPACK #-} !TraceId
       {-# UNPACK #-} !SpanId
       {-# UNPACK #-} !TraceFlags
+  deriving (Eq, Show)
 
 
 {- | Point-in-time snapshot of a log record's fields.
