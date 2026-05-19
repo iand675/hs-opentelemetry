@@ -5,7 +5,7 @@
 
 Selector criteria are additive (AND): an instrument must match /all/ provided criteria.
 -}
-module OpenTelemetry.Metrics.View (
+module OpenTelemetry.Metric.View (
   View (..),
   ViewSelector (..),
   ViewAggregation (..),
@@ -19,7 +19,7 @@ import Data.Int (Int32)
 import Data.List (filter, find)
 import Data.Text (Text)
 import qualified Data.Text as T
-import OpenTelemetry.Metrics (InstrumentKind (..))
+import OpenTelemetry.Metric.Core (InstrumentKind (..))
 
 
 {- | Select instruments by name pattern, kind, unit, and meter scope.

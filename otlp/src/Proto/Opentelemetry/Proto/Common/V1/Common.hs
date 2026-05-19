@@ -635,8 +635,6 @@ _AnyValue'BytesValue
               _otherwise -> Prelude.Nothing)
 _AnyValue'StringValueStrindex ::
   Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Int.Int32
-_AnyValue'StringValueStrindex
-  :: Data.ProtoLens.Prism.Prism' AnyValue'Value Data.Int.Int32
 _AnyValue'StringValueStrindex =
   Data.ProtoLens.Prism.prism'
     AnyValue'StringValueStrindex

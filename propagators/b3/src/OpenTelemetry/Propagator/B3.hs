@@ -36,7 +36,7 @@ import Prelude
 b3TraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
 b3TraceContextPropagator =
   Propagator
-    { propagatorNames = ["B3 Trace Context"]
+    { propagatorFields = ["B3 Trace Context"]
     , extractor = \hs c ->
         case b3Extractor hs of
           Nothing -> pure c
@@ -58,7 +58,7 @@ b3TraceContextPropagator =
 b3MultiTraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
 b3MultiTraceContextPropagator =
   Propagator
-    { propagatorNames = ["B3 Multi Trace Context"]
+    { propagatorFields = ["B3 Multi Trace Context"]
     , extractor = \hs c -> do
         case b3Extractor hs of
           Nothing -> pure c

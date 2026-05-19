@@ -32,7 +32,7 @@ detectHost :: IO Host
 detectHost = do
   mhost <- foldM go Nothing builtInHostDetectors
   pure $ case mhost of
-    Nothing -> Host Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+    Nothing -> Host Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     Just host -> host
   where
     go Nothing hostDetector = hostDetector
@@ -66,5 +66,7 @@ fallbackHostDetector =
         hostImageName = Nothing
         hostImageId = Nothing
         hostImageVersion = Nothing
+        hostIp = Nothing
+        hostMac = Nothing
     hostName <- Just . T.pack <$> getHostName
     pure Host {..}

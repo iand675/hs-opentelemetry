@@ -41,4 +41,5 @@ detectOperatingSystem =
       , osDescription = Nothing
       , osName = Nothing
       , osVersion = Nothing
+      , osBuildId = Nothing
       }

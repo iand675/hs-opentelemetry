@@ -7,7 +7,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StrictData #-}
 
-{- | SDK 'OpenTelemetry.Metrics.MeterProvider' with in-process aggregation (specification/metrics/sdk.md).
+{- | SDK 'OpenTelemetry.Metric.Core.MeterProvider' with in-process aggregation (specification/metrics/sdk.md).
 
  Synchronous: cumulative or delta sums, explicit or exponential histograms, last-value gauges;
  exemplars (optional trace context); cardinality limits; views (drop, aggregation, attribute keys).
@@ -27,6 +27,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
 import Data.Foldable (toList)
 import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import Data.Hashable (Hashable)
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef, writeIORef)
 import Data.Int (Int32, Int64)
@@ -51,13 +52,14 @@ import OpenTelemetry.Exporter.Metric (
   MetricExemplar (..),
   MetricExport (..),
   MetricExporter (..),
+  NumberValue (..),
   ResourceMetricsExport (..),
   ScopeMetricsExport (..),
   SumDataPoint (..),
   filterAttributesByKeys,
  )
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
-import OpenTelemetry.Metrics (
+import OpenTelemetry.Metric.Core (
   AdvisoryParameters (..),
   Counter (..),
   Gauge (..),
@@ -74,8 +76,8 @@ import OpenTelemetry.Metrics (
   UpDownCounter (..),
   noopMeter,
  )
-import qualified OpenTelemetry.Metrics.InstrumentName as VName
-import OpenTelemetry.Metrics.View (View (..), ViewAggregation (..), findMatchingView, viewOverrideDescription, viewOverrideName)
+import qualified OpenTelemetry.Metric.InstrumentName as VName
+import OpenTelemetry.Metric.View (View (..), ViewAggregation (..), findMatchingView, viewOverrideDescription, viewOverrideName)
 import OpenTelemetry.Resource (MaterializedResources)
 import OpenTelemetry.Trace.Core (SpanContext (..), getSpanContext, isValid)
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
@@ -151,7 +153,7 @@ data InstrumentDims = InstrumentDims
   , dimUnit :: !Text
   , dimDescription :: !Text
   , dimHistogramAggregation :: !(Maybe HistogramAggregation)
-  , dimExportAttributeKeys :: !(Maybe [Text])
+  , dimExportAttributeKeys :: !(Maybe (HS.HashSet Text))
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Hashable)
@@ -192,7 +194,7 @@ data ExpHistCell = ExpHistCell
 
 
 data GaugeCell = GaugeCell
-  { gcValue :: !(Either Int64 Double)
+  { gcValue :: !NumberValue
   , gcTimeUnixNano :: !Word64
   , gcExemplars :: !(Vector MetricExemplar)
   }
@@ -373,7 +375,7 @@ dimsFrom
   -> Maybe Text
   -> Maybe Text
   -> Maybe HistogramAggregation
-  -> Maybe [Text]
+  -> Maybe (HS.HashSet Text)
   -> InstrumentDims
 dimsFrom scope name kind mUnit mDesc mh mKeys =
   InstrumentDims
@@ -434,7 +436,7 @@ pushExemplar cap e v
 
 captureMetricExemplar
   :: SdkMeterExemplarOptions
-  -> Maybe (Either Int64 Double)
+  -> Maybe NumberValue
   -> IO (Maybe MetricExemplar)
 captureMetricExemplar opts mVal =
   case exemplarFilter opts of
@@ -487,7 +489,7 @@ captureMetricExemplar opts mVal =
 addSumInt
   :: Int64
   -> Bool
-  -> Maybe (Either Int64 Double)
+  -> Maybe NumberValue
   -> DimKey
   -> IORef SdkMeterStorageState
   -> Int
@@ -528,7 +530,7 @@ addSumInt delta isMonotonic mExVal k ref lim exOpts = do
 addSumDbl
   :: Double
   -> Bool
-  -> Maybe (Either Int64 Double)
+  -> Maybe NumberValue
   -> DimKey
   -> IORef SdkMeterStorageState
   -> Int
@@ -601,7 +603,7 @@ recordHist bounds v mExVal k ref lim exOpts = do
   if isNaN v || isInfinite v
     then pure ()
     else do
-      mex <- captureMetricExemplar exOpts (fmap Right mExVal)
+      mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
       let cap = exemplarReservoirLimit exOpts
       atomicModifyIORef' ref $ \st ->
         let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
@@ -633,7 +635,7 @@ recordExpHist sc v mExVal k ref lim exOpts = do
   if isNaN v || isInfinite v
     then pure ()
     else do
-      mex <- captureMetricExemplar exOpts (fmap Right mExVal)
+      mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
       let cap = exemplarReservoirLimit exOpts
       atomicModifyIORef' ref $ \st ->
         let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
@@ -653,9 +655,9 @@ recordExpHist sc v mExVal k ref lim exOpts = do
 
 
 recordGauge
-  :: Either Int64 Double
+  :: NumberValue
   -> Word64
-  -> Maybe (Either Int64 Double)
+  -> Maybe NumberValue
   -> DimKey
   -> IORef SdkMeterStorageState
   -> Int
@@ -702,7 +704,13 @@ recordGauge val t mExVal k ref lim exOpts = do
 resetCellForDelta :: Cell -> Cell
 resetCellForDelta = \case
   CsSum sc ->
-    CsSum sc {scValue = 0, scExemplars = V.empty}
+    CsSum
+      sc
+        { scValue = case scValue sc of
+            Left {} -> Left 0
+            Right {} -> Right 0
+        , scExemplars = V.empty
+        }
   CsHist hc ->
     CsHist (emptyHist (hcBounds hc))
   CsExpHist ehc ->
@@ -752,13 +760,13 @@ mkMeter env scope =
               let vName = viewOverrideName views k name
                   vDesc = viewOverrideDescription views k name mDesc
                   dims =
-                    dimsFrom sc vName k mUnit vDesc Nothing (exportKeysFor views k name adv)
+                    dimsFrom sc vName k mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views k name adv)
                   ref = sdkMeterStorage e
                   lim = sdkMeterCardinalityLimit e
               pure $
                 Counter
                   { counterAdd = \n attrs ->
-                      addSumInt n mono (Just (Left n)) (dims, attrs) ref lim exOpts
+                      addSumInt n mono (Just (IntNumber n)) (dims, attrs) ref lim exOpts
                   , counterEnabled = pure True
                   }
             else pure $ Counter (\_ _ -> pure ()) (pure False)
@@ -774,13 +782,13 @@ mkMeter env scope =
               let vName = viewOverrideName views k name
                   vDesc = viewOverrideDescription views k name mDesc
                   dims =
-                    dimsFrom sc vName k mUnit vDesc Nothing (exportKeysFor views k name adv)
+                    dimsFrom sc vName k mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views k name adv)
                   ref = sdkMeterStorage e
                   lim = sdkMeterCardinalityLimit e
               pure $
                 Counter
                   { counterAdd = \v attrs ->
-                      addSumDbl v mono (Just (Right v)) (dims, attrs) ref lim exOpts
+                      addSumDbl v mono (Just (DoubleNumber v)) (dims, attrs) ref lim exOpts
                   , counterEnabled = pure True
                   }
             else pure $ Counter (\_ _ -> pure ()) (pure False)
@@ -796,13 +804,13 @@ mkMeter env scope =
               let vName = viewOverrideName views KindUpDownCounter name
                   vDesc = viewOverrideDescription views KindUpDownCounter name mDesc
                   dims =
-                    dimsFrom sc vName KindUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindUpDownCounter name adv)
+                    dimsFrom sc vName KindUpDownCounter mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindUpDownCounter name adv)
                   ref = sdkMeterStorage e
                   lim = sdkMeterCardinalityLimit e
               pure $
                 UpDownCounter
                   { upDownCounterAdd = \n attrs ->
-                      addSumInt n False (Just (Left n)) (dims, attrs) ref lim exOpts
+                      addSumInt n False (Just (IntNumber n)) (dims, attrs) ref lim exOpts
                   , upDownCounterEnabled = pure True
                   }
             else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
@@ -818,13 +826,13 @@ mkMeter env scope =
               let vName = viewOverrideName views KindUpDownCounter name
                   vDesc = viewOverrideDescription views KindUpDownCounter name mDesc
                   dims =
-                    dimsFrom sc vName KindUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindUpDownCounter name adv)
+                    dimsFrom sc vName KindUpDownCounter mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindUpDownCounter name adv)
                   ref = sdkMeterStorage e
                   lim = sdkMeterCardinalityLimit e
               pure $
                 UpDownCounter
                   { upDownCounterAdd = \v attrs ->
-                      addSumDbl v False (Just (Right v)) (dims, attrs) ref lim exOpts
+                      addSumDbl v False (Just (DoubleNumber v)) (dims, attrs) ref lim exOpts
                   , upDownCounterEnabled = pure True
                   }
             else pure $ UpDownCounter (\_ _ -> pure ()) (pure False)
@@ -843,7 +851,7 @@ mkMeter env scope =
                 let vName = viewOverrideName views KindHistogram name
                     vDesc = viewOverrideDescription views KindHistogram name mDesc
                     dimsBase =
-                      dimsFrom sc vName KindHistogram mUnit vDesc (Just agg) (exportKeysFor views KindHistogram name adv)
+                      dimsFrom sc vName KindHistogram mUnit vDesc (Just agg) (HS.fromList <$> exportKeysFor views KindHistogram name adv)
                     ref = sdkMeterStorage e
                     lim = sdkMeterCardinalityLimit e
                 case agg of
@@ -873,14 +881,14 @@ mkMeter env scope =
               let vName = viewOverrideName views KindGauge name
                   vDesc = viewOverrideDescription views KindGauge name mDesc
                   dims =
-                    dimsFrom sc vName KindGauge mUnit vDesc Nothing (exportKeysFor views KindGauge name adv)
+                    dimsFrom sc vName KindGauge mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindGauge name adv)
                   ref = sdkMeterStorage e
                   lim = sdkMeterCardinalityLimit e
               pure $
                 Gauge
                   { gaugeRecord = \n attrs -> do
                       t <- nowNanos
-                      recordGauge (Left n) t (Just (Left n)) (dims, attrs) ref lim exOpts
+                      recordGauge (IntNumber n) t (Just (IntNumber n)) (dims, attrs) ref lim exOpts
                   , gaugeEnabled = pure True
                   }
             else pure $ Gauge (\_ _ -> pure ()) (pure False)
@@ -896,14 +904,14 @@ mkMeter env scope =
               let vName = viewOverrideName views KindGauge name
                   vDesc = viewOverrideDescription views KindGauge name mDesc
                   dims =
-                    dimsFrom sc vName KindGauge mUnit vDesc Nothing (exportKeysFor views KindGauge name adv)
+                    dimsFrom sc vName KindGauge mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindGauge name adv)
                   ref = sdkMeterStorage e
                   lim = sdkMeterCardinalityLimit e
               pure $
                 Gauge
                   { gaugeRecord = \v attrs -> do
                       t <- nowNanos
-                      recordGauge (Right v) t (Just (Right v)) (dims, attrs) ref lim exOpts
+                      recordGauge (DoubleNumber v) t (Just (DoubleNumber v)) (dims, attrs) ref lim exOpts
                   , gaugeEnabled = pure True
                   }
             else pure $ Gauge (\_ _ -> pure ()) (pure False)
@@ -924,11 +932,11 @@ mkMeter env scope =
           let vName = viewOverrideName views KindAsyncCounter name
               vDesc = viewOverrideDescription views KindAsyncCounter name mDesc
               dims =
-                dimsFrom sc vName KindAsyncCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncCounter name adv)
+                dimsFrom sc vName KindAsyncCounter mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindAsyncCounter name adv)
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \n attrs ->
-                addSumInt n True (Just (Left n)) (dims, attrs) ref lim exOpts
+                addSumInt n True (Just (IntNumber n)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncCounter name
@@ -951,11 +959,11 @@ mkMeter env scope =
           let vName = viewOverrideName views KindAsyncCounter name
               vDesc = viewOverrideDescription views KindAsyncCounter name mDesc
               dims =
-                dimsFrom sc vName KindAsyncCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncCounter name adv)
+                dimsFrom sc vName KindAsyncCounter mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindAsyncCounter name adv)
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \v attrs ->
-                addSumDbl v True (Just (Right v)) (dims, attrs) ref lim exOpts
+                addSumDbl v True (Just (DoubleNumber v)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncCounter name
@@ -978,11 +986,11 @@ mkMeter env scope =
           let vName = viewOverrideName views KindAsyncUpDownCounter name
               vDesc = viewOverrideDescription views KindAsyncUpDownCounter name mDesc
               dims =
-                dimsFrom sc vName KindAsyncUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncUpDownCounter name adv)
+                dimsFrom sc vName KindAsyncUpDownCounter mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindAsyncUpDownCounter name adv)
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \n attrs ->
-                addSumInt n False (Just (Left n)) (dims, attrs) ref lim exOpts
+                addSumInt n False (Just (IntNumber n)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncUpDownCounter name
@@ -1005,11 +1013,11 @@ mkMeter env scope =
           let vName = viewOverrideName views KindAsyncUpDownCounter name
               vDesc = viewOverrideDescription views KindAsyncUpDownCounter name mDesc
               dims =
-                dimsFrom sc vName KindAsyncUpDownCounter mUnit vDesc Nothing (exportKeysFor views KindAsyncUpDownCounter name adv)
+                dimsFrom sc vName KindAsyncUpDownCounter mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindAsyncUpDownCounter name adv)
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \v attrs ->
-                addSumDbl v False (Just (Right v)) (dims, attrs) ref lim exOpts
+                addSumDbl v False (Just (DoubleNumber v)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncUpDownCounter name
@@ -1032,12 +1040,12 @@ mkMeter env scope =
           let vName = viewOverrideName views KindAsyncGauge name
               vDesc = viewOverrideDescription views KindAsyncGauge name mDesc
               dims =
-                dimsFrom sc vName KindAsyncGauge mUnit vDesc Nothing (exportKeysFor views KindAsyncGauge name adv)
+                dimsFrom sc vName KindAsyncGauge mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindAsyncGauge name adv)
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \n attrs -> do
                 t <- nowNanos
-                recordGauge (Left n) t (Just (Left n)) (dims, attrs) ref lim exOpts
+                recordGauge (IntNumber n) t (Just (IntNumber n)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncGauge name
@@ -1060,12 +1068,12 @@ mkMeter env scope =
           let vName = viewOverrideName views KindAsyncGauge name
               vDesc = viewOverrideDescription views KindAsyncGauge name mDesc
               dims =
-                dimsFrom sc vName KindAsyncGauge mUnit vDesc Nothing (exportKeysFor views KindAsyncGauge name adv)
+                dimsFrom sc vName KindAsyncGauge mUnit vDesc Nothing (HS.fromList <$> exportKeysFor views KindAsyncGauge name adv)
               ref = sdkMeterStorage e
               lim = sdkMeterCardinalityLimit e
               res = ObservableResult $ \v attrs -> do
                 t <- nowNanos
-                recordGauge (Right v) t (Just (Right v)) (dims, attrs) ref lim exOpts
+                recordGauge (DoubleNumber v) t (Just (DoubleNumber v)) (dims, attrs) ref lim exOpts
               run = mapM_ ($ res) cbs
           registerCollect run
           en <- obsEnabled KindAsyncGauge name
@@ -1169,7 +1177,9 @@ buildMetricExports startT t temp dims series =
                   SumDataPoint
                     { sumDataPointStartTimeUnixNano = startT
                     , sumDataPointTimeUnixNano = t
-                    , sumDataPointValue = scValue sc
+                    , sumDataPointValue = case scValue sc of
+                        Left i -> IntNumber i
+                        Right d -> DoubleNumber d
                     , sumDataPointAttributes = applyDimAttrs d attrs
                     , sumDataPointExemplars = scExemplars sc
                     }
@@ -1232,8 +1242,8 @@ buildMetricExports startT t temp dims series =
               _ -> Nothing
           isInt = case series of
             (_, CsGauge gc, _) : _ -> case gcValue gc of
-              Left _ -> True
-              Right _ -> False
+              IntNumber _ -> True
+              DoubleNumber _ -> False
             _ -> False
       in [ MetricExportGauge (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) isInt points
          ]
@@ -1278,19 +1288,19 @@ createMeterProvider res opts = do
           , meterProviderShutdown = do
               writeIORef sd True
               batches <- collectResourceMetrics env
-              result <- case mExporter of
+              shutdownRes <- case mExporter of
                 Just ex -> do
-                  _ <- metricExporterExport ex batches
+                  _ <- metricExporterExport ex (V.fromList batches)
                   metricExporterShutdown ex
                 Nothing -> pure ShutdownSuccess
               writeIORef st emptyStorageState
               writeIORef cbs Seq.empty
-              pure result
-          , meterProviderForceFlush = do
+              pure shutdownRes
+          , meterProviderForceFlush = \_timeoutMicros -> do
               batches <- collectResourceMetrics env
               case mExporter of
                 Just ex -> do
-                  _ <- metricExporterExport ex batches
+                  _ <- metricExporterExport ex (V.fromList batches)
                   metricExporterForceFlush ex
                 Nothing -> pure FlushSuccess
           }

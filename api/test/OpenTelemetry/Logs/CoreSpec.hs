@@ -7,9 +7,9 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef
 import qualified Data.Text as T
 import qualified OpenTelemetry.Attributes as A
-import OpenTelemetry.Internal.Logs.Types
+import OpenTelemetry.Internal.Log.Types
+import OpenTelemetry.Log.Core
 import qualified OpenTelemetry.LogAttributes as LA
-import OpenTelemetry.Logs.Core
 import OpenTelemetry.Resource
 import OpenTelemetry.Resource.OperatingSystem
 import Test.Hspec

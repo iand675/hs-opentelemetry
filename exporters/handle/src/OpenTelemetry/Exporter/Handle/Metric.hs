@@ -14,6 +14,7 @@ module OpenTelemetry.Exporter.Handle.Metric (
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Text.IO as TIO
+import qualified Data.Vector as V
 import OpenTelemetry.Debug.MetricExport (renderResourceMetricsExportDebug)
 import OpenTelemetry.Exporter.Metric (
   MetricExporter (..),
@@ -26,7 +27,7 @@ makeHandleMetricExporter :: Handle -> MetricExporter
 makeHandleMetricExporter h =
   MetricExporter
     { metricExporterExport = \batches -> do
-        TIO.hPutStr h (renderResourceMetricsExportDebug batches)
+        TIO.hPutStr h (renderResourceMetricsExportDebug (V.toList batches))
         hPutChar h '\n'
         hFlush h
         pure Success

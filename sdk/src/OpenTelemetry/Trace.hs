@@ -154,11 +154,12 @@ module OpenTelemetry.Trace (
 ) where
 
 import qualified Data.ByteString.Char8 as B
+import qualified Data.CaseInsensitive as CI
 import Data.Either (partitionEithers)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Network.HTTP.Types.Header
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
@@ -169,7 +170,14 @@ import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables, otlpE
 import OpenTelemetry.Exporter.Span (SpanExporter)
 import OpenTelemetry.Processor.Batch.Span (BatchTimeoutConfig (..), batchProcessor, batchTimeoutConfig)
 import OpenTelemetry.Processor.Span (SpanProcessor)
-import OpenTelemetry.Propagator (Propagator)
+import OpenTelemetry.Propagator (
+  Propagator (..),
+  TextMap,
+  TextMapPropagator,
+  setGlobalTextMapPropagator,
+  textMapFromList,
+  textMapToList,
+ )
 import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContextPropagator)
 import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
@@ -292,6 +300,29 @@ import Text.Read (readMaybe)
 -}
 
 
+{- | Wrap a header-style propagator as a 'TextMapPropagator' for
+'TracerProvider' / @OTEL_PROPAGATORS@ wiring.
+-}
+headerPropagatorToTextMap :: Propagator Context RequestHeaders RequestHeaders -> TextMapPropagator
+headerPropagatorToTextMap (Propagator names ext inj) =
+  Propagator names ext' inj'
+  where
+    ext' tm ctx = ext (textMapToRequestHeaders tm) ctx
+    inj' ctx tm = do
+      hs <- inj ctx (textMapToRequestHeaders tm)
+      pure (requestHeadersToTextMap hs)
+
+
+textMapToRequestHeaders :: TextMap -> RequestHeaders
+textMapToRequestHeaders tm =
+  map (\(k, v) -> (CI.mk (encodeUtf8 k), encodeUtf8 v)) (textMapToList tm)
+
+
+requestHeadersToTextMap :: RequestHeaders -> TextMap
+requestHeadersToTextMap =
+  textMapFromList . map (\(name, val) -> (decodeUtf8 (CI.original name), decodeUtf8 val))
+
+
 knownPropagators :: [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
 knownPropagators =
   [ ("tracecontext", w3cTraceContextPropagator)
@@ -327,11 +358,12 @@ initializeGlobalTracerProvider = do
 initializeTracerProvider :: IO TracerProvider
 initializeTracerProvider = do
   (processors, opts) <- getTracerProviderInitializationOptions
+  setGlobalTextMapPropagator (tracerProviderOptionsPropagators opts)
   createTracerProvider processors opts
 
 
 getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
-getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' (mempty :: Resource 'Nothing)
+getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' mempty
 
 
 {- | Detect options for initializing a tracer provider from the app environment, taking additional supported resources as well.
@@ -339,9 +371,7 @@ getTracerProviderInitializationOptions = getTracerProviderInitializationOptions'
  @since 0.0.3.1
 -}
 getTracerProviderInitializationOptions'
-  :: forall schema
-   . (MaterializeResource schema)
-  => Resource schema
+  :: Resource
   -> IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions' rs = do
   disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
@@ -376,7 +406,7 @@ getTracerProviderInitializationOptions' rs = do
       pure (processors, providerOpts)
 
 
-detectPropagators :: IO (Propagator Context RequestHeaders RequestHeaders)
+detectPropagators :: IO TextMapPropagator
 detectPropagators = do
   registeredPropagators <- readRegisteredPropagators
   propagatorsInEnv <- fmap (T.splitOn "," . T.pack) <$> lookupEnv "OTEL_PROPAGATORS"
@@ -387,7 +417,7 @@ detectPropagators = do
           propagatorsAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k registeredPropagators) envPropagators
           (_notFound, propagators) = partitionEithers propagatorsAndRegistryEntry
       -- TODO log warn notFound
-      pure $ mconcat propagators
+      pure . headerPropagatorToTextMap $ mconcat propagators
 
 
 knownSamplers :: [(T.Text, Maybe T.Text -> Maybe Sampler)]
@@ -531,7 +561,7 @@ readEnv k = (>>= readMaybe) <$> lookupEnv k
 
  @since 0.0.1.0
 -}
-detectBuiltInResources :: IO (Resource 'Nothing)
+detectBuiltInResources :: IO Resource
 detectBuiltInResources = do
   svc <- detectService
   processInfo <- detectProcess

@@ -1,7 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Instrument name and unit validation (SDK applies this; API does not validate — see specification/metrics/api.md).
-module OpenTelemetry.Metrics.InstrumentName (
+{- |
+Module      : OpenTelemetry.Metric.InstrumentName
+Copyright   : (c) Ian Duncan, 2024-2026
+License     : BSD-3
+Description : Instrument name and unit validation per the metrics API spec.
+Stability   : experimental
+
+The SDK validates instrument names and units at creation time. The API itself
+does not validate (per spec), but these functions are used by the SDK to reject
+invalid names before registering instruments.
+
+Spec: <https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument-name-syntax>
+-}
+module OpenTelemetry.Metric.InstrumentName (
   validateInstrumentName,
   validateInstrumentUnit,
 ) where
@@ -13,6 +25,8 @@ import qualified Data.Text as T
 
 {- | @Nothing@ if valid; @Just err@ with a short English reason if invalid.
 Implements the stable rules from specification/metrics/api.md (instrument name ABNF; ASCII only).
+
+@since 0.0.1.0
 -}
 validateInstrumentName :: Text -> Maybe Text
 validateInstrumentName t
@@ -47,7 +61,10 @@ validateInstrumentName t
            )
 
 
--- | Unit is optional; when present it must be ASCII and at most 63 code units (specification/metrics/api.md).
+{- | Unit is optional; when present it must be ASCII and at most 63 code units (specification/metrics/api.md).
+
+@since 0.0.1.0
+-}
 validateInstrumentUnit :: Text -> Maybe Text
 validateInstrumentUnit u
   | T.null u = Nothing

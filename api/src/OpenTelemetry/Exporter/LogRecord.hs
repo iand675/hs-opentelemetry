@@ -1,3 +1,8 @@
+{- |
+Module      : OpenTelemetry.Exporter.LogRecord
+Description : Re-exports of log record exporter types.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.LogRecord (
   LogRecordExporter,
   LogRecordExporterArguments (..),
@@ -8,7 +13,7 @@ module OpenTelemetry.Exporter.LogRecord (
   ShutdownResult (..),
 ) where
 
-import OpenTelemetry.Internal.Logs.Types (
+import OpenTelemetry.Internal.Log.Types (
   LogRecordExporter,
   LogRecordExporterArguments (..),
   logRecordExporterExport,

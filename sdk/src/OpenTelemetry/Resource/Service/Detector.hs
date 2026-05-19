@@ -20,4 +20,5 @@ detectService = do
       , serviceNamespace = Nothing
       , serviceInstanceId = Nothing
       , serviceVersion = Nothing
+      , serviceCriticality = Nothing
       }
