@@ -19,6 +19,7 @@ module OpenTelemetry.MeterProvider (
   SdkMeterExemplarOptions (..),
   defaultSdkMeterExemplarOptions,
   SdkMeterEnv (..),
+  emptyStorageState,
   createMeterProvider,
   collectResourceMetrics,
   MetricReader (..),
