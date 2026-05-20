@@ -234,11 +234,6 @@ renderPattern FlatResource {..} =
       routePortionSection piece
 
 
--- | @http.framework@ – web framework name (custom attribute).
-httpFrameworkKey :: AttributeKey Text
-httpFrameworkKey = AttributeKey "http.framework"
-
-
 -- | @http.handler@ – Yesod route type name (custom attribute).
 httpHandlerKey :: AttributeKey Text
 httpHandlerKey = AttributeKey "http.handler"
@@ -268,7 +263,7 @@ openTelemetryYesodMiddleware rr m = do
   let mspan = requestContext req >>= Context.lookupSpan
       sharedAttributes =
         H.fromList $
-          (unkey httpFrameworkKey, toAttribute ("yesod" :: Text))
+          (unkey SC.webengine_name, toAttribute ("yesod" :: Text))
             : catMaybes
               [ do
                   r <- mr
