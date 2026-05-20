@@ -40,34 +40,6 @@ packages:
   original:
     hackage: proto-lens-runtime-0.7.0.7
 - completed:
-    hackage: amazonka-2.0@sha256:d401ac9094bb331d1bfb9be879d9007ca6bc94085ab745de5aa827128ad7917c,3522
-    pantry-tree:
-      sha256: b9fa0aaccff472ac93200d505678fb560ce15a9e409bdff61e1a3e08ed89d344
-      size: 1528
-  original:
-    hackage: amazonka-2.0
-- completed:
-    hackage: amazonka-core-2.0@sha256:b60507a2791d05ce6fb69544a854c0ee0ec794908400aebe9adcacedf9cd4e17,4585
-    pantry-tree:
-      sha256: 60d4c21ff717e3cfa3fc78812c6d1032e22c27d9427d2ab42f649a6cc0b70d0d
-      size: 3222
-  original:
-    hackage: amazonka-core-2.0
-- completed:
-    hackage: amazonka-sso-2.0@sha256:dfb9232d66fac2a912f63aa5ddaf56ea495649cc3ab451b5102f8ec579dedc4f,3012
-    pantry-tree:
-      sha256: 1018821c55d328ad72e532267bc27528353fc226ad43817a9e8ea91509b9b7a9
-      size: 1817
-  original:
-    hackage: amazonka-sso-2.0
-- completed:
-    hackage: amazonka-sts-2.0@sha256:949968463bde023a6b8035527b5da5585da8e3c36f0366eedf663aac2b9d5d12,3226
-    pantry-tree:
-      sha256: b761d4c67118c25f4711c183b4983903a3a759d5802b91795f603cb0555bfb0e
-      size: 2880
-  original:
-    hackage: amazonka-sts-2.0
-- completed:
     hackage: co-log-0.6.1.2@sha256:86d61e07356a5cb45b8ec28217b579a21f555d025dc0d9e1eecd9ff8d288f6fc,6512
     pantry-tree:
       sha256: 8a03f66e378e8653f3a5784b14ba1b01fca3cfce1350eec8d323bd27aa894a34

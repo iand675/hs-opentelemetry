@@ -256,7 +256,7 @@ spec = do
             `shouldBe` Just (AttributeValue (TextAttribute "/"))
           lookupAttribute (hotAttributes hot) "http.handler"
             `shouldBe` Just (AttributeValue (TextAttribute "HomeR"))
-          lookupAttribute (hotAttributes hot) "http.framework"
+          lookupAttribute (hotAttributes hot) "webengine.name"
             `shouldBe` Just (AttributeValue (TextAttribute "yesod"))
 
     it "uses route pattern for UserR" $ do

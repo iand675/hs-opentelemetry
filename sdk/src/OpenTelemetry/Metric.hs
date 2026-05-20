@@ -126,14 +126,13 @@ module OpenTelemetry.Metric (
   Attribute (..),
 ) where
 
-import Control.Concurrent.MVar (newMVar)
 import Control.Exception (bracket)
 import Data.IORef (newIORef)
-import qualified Data.IntMap.Strict as IM
+import qualified Data.Sequence as Seq
 import OpenTelemetry.Attributes (Attributes, emptyAttributes)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), ToAttribute (..))
 import OpenTelemetry.Environment (MetricsExemplarFilter (..), lookupBooleanEnv)
-import OpenTelemetry.Internal.AtomicCounter (newAtomicCounter)
+import OpenTelemetry.Exporter.Metric (AggregationTemporality (..))
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Internal.Logging (otelLogDebug)
 import OpenTelemetry.MeterProvider (
@@ -146,6 +145,7 @@ import OpenTelemetry.MeterProvider (
   defaultSdkMeterExemplarOptions,
   defaultSdkMeterProviderOptions,
   deltaTemporality,
+  emptyStorageState,
  )
 import OpenTelemetry.Metric.Core
 import OpenTelemetry.Metric.ExporterSelection (resolveMetricExporter)
@@ -182,27 +182,20 @@ fields are properly allocated (not bottom) so shutdown and flush never crash.
 -}
 noopSdkMeterEnv :: IO SdkMeterEnv
 noopSdkMeterEnv = do
-  instrRef <- newIORef []
-  cbRef <- newIORef IM.empty
-  cbId <- newAtomicCounter 0
+  storageRef <- newIORef emptyStorageState
+  cbRef <- newIORef Seq.empty
   sdRef <- newIORef True
-  lk <- newMVar ()
-  lcRef <- newIORef 0
   pure
     SdkMeterEnv
-      { sdkMeterInstruments = instrRef
+      { sdkMeterStorage = storageRef
       , sdkMeterCollectCallbacks = cbRef
-      , sdkMeterNextCallbackId = cbId
       , sdkMeterResource = emptyMaterializedResources
       , sdkMeterShutdown = sdRef
-      , sdkMeterCollectLock = lk
       , sdkMeterCardinalityLimit = 0
-      , sdkMeterReaders = []
-      , sdkMeterProducers = []
+      , sdkMeterAggregationTemporality = AggregationCumulative
       , sdkMeterViews = []
       , sdkMeterExemplarOptions = defaultSdkMeterExemplarOptions
       , sdkMeterStartTimeNanos = 0
-      , sdkMeterLastCollectTime = lcRef
       }
 
 
@@ -271,21 +264,12 @@ initializeGlobalMeterProvider = do
     else do
       exporter <- resolveMetricExporter
       readerOpts <- periodicMetricReaderOptionsFromEnv
-      let reader =
-            MetricReader
-              { metricReaderExporter = exporter
-              , metricReaderTemporalityFor = cumulativeTemporality
-              }
-          opts =
-            defaultSdkMeterProviderOptions
-              { readers = [reader]
-              }
       builtInRs <- detectBuiltInResources
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
       let rs = materializeResources (mergeResources envVarRs builtInRs)
-      (provider, env) <- createMeterProvider rs opts
+      (provider, env) <- createMeterProvider rs defaultSdkMeterProviderOptions
       setGlobalMeterProvider provider
-      readerHandle <- forkPeriodicMetricReader env reader readerOpts
+      readerHandle <- forkPeriodicMetricReader env exporter readerOpts
       otelLogDebug "MeterProvider initialized from environment"
       pure
         MeterProviderHandle

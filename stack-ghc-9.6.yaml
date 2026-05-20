@@ -15,7 +15,7 @@ packages:
 - propagators/xray
 - propagators/datadog
 - propagators/w3c
-- instrumentation/amazonka
+# amazonka excluded: instrumentation/amazonka has API compatibility issues (toBS, abbrev ambiguity)
 - instrumentation/cloudflare
 - instrumentation/co-log
 - instrumentation/conduit
@@ -39,17 +39,12 @@ packages:
 
 extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
-- thread-utils-context-0.3.0.4
+- thread-utils-context-0.4.1.0
 - thread-utils-finalizers-0.1.1.0
 - proto-lens-0.7.1.6
 - proto-lens-runtime-0.7.0.7
 - tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
 - postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
-# amazonka 2.0 is not in LTS 22; base/containers bounds are satisfied for GHC 9.6 (base 4.18)
-- amazonka-2.0
-- amazonka-core-2.0
-- amazonka-sso-2.0
-- amazonka-sts-2.0
 
 flags:
   postgresql-libpq:
@@ -57,4 +52,4 @@ flags:
 
 nix:
   enable: true
-  packages: [libffi, mysql80, openssl, pcre, pkg-config, postgresql, protobuf, rdkafka, zlib, zstd]
+  packages: [libffi, mysql84, openssl, pcre, pkg-config, postgresql, protobuf, rdkafka, zlib, zstd]

@@ -27,6 +27,11 @@ source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry
 
+flag tls-metadata
+  description: Enable TLS-based metadata detection (requires crypton-connection >= 0.3.1). Disable for LTS 21.x (GHC 9.4) which lacks crypton-connection.
+  manual: False
+  default: True
+
 library
   exposed-modules:
       OpenTelemetry.Configuration
@@ -108,9 +113,6 @@ library
     , case-insensitive
     , clock
     , containers
-    , crypton-connection
-    , crypton-x509
-    , crypton-x509-store
     , hashable
     , hs-opentelemetry-api >=0.3 && <0.5
     , hs-opentelemetry-exporter-handle >=0.0.1 && <0.1
@@ -122,7 +124,6 @@ library
     , hs-opentelemetry-propagator-xray >=0.0.1 && <0.1
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , http-client
-    , http-client-tls
     , http-types
     , network-bsd
     , process
@@ -130,7 +131,6 @@ library
     , scientific
     , stm
     , text
-    , tls
     , unix-compat >=0.7.1
     , unordered-containers
     , vector
@@ -149,6 +149,14 @@ library
         src/platform/unix
     build-depends:
         unix
+  if flag(tls-metadata)
+    cpp-options: -DTLS_METADATA
+    build-depends:
+        crypton-connection
+      , crypton-x509
+      , crypton-x509-store
+      , http-client-tls
+      , tls
 
 test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0

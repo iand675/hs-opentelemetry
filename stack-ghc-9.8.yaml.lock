@@ -12,12 +12,12 @@ packages:
   original:
     hackage: unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
 - completed:
-    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+    hackage: thread-utils-context-0.4.1.0@sha256:1de6cceba464ed69689bebf3b3a6867747a6b32fde9a56360dcbe8c555f23981,2274
     pantry-tree:
-      sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
-      size: 397
+      sha256: 626d897e901b77f20b0ed28cdb28e9aff123c76d59a8d2132c395cb0dcd9efad
+      size: 632
   original:
-    hackage: thread-utils-context-0.3.0.4
+    hackage: thread-utils-context-0.4.1.0
 - completed:
     hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
     pantry-tree:

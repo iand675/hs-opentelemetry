@@ -12,12 +12,12 @@ packages:
   original:
     hackage: unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
 - completed:
-    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+    hackage: thread-utils-context-0.4.1.0@sha256:1de6cceba464ed69689bebf3b3a6867747a6b32fde9a56360dcbe8c555f23981,2274
     pantry-tree:
-      sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
-      size: 397
+      sha256: 626d897e901b77f20b0ed28cdb28e9aff123c76d59a8d2132c395cb0dcd9efad
+      size: 632
   original:
-    hackage: thread-utils-context-0.3.0.4
+    hackage: thread-utils-context-0.4.1.0
 - completed:
     hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
     pantry-tree:
@@ -39,9 +39,23 @@ packages:
       size: 168
   original:
     hackage: proto-lens-runtime-0.7.0.7
+- completed:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+    pantry-tree:
+      sha256: 2142ab3dfe2420073a56ab28eb2c82904f3e50da46b326fcdce8886538be9cc8
+      size: 175
+  original:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+- completed:
+    hackage: co-log-0.6.1.2@sha256:86d61e07356a5cb45b8ec28217b579a21f555d025dc0d9e1eecd9ff8d288f6fc,6512
+    pantry-tree:
+      sha256: 8a03f66e378e8653f3a5784b14ba1b01fca3cfce1350eec8d323bd27aa894a34
+      size: 1198
+  original:
+    hackage: co-log-0.6.1.2
 snapshots:
 - completed:
-    sha256: 6a24f315b7ec3a158c3037c2f14d1ec569109cb5c04756eba554a7b493f26589
-    size: 721524
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/2/15.yaml
-  original: nightly-2026-02-15
+    sha256: 3feb356f42266933bcbfecbd3d853c86bd48f6ca3106dd5cfb5976386724514a
+    size: 735726
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/4/4.yaml
+  original: nightly-2026-04-04

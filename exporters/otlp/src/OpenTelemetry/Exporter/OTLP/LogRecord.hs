@@ -120,7 +120,7 @@ otlpLogRecordExporter conf = liftIO $ do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
       case eResp of
-        Left err@(HttpExceptionRequest _req' e)
+        Left (HttpExceptionRequest _req' e)
           | isRetryableException e -> exponentialBackoff
         Left err -> pure $ Failure $ Just $ SomeException err
         Right resp ->

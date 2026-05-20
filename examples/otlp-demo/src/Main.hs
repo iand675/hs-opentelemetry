@@ -1,4 +1,6 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {- |
 A self-contained integration demo that exercises traces, metrics, and logs
@@ -45,12 +47,12 @@ import OpenTelemetry.Configuration (
  )
 import OpenTelemetry.Internal.Common.Types (instrumentationLibrary)
 import OpenTelemetry.Internal.Log.Types (
-  AnyValue (..),
   LogRecordArguments (..),
   SeverityNumber (..),
   emptyLogRecordArguments,
  )
 import OpenTelemetry.Log.Core (emitLogRecord, makeLogger)
+import OpenTelemetry.LogAttributes (AnyValue (..))
 import OpenTelemetry.Metric.Core (
   Counter (..),
   Histogram (..),
@@ -152,22 +154,22 @@ runDemo OTelComponents {..} = do
   putStrLn "Emitting log records..."
   emitLogRecord logger $
     emptyLogRecordArguments
-      { severityNumber = Just INFO
-      , severityText = Just "INFO"
-      , body = StringValue "Application started successfully"
+      { severityNumber = Just Info
+      , severityText = Just "Info"
+      , body = TextValue "Application started successfully"
       , attributes =
           fromList
-            [ ("deployment.environment", StringValue "development")
-            , ("host.name", StringValue "localhost")
+            [ ("deployment.environment", TextValue "development")
+            , ("host.name", TextValue "localhost")
             ]
       }
 
   emitLogRecord logger $
     emptyLogRecordArguments
-      { severityNumber = Just WARN
-      , severityText = Just "WARN"
-      , body = StringValue "This is a warning log — for demo purposes only"
-      , attributes = fromList [("demo.warning", BooleanValue True)]
+      { severityNumber = Just Warn
+      , severityText = Just "Warn"
+      , body = TextValue "This is a warning log — for demo purposes only"
+      , attributes = fromList [("demo.warning", BoolValue True)]
       }
 
   -- Traces + metrics
@@ -187,13 +189,13 @@ runDemo OTelComponents {..} = do
   -- Error log
   emitLogRecord logger $
     emptyLogRecordArguments
-      { severityNumber = Just ERROR
-      , severityText = Just "ERROR"
-      , body = StringValue "Simulated error for demo — everything is fine"
+      { severityNumber = Just Error
+      , severityText = Just "Error"
+      , body = TextValue "Simulated error for demo — everything is fine"
       , attributes =
           fromList
-            [ ("error.type", StringValue "DemoError")
-            , ("demo.simulated", BooleanValue True)
+            [ ("error.type", TextValue "DemoError")
+            , ("demo.simulated", BoolValue True)
             ]
       }
 

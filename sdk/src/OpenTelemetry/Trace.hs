@@ -160,11 +160,11 @@ module OpenTelemetry.Trace (
 ) where
 
 import qualified Data.ByteString.Char8 as B
+import qualified Data.CaseInsensitive as CI
 import Data.Either (partitionEithers)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import qualified Data.CaseInsensitive as CI
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
@@ -576,15 +576,6 @@ detectResourceAttributes = do
           map (\(k, v) -> (decodeUtf8 $ Baggage.tokenValue k, toAttribute $ Baggage.value v)) $
             H.toList $
               Baggage.values ok
-
-
-readEnvDefault :: forall a. (Read a) => String -> a -> IO a
-readEnvDefault k defaultValue =
-  fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
-
-
-readEnv :: forall a. (Read a) => String -> IO (Maybe a)
-readEnv k = (>>= readMaybe) <$> lookupEnv k
 
 
 {- | Discover resource attributes using the shared SDK implementation in
