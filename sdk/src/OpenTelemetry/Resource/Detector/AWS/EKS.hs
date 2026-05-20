@@ -90,12 +90,12 @@ detectEKSSelf = do
           mToken <- readFileStripped k8sTokenPath
           case mToken of
             Nothing -> pure $ mkResource []
-            Just _ -> do
+            Just token -> do
               port <- fromMaybe "443" <$> lookupEnv "KUBERNETES_SERVICE_PORT"
               mClient <- newTlsMetadataClient k8sCertPath host
               case mClient of
                 Nothing -> pure $ mkResource []
-                Just client -> detectEKS client host port
+                Just client -> detectEKS client host port token
 
 
 {- | Detect EKS attributes by querying the in-cluster Kubernetes API.
@@ -104,27 +104,23 @@ Checks for the @aws-auth@ ConfigMap (EKS-specific) and reads the cluster
 name from @cluster-info@ if available. Returns an empty resource if the
 API is unreachable or the @aws-auth@ ConfigMap is absent.
 -}
-detectEKS :: MetadataClient -> String -> String -> IO Resource
-detectEKS client host port = do
-  mToken <- readFileStripped k8sTokenPath
-  case mToken of
+detectEKS :: MetadataClient -> String -> String -> Text -> IO Resource
+detectEKS client host port token = do
+  let bearerHeaders = [("Authorization", "Bearer " <> token)]
+      authUrl = mkK8sApiUrl host port authConfigmapPath
+  mAuthCm <- fetchJSONWithHeaders client authUrl bearerHeaders
+  case (mAuthCm :: Maybe ConfigMapResponse) of
     Nothing -> pure $ mkResource []
-    Just token -> do
-      let bearerHeaders = [("Authorization", "Bearer " <> token)]
-          authUrl = mkK8sApiUrl host port authConfigmapPath
-      mAuthCm <- fetchJSONWithHeaders client authUrl bearerHeaders
-      case (mAuthCm :: Maybe ConfigMapResponse) of
-        Nothing -> pure $ mkResource []
-        Just _ -> do
-          let infoUrl = mkK8sApiUrl host port clusterInfoPath
-          mClusterInfo <- fetchJSONWithHeaders client infoUrl bearerHeaders
-          let mClusterName = mClusterInfo >>= cmLookupData "cluster.name"
-          pure $
-            mkResource
-              [ unkey SC.cloud_provider .= ("aws" :: Text)
-              , unkey SC.cloud_platform .= ("aws_eks" :: Text)
-              , unkey SC.k8s_cluster_name .=? mClusterName
-              ]
+    Just _ -> do
+      let infoUrl = mkK8sApiUrl host port clusterInfoPath
+      mClusterInfo <- fetchJSONWithHeaders client infoUrl bearerHeaders
+      let mClusterName = mClusterInfo >>= cmLookupData "cluster.name"
+      pure $
+        mkResource
+          [ unkey SC.cloud_provider .= ("aws" :: Text)
+          , unkey SC.cloud_platform .= ("aws_eks" :: Text)
+          , unkey SC.k8s_cluster_name .=? mClusterName
+          ]
 
 
 readFileStripped :: FilePath -> IO (Maybe Text)
