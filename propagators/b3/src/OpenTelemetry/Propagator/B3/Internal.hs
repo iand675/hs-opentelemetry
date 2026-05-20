@@ -213,7 +213,7 @@ parseB3Single bs = do
                   guardByte bs afterSamp 0x2d -- '-'
                   let !parentStart = afterSamp + 1
                       !parentEnd = parentStart + 16
-                  if parentEnd > len
+                  if parentEnd /= len
                     then Nothing
                     else do
                       !psid <- either (const Nothing) Just (baseEncodedToSpanId Base16 (BS.take 16 (BS.drop parentStart bs)))
