@@ -26,25 +26,30 @@ library:
   source-dirs: src
   dependencies:
   - bytestring
-  - hs-opentelemetry-api ^>= 0.3
-  - http-types
+  - hs-opentelemetry-api ^>= 0.4
   - attoparsec
   - text
 
 tests:
   hs-opentelemetry-propagator-w3c-test:
     main:                Spec.hs
+    other-modules:
+    - OpenTelemetry.Propagator.W3CBaggageSpec
+    - OpenTelemetry.Propagator.W3CIntegrationSpec
+    - OpenTelemetry.Propagator.W3CMultiHeaderSpec
+    - OpenTelemetry.Propagator.W3CTraceContextSpec
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-propagator-w3c
+    - hs-opentelemetry-propagator-w3c >= 0.1.0 && < 0.2
     - hspec
     - hspec-discover
     - QuickCheck
     - bytestring
     - text
-    - hs-opentelemetry-api
+    - hs-opentelemetry-api == 0.4.*
     - attoparsec
+    - unordered-containers

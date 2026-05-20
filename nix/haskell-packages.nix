@@ -13,15 +13,10 @@ in rec {
   inherit pkgs;
 
   skipPackages = [
-    "hs-opentelemetry-sdk"
     "hs-opentelemetry-exporter-handle"
     "hs-opentelemetry-exporter-in-memory"
     "hs-opentelemetry-exporter-otlp"
-    "hs-opentelemetry-propagator-b3"
-    "hs-opentelemetry-propagator-datadog"
-    "hs-opentelemetry-propagator-w3c"
-    "hs-opentelemetry-propagator-jaeger"
-    "hs-opentelemetry-propagator-xray"
+    "hs-opentelemetry-sdk"
     "hs-opentelemetry-instrumentation-cloudflare"
     "hs-opentelemetry-instrumentation-conduit"
     "hs-opentelemetry-instrumentation-ghc-metrics"

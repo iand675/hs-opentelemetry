@@ -1,8 +1,6 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 
 {- | B3 Propagation Requirements:
  https://github.com/openzipkin/b3-propagation
@@ -16,15 +14,18 @@ module OpenTelemetry.Propagator.B3 (
 --------------------------------------------------------------------------------
 
 import Control.Applicative ((<|>))
-import Data.ByteString (ByteString)
 import Data.List (intersperse)
 import Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Text.Encoding as Text
-import Network.HTTP.Types (HeaderName, RequestHeaders)
 import OpenTelemetry.Common (TraceFlags (..))
-import OpenTelemetry.Context (Context)
 import qualified OpenTelemetry.Context as Context
-import OpenTelemetry.Propagator (Propagator (..))
+import OpenTelemetry.Propagator (
+  Propagator (..),
+  TextMap,
+  TextMapPropagator,
+  textMapInsert,
+  textMapLookup,
+ )
 import OpenTelemetry.Propagator.B3.Internal
 import qualified OpenTelemetry.Trace.Core as Core
 import qualified OpenTelemetry.Trace.TraceState as TS
@@ -33,7 +34,7 @@ import Prelude
 
 --------------------------------------------------------------------------------
 
-b3TraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
+b3TraceContextPropagator :: TextMapPropagator
 b3TraceContextPropagator =
   Propagator
     { propagatorFields = ["B3 Trace Context"]
@@ -45,17 +46,18 @@ b3TraceContextPropagator =
         case Context.lookupSpan c of
           Nothing -> pure hs
           Just span' -> do
-            Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState} <- Core.getSpanContext span'
+            Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState, traceFlags} <- Core.getSpanContext span'
             let traceIdValue = encodeTraceId traceId
                 spanIdValue = encodeSpanId spanId
-                samplingStateValue = lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue >>= printSamplingStateSingle
+                samplingStateValue =
+                  printSamplingStateSingle $ injectSamplingState traceState traceFlags
                 value = mconcat $ intersperse "-" $ [traceIdValue, spanIdValue] <> catMaybes [Text.encodeUtf8 <$> samplingStateValue]
 
-            pure $ (b3Header, value) : hs
+            pure $ textMapInsert b3Header (Text.decodeUtf8 value) hs
     }
 
 
-b3MultiTraceContextPropagator :: Propagator Context RequestHeaders RequestHeaders
+b3MultiTraceContextPropagator :: TextMapPropagator
 b3MultiTraceContextPropagator =
   Propagator
     { propagatorFields = ["B3 Multi Trace Context"]
@@ -67,17 +69,31 @@ b3MultiTraceContextPropagator =
         case Context.lookupSpan c of
           Nothing -> pure hs
           Just span' -> do
-            Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState} <- Core.getSpanContext span'
+            Core.SpanContext {traceId, spanId, traceState = TS.TraceState traceState, traceFlags} <- Core.getSpanContext span'
             let traceIdValue = encodeTraceId traceId
                 spanIdValue = encodeSpanId spanId
-                samplingStateValue = lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue >>= printSamplingStateMulti
-
-            pure $
-              (xb3TraceIdHeader, traceIdValue)
-                : (xb3SpanIdHeader, spanIdValue)
-                : hs
-                ++ catMaybes [fmap Text.encodeUtf8 <$> samplingStateValue]
+                samplingStateMay =
+                  printSamplingStateMulti $ injectSamplingState traceState traceFlags
+                hs' =
+                  textMapInsert xb3SpanIdHeader (Text.decodeUtf8 spanIdValue) $
+                    textMapInsert xb3TraceIdHeader (Text.decodeUtf8 traceIdValue) hs
+            pure $ case samplingStateMay of
+              Nothing -> hs'
+              Just (k, v) -> textMapInsert k v hs'
     }
+
+
+--------------------------------------------------------------------------------
+
+{- | B3 sampling for injection: prefer explicit @sampling-state@ in trace state,
+otherwise derive from 'TraceFlags' (so local spans inject without a prior extract).
+-}
+injectSamplingState :: [(TS.Key, TS.Value)] -> TraceFlags -> SamplingState
+injectSamplingState traceState traceFlags =
+  case lookup (TS.Key "sampling-state") traceState >>= samplingStateFromValue of
+    Just s -> s
+    Nothing ->
+      if Core.isSampled traceFlags then Accept else Deny
 
 
 --------------------------------------------------------------------------------
@@ -86,13 +102,13 @@ b3MultiTraceContextPropagator =
  multi header extraction:
  https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#configuration
 -}
-b3Extractor :: [(HeaderName, ByteString)] -> Maybe Core.SpanContext
+b3Extractor :: TextMap -> Maybe Core.SpanContext
 b3Extractor hs = b3SingleExtractor hs <|> b3MultiExtractor hs
 
 
-b3SingleExtractor :: [(HeaderName, ByteString)] -> Maybe Core.SpanContext
+b3SingleExtractor :: TextMap -> Maybe Core.SpanContext
 b3SingleExtractor hs = do
-  B3SingleHeader {..} <- decodeB3SingleHeader =<< Prelude.lookup b3Header hs
+  B3SingleHeader {..} <- decodeB3SingleHeader =<< (Text.encodeUtf8 <$> textMapLookup b3Header hs)
 
   let traceFlags = if samplingState == Accept || samplingState == Debug then TraceFlags 1 else TraceFlags 0
 
@@ -106,15 +122,15 @@ b3SingleExtractor hs = do
       }
 
 
-b3MultiExtractor :: [(HeaderName, ByteString)] -> Maybe Core.SpanContext
+b3MultiExtractor :: TextMap -> Maybe Core.SpanContext
 b3MultiExtractor hs = do
-  traceId <- decodeXb3TraceIdHeader =<< Prelude.lookup xb3TraceIdHeader hs
-  spanId <- decodeXb3SpanIdHeader =<< Prelude.lookup xb3SpanIdHeader hs
+  traceId <- decodeXb3TraceIdHeader =<< (Text.encodeUtf8 <$> textMapLookup xb3TraceIdHeader hs)
+  spanId <- decodeXb3SpanIdHeader =<< (Text.encodeUtf8 <$> textMapLookup xb3SpanIdHeader hs)
 
-  let sampled = decodeXb3SampledHeader =<< Prelude.lookup xb3SampledHeader hs
-      debug = decodeXb3FlagsHeader =<< Prelude.lookup xb3FlagsHeader hs
+  let sampled = decodeXb3SampledHeader =<< (Text.encodeUtf8 <$> textMapLookup xb3SampledHeader hs)
+      debug = decodeXb3FlagsHeader =<< (Text.encodeUtf8 <$> textMapLookup xb3FlagsHeader hs)
       -- NOTE: Debug implies Accept (https://github.com/openzipkin/b3-propagation#debug-flag)
-      samplingState = fromMaybe Defer $ sampled <|> debug
+      samplingState = fromMaybe Defer $ debug <|> sampled
   let traceFlags = if samplingState == Accept || samplingState == Debug then TraceFlags 1 else TraceFlags 0
 
   pure $
