@@ -32,9 +32,9 @@ withTracer action = do
   pure (spans, result)
 
 
-firstSpan :: [ImmutableSpan] -> ImmutableSpan
-firstSpan (s : _) = s
-firstSpan [] = error "No spans recorded"
+firstSpan :: [ImmutableSpan] -> IO ImmutableSpan
+firstSpan (s : _) = pure s
+firstSpan [] = expectationFailure "No spans recorded" >> pure (error "unreachable")
 
 
 spec :: Spec
@@ -45,7 +45,8 @@ spec = describe "Conduit instrumentation" $ do
         inSpan t "process-items" defaultSpanArguments $ \_s ->
           yieldMany [1 :: Int, 2, 3] .| sinkList
     result `shouldBe` [1, 2, 3]
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     hotName hot `shouldBe` "process-items"
 
   it "records exception on conduit failure" $ do
@@ -58,6 +59,7 @@ spec = describe "Conduit instrumentation" $ do
     case result of
       Left _ -> pure ()
       Right _ -> expectationFailure "expected exception"
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     let events = V.toList $ appendOnlyBoundedCollectionValues $ hotEvents hot
     any (\e -> eventName e == "exception") events `shouldBe` True
