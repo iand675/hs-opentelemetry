@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,6 +26,11 @@ extra-doc-files:
 source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry
+
+flag tls-metadata
+  description: Enable TLS-based metadata detection (requires crypton-connection >= 0.3.1). Disable for LTS 21.x (GHC 9.4) which lacks crypton-connection.
+  manual: False
+  default: True
 
 library
   exposed-modules:
@@ -101,14 +106,15 @@ library
       src
   ghc-options: -Wall
   build-depends:
-      async
+      aeson
+    , async
     , base >=4.7 && <5
     , bytestring
     , case-insensitive
     , clock
     , containers
     , hashable
-    , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-api >=0.3 && <0.5
     , hs-opentelemetry-exporter-handle >=0.0.1 && <0.1
     , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1
@@ -116,16 +122,20 @@ library
     , hs-opentelemetry-propagator-jaeger >=0.0.1 && <0.1
     , hs-opentelemetry-propagator-w3c >=0.1.0 && <0.2
     , hs-opentelemetry-propagator-xray >=0.0.1 && <0.1
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , http-client
     , http-types
     , network-bsd
     , process
     , random >=1.2.0
+    , scientific
     , stm
     , text
     , unix-compat >=0.7.1
     , unordered-containers
     , vector
     , vector-builder
+    , yaml
   default-language: Haskell2010
   if os(windows)
     other-modules:
@@ -139,22 +149,50 @@ library
         src/platform/unix
     build-depends:
         unix
+  if flag(tls-metadata)
+    cpp-options: -DTLS_METADATA
+    build-depends:
+        crypton-connection
+      , crypton-x509
+      , crypton-x509-store
+      , http-client-tls
+      , tls
 
 test-suite hs-opentelemetry-sdk-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      OpenTelemetry.BaggageSpec
+      OpenTelemetry.ConfigurationSpec
+      OpenTelemetry.ContextInSpanSpec
+      OpenTelemetry.ContextSpec
+      OpenTelemetry.LogSpec
       OpenTelemetry.MeterProviderSpec
+      OpenTelemetry.MetricReaderSpec
+      OpenTelemetry.Resource.DetectorSpec
+      OpenTelemetry.ResourceSpec
+      OpenTelemetry.Trace.CallStackSpec
+      OpenTelemetry.TraceSpec
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      async
+    , base >=4.7 && <5
+    , bytestring
     , clock
+    , containers
+    , directory
     , hs-opentelemetry-api
+    , hs-opentelemetry-exporter-in-memory
+    , hs-opentelemetry-propagator-b3
+    , hs-opentelemetry-propagator-w3c
     , hs-opentelemetry-sdk
+    , hs-opentelemetry-semantic-conventions
     , hspec
+    , process
     , text
+    , unix
     , unordered-containers
     , vector
   default-language: Haskell2010
