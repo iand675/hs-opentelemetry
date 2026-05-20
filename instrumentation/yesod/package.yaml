@@ -25,7 +25,8 @@ library:
   ghc-options: -Wall
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - hs-opentelemetry-instrumentation-wai >= 0.0.1 && < 0.2
   - microlens
   - template-haskell
@@ -35,14 +36,30 @@ library:
   - wai
   - yesod-core
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-instrumentation-yesod-test:
     main:                Spec.hs
     source-dirs:         test
+    other-modules:
+    - TestApp.ApiSub
+    - TestApp.ApiSub.Routes
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-yesod
+    - hs-opentelemetry-instrumentation-yesod >= 0.1 && < 0.2
+    - hs-opentelemetry-instrumentation-wai >= 0.1 && < 0.2
+    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+    - hspec
+    - text
+    - wai
+    - http-types
+    - vault
+    - network
+    - yesod-core
+    - template-haskell
+    - unordered-containers
