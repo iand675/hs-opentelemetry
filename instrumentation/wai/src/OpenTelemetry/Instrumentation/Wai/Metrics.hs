@@ -30,6 +30,7 @@ module OpenTelemetry.Instrumentation.Wai.Metrics (
   newWaiMetrics,
 ) where
 
+import Control.Exception (finally)
 import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -112,16 +113,16 @@ metricsMiddleware wm app req sendResp = do
           if isSecure req then ("https" :: T.Text) else "http"
   upDownCounterAdd (waiActiveRequests wm) 1 reqAttrs
   startNs <- getMonotonicTimeNSec
-  app req $ \resp -> do
-    result <- sendResp resp
-    endNs <- getMonotonicTimeNSec
-    upDownCounterAdd (waiActiveRequests wm) (-1) reqAttrs
-    let sc = statusCode (responseStatus resp)
-        durationSec = fromIntegral (endNs - startNs) / 1000000000 :: Double
-        respAttrs = addResponseAttrs sc req reqAttrs
-    histogramRecord (waiDurationHistogram wm) durationSec respAttrs
-    counterAdd (waiRequestCounter wm) 1 respAttrs
-    pure result
+  app req $ \resp ->
+    flip finally (upDownCounterAdd (waiActiveRequests wm) (-1) reqAttrs) $ do
+      result <- sendResp resp
+      endNs <- getMonotonicTimeNSec
+      let sc = statusCode (responseStatus resp)
+          durationSec = fromIntegral (endNs - startNs) / 1000000000 :: Double
+          respAttrs = addResponseAttrs sc req reqAttrs
+      histogramRecord (waiDurationHistogram wm) durationSec respAttrs
+      counterAdd (waiRequestCounter wm) 1 respAttrs
+      pure result
 
 
 addResponseAttrs :: Int -> Request -> Attributes -> Attributes

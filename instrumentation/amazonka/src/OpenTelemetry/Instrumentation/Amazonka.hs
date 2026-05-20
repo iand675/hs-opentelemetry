@@ -43,6 +43,7 @@ import Amazonka.Env (Env, Env' (..))
 import Amazonka.Env.Hooks (Finality (..), Hook, Hook_, Hooks (..))
 import qualified Amazonka.Types as AWS
 import Control.Applicative ((<|>))
+import Control.Exception (onException)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -131,7 +132,7 @@ tracingConfiguredRequest tracer baseHook env req = do
         }
 
   _ <- getAndAdjustContext (insertSpan span)
-  baseHook env req
+  baseHook env req `onException` endSpan span Nothing
 
 
 tracingClientResponse
