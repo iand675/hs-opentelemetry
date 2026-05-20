@@ -53,7 +53,7 @@ import qualified Network.HTTP.Types.Status as HTTP
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Context (insertSpan, lookupSpan)
-import OpenTelemetry.Context.ThreadLocal (getAndAdjustContext)
+import OpenTelemetry.Context.ThreadLocal (getAndAdjustContext, getContext)
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core (
   Span,
@@ -65,9 +65,9 @@ import OpenTelemetry.Trace.Core (
   createSpanWithoutCallStack,
   defaultSpanArguments,
   endSpan,
-  getContext,
   setStatus,
  )
+import Prelude hiding (error)
 
 
 {- | Add OpenTelemetry tracing hooks to an Amazonka 'Env'.

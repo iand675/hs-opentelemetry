@@ -17,6 +17,7 @@ module OpenTelemetry.Instrumentation.Tasty (instrumentTestTree, instrumentTestTr
 
 import Control.Exception (bracket)
 import Data.Tagged (Tagged, retag)
+import Data.Text (Text)
 import Data.Text qualified as T
 import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
