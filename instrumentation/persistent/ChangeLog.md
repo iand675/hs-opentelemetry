@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Internal: `db.transaction.*` attribute keys are now typed `AttributeKey` constants
+  (`db.transaction.isolation`, `db.transaction.outcome`,
+  `db.transaction.commit_duration_us`, `db.transaction.rollback_duration_us`).
+  Attribute names are unchanged.
+
 - **Respect `OTEL_SEMCONV_STABILITY_OPT_IN` for database query attribute.**
   Query text is now emitted as `db.query.text` (stable), `db.statement` (old),
   or both (`database/dup`), controlled by the `databaseOption` setting.
