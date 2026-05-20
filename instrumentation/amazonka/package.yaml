@@ -1,0 +1,51 @@
+_common/lib: !include "../../package-common.yaml"
+
+name:                hs-opentelemetry-instrumentation-amazonka
+version:             0.1.0.0
+
+<<: *preface
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            OpenTelemetry instrumentation for the Amazonka AWS SDK
+category:            OpenTelemetry, Telemetry, Monitoring, Observability, AWS
+description:         Automatic tracing for Amazonka AWS SDK calls via the hooks API. Creates spans per AWS API call with semantic convention attributes (rpc.system, rpc.service, rpc.method, aws.request_id, etc.).
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  ghc-options: -Wall
+  source-dirs: src
+  dependencies:
+  - amazonka ^>= 2.0
+  - amazonka-core ^>= 2.0
+  - bytestring
+  - case-insensitive
+  - hs-opentelemetry-api >= 0.3 && < 0.5
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+  - http-client
+  - http-types
+  - text
+  - unordered-containers
+
+tests:
+  hs-opentelemetry-instrumentation-amazonka-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hs-opentelemetry-instrumentation-amazonka
+    - hs-opentelemetry-api >= 0.3 && < 0.5
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - amazonka
+    - amazonka-core
+    - hspec
+    - text
+    - unordered-containers

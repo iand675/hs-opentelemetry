@@ -1,0 +1,69 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           hs-opentelemetry-instrumentation-amazonka
+version:        0.1.0.0
+synopsis:       OpenTelemetry instrumentation for the Amazonka AWS SDK
+description:    Automatic tracing for Amazonka AWS SDK calls via the hooks API. Creates spans per AWS API call with semantic convention attributes (rpc.system, rpc.service, rpc.method, aws.request_id, etc.).
+category:       OpenTelemetry, Telemetry, Monitoring, Observability, AWS
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan, Jade Lovelace
+maintainer:     ian@iankduncan.com
+copyright:      2024 Ian Duncan, Mercury Technologies
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Instrumentation.Amazonka
+  other-modules:
+      Paths_hs_opentelemetry_instrumentation_amazonka
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      amazonka ==2.0.*
+    , amazonka-core ==2.0.*
+    , base >=4.7 && <5
+    , bytestring
+    , case-insensitive
+    , hs-opentelemetry-api >=0.3 && <0.5
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , http-client
+    , http-types
+    , text
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite hs-opentelemetry-instrumentation-amazonka-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hs_opentelemetry_instrumentation_amazonka
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      amazonka
+    , amazonka-core
+    , base >=4.7 && <5
+    , hs-opentelemetry-api >=0.3 && <0.5
+    , hs-opentelemetry-exporter-in-memory ==0.0.*
+    , hs-opentelemetry-instrumentation-amazonka
+    , hs-opentelemetry-sdk ==0.1.*
+    , hspec
+    , text
+    , unordered-containers
+  default-language: Haskell2010
