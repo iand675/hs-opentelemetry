@@ -15,11 +15,17 @@ packages:
 - propagators/xray
 - propagators/datadog
 - propagators/w3c
+- instrumentation/amazonka
 - instrumentation/cloudflare
+- instrumentation/co-log
 - instrumentation/conduit
+- instrumentation/ghc-metrics
+- instrumentation/gogol
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/hw-kafka-client
+- instrumentation/katip
+- instrumentation/monad-logger
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
@@ -27,6 +33,7 @@ packages:
 - instrumentation/wai
 - instrumentation/yesod
 - examples/hspec
+- examples/otlp-demo
 - examples/yesod-minimal
 - examples/hw-kafka-client-example
 
@@ -36,6 +43,20 @@ extra-deps:
 - thread-utils-finalizers-0.1.1.0
 - proto-lens-0.7.1.6
 - proto-lens-runtime-0.7.0.7
+# amazonka 2.0 has overly conservative base/containers bounds; allow-newer (below) lets it build on GHC 9.10+
+- amazonka-2.0
+- amazonka-core-2.0
+- amazonka-sso-2.0
+- amazonka-sts-2.0
+# co-log 0.7.x is in LTS 24; pin 0.6 to satisfy our <0.7 constraint
+- co-log-0.6.1.2
+
+allow-newer: true
+allow-newer-deps:
+- amazonka
+- amazonka-core
+- amazonka-sso
+- amazonka-sts
 
 nix:
   enable: true

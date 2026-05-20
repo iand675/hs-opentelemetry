@@ -61,6 +61,7 @@ library:
   - OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
   - OpenTelemetry.Resource.Detector.Internal
+  - Paths_hs_opentelemetry_sdk
   ghc-options: -Wall
   source-dirs: src
   when:
@@ -138,8 +139,6 @@ library:
     - OpenTelemetry.Trace.Sampler
     - OpenTelemetry.Trace.TraceState
     - OpenTelemetry.Util
-  other-modules:
-  - Paths_hs_opentelemetry_sdk
 
 tests:
   hs-opentelemetry-sdk-test:

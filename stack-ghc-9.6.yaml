@@ -15,12 +15,16 @@ packages:
 - propagators/xray
 - propagators/datadog
 - propagators/w3c
+- instrumentation/amazonka
 - instrumentation/cloudflare
+- instrumentation/co-log
 - instrumentation/conduit
 - instrumentation/ghc-metrics
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/hw-kafka-client
+- instrumentation/katip
+- instrumentation/monad-logger
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
@@ -29,6 +33,7 @@ packages:
 - instrumentation/yesod
 - utils/exceptions
 - examples/hspec
+- examples/otlp-demo
 - examples/yesod-minimal
 - examples/hw-kafka-client-example
 
@@ -40,6 +45,11 @@ extra-deps:
 - proto-lens-runtime-0.7.0.7
 - tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
 - postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+# amazonka 2.0 is not in LTS 22; base/containers bounds are satisfied for GHC 9.6 (base 4.18)
+- amazonka-2.0
+- amazonka-core-2.0
+- amazonka-sso-2.0
+- amazonka-sts-2.0
 
 flags:
   postgresql-libpq:
