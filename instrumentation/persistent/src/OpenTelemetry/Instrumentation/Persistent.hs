@@ -86,7 +86,7 @@ import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBacken
 import Database.Persist.SqlBackend.Internal
 import Database.Persist.SqlBackend.Internal.IsolationLevel (IsolationLevel (..))
 import OpenTelemetry.Attributes (Attribute (..), Attributes)
-import OpenTelemetry.Attributes.Key (unkey)
+import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
@@ -117,6 +117,26 @@ instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlReadBackend
 
 instance {-# OVERLAPS #-} (MonadTracer m) => MonadTracer (ReaderT SqlWriteBackend m) where
   getTracer = lift OpenTelemetry.Trace.Monad.getTracer
+
+
+-- | @db.transaction.isolation@ – isolation level used for the transaction.
+dbTransactionIsolation :: AttributeKey Text
+dbTransactionIsolation = AttributeKey "db.transaction.isolation"
+
+
+-- | @db.transaction.outcome@ – @\"committed\"@ or @\"rolled back\"@.
+dbTransactionOutcome :: AttributeKey Text
+dbTransactionOutcome = AttributeKey "db.transaction.outcome"
+
+
+-- | @db.transaction.commit_duration_us@ – microseconds spent in the commit call.
+dbTransactionCommitDurationUs :: AttributeKey Int
+dbTransactionCommitDurationUs = AttributeKey "db.transaction.commit_duration_us"
+
+
+-- | @db.transaction.rollback_duration_us@ – microseconds spent in the rollback call.
+dbTransactionRollbackDurationUs :: AttributeKey Int
+dbTransactionRollbackDurationUs = AttributeKey "db.transaction.rollback_duration_us"
 
 
 originalConnectionKey :: Vault.Key SqlBackend
@@ -245,7 +265,7 @@ wrapSqlBackend' tp attrs conn_ = do
               let isoAttrs = case mIso of
                     Nothing -> H.empty
                     Just iso ->
-                      H.singleton "db.transaction.isolation" $ toAttribute $ case iso of
+                      H.singleton (unkey dbTransactionIsolation) $ toAttribute $ case iso of
                         ReadUncommitted -> "read uncommitted" :: Text
                         ReadCommitted -> "read committed"
                         RepeatableRead -> "repeatable read"
@@ -266,8 +286,8 @@ wrapSqlBackend' tp attrs conn_ = do
                       let !durationMicros = fromIntegral @Word64 @Int ((nsEnd - nsStart) `div` 1000)
                       addAttributes
                         s
-                        [ ("db.transaction.outcome", toAttribute ("committed" :: Text))
-                        , ("db.transaction.commit_duration_us", toAttribute durationMicros)
+                        [ (unkey dbTransactionOutcome, toAttribute ("committed" :: Text))
+                        , (unkey dbTransactionCommitDurationUs, toAttribute durationMicros)
                         ]
                       endSpan s Nothing
                       case result of
@@ -290,8 +310,8 @@ wrapSqlBackend' tp attrs conn_ = do
                       let !durationMicros = fromIntegral @Word64 @Int ((nsEnd - nsStart) `div` 1000)
                       addAttributes
                         s
-                        [ ("db.transaction.outcome", toAttribute ("rolled back" :: Text))
-                        , ("db.transaction.rollback_duration_us", toAttribute durationMicros)
+                        [ (unkey dbTransactionOutcome, toAttribute ("rolled back" :: Text))
+                        , (unkey dbTransactionRollbackDurationUs, toAttribute durationMicros)
                         ]
                       endSpan s Nothing
                       case result of
