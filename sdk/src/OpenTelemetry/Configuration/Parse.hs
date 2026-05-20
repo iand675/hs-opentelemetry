@@ -92,7 +92,7 @@ substituteEnvVars input = go input T.empty
               let afterOpen = T.drop 2 withRef
               in case T.breakOn "}" afterOpen of
                    (_, "") -> do
-                     otelLogWarning $ "Malformed environment variable reference in config (no closing '}'): " <> withRef
+                     otelLogWarning $ "Malformed environment variable reference in config (no closing '}'): " <> T.unpack withRef
                      pure (acc <> remaining)
                    (ref, afterClose) -> do
                      val <- resolveRef ref

@@ -122,6 +122,7 @@ createFromConfig cfg = do
             -- so the reader must not try to export after that point.
             meterShutdown `finally` meterProviderShutdown mp
             _ <- shutdownLoggerProvider lp Nothing
+            pure ()
 
       pure
         OTelComponents

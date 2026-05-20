@@ -22,6 +22,12 @@ description:         Please see the README on GitHub at <https://github.com/iand
 dependencies:
 - base >= 4.7 && < 5
 
+flags:
+  tls-metadata:
+    description: Enable TLS-based metadata detection (requires crypton-connection >= 0.3.1). Disable for LTS 21.x (GHC 9.4) which lacks crypton-connection.
+    manual: false
+    default: true
+
 library:
   exposed-modules:
   - OpenTelemetry.Configuration
@@ -61,6 +67,7 @@ library:
   - OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
   - OpenTelemetry.Resource.Detector.Internal
+  - Paths_hs_opentelemetry_sdk
   ghc-options: -Wall
   source-dirs: src
   when:
@@ -70,25 +77,37 @@ library:
       else:
         source-dirs: src/platform/unix
         dependencies: unix # for getEffectiveUserID
+    - condition: flag(tls-metadata)
+      dependencies:
+      - crypton-connection
+      - crypton-x509
+      - crypton-x509-store
+      - http-client-tls
+      - tls
+      cpp-options: -DTLS_METADATA
   dependencies:
+  - aeson
   - async
   - bytestring
   - case-insensitive
   - clock
   - containers
   - hashable
+  - http-client
   - http-types
   - network-bsd
-    - process
-    - random >= 1.2.0
+  - process
+  - random >= 1.2.0
+  - scientific
   - stm
   - text
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
   - vector
   - vector-builder
+  - yaml
   # These are "distribution" packages
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api >= 0.3 && < 0.5
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0
   - hs-opentelemetry-exporter-handle ^>= 0.0.1
   - hs-opentelemetry-exporter-otlp ^>= 0.1
@@ -96,6 +115,7 @@ library:
   - hs-opentelemetry-propagator-datadog ^>=0.0.0
   - hs-opentelemetry-propagator-jaeger ^>=0.0.1
   - hs-opentelemetry-propagator-xray ^>=0.0.1
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   reexported-modules:
     - OpenTelemetry.Attributes
     - OpenTelemetry.Baggage
@@ -128,24 +148,42 @@ library:
     - OpenTelemetry.Trace.Sampler
     - OpenTelemetry.Trace.TraceState
     - OpenTelemetry.Util
-  other-modules:
-  - Paths_hs_opentelemetry_sdk
 
 tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs
     other-modules:
+    - OpenTelemetry.BaggageSpec
+    - OpenTelemetry.ConfigurationSpec
+    - OpenTelemetry.ContextInSpanSpec
+    - OpenTelemetry.ContextSpec
+    - OpenTelemetry.LogSpec
     - OpenTelemetry.MeterProviderSpec
+    - OpenTelemetry.MetricReaderSpec
+    - OpenTelemetry.Resource.DetectorSpec
+    - OpenTelemetry.ResourceSpec
+    - OpenTelemetry.Trace.CallStackSpec
+    - OpenTelemetry.TraceSpec
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - async
+    - bytestring
     - clock
+    - containers
+    - directory
     - hs-opentelemetry-api
+    - hs-opentelemetry-exporter-in-memory
+    - hs-opentelemetry-propagator-b3
+    - hs-opentelemetry-propagator-w3c
     - hs-opentelemetry-sdk
+    - hs-opentelemetry-semantic-conventions
     - hspec
+    - process
     - text
+    - unix
     - unordered-containers
     - vector
