@@ -12,6 +12,7 @@ module OpenTelemetry.Configuration.Create (
   OTelComponents (..),
 ) where
 
+import Control.Monad (when)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -95,7 +96,7 @@ createFromConfig cfg = do
       setGlobalTextMapPropagator props
 
       -- TracerProvider
-      (spanProcessors, spanShutdowns) <- buildSpanProcessors cfg
+      (spanProcessors, _spanShutdowns) <- buildSpanProcessors cfg
       let tpOpts =
             emptyTracerProviderOptions
               { tracerProviderOptionsIdGenerator = defaultIdGenerator
@@ -111,15 +112,16 @@ createFromConfig cfg = do
       (mp, meterShutdown) <- buildMeterProvider cfg res
 
       -- LoggerProvider
-      (lp, logShutdowns) <- buildLoggerProvider cfg globalAttrLimits res
+      (lp, _logShutdowns) <- buildLoggerProvider cfg globalAttrLimits res
 
       let shutdown = do
             _ <- shutdownTracerProvider tp Nothing
+            -- Stop the periodic reader thread before shutting down the meter
+            -- provider; the provider shutdown flushes + closes the exporter,
+            -- so the reader must not try to export after that point.
+            meterShutdown
             _ <- meterProviderShutdown mp
             _ <- shutdownLoggerProvider lp Nothing
-            sequence_ spanShutdowns
-            meterShutdown
-            sequence_ logShutdowns
 
       pure
         OTelComponents
@@ -209,11 +211,11 @@ buildSpanProcessors cfg = case configTracerProvider cfg >>= tpProcessors of
   Nothing -> pure ([], [])
   Just procs -> do
     results <- mapM buildOneSpanProcessor procs
-    let (sps, shutdowns) = unzip results
+    let (sps, shutdowns) = unzip (concatMap (maybe [] pure) results)
     pure (sps, shutdowns)
 
 
-buildOneSpanProcessor :: SpanProcessorConfig -> IO (SpanProcessor, IO ())
+buildOneSpanProcessor :: SpanProcessorConfig -> IO (Maybe (SpanProcessor, IO ()))
 buildOneSpanProcessor (SpanProcessorBatch bsp) = do
   exporter <- buildSpanExporter (bspExporter bsp)
   let conf =
@@ -224,11 +226,14 @@ buildOneSpanProcessor (SpanProcessorBatch bsp) = do
           , maxExportBatchSize = fromMaybe (maxExportBatchSize batchTimeoutConfig) (bspMaxExportBatchSize bsp)
           }
   processor <- batchProcessor conf exporter
-  pure (processor, pure ())
+  pure $ Just (processor, pure ())
 buildOneSpanProcessor (SpanProcessorSimple ssp) = do
   exporter <- buildSpanExporter (sspExporter ssp)
   processor <- simpleProcessor SimpleProcessorConfig {spanExporter = exporter, simpleSpanExportTimeoutMicros = 30_000_000}
-  pure (processor, pure ())
+  pure $ Just (processor, pure ())
+buildOneSpanProcessor SpanProcessorUnknown = do
+  otelLogWarning "Unrecognized span processor type in configuration; this processor will be skipped"
+  pure Nothing
 
 
 buildSpanExporter :: SpanExporterConfig -> IO SpanExporter
@@ -255,7 +260,12 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
       [] -> do
         (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
         pure (mp, pure ())
-      (MetricReaderPeriodic pmc : _) -> do
+      (MetricReaderPeriodic pmc : rest) -> do
+        when (not (null rest)) $
+          otelLogWarning "Multiple metric readers configured; only the first is currently supported — additional readers will be ignored"
+        case pmrTimeout pmc of
+          Just _ -> otelLogWarning "metric_reader.periodic.timeout is configured but not yet supported; the setting will be ignored"
+          Nothing -> pure ()
         mExporter <- buildMetricExporter (pmrExporter pmc)
         case mExporter of
           Just ex -> do
@@ -288,13 +298,13 @@ buildLoggerProvider cfg attrLimits res = case configLoggerProvider cfg >>= lpPro
     pure (lp, [])
   Just procs -> do
     results <- mapM buildOneLogProcessor procs
-    let (lps, shutdowns) = unzip results
+    let (lps, shutdowns) = unzip (concatMap (maybe [] pure) results)
         lpOpts = LoggerProviderOptions res attrLimits Nothing
     lp <- createLoggerProvider lps lpOpts
     pure (lp, shutdowns)
 
 
-buildOneLogProcessor :: LogRecordProcessorConfig -> IO (LogRecordProcessor, IO ())
+buildOneLogProcessor :: LogRecordProcessorConfig -> IO (Maybe (LogRecordProcessor, IO ()))
 buildOneLogProcessor (LogRecordProcessorBatch blp) = do
   exporter <- buildLogExporter (blpExporter blp)
   let conf =
@@ -306,12 +316,15 @@ buildOneLogProcessor (LogRecordProcessorBatch blp) = do
           , BlogProc.batchLogMaxExportBatchSize = fromMaybe 512 (blpMaxExportBatchSize blp)
           }
   processor <- batchLogRecordProcessor conf
-  pure (processor, pure ())
+  pure $ Just (processor, pure ())
 buildOneLogProcessor (LogRecordProcessorSimple slp) = do
   exporter <- buildLogExporter (slpExporter slp)
   let conf = SlogProc.SimpleLogRecordProcessorConfig {SlogProc.simpleLogRecordExporter = exporter, SlogProc.simpleLogRecordExportTimeoutMicros = 30_000_000}
   processor <- SlogProc.simpleLogRecordProcessor conf
-  pure (processor, pure ())
+  pure $ Just (processor, pure ())
+buildOneLogProcessor LogRecordProcessorUnknown = do
+  otelLogWarning "Unrecognized log record processor type in configuration; this processor will be skipped"
+  pure Nothing
 
 
 buildLogExporter :: LogRecordExporterConfig -> IO LogRecordExporter

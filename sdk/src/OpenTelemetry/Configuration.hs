@@ -47,12 +47,14 @@ module OpenTelemetry.Configuration (
 ) where
 
 import Control.Applicative ((<|>))
+import Control.Exception (throwIO)
 import Data.Text (Text)
 import OpenTelemetry.Configuration.Create
 import OpenTelemetry.Configuration.Parse
 import OpenTelemetry.Configuration.Types
 import OpenTelemetry.Internal.Logging (otelLogDebug)
 import System.Environment (lookupEnv)
+import System.IO.Error (userError)
 
 
 {- | Check for a declarative config file and initialize from it if set.
@@ -83,7 +85,7 @@ initializeFromFile :: FilePath -> IO OTelComponents
 initializeFromFile path = do
   result <- parseConfigFile path
   case result of
-    Left err -> error $ "Failed to parse OTEL config file " <> path <> ": " <> show err
+    Left err -> throwIO $ userError $ "Failed to parse OTEL config file " <> path <> ": " <> show err
     Right cfg -> createFromConfig cfg
 
 
@@ -95,5 +97,5 @@ initializeFromText :: Text -> IO OTelComponents
 initializeFromText content = do
   result <- parseConfigBytes content
   case result of
-    Left err -> error $ "Failed to parse OTEL config: " <> show err
+    Left err -> throwIO $ userError $ "Failed to parse OTEL config: " <> show err
     Right cfg -> createFromConfig cfg
