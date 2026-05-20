@@ -63,6 +63,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import OpenTelemetry.Internal.Common.Types (AnyValue (..), ToValue (..))
 import OpenTelemetry.Internal.Log.Types (
   LogRecordArguments (..),
@@ -70,6 +71,7 @@ import OpenTelemetry.Internal.Log.Types (
   emptyLogRecordArguments,
  )
 import OpenTelemetry.Log.Core (Logger, emitLogRecord)
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.Log.FastLogger (fromLogStr)
 
 
@@ -109,16 +111,21 @@ monadLoggerSeverity LevelError = (Error, "ERROR")
 monadLoggerSeverity (LevelOther t) = (Info, t)
 
 
+-- | @log.source@ – monad-logger log source tag (custom attribute).
+logSourceKey :: AttributeKey Text
+logSourceKey = AttributeKey "log.source"
+
+
 locAttributes :: Loc -> H.HashMap Text AnyValue
 locAttributes loc =
   H.fromList
-    [ ("code.filepath", toValue (T.pack (loc_filename loc)))
-    , ("code.function.name", toValue (T.pack (loc_module loc)))
-    , ("code.lineno", IntValue (fromIntegral (fst (loc_start loc))))
+    [ (unkey SC.code_filepath, toValue (T.pack (loc_filename loc)))
+    , (unkey SC.code_function_name, toValue (T.pack (loc_module loc)))
+    , (unkey SC.code_lineno, IntValue (fromIntegral (fst (loc_start loc))))
     ]
 
 
 sourceAttributes :: LogSource -> H.HashMap Text AnyValue
 sourceAttributes src
   | T.null src = H.empty
-  | otherwise = H.singleton "log.source" (toValue src)
+  | otherwise = H.singleton (unkey logSourceKey) (toValue src)

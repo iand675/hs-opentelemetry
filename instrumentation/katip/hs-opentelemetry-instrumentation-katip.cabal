@@ -31,6 +31,7 @@ library
       aeson
     , base >=4.7 && <5
     , hs-opentelemetry-api >=0.4 && <0.5
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , katip >=0.8 && <0.9
     , template-haskell
     , text

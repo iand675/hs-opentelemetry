@@ -18,6 +18,7 @@ module OpenTelemetry.Instrumentation.Tasty (instrumentTestTree, instrumentTestTr
 import Control.Exception (bracket)
 import Data.Tagged (Tagged, retag)
 import Data.Text qualified as T
+import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
 import OpenTelemetry.Trace.Core (Span, SpanStatus (Error, Ok), Tracer, addAttribute, createSpan, defaultSpanArguments, detectInstrumentationLibrary, endSpan, getGlobalTracerProvider, inSpan, makeTracer, setStatus, tracerOptions)
@@ -25,6 +26,11 @@ import Test.Tasty (TestTree, withResource)
 import Test.Tasty.Options (OptionDescription)
 import Test.Tasty.Providers (IsTest (run, testOptions))
 import Test.Tasty.Runners (FailureReason (..), Outcome (Failure, Success), ResourceSpec (ResourceSpec), Result (Result, resultDescription, resultOutcome), TestTree (After, AskOptions, PlusTestOptions, SingleTest, TestGroup, WithResource))
+
+
+-- | @result.description@ – human-readable description of the test result (custom attribute).
+resultDescriptionKey :: AttributeKey Text
+resultDescriptionKey = AttributeKey "result.description"
 
 
 {- | A test case with a wrapper function that can do some IO around the
@@ -42,7 +48,7 @@ instance IsTest t => IsTest (WrappedTest t) where
       res@Result {resultOutcome, resultDescription} <- run opts innerTest progress
       case mspan of
         Just s -> do
-          addAttribute s "result.description" (T.pack resultDescription)
+          addAttribute s (unkey resultDescriptionKey) (T.pack resultDescription)
           case resultOutcome of
             Success -> do
               setStatus s Ok

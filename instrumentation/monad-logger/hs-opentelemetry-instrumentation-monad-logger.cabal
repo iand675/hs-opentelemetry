@@ -30,6 +30,7 @@ library
       base >=4.7 && <5
     , fast-logger
     , hs-opentelemetry-api >=0.4 && <0.5
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , monad-logger >=0.3 && <0.4
     , text
     , unordered-containers
