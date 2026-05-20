@@ -30,7 +30,8 @@ spec = describe "Cloudflare middleware" $ do
     spans <-
       withCloudflareMiddleware
         [("cf-connecting-ip", "203.0.113.50"), ("Host", "example.com")]
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     lookupAttribute (hotAttributes hot) "http.request.header.cf-connecting-ip"
       `shouldBe` Just (AttributeValue (TextAttribute "203.0.113.50"))
 
@@ -38,7 +39,8 @@ spec = describe "Cloudflare middleware" $ do
     spans <-
       withCloudflareMiddleware
         [("cf-ray", "abc123-LAX"), ("Host", "example.com")]
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     lookupAttribute (hotAttributes hot) "http.request.header.cf-ray"
       `shouldBe` Just (AttributeValue (TextAttribute "abc123-LAX"))
 
@@ -46,7 +48,8 @@ spec = describe "Cloudflare middleware" $ do
     spans <-
       withCloudflareMiddleware
         [("cf-ipcountry", "US"), ("Host", "example.com")]
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     lookupAttribute (hotAttributes hot) "http.request.header.cf-ipcountry"
       `shouldBe` Just (AttributeValue (TextAttribute "US"))
 
@@ -54,22 +57,24 @@ spec = describe "Cloudflare middleware" $ do
     spans <-
       withCloudflareMiddleware
         [("true-client-ip", "198.51.100.42"), ("Host", "example.com")]
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     lookupAttribute (hotAttributes hot) "http.request.header.true-client-ip"
       `shouldBe` Just (AttributeValue (TextAttribute "198.51.100.42"))
 
   it "does not add attributes for missing CF headers" $ do
     spans <- withCloudflareMiddleware [("Host", "example.com")]
-    hot <- readIORef (spanHot (firstSpan spans))
+    s <- firstSpan spans
+    hot <- readIORef (spanHot s)
     lookupAttribute (hotAttributes hot) "http.request.header.cf-connecting-ip"
       `shouldBe` Nothing
     lookupAttribute (hotAttributes hot) "http.request.header.cf-ray"
       `shouldBe` Nothing
 
 
-firstSpan :: [ImmutableSpan] -> ImmutableSpan
-firstSpan (s : _) = s
-firstSpan [] = error "No spans recorded"
+firstSpan :: [ImmutableSpan] -> IO ImmutableSpan
+firstSpan (s : _) = pure s
+firstSpan [] = expectationFailure "No spans recorded" >> pure (error "unreachable")
 
 
 withCloudflareMiddleware :: RequestHeaders -> IO [ImmutableSpan]
