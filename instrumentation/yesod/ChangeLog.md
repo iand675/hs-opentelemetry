@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Breaking: `http.framework` attribute renamed to `webengine.name`.**
+  Uses the standard OTel semantic convention (`webengine.name = "yesod"`) instead of
+  the custom `http.framework` key. Update any dashboards or alerts that reference
+  `http.framework`.
 - **Fix: span name uses `{method} {route_template}` pattern.** When Yesod creates its
   own span (no WAI parent), name is now `GET /api/users/:id` instead of Haskell route
   constructor name. Falls back to just `{method}` when no route matches.
