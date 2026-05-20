@@ -25,17 +25,18 @@ library:
   ghc-options: -Wall
   source-dirs: src
   dependencies:
+  - case-insensitive
   - http-types
   - wai
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - vault
   - text
   - network
   - iproute
   - unordered-containers
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-instrumentation-wai-test:
     main:                Spec.hs
     source-dirs:         test
@@ -44,4 +45,15 @@ _tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-wai
+    - hs-opentelemetry-instrumentation-wai >= 0.1 && < 0.2
+    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-sdk == 0.1.*
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+    - hspec
+    - text
+    - wai
+    - http-types
+    - vault
+    - network
+    - unordered-containers
