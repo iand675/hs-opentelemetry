@@ -1,0 +1,21 @@
+name: otlp-demo
+
+dependencies:
+- base >= 4.7 && < 5
+
+ghc-options:
+  - -Wall
+  - -threaded
+  - -rtsopts
+  - -with-rtsopts=-N
+
+executables:
+  otlp-demo:
+    main: Main.hs
+    source-dirs: src
+    dependencies:
+      - containers
+      - text
+      - unordered-containers
+      - hs-opentelemetry-api >= 0.4 && < 0.5
+      - hs-opentelemetry-sdk == 0.1.*

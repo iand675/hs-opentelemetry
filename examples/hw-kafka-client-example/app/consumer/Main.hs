@@ -4,6 +4,7 @@
 module Main where
 
 import Control.Exception (bracket)
+import Control.Monad (void)
 import Data.Either.Combinators (maybeToLeft)
 import Data.Text (Text, pack)
 import Kafka.Consumer (ConsumerGroupId (ConsumerGroupId), ConsumerProperties, Timeout (Timeout), closeConsumer, newConsumer)
@@ -34,7 +35,7 @@ withTracer f =
     -- Install the SDK, pulling configuration from the environment
     initializeGlobalTracerProvider
     -- Ensure that any spans that haven't been exported yet are flushed
-    shutdownTracerProvider
+    (\tp -> void $ shutdownTracerProvider tp Nothing)
     -- Get a tracer so you can create spans
     (\tracerProvider -> f $ makeTracer tracerProvider "haskell-consumer")
 

@@ -37,7 +37,7 @@ library
       base >=4.7 && <5
     , bytestring
     , honeycomb >=0.1.0.1
-    , hs-opentelemetry-api
+    , hs-opentelemetry-api ==0.4.*
     , mtl
     , text
     , time
@@ -60,7 +60,7 @@ test-suite test
       hspec-discover:hspec-discover
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api
+    , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-vendor-honeycomb
     , hspec
     , time
