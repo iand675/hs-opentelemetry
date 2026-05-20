@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -36,9 +37,6 @@ import qualified Data.CaseInsensitive as CI
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.X509.CertificateStore (makeCertificateStore)
-import Data.X509.File (readSignedObject)
-import Network.Connection (TLSSettings (..))
 import Network.HTTP.Client (
   Manager,
   Request (..),
@@ -50,9 +48,16 @@ import Network.HTTP.Client (
   parseRequest,
   responseTimeoutMicro,
  )
-import Network.HTTP.Client.TLS (mkManagerSettings)
 import Network.HTTP.Types.Status (statusCode)
+
+
+#ifdef TLS_METADATA
+import Data.X509.CertificateStore (makeCertificateStore)
+import Data.X509.File (readSignedObject)
+import Network.Connection (TLSSettings (..))
+import Network.HTTP.Client.TLS (mkManagerSettings)
 import qualified Network.TLS as TLS
+#endif
 
 
 {- | Opaque handle holding an HTTP 'Manager' configured with short timeouts
@@ -76,7 +81,7 @@ newMetadataClient =
 
 {- | Create a 'MetadataClient' that validates TLS using a specific CA
 certificate file (PEM or DER). Returns 'Nothing' if the CA cert cannot
-be loaded.
+be loaded, or if TLS support was disabled at build time.
 
 Used by the EKS detector to make HTTPS calls to the in-cluster
 Kubernetes API server using the service account CA at
@@ -85,6 +90,7 @@ Kubernetes API server using the service account CA at
 @since 0.1.0.2
 -}
 newTlsMetadataClient :: FilePath -> String -> IO (Maybe MetadataClient)
+#ifdef TLS_METADATA
 newTlsMetadataClient caCertPath hostname = do
   result <- try @SomeException $ do
     certs <- readSignedObject caCertPath
@@ -102,6 +108,9 @@ newTlsMetadataClient caCertPath hostname = do
   pure $ case result of
     Left _ -> Nothing
     Right v -> Just v
+#else
+newTlsMetadataClient _ _ = pure Nothing
+#endif
 
 
 {- | Fetch a URL via GET and return the response body as 'Text',

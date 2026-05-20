@@ -3,7 +3,7 @@
 
 {- |
 Module      :  OpenTelemetry.Log
-Copyright   :  (c) Ian Duncan, 2021-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description :  OpenTelemetry Logs SDK — batteries-included setup
 Stability   :  experimental
@@ -130,7 +130,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
-import OpenTelemetry.Environment (LogsExporterSelection (..), lookupBooleanEnv, lookupLogsExporterSelection, readEnvDefault, readEnvDefaultWithAlias)
+import OpenTelemetry.Environment (LogsExporterSelection (..), lookupBooleanEnv, lookupLogsExporterSelection)
 import OpenTelemetry.Exporter.Handle.LogRecord (stdoutLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.LogRecord (otlpLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables)
@@ -278,3 +278,16 @@ detectLogRecordAttributeLimits = do
   where
     readEnvMaybe :: (Read a) => String -> IO (Maybe a)
     readEnvMaybe k = (>>= readMaybe) <$> lookupEnv k
+
+
+readEnvDefault :: forall a. (Read a) => String -> a -> IO a
+readEnvDefault k defaultValue =
+  fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
+
+
+readEnvDefaultWithAlias :: forall a. (Read a) => String -> String -> a -> IO a
+readEnvDefaultWithAlias primary fallback defaultValue = do
+  mv <- lookupEnv primary
+  case mv >>= readMaybe of
+    Just v -> pure v
+    Nothing -> readEnvDefault fallback defaultValue
