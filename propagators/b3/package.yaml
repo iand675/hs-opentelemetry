@@ -28,12 +28,10 @@ library:
   dependencies:
   - attoparsec
   - bytestring
-  - hs-opentelemetry-api ^>= 0.3
-  - http-types
+  - hs-opentelemetry-api ^>= 0.4
   - text
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-propagator-b3-test:
     main:                Spec.hs
     source-dirs:         test
@@ -42,4 +40,8 @@ _tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-propagator-b3
+    - hs-opentelemetry-propagator-b3 >= 0.0.1 && < 0.1
+    - hs-opentelemetry-api == 0.4.*
+    - hspec
+    - bytestring
+    - text

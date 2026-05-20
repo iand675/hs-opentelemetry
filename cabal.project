@@ -13,6 +13,8 @@ packages:
   , propagators/datadog
   , propagators/w3c
   , propagators/b3
+  , propagators/jaeger
+  , propagators/xray
   , instrumentation/conduit
   , instrumentation/hspec
   , instrumentation/postgresql-simple

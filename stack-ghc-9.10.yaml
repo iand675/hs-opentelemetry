@@ -5,6 +5,11 @@ packages:
 - api
 - otlp
 - semantic-conventions
+- propagators/b3
+- propagators/jaeger
+- propagators/xray
+- propagators/datadog
+- propagators/w3c
 
 extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
