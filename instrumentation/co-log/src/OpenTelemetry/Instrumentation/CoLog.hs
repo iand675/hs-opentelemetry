@@ -63,6 +63,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Stack (CallStack, getCallStack, srcLocFile, srcLocModule, srcLocStartLine)
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Internal.Common.Types (AnyValue (..), ToValue (..))
 import OpenTelemetry.Internal.Log.Types (
   LogRecordArguments (..),
@@ -70,6 +71,7 @@ import OpenTelemetry.Internal.Log.Types (
   emptyLogRecordArguments,
  )
 import OpenTelemetry.Log.Core (Logger, emitLogRecord)
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 {- | A 'LogAction' for co-log's standard 'Message' type that forwards
@@ -117,7 +119,7 @@ callStackAttributes cs = case getCallStack cs of
   [] -> H.empty
   ((_, loc) : _) ->
     H.fromList
-      [ ("code.filepath", toValue (T.pack (srcLocFile loc)))
-      , ("code.function.name", toValue (T.pack (srcLocModule loc)))
-      , ("code.lineno", IntValue (fromIntegral (srcLocStartLine loc)))
+      [ (unkey SC.code_filepath, toValue (T.pack (srcLocFile loc)))
+      , (unkey SC.code_function_name, toValue (T.pack (srcLocModule loc)))
+      , (unkey SC.code_lineno, IntValue (fromIntegral (srcLocStartLine loc)))
       ]

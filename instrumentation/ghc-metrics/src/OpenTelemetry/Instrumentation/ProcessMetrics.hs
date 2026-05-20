@@ -69,6 +69,7 @@ import OpenTelemetry.Attributes (
   toAttribute,
   unsafeAttributesFromListIgnoringLimits,
  )
+import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Metric.Core (
   AdvisoryParameters,
   Meter (..),
@@ -78,6 +79,7 @@ import OpenTelemetry.Metric.Core (
   ObservableResult (..),
   defaultAdvisoryParameters,
  )
+import qualified OpenTelemetry.SemanticConventions as SC
 import System.IO.Unsafe (unsafePerformIO)
 
 
@@ -227,11 +229,11 @@ capabilityGauge m =
 
 #if defined(linux_HOST_OS)
 readDirAttr :: Attributes
-readDirAttr = unsafeAttributesFromListIgnoringLimits [("disk.io.direction", toAttribute ("read" :: Text))]
+readDirAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.disk_io_direction, toAttribute ("read" :: Text))]
 
 
 writeDirAttr :: Attributes
-writeDirAttr = unsafeAttributesFromListIgnoringLimits [("disk.io.direction", toAttribute ("write" :: Text))]
+writeDirAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.disk_io_direction, toAttribute ("write" :: Text))]
 
 
 threadCountGauge :: Meter -> [IO ObservableCallbackHandle]
@@ -276,27 +278,27 @@ diskIoCounters _ = []
 -- ── Attribute constants ─────────────────────────────────────────────
 
 userModeAttr :: Attributes
-userModeAttr = unsafeAttributesFromListIgnoringLimits [("cpu.mode", toAttribute ("user" :: Text))]
+userModeAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.cpu_mode, toAttribute ("user" :: Text))]
 
 
 systemModeAttr :: Attributes
-systemModeAttr = unsafeAttributesFromListIgnoringLimits [("cpu.mode", toAttribute ("system" :: Text))]
+systemModeAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.cpu_mode, toAttribute ("system" :: Text))]
 
 
 minorFaultAttr :: Attributes
-minorFaultAttr = unsafeAttributesFromListIgnoringLimits [("system.paging.fault.type", toAttribute ("minor" :: Text))]
+minorFaultAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.system_paging_fault_type, toAttribute ("minor" :: Text))]
 
 
 majorFaultAttr :: Attributes
-majorFaultAttr = unsafeAttributesFromListIgnoringLimits [("system.paging.fault.type", toAttribute ("major" :: Text))]
+majorFaultAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.system_paging_fault_type, toAttribute ("major" :: Text))]
 
 
 voluntaryCSWAttr :: Attributes
-voluntaryCSWAttr = unsafeAttributesFromListIgnoringLimits [("process.context_switch.type", toAttribute ("voluntary" :: Text))]
+voluntaryCSWAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.process_contextSwitch_type, toAttribute ("voluntary" :: Text))]
 
 
 involuntaryCSWAttr :: Attributes
-involuntaryCSWAttr = unsafeAttributesFromListIgnoringLimits [("process.context_switch.type", toAttribute ("involuntary" :: Text))]
+involuntaryCSWAttr = unsafeAttributesFromListIgnoringLimits [(unkey SC.process_contextSwitch_type, toAttribute ("involuntary" :: Text))]
 
 
 -- ── getrusage FFI ───────────────────────────────────────────────────

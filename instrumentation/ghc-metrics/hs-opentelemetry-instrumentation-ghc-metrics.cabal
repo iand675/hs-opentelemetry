@@ -35,6 +35,7 @@ library
   build-depends:
       base >= 4.16 && < 5
     , hs-opentelemetry-api == 0.4.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , text
 
   if os(darwin)

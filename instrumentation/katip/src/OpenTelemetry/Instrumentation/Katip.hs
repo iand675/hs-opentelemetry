@@ -59,6 +59,7 @@ import qualified Data.Text.Lazy.Builder as TLB
 import qualified Katip as K
 import qualified Katip.Core as KC
 import Language.Haskell.TH.Syntax (Loc (..))
+import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import OpenTelemetry.Internal.Common.Types (AnyValue (..), ToValue (..))
 import OpenTelemetry.Internal.Log.Types (
   LogRecordArguments (..),
@@ -66,6 +67,7 @@ import OpenTelemetry.Internal.Log.Types (
   emptyLogRecordArguments,
  )
 import OpenTelemetry.Log.Core (Logger, emitLogRecord)
+import qualified OpenTelemetry.SemanticConventions as SC
 
 
 {- | Create a Katip 'K.Scribe' that forwards log items to OTel.
@@ -124,25 +126,30 @@ katipSeverity K.AlertS = (Fatal2, "ALERT")
 katipSeverity K.EmergencyS = (Fatal4, "EMERGENCY")
 
 
+-- | @katip.namespace@ – dot-joined Katip namespace segments (custom attribute).
+katipNamespaceKey :: AttributeKey Text
+katipNamespaceKey = AttributeKey "katip.namespace"
+
+
 itemAttributes :: (K.LogItem a) => K.Verbosity -> K.Item a -> H.HashMap Text AnyValue
 itemAttributes verb item =
   let KC.Namespace ns = KC._itemNamespace item
       base =
         H.fromList $
           concat
-            [ [("katip.namespace", toValue (T.intercalate "." ns))]
-            , [("thread.id", toValue (KC.getThreadIdText (KC._itemThread item)))]
-            , [("server.address", toValue (T.pack (KC._itemHost item)))]
-            , [("process.pid", toValue (T.pack (show (KC._itemProcess item))))]
+            [ [(unkey katipNamespaceKey, toValue (T.intercalate "." ns))]
+            , [(unkey SC.thread_id, toValue (KC.getThreadIdText (KC._itemThread item)))]
+            , [(unkey SC.server_address, toValue (T.pack (KC._itemHost item)))]
+            , [(unkey SC.process_pid, toValue (T.pack (show (KC._itemProcess item))))]
             , maybe [] locAttrs (KC._itemLoc item)
             ]
       payloadAttrs = aesonToAttributes (K.itemJson verb item)
   in H.union base payloadAttrs
   where
     locAttrs loc =
-      [ ("code.filepath", toValue (T.pack (loc_filename loc)))
-      , ("code.function.name", toValue (T.pack (loc_package loc) <> ":" <> T.pack (loc_module loc)))
-      , ("code.lineno", IntValue (fromIntegral (fst (loc_start loc))))
+      [ (unkey SC.code_filepath, toValue (T.pack (loc_filename loc)))
+      , (unkey SC.code_function_name, toValue (T.pack (loc_package loc) <> ":" <> T.pack (loc_module loc)))
+      , (unkey SC.code_lineno, IntValue (fromIntegral (fst (loc_start loc))))
       ]
 
 

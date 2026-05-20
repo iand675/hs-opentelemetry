@@ -65,7 +65,7 @@ import Data.Typeable (typeOf)
 import Language.Haskell.TH.Syntax
 import Lens.Micro
 import Network.Wai (requestHeaders, requestMethod)
-import OpenTelemetry.Attributes.Key (unkey)
+import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Instrumentation.Wai (requestContext)
 import qualified OpenTelemetry.SemanticConventions as SC
@@ -234,6 +234,16 @@ renderPattern FlatResource {..} =
       routePortionSection piece
 
 
+-- | @http.framework@ – web framework name (custom attribute).
+httpFrameworkKey :: AttributeKey Text
+httpFrameworkKey = AttributeKey "http.framework"
+
+
+-- | @http.handler@ – Yesod route type name (custom attribute).
+httpHandlerKey :: AttributeKey Text
+httpHandlerKey = AttributeKey "http.handler"
+
+
 data RouteRenderer site = RouteRenderer
   { nameRender :: Route site -> T.Text
   , pathRender :: Route site -> T.Text
@@ -258,14 +268,14 @@ openTelemetryYesodMiddleware rr m = do
   let mspan = requestContext req >>= Context.lookupSpan
       sharedAttributes =
         H.fromList $
-          ("http.framework", toAttribute ("yesod" :: Text))
+          (unkey httpFrameworkKey, toAttribute ("yesod" :: Text))
             : catMaybes
               [ do
                   r <- mr
                   Just (unkey SC.http_route, toAttribute $ pathRender rr r)
               , do
                   r <- mr
-                  Just ("http.handler", toAttribute $ nameRender rr r)
+                  Just (unkey httpHandlerKey, toAttribute $ nameRender rr r)
               , do
                   ff <- lookup "X-Forwarded-For" $ requestHeaders req
                   case httpOption semanticsOptions of

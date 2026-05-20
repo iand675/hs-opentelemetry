@@ -26,6 +26,7 @@ library
   build-depends:
     base >=4.7 && <5
     , hs-opentelemetry-api ^>= 0.4
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , tagged ^>= 0.8
     , tasty ^>= 1.5
     , text
