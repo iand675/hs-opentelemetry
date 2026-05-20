@@ -12,6 +12,7 @@ module OpenTelemetry.Configuration.Create (
   OTelComponents (..),
 ) where
 
+import Control.Exception (finally)
 import Control.Monad (when)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Map.Strict as Map
@@ -119,8 +120,7 @@ createFromConfig cfg = do
             -- Stop the periodic reader thread before shutting down the meter
             -- provider; the provider shutdown flushes + closes the exporter,
             -- so the reader must not try to export after that point.
-            meterShutdown
-            _ <- meterProviderShutdown mp
+            meterShutdown `finally` meterProviderShutdown mp
             _ <- shutdownLoggerProvider lp Nothing
 
       pure
