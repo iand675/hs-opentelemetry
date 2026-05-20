@@ -3,10 +3,17 @@
 
 import Control.DeepSeq (NFData)
 import qualified Criterion.Main as C
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Short as SB
+import OpenTelemetry.Internal.Trace.Id (TraceId (..), bytesToTraceId)
 import OpenTelemetry.Propagator.Datadog.Internal
-import OpenTelemetry.Trace.Id (TraceId)
 import qualified String
+
+
+mkTid :: [Word] -> TraceId
+mkTid bs = case bytesToTraceId (B.pack (map fromIntegral bs)) of
+  Right t -> t
+  Left _ -> error "bad trace id"
 
 
 main :: IO ()
@@ -18,9 +25,11 @@ main =
         , C.bench "old" $ C.nf String.newTraceIdFromHeader "1"
         ]
     , C.bgroup "newHeaderFromTraceId" $
-        let value = SB.pack [0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 11, 12, 13, 14, 15]
-        in [ C.bench "new" $ C.nf newHeaderFromTraceId value
-           , C.bench "old" $ C.nf String.newHeaderFromTraceId value
+        let bytes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 11, 12, 13, 14, 15]
+            newValue = mkTid bytes
+            oldValue = SB.pack (map fromIntegral bytes)
+        in [ C.bench "new" $ C.nf newHeaderFromTraceId newValue
+           , C.bench "old" $ C.nf String.newHeaderFromTraceId oldValue
            ]
     ]
 
