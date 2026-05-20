@@ -88,6 +88,8 @@ data TracerProviderConfig = TracerProviderConfig
 data SpanProcessorConfig
   = SpanProcessorBatch !BatchSpanProcessorConfig
   | SpanProcessorSimple !SimpleSpanProcessorConfig
+  | -- | Unrecognized processor type in the config file; will be skipped with a warning.
+    SpanProcessorUnknown
   deriving (Show, Eq, Generic)
 
 
@@ -213,6 +215,8 @@ data LoggerProviderConfig = LoggerProviderConfig
 data LogRecordProcessorConfig
   = LogRecordProcessorBatch !BatchLogRecordProcessorConfig
   | LogRecordProcessorSimple !SimpleLogRecordProcessorConfig
+  | -- | Unrecognized processor type in the config file; will be skipped with a warning.
+    LogRecordProcessorUnknown
   deriving (Show, Eq, Generic)
 
 
