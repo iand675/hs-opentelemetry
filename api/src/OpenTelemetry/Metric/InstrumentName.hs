@@ -2,7 +2,7 @@
 
 {- |
 Module      : OpenTelemetry.Metric.InstrumentName
-Copyright   : (c) Ian Duncan, 2024-2026
+Copyright   : (c) Ian Duncan, 2026
 License     : BSD-3
 Description : Instrument name and unit validation per the metrics API spec.
 Stability   : experimental

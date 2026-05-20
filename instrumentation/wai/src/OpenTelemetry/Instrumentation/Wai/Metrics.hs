@@ -2,7 +2,7 @@
 
 {- |
 Module      :  OpenTelemetry.Instrumentation.Wai.Metrics
-Copyright   :  (c) Ian Duncan, 2024-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description :  WAI middleware that records HTTP server metrics per the OpenTelemetry HTTP semantic conventions (stable, Nov 2023).
 Stability   :  experimental

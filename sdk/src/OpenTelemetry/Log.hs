@@ -3,7 +3,7 @@
 
 {- |
 Module      :  OpenTelemetry.Log
-Copyright   :  (c) Ian Duncan, 2021-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description :  OpenTelemetry Logs SDK — batteries-included setup
 Stability   :  experimental
