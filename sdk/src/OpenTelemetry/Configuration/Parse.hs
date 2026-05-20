@@ -30,6 +30,7 @@ import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import qualified Data.Vector as V
 import qualified Data.Yaml as Yaml
 import OpenTelemetry.Configuration.Types
+import OpenTelemetry.Internal.Logging (otelLogWarning)
 import System.Environment (lookupEnv)
 
 
@@ -90,7 +91,9 @@ substituteEnvVars input = go input T.empty
             (before, withRef) ->
               let afterOpen = T.drop 2 withRef
               in case T.breakOn "}" afterOpen of
-                   (_, "") -> pure (acc <> remaining)
+                   (_, "") -> do
+                     otelLogWarning $ "Malformed environment variable reference in config (no closing '}'): " <> withRef
+                     pure (acc <> remaining)
                    (ref, afterClose) -> do
                      val <- resolveRef ref
                      go (T.drop 1 afterClose) (acc <> before <> val)
@@ -211,8 +214,8 @@ parseSpanProcessor (Object obj) = case KM.lookup "batch" obj of
         SimpleSpanProcessorConfig
           { sspExporter = parseSpanExporter s
           }
-    _ -> SpanProcessorBatch (BatchSpanProcessorConfig Nothing Nothing Nothing Nothing SpanExporterNone)
-parseSpanProcessor _ = SpanProcessorBatch (BatchSpanProcessorConfig Nothing Nothing Nothing Nothing SpanExporterNone)
+    _ -> SpanProcessorUnknown
+parseSpanProcessor _ = SpanProcessorUnknown
 
 
 parseSpanExporter :: Object -> SpanExporterConfig
@@ -335,9 +338,8 @@ parseLogRecordProcessor (Object obj) = case KM.lookup "batch" obj of
         SimpleLogRecordProcessorConfig
           { slpExporter = parseLogRecordExporter s
           }
-    _ -> LogRecordProcessorBatch (BatchLogRecordProcessorConfig Nothing Nothing Nothing Nothing LogRecordExporterNone)
-parseLogRecordProcessor _ =
-  LogRecordProcessorBatch (BatchLogRecordProcessorConfig Nothing Nothing Nothing Nothing LogRecordExporterNone)
+    _ -> LogRecordProcessorUnknown
+parseLogRecordProcessor _ = LogRecordProcessorUnknown
 
 
 parseLogRecordExporter :: Object -> LogRecordExporterConfig
