@@ -48,7 +48,7 @@ spec = describe "co-log bridge" $ do
       length records `shouldBe` 1
       let r = head records
       ilr <- readLogRecord r
-      logRecordSeverityNumber ilr `shouldBe` Just OpenTelemetry.Internal.Log.Types.Info
+      toBaseMaybe (logRecordSeverityNumber ilr) `shouldBe` Just OpenTelemetry.Internal.Log.Types.Info
       logRecordBody ilr `shouldBe` TextValue "hello from co-log"
 
   describe "otelLogActionWith" $ do
@@ -67,5 +67,5 @@ spec = describe "co-log bridge" $ do
       records <- getExportedLogRecords ref
       length records `shouldBe` 1
       ilr <- readLogRecord (head records)
-      logRecordSeverityNumber ilr `shouldBe` Just Warn
+      toBaseMaybe (logRecordSeverityNumber ilr) `shouldBe` Just Warn
       logRecordBody ilr `shouldBe` TextValue "custom message"

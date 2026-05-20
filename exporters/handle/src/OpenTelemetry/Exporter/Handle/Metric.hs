@@ -3,7 +3,7 @@
 
 {- |
 Module      :  OpenTelemetry.Exporter.Handle.Metric
-Copyright   :  (c) Ian Duncan, 2024-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description :  Console \/ handle metric exporter (@OTEL_METRICS_EXPORTER=console@).
 Stability   :  experimental

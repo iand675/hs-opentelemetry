@@ -17,7 +17,6 @@ import OpenTelemetry.Internal.Common.Types (instrumentationLibrary)
 import OpenTelemetry.MeterProvider (
   collectResourceMetrics,
   createMeterProvider,
-  cumulativeTemporality,
   defaultSdkMeterProviderOptions,
  )
 import OpenTelemetry.Metric.Core (getMeter)
@@ -63,8 +62,8 @@ spec = do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.ghc-metrics" "0.1.0")
       _ <- registerGHCMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` all (T.isPrefixOf "process.runtime.ghc.")
       length names `shouldBe` expectedBaseCount
 
@@ -72,16 +71,16 @@ spec = do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.ghc-metrics" "0.1.0")
       _ <- registerGHCMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.runtime.ghc.allocated_bytes"
 
     it "reports expected counter and gauge names" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.ghc-metrics" "0.1.0")
       _ <- registerGHCMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
 
       names `shouldSatisfy` elem "process.runtime.ghc.gc.count"
       names `shouldSatisfy` elem "process.runtime.ghc.gc.cpu_time"
@@ -119,48 +118,48 @@ spec = do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.cpu.time"
 
     it "produces process.memory.usage metric" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.memory.usage"
 
     it "produces process.uptime metric" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.uptime"
 
     it "produces process.paging.faults metric" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.paging.faults"
 
     it "produces process.context_switches metric" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.context_switches"
 
     it "produces process.runtime.ghc.capability.count metric" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.runtime.ghc.capability.count"
 
 #if defined(linux_HOST_OS)
@@ -168,24 +167,24 @@ spec = do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.thread.count"
 
     it "produces process.unix.file_descriptor.count metric on Linux" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.unix.file_descriptor.count"
 
     it "produces process.disk.io metric on Linux" $ do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.disk.io"
 #endif
 
@@ -193,8 +192,8 @@ spec = do
       (provider, env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       m <- getMeter provider (instrumentationLibrary "test.process-metrics" "0.1.0")
       _ <- registerProcessMetrics m
-      batches <- collectResourceMetrics env cumulativeTemporality
-      let names = concatMap extractMetricNames (V.toList batches)
+      batches <- collectResourceMetrics env
+      let names = concatMap extractMetricNames batches
       names `shouldSatisfy` elem "process.uptime"
 
 

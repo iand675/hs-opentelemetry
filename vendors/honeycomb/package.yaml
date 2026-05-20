@@ -52,7 +52,7 @@ library:
   dependencies:
   - bytestring
   - honeycomb >= 0.1.0.1
-  - hs-opentelemetry-api
+  - hs-opentelemetry-api == 0.4.*
   - mtl
   - text
   - time
@@ -76,7 +76,7 @@ tests:
       hspec-discover
 
     dependencies:
-      - hs-opentelemetry-api
+      - hs-opentelemetry-api == 0.4.*
       - hs-opentelemetry-vendor-honeycomb
       - hspec
       - time

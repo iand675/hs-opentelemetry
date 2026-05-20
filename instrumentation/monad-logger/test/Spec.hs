@@ -46,8 +46,8 @@ spec = describe "MonadLogger bridge" $ do
       length records `shouldBe` 1
       let r = head records
       ilr <- readLogRecord r
-      logRecordSeverityNumber ilr `shouldBe` Just Info
-      logRecordSeverityText ilr `shouldBe` Just "INFO"
+      toBaseMaybe (logRecordSeverityNumber ilr) `shouldBe` Just Info
+      toBaseMaybe (logRecordSeverityText ilr) `shouldBe` Just "INFO"
       logRecordBody ilr `shouldBe` TextValue "hello from monad-logger"
 
     it "preserves severity across multiple levels" $ do
@@ -61,4 +61,4 @@ spec = describe "MonadLogger bridge" $ do
       records <- reverse <$> getExportedLogRecords ref
       length records `shouldBe` 4
       sevs <- mapM (\r -> logRecordSeverityNumber <$> readLogRecord r) records
-      sevs `shouldBe` [Just Debug, Just Info, Just Warn, Just Error]
+      map toBaseMaybe sevs `shouldBe` [Just Debug, Just Info, Just Warn, Just Error]

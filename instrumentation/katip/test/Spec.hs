@@ -48,8 +48,8 @@ spec = describe "Katip bridge" $ do
       length records `shouldBe` 1
       let r = head records
       ilr <- readLogRecord r
-      logRecordSeverityNumber ilr `shouldBe` Just Info
-      logRecordSeverityText ilr `shouldBe` Just "INFO"
+      toBaseMaybe (logRecordSeverityNumber ilr) `shouldBe` Just Info
+      toBaseMaybe (logRecordSeverityText ilr) `shouldBe` Just "INFO"
 
     it "filters by severity" $ do
       (exporter, ref) <- inMemoryLogRecordExporter
@@ -68,4 +68,4 @@ spec = describe "Katip bridge" $ do
       records <- reverse <$> getExportedLogRecords ref
       length records `shouldBe` 2
       sevs <- mapM (\r -> logRecordSeverityNumber <$> readLogRecord r) records
-      sevs `shouldBe` [Just Warn, Just Error]
+      map toBaseMaybe sevs `shouldBe` [Just Warn, Just Error]

@@ -2,7 +2,7 @@
 
 {- |
 Module      : OpenTelemetry.Internal.Log.Types
-Copyright   :  (c) Ian Duncan, 2024-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description : Internal type definitions for the Logs signal: LoggerProvider, Logger, ReadWriteLogRecord, ImmutableLogRecord, SeverityNumber.
 Stability   : experimental

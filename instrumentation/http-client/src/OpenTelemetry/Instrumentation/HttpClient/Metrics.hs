@@ -3,7 +3,7 @@
 
 {- |
 Module      :  OpenTelemetry.Instrumentation.HttpClient.Metrics
-Copyright   :  (c) Ian Duncan, 2024-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description :  HTTP client metrics per the OpenTelemetry stable HTTP semantic conventions.
 Stability   :  experimental
