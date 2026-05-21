@@ -43,6 +43,9 @@ module OpenTelemetry.Exporter.OTLP.Span (
   -- * Default local endpoints
   otlpExporterHttpEndpoint,
   otlpExporterGRpcEndpoint,
+
+  -- * Protobuf conversion (testing)
+  immutableSpansToProtobuf,
 ) where
 
 import Codec.Compression.GZip
@@ -50,14 +53,14 @@ import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class
-import Data.Bits (shiftL)
+import Data.Bits (shiftL, (.|.))
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.CaseInsensitive as CI
 import Data.Char (toLower)
-import Data.IORef (readIORef)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
+import Data.IORef (readIORef)
 import Data.Maybe
 import Data.ProtoLens.Encoding
 import Data.ProtoLens.Message
@@ -66,9 +69,9 @@ import qualified Data.Text.Encoding as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector as Vector
+import qualified Data.Word
 import Lens.Micro
 import Network.HTTP.Client
-import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
@@ -143,9 +146,9 @@ loadExporterEnvironmentVariables = liftIO $ do
     <*> lookupEnv "OTEL_EXPORTER_OTLP_CERTIFICATE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE"
     <*> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE"
-    <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_HEADERS")
-    <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_TRACES_HEADERS")
-    <*> (fmap decodeHeaders <$> lookupEnv "OTEL_EXPORTER_OTLP_METRICS_HEADERS")
+    <*> (traverse decodeHeaders =<< lookupEnv "OTEL_EXPORTER_OTLP_HEADERS")
+    <*> (traverse decodeHeaders =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_HEADERS")
+    <*> (traverse decodeHeaders =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_HEADERS")
     <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_COMPRESSION")
     <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_TRACES_COMPRESSION")
     <*> (traverse readCompressionFormat =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_COMPRESSION")
@@ -157,9 +160,11 @@ loadExporterEnvironmentVariables = liftIO $ do
     <*> (traverse readProtocol =<< lookupEnv "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")
   where
     decodeHeaders hsString = case Baggage.decodeBaggageHeader $ C.pack hsString of
-      Left _ -> mempty
+      Left err -> do
+        putWarningLn $ "Warning: failed to parse OTEL_EXPORTER_OTLP_HEADERS: " <> show err
+        pure mempty
       Right baggageFmt ->
-        (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
+        pure $ (\(k, v) -> (CI.mk $ Baggage.tokenValue k, T.encodeUtf8 $ Baggage.value v)) <$> H.toList (Baggage.values baggageFmt)
 
 
 {- |
@@ -326,17 +331,9 @@ httpOtlpExporter conf = do
                 sendReq req (backoffCount + 1)
 
       case eResp of
-        Left err@(HttpExceptionRequest req' e)
-          | HTTPClient.host req' == "localhost"
-          , HTTPClient.port req' == 4317 || HTTPClient.port req' == 4318
-          , ConnectionFailure _someExn <- e ->
-              do
-                pure $ Failure Nothing
-          | otherwise ->
-              if isRetryableException e
-                then exponentialBackoff
-                else pure $ Failure $ Just $ SomeException err
-        Left err -> do
+        Left err@(HttpExceptionRequest _req' e)
+          | isRetryableException e -> exponentialBackoff
+        Left err ->
           pure $ Failure $ Just $ SomeException err
         Right resp ->
           if isRetryableStatusCode (responseStatus resp)
@@ -351,9 +348,7 @@ httpOtlpExporter conf = do
                     sendReq req (backoffCount + 1)
             else
               if statusCode (responseStatus resp) >= 300
-                then do
-                  print resp
-                  pure $ Failure Nothing
+                then pure $ Failure Nothing
                 else pure Success
 
 
@@ -377,9 +372,8 @@ Internal helper.
 Get the HTTP host from the `OTLPExporterConfig`.
 -}
 httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost $ otlpEndpoint conf
+httpHost conf = fromMaybe defaultHost $ otlpTracesEndpoint conf <|> otlpEndpoint conf
   where
-    -- TODO shouldn't this be http://localhost:4317 ?
     defaultHost = "http://localhost:4318"
 
 
@@ -417,7 +411,7 @@ httpBaseHeaders :: OTLPExporterConfig -> Request -> [(HeaderName, C.ByteString)]
 httpBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
+    , [(hAccept, httpProtobufMimeType)]
     , fromMaybe [] (otlpHeaders conf)
     , fromMaybe [] (otlpTracesHeaders conf)
     , requestHeaders req
@@ -508,6 +502,8 @@ makeSpan completedSpan = do
         .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
       & Trace_Fields.traceState
         .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
+      & Trace_Fields.flags
+        .~ fromIntegral (OT.traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
       & Trace_Fields.name
         .~ OT.hotName hot
       & Trace_Fields.kind
@@ -525,7 +521,7 @@ makeSpan completedSpan = do
       & Trace_Fields.vec'attributes
         .~ attributesToProto (OT.hotAttributes hot)
       & Trace_Fields.droppedAttributesCount
-        .~ fromIntegral (getCount $ OT.hotAttributes hot)
+        .~ fromIntegral (getDropped $ OT.hotAttributes hot)
       & Trace_Fields.vec'events
         .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.hotEvents hot)
       & Trace_Fields.droppedEventsCount
@@ -568,7 +564,7 @@ makeEvent e =
     & Trace_Fields.vec'attributes
       .~ attributesToProto (OT.eventAttributes e)
     & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (getCount $ OT.eventAttributes e)
+      .~ fromIntegral (getDropped $ OT.eventAttributes e)
 
 
 {- |
@@ -579,21 +575,35 @@ makeLink :: OT.Link -> Span'Link
 makeLink l =
   defMessage
     & Trace_Fields.traceId
-      .~ traceIdBytes (OT.traceId $ OT.frozenLinkContext l)
+      .~ traceIdBytes (OT.traceId ctx)
     & Trace_Fields.spanId
-      .~ spanIdBytes (OT.spanId $ OT.frozenLinkContext l)
+      .~ spanIdBytes (OT.spanId ctx)
     & Trace_Fields.traceState
-      .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.frozenLinkContext l)
+      .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState ctx)
+    & Trace_Fields.flags
+      .~ linkFlags ctx
     & Trace_Fields.vec'attributes
       .~ attributesToProto (OT.frozenLinkAttributes l)
     & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (getCount $ OT.frozenLinkAttributes l)
+      .~ fromIntegral (getDropped $ OT.frozenLinkAttributes l)
+  where
+    ctx = OT.frozenLinkContext l
 
 
 {- |
 Internal helper.
 Translate a collection of `Attributes` to a vector of OTLP `KeyValue` pairs.
 -}
+
+-- | OTLP link flags: bits 0-7 = W3C trace flags, bit 8 = HAS_IS_REMOTE, bit 9 = IS_REMOTE.
+linkFlags :: OT.SpanContext -> Data.Word.Word32
+linkFlags ctx =
+  let w8flags = fromIntegral (OT.traceFlagsValue $ OT.traceFlags ctx) :: Data.Word.Word32
+      hasIsRemote = 1 `shiftL` 8
+      isRemoteBit = if OT.isRemote ctx then 1 `shiftL` 9 else 0
+  in w8flags .|. hasIsRemote .|. isRemoteBit
+
+
 attributesToProto :: Attributes -> Vector KeyValue
 attributesToProto =
   V.fromList

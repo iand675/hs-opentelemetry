@@ -22,12 +22,17 @@ library:
   ghc-options: -Wall
   source-dirs: src
   dependencies:
+  - async
   - bytestring
   - containers
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
+  - http-client
+  - http-types
   - text
   - unordered-containers
   - vector
+  - wai
+  - warp
 
 tests:
   hs-opentelemetry-exporter-prometheus-test:
@@ -38,8 +43,13 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-api ^>= 0.3
-    - hs-opentelemetry-exporter-prometheus
+    - hs-opentelemetry-api ^>= 0.4
+    - hs-opentelemetry-exporter-prometheus == 0.1.*
+    - hs-opentelemetry-semantic-conventions ^>= 1.40
     - hspec
     - text
     - vector
+    - wai
+    - wai-extra
+    - http-types
+    - bytestring

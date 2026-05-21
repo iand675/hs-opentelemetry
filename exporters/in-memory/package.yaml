@@ -11,8 +11,8 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis: In-memory exporter for OpenTelemetry testing
+category: OpenTelemetry, Telemetry, Testing
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -27,17 +27,18 @@ library:
   source-dirs: src
   exposed-modules:
   - OpenTelemetry.Exporter.InMemory
+  - OpenTelemetry.Exporter.InMemory.Assertions
   - OpenTelemetry.Exporter.InMemory.LogRecord
   - OpenTelemetry.Exporter.InMemory.Metric
   - OpenTelemetry.Exporter.InMemory.Span
   dependencies:
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
   - async
+  - text
   - unagi-chan
   - vector
 
-# Test suite not yet implemented
-_tests:
+tests:
   hs-opentelemetry-exporter-in-memory-test:
     main:                Spec.hs
     source-dirs:         test
@@ -46,4 +47,7 @@ _tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-exporter-in-memory
+    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-api == 0.4.*
+    - hspec
+    - text

@@ -1,3 +1,8 @@
+{- |
+Module      : OpenTelemetry.Exporter.OTLP
+Description : Re-exports for OTLP (OpenTelemetry Protocol) exporters.
+Stability   : experimental
+-}
 module OpenTelemetry.Exporter.OTLP (
   module OpenTelemetry.Exporter.OTLP.Span,
   module OpenTelemetry.Exporter.OTLP.Metric,
