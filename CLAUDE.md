@@ -27,17 +27,19 @@ The project uses both Cabal and Stack as build tools, with Nix for environment m
 Stack files exist for each supported GHC version:
 | GHC | Stack file | Resolver | Notes |
 |-----|-----------|----------|-------|
-| 9.4 | `stack-ghc-9.4.yaml` | lts-21.25 | No hw-kafka-client, no gogol |
+| 9.4 | `stack-ghc-9.4.yaml` | lts-21.25 | No hw-kafka-client, no gogol, no amazonka |
 | 9.6 | `stack-ghc-9.6.yaml` | lts-22.44 | No gogol |
 | 9.8 | `stack-ghc-9.8.yaml` | lts-23.28 | No gogol |
-| 9.10 | `stack-ghc-9.10.yaml` | lts-24.35 | Full support |
-| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-04-04 | No persistent-mysql; proto-lens via allow-newer |
+| 9.10 | `stack-ghc-9.10.yaml` | lts-24.35 | No amazonka |
+| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-04-04 | No persistent-mysql, no amazonka; proto-lens via allow-newer |
 
 Key compat notes:
 - `foldl'` moved to Prelude in GHC 9.10; older versions need `import Data.List (foldl')`
 - `proto-lens` caps at `base < 4.21`; GHC 9.12 uses `allow-newer`
 - `gogol-core` only available in LTS 24+ / nightly
 - hw-kafka-client headers API only in LTS 22+
+- `amazonka 2.0` requires `base < 4.19`; excluded from GHC 9.10+ (base 4.20/4.21)
+- `co-log 0.7.x` is in LTS 24 and nightly; `stack-ghc-9.10.yaml` and `stack-ghc-9.12.yaml` pin co-log-0.6.1.2 via extra-deps
 
 ### Testing
 - Run tests via the build commands above (`--test` flag for Stack, `cabal test` for Cabal)
