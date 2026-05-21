@@ -1,6 +1,6 @@
 {- |
 Module      : OpenTelemetry.Log.Core
-Copyright   : (c) Ian Duncan, 2021-2026
+Copyright   : (c) Ian Duncan, 2026
 License     : BSD-3
 Description : Public API for OpenTelemetry Logs
 Stability   : experimental

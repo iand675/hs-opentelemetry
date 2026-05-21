@@ -44,12 +44,20 @@ in rec {
     hs-opentelemetry-exporter-otlp = ../exporters/otlp;
     hs-opentelemetry-propagator-b3 = ../propagators/b3;
     hs-opentelemetry-propagator-datadog = ../propagators/datadog;
+    hs-opentelemetry-propagator-jaeger = ../propagators/jaeger;
+    hs-opentelemetry-propagator-xray = ../propagators/xray;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
+    hs-opentelemetry-instrumentation-amazonka = ../instrumentation/amazonka;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
+    hs-opentelemetry-instrumentation-co-log = ../instrumentation/co-log;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
+    hs-opentelemetry-instrumentation-ghc-metrics = ../instrumentation/ghc-metrics;
+    hs-opentelemetry-instrumentation-gogol = ../instrumentation/gogol;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
     hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
+    hs-opentelemetry-instrumentation-katip = ../instrumentation/katip;
+    hs-opentelemetry-instrumentation-monad-logger = ../instrumentation/monad-logger;
     hs-opentelemetry-instrumentation-persistent = ../instrumentation/persistent;
     hs-opentelemetry-instrumentation-persistent-mysql = ../instrumentation/persistent-mysql;
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
@@ -61,6 +69,7 @@ in rec {
 
     hspec-example = ../examples/hspec;
     hw-kafka-client-example = ../examples/hw-kafka-client-example;
+    otlp-demo = ../examples/otlp-demo;
     yesod-minimal = ../examples/yesod-minimal;
   };
 
@@ -134,5 +143,13 @@ in rec {
       url = "https://hackage.haskell.org/package/thread-utils-context-0.4.1.0/thread-utils-context-0.4.1.0.tar.gz";
       sha256 = "0b5jcfnrf3rss6kbcdg7q1mhlnn4405zfd6b5w9qv3nmn7vw3mks";
     }) {};
+    # amazonka-2.0 has overly conservative base/containers bounds; jailbreak
+    # lets it build against newer GHC (9.10+) where base >= 4.19.
+    amazonka = pkgs.haskell.lib.compose.doJailbreak prev.amazonka;
+    amazonka-core = pkgs.haskell.lib.compose.doJailbreak prev.amazonka-core;
+    # co-log 0.7.x is in nixpkgs-unstable; our constraint is <0.7.
+    # Pin to 0.6.1.2 so the instrumentation package can build.
+    co-log = final.callHackage "co-log" "0.6.1.2" {};
+    co-log-core = final.callHackage "co-log-core" "0.3.2.2" {};
   };
 }

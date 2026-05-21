@@ -38,7 +38,23 @@ data FaaS = FaaS
 
   Examples: 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
   -}
-  , faasCloudResourceId :: Maybe Text
+  , -- \^ The name of the single function that this runtime instance executes.
+    --
+    --  This is the name of the function as configured/deployed on the FaaS platform and is usually different from the name of the callback function (which may be stored in the code.namespace/code.function span attributes).
+    --
+    --  Examples: 'my-function'
+    --
+    faasCloudResourceId :: Maybe Text
+  {- ^ The unique ID of the single function that this runtime instance executes.
+
+  Depending on the cloud provider, use:
+
+  - AWS Lambda: The function ARN. Take care not to use the "invoked ARN" directly but replace any alias suffix with the resolved function version, as the same runtime instance may be invokable with multiple different aliases.
+  - GCP: The URI of the resource
+  - Azure: The Fully Qualified Resource ID.
+
+  Examples: 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
+  -}
   , faasVersion :: Maybe Text
   {- ^ The immutable version of the function being executed.
 

@@ -40,22 +40,22 @@ packages:
   original:
     hackage: proto-lens-runtime-0.7.0.7
 - completed:
-    hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
-    pantry-tree:
-      sha256: 55cabcd98ff0f5c671a93fb138b8b8cb1cf223497b0fbf9207e6c519fd54a9e9
-      size: 1944
-  original:
-    hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
-- completed:
     hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
     pantry-tree:
       sha256: 2142ab3dfe2420073a56ab28eb2c82904f3e50da46b326fcdce8886538be9cc8
       size: 175
   original:
     hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+- completed:
+    hackage: co-log-0.6.1.2@sha256:86d61e07356a5cb45b8ec28217b579a21f555d025dc0d9e1eecd9ff8d288f6fc,6512
+    pantry-tree:
+      sha256: 8a03f66e378e8653f3a5784b14ba1b01fca3cfce1350eec8d323bd27aa894a34
+      size: 1198
+  original:
+    hackage: co-log-0.6.1.2
 snapshots:
 - completed:
-    sha256: 238fa745b64f91184f9aa518fe04bdde6552533d169b0da5256670df83a0f1a9
-    size: 721141
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/44.yaml
-  original: lts-22.44
+    sha256: 3feb356f42266933bcbfecbd3d853c86bd48f6ca3106dd5cfb5976386724514a
+    size: 735726
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/4/4.yaml
+  original: nightly-2026-04-04
