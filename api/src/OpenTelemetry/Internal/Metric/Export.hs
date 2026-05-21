@@ -4,7 +4,7 @@
 
 {- |
 Module      : OpenTelemetry.Internal.Metric.Export
-Copyright   : (c) Ian Duncan, 2024-2026
+Copyright   : (c) Ian Duncan, 2026
 License     : BSD-3
 Description : Export data types for metric data points and aggregations.
 Stability   : experimental
