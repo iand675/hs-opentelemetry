@@ -5,7 +5,7 @@
 
 {- |
 Module      : OpenTelemetry.Internal.Metric.Types
-Copyright   : (c) Ian Duncan, 2024-2026
+Copyright   : (c) Ian Duncan, 2026
 License     : BSD-3
 Description : Internal types for the OpenTelemetry Metrics API.
 Stability   : experimental
