@@ -67,7 +67,7 @@ library:
   - vector
   - vector-builder
   # These are "distribution" packages
-  - hs-opentelemetry-api ^>= 0.3
+  - hs-opentelemetry-api ^>= 0.4
   - hs-opentelemetry-propagator-w3c ^>= 0.1.0
   - hs-opentelemetry-exporter-handle ^>= 0.0.1
   - hs-opentelemetry-exporter-otlp ^>= 0.1

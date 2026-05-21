@@ -323,7 +323,7 @@ requestHeadersToTextMap =
   textMapFromList . map (\(name, val) -> (decodeUtf8 (CI.original name), decodeUtf8 val))
 
 
-knownPropagators :: [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
+knownPropagators :: [(T.Text, TextMapPropagator)]
 knownPropagators =
   [ ("tracecontext", w3cTraceContextPropagator)
   , ("baggage", w3cBaggagePropagator)
@@ -334,8 +334,8 @@ knownPropagators =
   ]
 
 
--- TODO, actually implement a registry systme
-readRegisteredPropagators :: IO [(T.Text, Propagator Context RequestHeaders RequestHeaders)]
+-- TODO, actually implement a registry system
+readRegisteredPropagators :: IO [(T.Text, TextMapPropagator)]
 readRegisteredPropagators = pure knownPropagators
 
 
@@ -417,7 +417,7 @@ detectPropagators = do
           propagatorsAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k registeredPropagators) envPropagators
           (_notFound, propagators) = partitionEithers propagatorsAndRegistryEntry
       -- TODO log warn notFound
-      pure . headerPropagatorToTextMap $ mconcat propagators
+      pure $ mconcat propagators
 
 
 knownSamplers :: [(T.Text, Maybe T.Text -> Maybe Sampler)]

@@ -12,26 +12,7 @@
 in rec {
   inherit pkgs;
 
-  skipPackages = [
-    "hs-opentelemetry-sdk"
-    "hs-opentelemetry-instrumentation-cloudflare"
-    "hs-opentelemetry-instrumentation-conduit"
-    "hs-opentelemetry-instrumentation-ghc-metrics"
-    "hs-opentelemetry-instrumentation-hspec"
-    "hs-opentelemetry-instrumentation-http-client"
-    "hs-opentelemetry-instrumentation-hw-kafka-client"
-    "hs-opentelemetry-instrumentation-persistent"
-    "hs-opentelemetry-instrumentation-persistent-mysql"
-    "hs-opentelemetry-instrumentation-postgresql-simple"
-    "hs-opentelemetry-instrumentation-yesod"
-    "hs-opentelemetry-instrumentation-wai"
-    "hs-opentelemetry-instrumentation-tasty"
-    "hs-opentelemetry-utils-exceptions"
-    "hs-opentelemetry-vendor-honeycomb"
-    "hspec-example"
-    "hw-kafka-client-example"
-    "yesod-minimal"
-  ];
+  skipPackages = [];
 
   localPackages = {
     hs-opentelemetry-api = ../api;
@@ -47,17 +28,11 @@ in rec {
     hs-opentelemetry-propagator-jaeger = ../propagators/jaeger;
     hs-opentelemetry-propagator-xray = ../propagators/xray;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
-    hs-opentelemetry-instrumentation-amazonka = ../instrumentation/amazonka;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
-    hs-opentelemetry-instrumentation-co-log = ../instrumentation/co-log;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
-    hs-opentelemetry-instrumentation-ghc-metrics = ../instrumentation/ghc-metrics;
-    hs-opentelemetry-instrumentation-gogol = ../instrumentation/gogol;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
     hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
-    hs-opentelemetry-instrumentation-katip = ../instrumentation/katip;
-    hs-opentelemetry-instrumentation-monad-logger = ../instrumentation/monad-logger;
     hs-opentelemetry-instrumentation-persistent = ../instrumentation/persistent;
     hs-opentelemetry-instrumentation-persistent-mysql = ../instrumentation/persistent-mysql;
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
@@ -69,7 +44,6 @@ in rec {
 
     hspec-example = ../examples/hspec;
     hw-kafka-client-example = ../examples/hw-kafka-client-example;
-    otlp-demo = ../examples/otlp-demo;
     yesod-minimal = ../examples/yesod-minimal;
   };
 
