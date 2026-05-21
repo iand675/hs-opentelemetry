@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -89,7 +89,7 @@ library
     , clock
     , containers
     , hashable
-    , hs-opentelemetry-api ==0.3.*
+    , hs-opentelemetry-api ==0.4.*
     , hs-opentelemetry-exporter-handle >=0.0.1 && <0.1
     , hs-opentelemetry-exporter-otlp ==0.1.*
     , hs-opentelemetry-propagator-b3 >=0.0.1 && <0.1

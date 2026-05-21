@@ -32,7 +32,6 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
@@ -142,15 +141,8 @@ otlpMetricExporter conf = liftIO $ do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
       case eResp of
-        Left err@(HttpExceptionRequest req' e)
-          | HTTPClient.host req' == "localhost"
-          , HTTPClient.port req' == 4317 || HTTPClient.port req' == 4318
-          , ConnectionFailure _ <- e ->
-              pure $ Failure Nothing
-          | otherwise ->
-              if isRetryableException e
-                then exponentialBackoff
-                else pure $ Failure $ Just $ SomeException err
+        Left err@(HttpExceptionRequest _req' e)
+          | isRetryableException e -> exponentialBackoff
         Left err -> pure $ Failure $ Just $ SomeException err
         Right resp ->
           if isRetryableStatusCode (responseStatus resp)
@@ -189,7 +181,7 @@ httpMetricsBaseHeaders :: OTLPExporterConfig -> Request -> RequestHeaders
 httpMetricsBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
-    , [(hAcceptEncoding, httpProtobufMimeType)]
+    , [(hAccept, httpProtobufMimeType)]
     , fromMaybe [] (otlpHeaders conf)
     , fromMaybe [] (otlpMetricsHeaders conf)
     , requestHeaders req
@@ -234,7 +226,7 @@ materializedResourceToProto r =
        & Rf.vec'attributes
          .~ attributesToProto attrs
        & Rf.droppedAttributesCount
-         .~ fromIntegral (getCount attrs)
+         .~ fromIntegral (getDropped attrs)
 
 
 scopeMetricsExportToProto :: ScopeMetricsExport -> PM.ScopeMetrics
@@ -258,7 +250,7 @@ instrumentationLibraryToProto InstrumentationLibrary {..} =
     & Common_Fields.vec'attributes
       .~ attributesToProto libraryAttributes
     & Common_Fields.droppedAttributesCount
-      .~ fromIntegral (getCount libraryAttributes)
+      .~ fromIntegral (getDropped libraryAttributes)
 
 
 temporalityToProto :: AggregationTemporality -> PM.AggregationTemporality
