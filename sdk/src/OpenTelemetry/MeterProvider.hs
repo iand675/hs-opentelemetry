@@ -19,8 +19,12 @@ module OpenTelemetry.MeterProvider (
   SdkMeterExemplarOptions (..),
   defaultSdkMeterExemplarOptions,
   SdkMeterEnv (..),
+  emptyStorageState,
   createMeterProvider,
   collectResourceMetrics,
+  MetricReader (..),
+  cumulativeTemporality,
+  deltaTemporality,
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -97,6 +101,20 @@ defaultSdkMeterExemplarOptions =
     { exemplarFilter = MetricsExemplarFilterTraceBased
     , exemplarReservoirLimit = 1
     }
+
+
+data MetricReader = MetricReader
+  { metricReaderExporter :: !MetricExporter
+  , metricReaderTemporalityFor :: !(InstrumentKind -> AggregationTemporality)
+  }
+
+
+cumulativeTemporality :: InstrumentKind -> AggregationTemporality
+cumulativeTemporality _ = AggregationCumulative
+
+
+deltaTemporality :: InstrumentKind -> AggregationTemporality
+deltaTemporality _ = AggregationDelta
 
 
 data SdkMeterProviderOptions = SdkMeterProviderOptions

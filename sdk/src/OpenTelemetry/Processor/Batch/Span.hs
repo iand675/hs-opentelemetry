@@ -33,7 +33,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import OpenTelemetry.Exporter.Span (SpanExporter)
+import OpenTelemetry.Exporter.Span (ExportResult (..), SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Processor.Span
@@ -67,7 +67,7 @@ data BatchTimeoutConfig = BatchTimeoutConfig
 batchTimeoutConfig :: BatchTimeoutConfig
 batchTimeoutConfig =
   BatchTimeoutConfig
-    { maxQueueSize = 1024
+    { maxQueueSize = 2048
     , scheduledDelayMillis = 5000
     , exportTimeoutMillis = 30000
     , maxExportBatchSize = 512

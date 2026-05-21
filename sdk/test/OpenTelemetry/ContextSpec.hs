@@ -30,15 +30,16 @@ spec = describe "Context" $ do
   describe "Attach Context" $ do
     specify "ThreadLocal works" $ do
       k <- newKey "thingum"
-      attachContext $ insert k True empty
+      _ <- attachContext $ insert k True empty
       mctxt <- lookupContext
       (mctxt >>= lookup k) `shouldBe` Just True
   describe "Detach Context" $ do
     specify "ThreadLocal works" $ do
       k <- newKey "thingum"
-      attachContext $ insert k True empty
-      mctxt <- detachContext
+      token <- attachContext $ insert k True empty
+      mctxt <- lookupContext
       (mctxt >>= lookup k) `shouldBe` Just True
+      detachContext token
       mctxt' <- lookupContext
       isNothing mctxt' `shouldBe` True
 
@@ -46,9 +47,9 @@ spec = describe "Context" $ do
     k1 <- newKey "k.1"
     k2 <- newKey "k.2"
     let ctxt1 = insert k1 (12 :: Int) empty
-    attachContext ctxt1
+    _ <- attachContext ctxt1
     let ctxt2 = insert k2 (13 :: Int) empty
-    attachContext ctxt2
+    _ <- attachContext ctxt2
     (Just ctxt) <- lookupContext
     lookup k1 ctxt `shouldBe` Nothing
     lookup k2 ctxt `shouldBe` Just 13
