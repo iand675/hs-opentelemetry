@@ -11,6 +11,9 @@ Used by the SDK during provider initialization.
 -}
 module OpenTelemetry.Environment (
   lookupBooleanEnv,
+  readEnv,
+  readEnvDefault,
+  readEnvDefaultWithAlias,
   MetricsExporterSelection (..),
   lookupMetricsExporterSelection,
   lookupMetricExportIntervalMillis,
@@ -36,6 +39,27 @@ isTrue = ("true" ==) . map C.toLower
 
 lookupBooleanEnv :: String -> IO Bool
 lookupBooleanEnv = fmap (maybe False isTrue) . lookupEnv
+
+
+-- | Read an environment variable and parse it with 'readMaybe'. Returns 'Nothing' if unset or unparseable.
+readEnv :: (Read a) => String -> IO (Maybe a)
+readEnv k = (>>= readMaybe) <$> lookupEnv k
+
+
+-- | Like 'readEnv' but falls back to a default value if the variable is unset or unparseable.
+readEnvDefault :: (Read a) => String -> a -> IO a
+readEnvDefault k def = maybe def id <$> readEnv k
+
+
+{- | Like 'readEnvDefault' but tries a primary key first, then a legacy alias.
+Useful when an env var was renamed to maintain backwards compatibility.
+-}
+readEnvDefaultWithAlias :: (Read a) => String -> String -> a -> IO a
+readEnvDefaultWithAlias primary fallback def = do
+  mv <- readEnv primary
+  case mv of
+    Just v -> pure v
+    Nothing -> readEnvDefault fallback def
 
 
 {- | Parsed value of @OTEL_METRICS_EXPORTER@ (first entry if comma-separated).

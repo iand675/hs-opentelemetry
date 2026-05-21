@@ -91,6 +91,7 @@ module OpenTelemetry.Trace (
   TracerProvider,
   initializeGlobalTracerProvider,
   initializeTracerProvider,
+  withTracerProvider,
   getTracerProviderInitializationOptions,
   getTracerProviderInitializationOptions',
   shutdownTracerProvider,
@@ -151,6 +152,11 @@ module OpenTelemetry.Trace (
   SpanContext (..),
   -- TODO, don't remember if this is okay with the spec or not
   ImmutableSpan (..),
+
+  -- * Internal helpers re-exported for tests
+  detectSpanLimits,
+  detectBatchProcessorConfig,
+  registerBuiltinResourceDetectors,
 ) where
 
 import qualified Data.ByteString.Char8 as B
@@ -160,7 +166,7 @@ import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Network.HTTP.Types.Header
+import Network.HTTP.Types (RequestHeaders)
 import OpenTelemetry.Attributes (AttributeLimits (..), defaultAttributeLimits)
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
@@ -182,12 +188,9 @@ import OpenTelemetry.Propagator.B3 (b3MultiTraceContextPropagator, b3TraceContex
 import OpenTelemetry.Propagator.Datadog (datadogTraceContextPropagator)
 import OpenTelemetry.Propagator.W3CBaggage (w3cBaggagePropagator)
 import OpenTelemetry.Propagator.W3CTraceContext (w3cTraceContextPropagator)
+import qualified OpenTelemetry.Registry as Registry
 import OpenTelemetry.Resource
-import OpenTelemetry.Resource.Host.Detector (detectHost)
-import OpenTelemetry.Resource.OperatingSystem.Detector (detectOperatingSystem)
-import OpenTelemetry.Resource.Process.Detector (detectProcess, detectProcessRuntime)
-import OpenTelemetry.Resource.Service.Detector (detectService)
-import OpenTelemetry.Resource.Telemetry.Detector (detectTelemetry)
+import qualified OpenTelemetry.Resource.Detect as ResourceDetect
 import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 import OpenTelemetry.Trace.Sampler (Sampler, alwaysOff, alwaysOn, parentBased, parentBasedOptions, traceIdRatioBased)
@@ -334,9 +337,12 @@ knownPropagators =
   ]
 
 
--- TODO, actually implement a registry system
 readRegisteredPropagators :: IO [(T.Text, TextMapPropagator)]
-readRegisteredPropagators = pure knownPropagators
+readRegisteredPropagators = do
+  registered <- H.toList <$> Registry.registeredTextMapPropagators
+  let regKeys = map fst registered
+      builtins = filter (\(k, _) -> k `notElem` regKeys) knownPropagators
+  pure (registered ++ builtins)
 
 
 {- | Create a new 'TracerProvider' and set it as the global
@@ -362,6 +368,14 @@ initializeTracerProvider = do
   createTracerProvider processors opts
 
 
+withTracerProvider :: (TracerProvider -> IO a) -> IO a
+withTracerProvider f = do
+  tp <- initializeTracerProvider
+  r <- f tp
+  _ <- shutdownTracerProvider tp Nothing
+  pure r
+
+
 getTracerProviderInitializationOptions :: IO ([SpanProcessor], TracerProviderOptions)
 getTracerProviderInitializationOptions = getTracerProviderInitializationOptions' mempty
 
@@ -376,7 +390,12 @@ getTracerProviderInitializationOptions'
 getTracerProviderInitializationOptions' rs = do
   disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
   if disabled
-    then pure ([], emptyTracerProviderOptions)
+    then do
+      propagators <- detectPropagators
+      pure
+        ( []
+        , emptyTracerProviderOptions {tracerProviderOptionsPropagators = propagators}
+        )
     else do
       sampler <- detectSampler
       attrLimits <- detectAttributeLimits
@@ -386,9 +405,15 @@ getTracerProviderInitializationOptions' rs = do
       exporters <- detectExporters
       builtInRs <- detectBuiltInResources
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
+      mSvcNameEnv <- fmap (fmap T.pack) $ lookupEnv "OTEL_SERVICE_NAME"
       let
         -- NB: Resource merge prioritizes the left value on attribute key conflict.
-        allRs = mergeResources rs (envVarRs <> builtInRs)
+        baseRs = mergeResources rs (envVarRs <> builtInRs)
+        allRs =
+          case mSvcNameEnv of
+            Nothing -> baseRs
+            Just name ->
+              mergeResources (mkResource ["service.name" .= name]) baseRs
       processors <- case exporters of
         [] -> do
           pure []
@@ -457,19 +482,26 @@ detectSampler = do
   envSampler <- lookupEnv "OTEL_TRACES_SAMPLER"
   envArg <- lookupEnv "OTEL_TRACES_SAMPLER_ARG"
   let sampler = fromMaybe (parentBased $ parentBasedOptions alwaysOn) $ do
-        samplerName <- envSampler
-        samplerConstructor <- lookup (T.pack samplerName) knownSamplers
+        samplerNameRaw <- envSampler
+        let samplerName = T.strip $ T.toLower $ T.pack samplerNameRaw
+        samplerConstructor <- lookup samplerName knownSamplers
         samplerConstructor (T.pack <$> envArg)
   pure sampler
 
 
 detectBatchProcessorConfig :: IO BatchTimeoutConfig
-detectBatchProcessorConfig =
-  BatchTimeoutConfig
-    <$> readEnvDefault "OTEL_BSP_MAX_QUEUE_SIZE" (maxQueueSize batchTimeoutConfig)
-    <*> readEnvDefault "OTEL_BSP_SCHEDULE_DELAY" (scheduledDelayMillis batchTimeoutConfig)
-    <*> readEnvDefault "OTEL_BSP_EXPORT_TIMEOUT" (exportTimeoutMillis batchTimeoutConfig)
-    <*> readEnvDefault "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" (maxExportBatchSize batchTimeoutConfig)
+detectBatchProcessorConfig = do
+  maxQ <- readEnvDefault "OTEL_BSP_MAX_QUEUE_SIZE" (maxQueueSize batchTimeoutConfig)
+  delay <- readEnvDefault "OTEL_BSP_SCHEDULE_DELAY" (scheduledDelayMillis batchTimeoutConfig)
+  expT <- readEnvDefault "OTEL_BSP_EXPORT_TIMEOUT" (exportTimeoutMillis batchTimeoutConfig)
+  maxBatch <- readEnvDefault "OTEL_BSP_MAX_EXPORT_BATCH_SIZE" (maxExportBatchSize batchTimeoutConfig)
+  pure
+    BatchTimeoutConfig
+      { maxQueueSize = maxQ
+      , scheduledDelayMillis = delay
+      , exportTimeoutMillis = expT
+      , maxExportBatchSize = min maxBatch maxQ
+      }
 
 
 detectAttributeLimits :: IO AttributeLimits
@@ -485,8 +517,8 @@ detectSpanLimits =
     <$> readEnv "OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT"
     <*> readEnv "OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT"
     <*> readEnv "OTEL_SPAN_EVENT_COUNT_LIMIT"
-    <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
     <*> readEnv "OTEL_EVENT_ATTRIBUTE_COUNT_LIMIT"
+    <*> readEnv "OTEL_SPAN_LINK_COUNT_LIMIT"
     <*> readEnv "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT"
 
 
@@ -511,10 +543,19 @@ detectExporters = do
     then pure []
     else do
       let envExporters = fromMaybe ["otlp"] exportersInEnv
-          exportersAndRegistryEntry = map (\k -> maybe (Left k) Right $ lookup k knownExporters) envExporters
-          (_notFound, exporterIntializers) = partitionEithers exportersAndRegistryEntry
+      resolved <- traverse resolveSpanExporterFactory envExporters
+      let (_notFound, exporterInitializers) = partitionEithers resolved
       -- TODO, notFound logging
-      sequence exporterIntializers
+      sequence exporterInitializers
+
+
+-- | Prefer a user 'Registry' factory for @k@ when present (left-biased merge with 'knownExporters').
+resolveSpanExporterFactory :: T.Text -> IO (Either T.Text (IO SpanExporter))
+resolveSpanExporterFactory k =
+  Registry.lookupSpanExporterFactory k >>= \case
+    Just factoryIO -> pure (Right factoryIO)
+    Nothing ->
+      pure $ maybe (Left k) Right $ lookup k knownExporters
 
 
 -- -- detectMetricsExporterSelection :: _
@@ -537,41 +578,19 @@ detectResourceAttributes = do
               Baggage.values ok
 
 
-readEnvDefault :: forall a. (Read a) => String -> a -> IO a
-readEnvDefault k defaultValue =
-  fromMaybe defaultValue . (>>= readMaybe) <$> lookupEnv k
+{- | Discover resource attributes using the shared SDK implementation in
+     "OpenTelemetry.Resource.Detect".
 
-
-readEnv :: forall a. (Read a) => String -> IO (Maybe a)
-readEnv k = (>>= readMaybe) <$> lookupEnv k
-
-
-{- | Use all built-in resource detectors to populate resource information.
-
- Currently used detectors include:
-
- - 'detectService'
- - 'detectProcess'
- - 'detectOperatingSystem'
- - 'detectHost'
- - 'detectTelemetry'
- - 'detectProcessRuntime'
-
- This list will grow in the future as more detectors are implemented.
+     This reads @OTEL_RESOURCE_DETECTORS@, consults the detector 'Registry', and
+     merges results in spec order. See 'OpenTelemetry.Resource.Detect.detectBuiltInResources'.
 
  @since 0.0.1.0
+ @since 0.1.0.2 Re-exported implementation (registry + @OTEL_RESOURCE_DETECTORS@).
 -}
 detectBuiltInResources :: IO Resource
-detectBuiltInResources = do
-  svc <- detectService
-  processInfo <- detectProcess
-  osInfo <- detectOperatingSystem
-  host <- detectHost
-  let rs =
-        toResource svc
-          `mergeResources` toResource detectTelemetry
-          `mergeResources` toResource detectProcessRuntime
-          `mergeResources` toResource processInfo
-          `mergeResources` toResource osInfo
-          `mergeResources` toResource host
-  pure rs
+detectBuiltInResources = ResourceDetect.detectBuiltInResources
+
+
+registerBuiltinResourceDetectors :: IO ()
+registerBuiltinResourceDetectors =
+  ResourceDetect.registerBuiltinResourceDetectors
