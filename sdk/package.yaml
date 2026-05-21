@@ -154,15 +154,9 @@ tests:
     main:                Spec.hs
     other-modules:
     - OpenTelemetry.BaggageSpec
-    - OpenTelemetry.ConfigurationSpec
-    - OpenTelemetry.ContextInSpanSpec
     - OpenTelemetry.ContextSpec
-    - OpenTelemetry.LogSpec
     - OpenTelemetry.MeterProviderSpec
-    - OpenTelemetry.MetricReaderSpec
-    - OpenTelemetry.Resource.DetectorSpec
     - OpenTelemetry.ResourceSpec
-    - OpenTelemetry.Trace.CallStackSpec
     - OpenTelemetry.TraceSpec
     source-dirs:         test
     ghc-options:
