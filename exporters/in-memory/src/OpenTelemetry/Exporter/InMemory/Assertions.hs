@@ -19,6 +19,9 @@ assertSpanAttribute span "http.method" (AttributeValue (TextAttribute "GET"))
 @
 -}
 module OpenTelemetry.Exporter.InMemory.Assertions (
+  -- * Exception type
+  OTelAssertionError (..),
+
   -- * Span assertions
   getSpans,
   assertSpanNamed,
@@ -40,7 +43,7 @@ module OpenTelemetry.Exporter.InMemory.Assertions (
   assertNoLogs,
 ) where
 
-import Control.Exception (throwIO)
+import Control.Exception (Exception, throwIO)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (IORef, readIORef)
@@ -61,6 +64,18 @@ import OpenTelemetry.Trace.Core (
  )
 
 
+-- | Exception thrown when an OpenTelemetry assertion fails.
+newtype OTelAssertionError = OTelAssertionError String
+  deriving (Eq)
+
+
+instance Show OTelAssertionError where
+  show (OTelAssertionError msg) = "OTelAssertionError: " <> msg
+
+
+instance Exception OTelAssertionError
+
+
 -- Spans
 
 -- | Read all spans currently in the in-memory exporter.
@@ -79,7 +94,7 @@ assertSpanNamed ref name = liftIO $ do
   case result of
     Nothing -> do
       names <- mapM (\s -> hotName <$> readIORef (spanHot s)) spans
-      throwIO $ userError $ "Expected span named " <> show name <> " but found: [" <> T.unpack (T.intercalate ", " names) <> "]"
+      throwIO $ OTelAssertionError $ "Expected span named " <> show name <> " but found: [" <> T.unpack (T.intercalate ", " names) <> "]"
     Just s -> pure s
 
 
@@ -90,7 +105,7 @@ assertSpanCount ref expected = liftIO $ do
   let actual = length spans
   unless (actual == expected) $
     throwIO $
-      userError $
+      OTelAssertionError $
         "Expected " <> show expected <> " spans but found " <> show actual
 
 
@@ -107,11 +122,11 @@ assertSpanAttribute span_ key expected = liftIO $ do
       name = hotName hot
   case actual of
     Nothing ->
-      throwIO $ userError $ "Span " <> show name <> " missing attribute " <> show key
+      throwIO $ OTelAssertionError $ "Span " <> show name <> " missing attribute " <> show key
     Just v ->
       unless (v == expected) $
         throwIO $
-          userError $
+          OTelAssertionError $
             "Span " <> show name <> " attribute " <> show key <> ": expected " <> show expected <> " but got " <> show v
 
 
@@ -121,7 +136,7 @@ assertSpanHasParent span_ = liftIO $ do
   case spanParent span_ of
     Nothing -> do
       name <- hotName <$> readIORef (spanHot span_)
-      throwIO $ userError $ "Span " <> show name <> " has no parent"
+      throwIO $ OTelAssertionError $ "Span " <> show name <> " has no parent"
     Just _ -> pure ()
 
 
@@ -133,7 +148,7 @@ assertSpanStatus span_ expected = liftIO $ do
       name = hotName hot
   unless (actual == expected) $
     throwIO $
-      userError $
+      OTelAssertionError $
         "Span " <> show name <> " status: expected " <> show expected <> " but got " <> show actual
 
 
@@ -150,7 +165,7 @@ assertMetricNamed ref name = liftIO $ do
   batches <- readIORef ref
   case findMetricByName name batches of
     Nothing ->
-      throwIO $ userError $ "Expected metric named " <> show name <> " but not found in exports"
+      throwIO $ OTelAssertionError $ "Expected metric named " <> show name <> " but not found in exports"
     Just m -> pure m
 
 
@@ -161,7 +176,7 @@ assertMetricCount ref expected = liftIO $ do
   let actual = length (allMetrics batches)
   unless (actual == expected) $
     throwIO $
-      userError $
+      OTelAssertionError $
         "Expected " <> show expected <> " metrics but found " <> show actual
 
 
@@ -184,7 +199,7 @@ assertLogCount ref expected = liftIO $ do
   let actual = length logs
   unless (actual == expected) $
     throwIO $
-      userError $
+      OTelAssertionError $
         "Expected " <> show expected <> " log records but found " <> show actual
 
 
