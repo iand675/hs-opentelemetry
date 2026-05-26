@@ -115,6 +115,19 @@ encodeUberTraceId tid sid sampled =
 
 -- Decoders -------------------------------------------------------------------
 
+{- | Maximum allowed size for a Jaeger uber-trace-id header in bytes.
+
+The standard format is ~69 bytes:
+@{32hex-tid}:{16hex-sid}:{16hex-parent}:{2hex-flags}@
+
+We allow 512 bytes to prevent DoS from scanning arbitrarily large
+malformed inputs. This is well below typical web server header limits
+(8KB-50KB).
+-}
+maxHeaderSize :: Int
+maxHeaderSize = 512
+
+
 {- | Decode a Jaeger @uber-trace-id@ header value.
 
 Uses memchr to locate colon delimiters and the existing SIMD hex
@@ -123,48 +136,52 @@ decoders for trace/span ID parsing.
 decodeUberTraceId :: ByteString -> Maybe JaegerHeader
 decodeUberTraceId bs = do
   let !len = BS.length bs
-  -- Need at least: 16 (tid) + 1 (:) + 1 (sid) + 1 (:) + 1 (parent) + 1 (:) + 1 (flags) = 22
-  if len < 22
+  -- Reject oversized headers to prevent DoS.
+  if len > maxHeaderSize
     then Nothing
-    else do
-      -- Find three colons via memchr.
-      !c1 <- BS.elemIndex 0x3a bs
-      !c2rel <- BS.elemIndex 0x3a (BS.drop (c1 + 1) bs)
-      let !c2 = c1 + 1 + c2rel
-      !c3rel <- BS.elemIndex 0x3a (BS.drop (c2 + 1) bs)
-      let !c3 = c2 + 1 + c3rel
+    -- Need at least: 16 (tid) + 1 (:) + 1 (sid) + 1 (:) + 1 (parent) + 1 (:) + 1 (flags) = 22
+    else
+      if len < 22
+        then Nothing
+        else do
+          -- Find three colons via memchr.
+          !c1 <- BS.elemIndex 0x3a bs
+          !c2rel <- BS.elemIndex 0x3a (BS.drop (c1 + 1) bs)
+          let !c2 = c1 + 1 + c2rel
+          !c3rel <- BS.elemIndex 0x3a (BS.drop (c2 + 1) bs)
+          let !c3 = c2 + 1 + c3rel
 
-      -- Reject extra colons (trailing garbage).
-      case BS.elemIndex 0x3a (BS.drop (c3 + 1) bs) of
-        Just _ -> Nothing
-        Nothing -> do
-          let !tidHex = BS.take c1 bs
-              !sidHex = BS.take c2rel (BS.drop (c1 + 1) bs)
-              !parentHex = BS.take c3rel (BS.drop (c2 + 1) bs)
-              !flagsHex = BS.drop (c3 + 1) bs
+          -- Reject extra colons (trailing garbage).
+          case BS.elemIndex 0x3a (BS.drop (c3 + 1) bs) of
+            Just _ -> Nothing
+            Nothing -> do
+              let !tidHex = BS.take c1 bs
+                  !sidHex = BS.take c2rel (BS.drop (c1 + 1) bs)
+                  !parentHex = BS.take c3rel (BS.drop (c2 + 1) bs)
+                  !flagsHex = BS.drop (c3 + 1) bs
 
-          -- Flags: 1-2 hex digits, validated first (cheapest check).
-          !flags <- parseFlags flagsHex
+              -- Flags: 1-2 hex digits, validated first (cheapest check).
+              !flags <- parseFlags flagsHex
 
-          -- Trace ID: 16 or 32 hex chars.
-          !tid <- eitherToMaybe (decodeTraceIdFromHex tidHex)
+              -- Trace ID: 16 or 32 hex chars.
+              !tid <- eitherToMaybe (decodeTraceIdFromHex tidHex)
 
-          -- Span ID: must be valid hex (length validated by baseEncodedToSpanId).
-          !sid <- eitherToMaybe (baseEncodedToSpanId Base16 sidHex)
+              -- Span ID: must be valid hex (length validated by baseEncodedToSpanId).
+              !sid <- eitherToMaybe (baseEncodedToSpanId Base16 sidHex)
 
-          -- Parent span ID: all-zeros means "no parent".
-          let !parentSid
-                | BS.null parentHex = Nothing
-                | BS.all (== 0x30) parentHex = Nothing
-                | otherwise = eitherToMaybe (baseEncodedToSpanId Base16 parentHex)
+              -- Parent span ID: all-zeros means "no parent".
+              let !parentSid
+                    | BS.null parentHex = Nothing
+                    | BS.all (== 0x30) parentHex = Nothing
+                    | otherwise = eitherToMaybe (baseEncodedToSpanId Base16 parentHex)
 
-          pure
-            JaegerHeader
-              { jhTraceId = tid
-              , jhSpanId = sid
-              , jhParentSpanId = parentSid
-              , jhFlags = flags
-              }
+              pure
+                JaegerHeader
+                  { jhTraceId = tid
+                  , jhSpanId = sid
+                  , jhParentSpanId = parentSid
+                  , jhFlags = flags
+                  }
 
 
 -- Internal helpers -----------------------------------------------------------
