@@ -61,9 +61,8 @@ data XRayHeader = XRayHeader
   { xhTraceId :: !TraceId
   , xhSpanId :: !SpanId
   , xhSampled :: !(Maybe Bool)
-  {- ^ @Nothing@ when the @Sampled@ field is absent (deferred decision).
-  @Just True@ = sampled, @Just False@ = not sampled.
-  -}
+  -- ^ @Nothing@ when the @Sampled@ field is absent (deferred decision).
+  --   @Just True@ = sampled, @Just False@ = not sampled.
   }
   deriving (Eq, Show)
 
@@ -92,15 +91,30 @@ xrayTraceIdToOTel bs
           unique = BS.drop 11 bs
           combined = epoch <> unique
       in case baseEncodedToTraceId Base16 combined of
-           Left _ -> Nothing
-           Right tid -> Just tid
+          Left _ -> Nothing
+          Right tid -> Just tid
 
 
 -- Decoders -------------------------------------------------------------------
 
+{- | Maximum allowed size for an X-Ray header in bytes.
+
+The standard format is ~74 bytes:
+@Root=1-{8hex}-{24hex};Parent={16hex};Sampled={0|1}@
+
+We allow 512 bytes to accommodate optional custom fields while still
+preventing DoS from scanning arbitrarily large inputs. This is well below
+typical web server header limits (8KB-50KB).
+-}
+maxHeaderSize :: Int
+maxHeaderSize = 512
+
+
 -- | Parse a full @X-Amzn-Trace-Id@ header value.
 decodeXRayHeader :: ByteString -> Maybe XRayHeader
-decodeXRayHeader = parseXRayKVs
+decodeXRayHeader bs
+  | BS.length bs > maxHeaderSize = Nothing
+  | otherwise = parseXRayKVs bs
 
 
 {- | Hand-rolled parser for semicolon-separated key=value pairs.
@@ -118,12 +132,12 @@ parseXRayKVs bs = go bs Nothing Nothing Nothing
           let !trimmed = BS.dropWhile (== charW8 ' ') remaining
               (!key, !afterEq) = BS.break (== charW8 '=') trimmed
           in if BS.null afterEq
-               then Nothing -- no '=' found
-               else
-                 let !valAndRest = BS.drop 1 afterEq -- skip '='
-                     (!val, !rest) = breakSemicolon valAndRest
-                     !next = skipSpacesAfterSemicolon rest
-                 in if
+              then Nothing -- no '=' found
+              else
+                let !valAndRest = BS.drop 1 afterEq -- skip '='
+                    (!val, !rest) = breakSemicolon valAndRest
+                    !next = skipSpacesAfterSemicolon rest
+                in if
                     | key == "Root" ->
                         case xrayTraceIdToOTel val of
                           Nothing -> Nothing

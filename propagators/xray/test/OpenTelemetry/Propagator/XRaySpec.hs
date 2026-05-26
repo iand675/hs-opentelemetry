@@ -157,6 +157,14 @@ spec =
       it "rejects empty header" $ do
         decodeXRayHeader "" `shouldSatisfy` isNothing
 
+      it "rejects oversized header (> 512 bytes)" $ do
+        -- Create a header with valid Root/Parent but padded with junk to exceed 512 bytes
+        let validPart = "Root=1-65a8c9d2-0abcdef1234567890abcdef0;Parent=53995c3f42cd8ad8;Sampled=1"
+            -- Add enough padding to exceed 512 bytes (valid part is ~81 bytes)
+            padding = replicate (512 - length validPart + 1) 'x'
+            oversized = TE.encodeUtf8 $ T.pack $ validPart ++ padding
+        decodeXRayHeader oversized `shouldSatisfy` isNothing
+
     describe "trace context extraction" $ do
       it "extracts sampled span context from header" $ do
         ctx <- extractWith "Root=1-65a8c9d2-0abcdef1234567890abcdef0;Parent=53995c3f42cd8ad8;Sampled=1"
