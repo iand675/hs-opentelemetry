@@ -1,0 +1,42 @@
+# OpenTelemetry SDK configuration for the otlp-demo example.
+# Points all three signals to a local OTel Collector.
+sdk:
+  disabled: false
+  resource:
+    attributes:
+      - name: service.name
+        value: hs-otel-demo
+      - name: service.version
+        value: "0.1.0"
+      - name: deployment.environment
+        value: development
+
+  tracer_provider:
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://localhost:4318
+
+  meter_provider:
+    readers:
+      - periodic:
+          interval: 2000
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://localhost:4318
+
+  logger_provider:
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://localhost:4318
+
+propagator:
+  composite:
+    - tracecontext
+    - baggage
