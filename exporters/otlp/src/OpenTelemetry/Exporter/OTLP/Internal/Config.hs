@@ -1,5 +1,4 @@
 {- FOURMOLU_DISABLE -}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,8 +17,7 @@ precedence over generic ones.
 
 === Endpoint
 
-* @OTEL_EXPORTER_OTLP_ENDPOINT@ (default: @http:\/\/localhost:4318@ HTTP,
-  @http:\/\/localhost:4317@ gRPC)
+* @OTEL_EXPORTER_OTLP_ENDPOINT@ (default: @http:\/\/localhost:4318@)
 * @OTEL_EXPORTER_OTLP_TRACES_ENDPOINT@, @OTEL_EXPORTER_OTLP_METRICS_ENDPOINT@,
   @OTEL_EXPORTER_OTLP_LOGS_ENDPOINT@
 
@@ -58,7 +56,7 @@ Milliseconds (default: @10000@).
 * @OTEL_EXPORTER_OTLP_PROTOCOL@, @OTEL_EXPORTER_OTLP_TRACES_PROTOCOL@,
   @OTEL_EXPORTER_OTLP_METRICS_PROTOCOL@, @OTEL_EXPORTER_OTLP_LOGS_PROTOCOL@
 
-Values: @http\/protobuf@ (default), @grpc@.
+Value: @http\/protobuf@ (default).
 -}
 module OpenTelemetry.Exporter.OTLP.Internal.Config (
   OTLPExporterConfig (..),
@@ -66,7 +64,6 @@ module OpenTelemetry.Exporter.OTLP.Internal.Config (
   Protocol (..),
   loadExporterEnvironmentVariables,
   otlpExporterHttpEndpoint,
-  otlpExporterGRpcEndpoint,
   defaultExporterTimeout,
   readCompressionFormat,
   readProtocol,
@@ -81,12 +78,6 @@ module OpenTelemetry.Exporter.OTLP.Internal.Config (
 
   -- * Retry-After parsing
   parseRetryAfterMicros,
-
-  -- * gRPC endpoint resolution (same env vars as HTTP; default port 4317)
-  grpcEndpoint,
-  grpcTracesEndpoint,
-  grpcMetricsEndpoint,
-  grpcLogsEndpoint,
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -215,14 +206,10 @@ data CompressionFormat
 {- |
 The OpenTelemetry Protocol.
 
-@http\/protobuf@ is always available. When the @grpc@ cabal flag is enabled,
-@grpc@ is also supported (native HTTP\/2 gRPC via grapesy).
+Currently only @http\/protobuf@ is supported.
 -}
 data Protocol
   = HttpProtobuf
-#ifdef GRPC_ENABLED
-  | GRpc
-#endif
 
 
 readCompressionFormat :: (MonadIO m) => String -> m CompressionFormat
@@ -239,9 +226,6 @@ readProtocol :: (MonadIO m) => String -> m Protocol
 readProtocol protocol =
   protocol & fmap toLower & \case
     "http/protobuf" -> pure HttpProtobuf
-#ifdef GRPC_ENABLED
-    "grpc" -> pure GRpc
-#endif
     _ -> do
       putWarningLn $ "Unsupported protocol '" <> protocol <> "'"
       pure HttpProtobuf
@@ -262,44 +246,6 @@ defaultExporterTimeout = 10_000
 
 otlpExporterHttpEndpoint :: C.ByteString
 otlpExporterHttpEndpoint = "http://localhost:4318"
-
-
-otlpExporterGRpcEndpoint :: C.ByteString
-otlpExporterGRpcEndpoint = "http://localhost:4317"
-
-
-{- | Base OTLP gRPC URL from @OTEL_EXPORTER_OTLP_ENDPOINT@.
-
-Defaults to @http:\/\/localhost:4317@. Per-signal
-@OTEL_EXPORTER_OTLP_TRACES_ENDPOINT@ (and metrics\/logs variants) override via
-'grpcTracesEndpoint' and siblings.
--}
-grpcEndpoint :: OTLPExporterConfig -> String
-grpcEndpoint conf =
-  fromMaybe "http://localhost:4317" (otlpEndpoint conf)
-
-
-{- | Effective gRPC URL for traces: per-signal env overrides the generic endpoint.
-
-See <https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls>.
--}
-grpcTracesEndpoint :: OTLPExporterConfig -> String
-grpcTracesEndpoint conf =
-  fromMaybe (grpcEndpoint conf) (otlpTracesEndpoint conf)
-
-
-{- | Effective gRPC URL for metrics (per-signal override or generic base).
--}
-grpcMetricsEndpoint :: OTLPExporterConfig -> String
-grpcMetricsEndpoint conf =
-  fromMaybe (grpcEndpoint conf) (otlpMetricsEndpoint conf)
-
-
-{- | Effective gRPC URL for logs (per-signal override or generic base).
--}
-grpcLogsEndpoint :: OTLPExporterConfig -> String
-grpcLogsEndpoint conf =
-  fromMaybe (grpcEndpoint conf) (otlpLogsEndpoint conf)
 
 
 putWarningLn :: (MonadIO m) => String -> m ()
