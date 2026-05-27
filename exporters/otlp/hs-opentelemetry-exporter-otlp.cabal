@@ -25,6 +25,11 @@ source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry
 
+flag grpc
+  description: Enable gRPC export support (requires grapesy)
+  manual: True
+  default: False
+
 library
   exposed-modules:
       OpenTelemetry.Exporter.OTLP
@@ -56,6 +61,11 @@ library
     , vector
     , zlib
   default-language: Haskell2010
+  if flag(grpc)
+    exposed-modules:
+        OpenTelemetry.Exporter.OTLP.GRPC
+    build-depends:
+        grapesy
 
 test-suite hs-opentelemetry-exporter-otlp-test
   type: exitcode-stdio-1.0

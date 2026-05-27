@@ -91,12 +91,12 @@ substituteEnvVars input = go input T.empty
             (before, withRef) ->
               let afterOpen = T.drop 2 withRef
               in case T.breakOn "}" afterOpen of
-                   (_, "") -> do
-                     otelLogWarning $ "Malformed environment variable reference in config (no closing '}'): " <> T.unpack withRef
-                     pure (acc <> remaining)
-                   (ref, afterClose) -> do
-                     val <- resolveRef ref
-                     go (T.drop 1 afterClose) (acc <> before <> val)
+                  (_, "") -> do
+                    otelLogWarning $ "Malformed environment variable reference in config (no closing '}'): " <> T.unpack withRef
+                    pure (acc <> remaining)
+                  (ref, afterClose) -> do
+                    val <- resolveRef ref
+                    go (T.drop 1 afterClose) (acc <> before <> val)
 
     resolveRef ref =
       let (varSpec, defaultVal) = splitDefault ref
@@ -104,10 +104,10 @@ substituteEnvVars input = go input T.empty
             Just name -> name
             Nothing -> varSpec
       in do
-           result <- lookupEnv (T.unpack varName)
-           pure $ case result of
-             Just v -> T.pack v
-             Nothing -> defaultVal
+          result <- lookupEnv (T.unpack varName)
+          pure $ case result of
+            Just v -> T.pack v
+            Nothing -> defaultVal
 
     splitDefault ref =
       case T.breakOn ":-" ref of

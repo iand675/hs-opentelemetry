@@ -53,14 +53,12 @@ inSpanM
   -> Text
   -- ^ The name of the span. This may be updated later via 'updateName'
   -> Trace.SpanArguments
-  {- ^ Additional options for creating the span, such as 'SpanKind',
-  span links, starting attributes, etc.
-  -}
+  -- ^ Additional options for creating the span, such as 'SpanKind',
+  --   span links, starting attributes, etc.
   -> m a
-  {- ^ The action to perform. 'inSpan' will record the time spent on the
-  action without forcing strict evaluation of the result. Any uncaught
-  exceptions will be recorded and rethrown.
-  -}
+  -- ^ The action to perform. 'inSpan' will record the time spent on the
+  --   action without forcing strict evaluation of the result. Any uncaught
+  --   exceptions will be recorded and rethrown.
   -> m a
 inSpanM t n args m = inSpanM'' t callStack n args (const m)
 
@@ -80,9 +78,8 @@ inSpanM''
   :: (MonadMask m, HasCallStack, MonadIO m)
   => Trace.Tracer
   -> CallStack
-  {- ^ Record the location of the span in the codebase using the provided
-  callstack for source location info.
-  -}
+  -- ^ Record the location of the span in the codebase using the provided
+  --   callstack for source location info.
   -> Text
   -- ^ The name of the span. This may be updated later via 'updateName'
   -> Trace.SpanArguments

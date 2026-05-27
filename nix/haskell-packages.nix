@@ -12,25 +12,7 @@
 in rec {
   inherit pkgs;
 
-  skipPackages = [
-    "hs-opentelemetry-instrumentation-cloudflare"
-    "hs-opentelemetry-instrumentation-conduit"
-    "hs-opentelemetry-instrumentation-ghc-metrics"
-    "hs-opentelemetry-instrumentation-hspec"
-    "hs-opentelemetry-instrumentation-http-client"
-    "hs-opentelemetry-instrumentation-hw-kafka-client"
-    "hs-opentelemetry-instrumentation-persistent"
-    "hs-opentelemetry-instrumentation-persistent-mysql"
-    "hs-opentelemetry-instrumentation-postgresql-simple"
-    "hs-opentelemetry-instrumentation-yesod"
-    "hs-opentelemetry-instrumentation-wai"
-    "hs-opentelemetry-instrumentation-tasty"
-    "hs-opentelemetry-utils-exceptions"
-    "hs-opentelemetry-vendor-honeycomb"
-    "hspec-example"
-    "hw-kafka-client-example"
-    "yesod-minimal"
-  ];
+  skipPackages = [];
 
   localPackages = {
     hs-opentelemetry-api = ../api;
@@ -135,5 +117,13 @@ in rec {
       url = "https://hackage.haskell.org/package/thread-utils-context-0.4.1.0/thread-utils-context-0.4.1.0.tar.gz";
       sha256 = "0b5jcfnrf3rss6kbcdg7q1mhlnn4405zfd6b5w9qv3nmn7vw3mks";
     }) {};
+    # amazonka-2.0 has overly conservative base/containers bounds; jailbreak
+    # lets it build against newer GHC (9.10+) where base >= 4.19.
+    amazonka = pkgs.haskell.lib.compose.doJailbreak prev.amazonka;
+    amazonka-core = pkgs.haskell.lib.compose.doJailbreak prev.amazonka-core;
+    # co-log 0.7.x is in nixpkgs-unstable; our constraint is <0.7.
+    # Pin to 0.6.1.2 so the instrumentation package can build.
+    co-log = final.callHackage "co-log" "0.6.1.2" {};
+    co-log-core = final.callHackage "co-log-core" "0.3.2.2" {};
   };
 }

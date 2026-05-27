@@ -90,12 +90,12 @@ lookupMetricsExporterSelection = do
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
       in pure $ case key of
-           "" -> Nothing
-           "none" -> Just MetricsExporterNone
-           "otlp" -> Just MetricsExporterOtlp
-           "prometheus" -> Just MetricsExporterPrometheus
-           "console" -> Just MetricsExporterConsole
-           other -> Just (MetricsExporterCustom other)
+          "" -> Nothing
+          "none" -> Just MetricsExporterNone
+          "otlp" -> Just MetricsExporterOtlp
+          "prometheus" -> Just MetricsExporterPrometheus
+          "console" -> Just MetricsExporterConsole
+          other -> Just (MetricsExporterCustom other)
 
 
 {- | Read @OTEL_METRIC_EXPORT_INTERVAL@ (milliseconds between periodic export cycles).
@@ -147,11 +147,11 @@ lookupLogsExporterSelection = do
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
       in pure $ case key of
-           "" -> Nothing
-           "none" -> Just LogsExporterNone
-           "otlp" -> Just LogsExporterOtlp
-           "console" -> Just LogsExporterConsole
-           other -> Just (LogsExporterCustom other)
+          "" -> Nothing
+          "none" -> Just LogsExporterNone
+          "otlp" -> Just LogsExporterOtlp
+          "console" -> Just LogsExporterConsole
+          other -> Just (LogsExporterCustom other)
 
 
 -- | Parsed @OTEL_METRICS_EXEMPLAR_FILTER@ (when present).
@@ -173,8 +173,8 @@ lookupMetricsExemplarFilter = do
             (a, _) -> a
           key = map C.toLower $ trimSpaces firstSeg
       in pure $ case key of
-           "" -> Nothing
-           "trace_based" -> Just MetricsExemplarFilterTraceBased
-           "always_on" -> Just MetricsExemplarFilterAlwaysOn
-           "always_off" -> Just MetricsExemplarFilterAlwaysOff
-           _ -> Nothing
+          "" -> Nothing
+          "trace_based" -> Just MetricsExemplarFilterTraceBased
+          "always_on" -> Just MetricsExemplarFilterAlwaysOn
+          "always_off" -> Just MetricsExemplarFilterAlwaysOff
+          _ -> Nothing

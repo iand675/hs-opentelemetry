@@ -67,8 +67,8 @@ newAtomicBucketArray :: Int -> IO AtomicBucketArray
 newAtomicBucketArray (I# n) = IO $ \s ->
   let !nbytes = n *# SIZEOF_HSINT#
   in case newByteArray# nbytes s of
-       (# s1, arr #) -> case zeroFill arr n s1 of
-         s2 -> (# s2, AtomicBucketArray arr n #)
+      (# s1, arr #) -> case zeroFill arr n s1 of
+        s2 -> (# s2, AtomicBucketArray arr n #)
 
 
 zeroFill :: MutableByteArray# RealWorld -> Int# -> State# RealWorld -> State# RealWorld

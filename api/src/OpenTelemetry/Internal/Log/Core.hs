@@ -4,7 +4,7 @@
 
 {- |
 Module      : OpenTelemetry.Internal.Log.Core
-Copyright   :  (c) Ian Duncan, 2024-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description : Internal implementation of the Logs API: LoggerProvider creation, Logger, and LogRecord emission.
 Stability   : experimental
@@ -69,11 +69,10 @@ data LoggerProviderOptions = LoggerProviderOptions
   { loggerProviderOptionsResource :: MaterializedResources
   , loggerProviderOptionsAttributeLimits :: A.AttributeLimits
   , loggerProviderOptionsMinSeverity :: Maybe SeverityNumber
-  {- ^ When @Just sev@, log records with severity below @sev@ are
-  suppressed (both 'loggerIsEnabled' and 'emitLogRecord' respect
-  this). 'Nothing' means no filtering. Can be changed at runtime
-  via 'setLoggerMinSeverity'.
-  -}
+  -- ^ When @Just sev@, log records with severity below @sev@ are
+  --   suppressed (both 'loggerIsEnabled' and 'emitLogRecord' respect
+  --   this). 'Nothing' means no filtering. Can be changed at runtime
+  --   via 'setLoggerMinSeverity'.
   }
 
 
@@ -224,10 +223,9 @@ makeLogger
   :: LoggerProvider
   -- ^ The @LoggerProvider@ holds the configuration for the @Logger@.
   -> InstrumentationLibrary
-  {- ^ The library that the @Logger@ instruments. This uniquely identifies the @Logger@.
-  Use a non-empty 'libraryName' per the OpenTelemetry specification; use 'getLogger'
-  if you want a warning when the name is empty.
-  -}
+  -- ^ The library that the @Logger@ instruments. This uniquely identifies the @Logger@.
+  --   Use a non-empty 'libraryName' per the OpenTelemetry specification; use 'getLogger'
+  --   if you want a warning when the name is empty.
   -> Logger
 makeLogger loggerLoggerProvider loggerInstrumentationScope = Logger {..}
 
@@ -420,18 +418,18 @@ addAttribute :: (IsReadWriteLogRecord r, MonadIO m, ToValue a) => r -> Text -> a
 addAttribute lr k v =
   let attributeLimits = readLogRecordAttributeLimits lr
   in liftIO $
-       modifyLogRecord
-         lr
-         ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
-             ilr
-               { logRecordAttributes =
-                   LA.addAttribute
-                     attributeLimits
-                     logRecordAttributes
-                     k
-                     v
-               }
-         )
+      modifyLogRecord
+        lr
+        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+            ilr
+              { logRecordAttributes =
+                  LA.addAttribute
+                    attributeLimits
+                    logRecordAttributes
+                    k
+                    v
+              }
+        )
 
 
 {- | A convenience function related to 'addAttribute' that adds multiple attributes to a @LogRecord@ at the same time.
@@ -446,17 +444,17 @@ addAttributes :: (IsReadWriteLogRecord r, MonadIO m, ToValue a) => r -> HashMap 
 addAttributes lr attrs =
   let attributeLimits = readLogRecordAttributeLimits lr
   in liftIO $
-       modifyLogRecord
-         lr
-         ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
-             ilr
-               { logRecordAttributes =
-                   LA.addAttributes
-                     attributeLimits
-                     logRecordAttributes
-                     attrs
-               }
-         )
+      modifyLogRecord
+        lr
+        ( \ilr@ImmutableLogRecord {logRecordAttributes} ->
+            ilr
+              { logRecordAttributes =
+                  LA.addAttributes
+                    attributeLimits
+                    logRecordAttributes
+                    attrs
+              }
+        )
 
 
 {- | This can be useful for pulling data for attributes and

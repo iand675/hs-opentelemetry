@@ -187,16 +187,16 @@ shouldSampleComplex :: Sampler -> Context -> TraceId -> Text -> SpanArguments ->
 shouldSampleComplex (TraceIdRatioSampler frac upperBound sampleRateAttr) ctxt tid _name _args _scope =
   let !ts = parentTraceState ctxt
   in if frac >= 1
-       then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
-       else
-         let !(TraceId _ lo) = tid
-             !loBE = case targetByteOrder of
-               BigEndian -> lo
-               LittleEndian -> byteSwap64 lo
-             !x = loBE `shiftR` 1
-         in if x < upperBound
-              then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
-              else pure $! SamplingDecision Drop H.empty ts
+      then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
+      else
+        let !(TraceId _ lo) = tid
+            !loBE = case targetByteOrder of
+              BigEndian -> lo
+              LittleEndian -> byteSwap64 lo
+            !x = loBE `shiftR` 1
+        in if x < upperBound
+            then pure $! SamplingDecision RecordAndSample (H.singleton "sampleRate" sampleRateAttr) ts
+            else pure $! SamplingDecision Drop H.empty ts
 shouldSampleComplex (ParentBasedSampler ParentBasedOptions {..}) ctxt tid name args scope =
   case parentSpanContext ctxt of
     Nothing -> shouldSample rootSampler ctxt tid name args scope

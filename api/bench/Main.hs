@@ -290,8 +290,8 @@ main = do
            , bench "3-deep nested spans" $ whnfIO $ nestedSpans activeTracer
            , bench "heavy span (5 attrs + status + event)" $ whnfIO $ heavySpan activeTracer
            , bench "getSpanContext (live, isolated)" $ whnfIO $ do
-               s <- createSpan activeTracer empty "s" defaultSpanArguments
-               getSpanContext s
+              s <- createSpan activeTracer empty "s" defaultSpanArguments
+              getSpanContext s
            ]
     , bgroup
         "rng"

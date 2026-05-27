@@ -3,6 +3,7 @@ resolver: lts-24.35
 packages:
 - api-types
 - api
+- sdk
 - otlp
 - semantic-conventions
 - exporters/handle
@@ -14,6 +15,20 @@ packages:
 - propagators/xray
 - propagators/datadog
 - propagators/w3c
+- instrumentation/cloudflare
+- instrumentation/conduit
+- instrumentation/hspec
+- instrumentation/http-client
+- instrumentation/hw-kafka-client
+- instrumentation/persistent
+- instrumentation/persistent-mysql
+- instrumentation/postgresql-simple
+- instrumentation/tasty
+- instrumentation/wai
+- instrumentation/yesod
+- examples/hspec
+- examples/yesod-minimal
+- examples/hw-kafka-client-example
 
 extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
@@ -21,7 +36,10 @@ extra-deps:
 - thread-utils-finalizers-0.1.1.0
 - proto-lens-0.7.1.6
 - proto-lens-runtime-0.7.0.7
+# co-log 0.7.x is in LTS 24; pin 0.6 to satisfy our <0.7 constraint
+- co-log-0.6.1.2
+
 
 nix:
   enable: true
-  packages: [libffi, mysql80, openssl, pcre, pkg-config, postgresql, protobuf, rdkafka, zlib, zstd]
+  packages: [libffi, mysql84, openssl, pcre, pkg-config, postgresql, protobuf, rdkafka, zlib, zstd]

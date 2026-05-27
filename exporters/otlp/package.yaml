@@ -50,6 +50,18 @@ library:
   - unordered-containers
   - vector
   - zlib
+  when:
+  - condition: flag(grpc)
+    exposed-modules:
+    - OpenTelemetry.Exporter.OTLP.GRPC
+    dependencies:
+    - grapesy
+
+flags:
+  grpc:
+    description: Enable gRPC export support (requires grapesy)
+    manual: true
+    default: false
 
 tests:
   hs-opentelemetry-exporter-otlp-test:

@@ -417,14 +417,14 @@ encodeBaggageHeaderB (Baggage bmap) =
           sep = if isFirst then 0 else 1
           newTotal = totalSoFar + sep + memberLen
       in if memberLen > maxMemberBytes
-           then go totalSoFar isFirst rest
-           else
-             if newTotal > maxBaggageBytes
-               then mempty
-               else
-                 (if isFirst then mempty else B.char7 ',')
-                   <> B.byteString memberBs
-                   <> go newTotal False rest
+          then go totalSoFar isFirst rest
+          else
+            if newTotal > maxBaggageBytes
+              then mempty
+              else
+                (if isFirst then mempty else B.char7 ',')
+                  <> B.byteString memberBs
+                  <> go newTotal False rest
 
 
 encodeMemberB :: Token -> Element -> B.Builder
@@ -587,12 +587,12 @@ insertChecked k v (Baggage c) =
       newCount = H.size c'
       newBag = Baggage c'
   in if newCount > maxMembers
-       then Left TooManyListMembers
-       else
-         let totalBytes = baggageSerializedSize c'
-         in if totalBytes > maxBaggageBytes
-              then Left BaggageTooLong
-              else Right newBag
+      then Left TooManyListMembers
+      else
+        let totalBytes = baggageSerializedSize c'
+        in if totalBytes > maxBaggageBytes
+            then Left BaggageTooLong
+            else Right newBag
 
 
 baggageSerializedSize :: H.HashMap Token Element -> Int
