@@ -16,17 +16,24 @@ packages:
 - propagators/datadog
 - propagators/w3c
 - instrumentation/cloudflare
+- instrumentation/co-log
 - instrumentation/conduit
+- instrumentation/ghc-metrics
+- instrumentation/gogol
 - instrumentation/hspec
 - instrumentation/http-client
 - instrumentation/hw-kafka-client
+- instrumentation/katip
+- instrumentation/monad-logger
 - instrumentation/persistent
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
 - instrumentation/tasty
 - instrumentation/wai
 - instrumentation/yesod
+- utils/exceptions
 - examples/hspec
+- examples/otlp-demo
 - examples/yesod-minimal
 - examples/hw-kafka-client-example
 
@@ -36,8 +43,7 @@ extra-deps:
 - thread-utils-finalizers-0.1.1.0
 - proto-lens-0.7.1.6
 - proto-lens-runtime-0.7.0.7
-# co-log 0.7.x is in LTS 24; pin 0.6 to satisfy our <0.7 constraint
-- co-log-0.6.1.2
+# co-log 0.7.x is in LTS 24 and our bound is now < 0.8; no pin needed
 
 
 nix:

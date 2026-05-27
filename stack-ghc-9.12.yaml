@@ -45,8 +45,7 @@ extra-deps:
 - proto-lens-0.7.1.6
 - proto-lens-runtime-0.7.0.7
 - postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
-# co-log 0.7.x is in nightly; pin 0.6 to satisfy our <0.7 constraint
-- co-log-0.6.1.2
+# co-log 0.7.x is in nightly and our bound is now < 0.8; no pin needed
 
 allow-newer: true
 allow-newer-deps:
