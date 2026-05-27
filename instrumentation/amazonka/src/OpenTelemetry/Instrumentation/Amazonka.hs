@@ -49,6 +49,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Typeable (Proxy (..), Typeable, tyConName, typeRep, typeRepTyCon)
 import qualified Network.HTTP.Client as HTTP
+import Network.HTTP.Types (Header)
 import qualified Network.HTTP.Types.Status as HTTP
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Attributes.Key (unkey)
@@ -109,7 +110,8 @@ tracingConfiguredRequest
   -> Hook (AWS.Request a)
   -> Hook (AWS.Request a)
 tracingConfiguredRequest tracer baseHook env req = do
-  let svcAbbrev = TE.decodeUtf8 $ AWS.toBS (AWS.abbrev (AWS.service req))
+  let svc = AWS.service req
+      svcAbbrev = TE.decodeUtf8 $ AWS.toBS ((AWS.abbrev :: AWS.Service -> AWS.Abbrev) svc)
       opName = T.pack $ tyConName $ typeRepTyCon $ typeRep (Proxy @a)
       spanName = svcAbbrev <> "." <> opName
       region = AWS.fromRegion (Amazonka.Env.region env)
@@ -197,7 +199,7 @@ tracingError baseHook env arg@(finality, _req, err) = do
   baseHook env arg
 
 
-requestIdFromHeaders :: [HTTP.Header] -> Maybe T.Text
+requestIdFromHeaders :: [Header] -> Maybe T.Text
 requestIdFromHeaders headers =
   fmap TE.decodeUtf8 (lookup "x-amzn-requestid" headers)
     <|> fmap TE.decodeUtf8 (lookup "x-amzn-request-id" headers)
@@ -213,7 +215,7 @@ extractServiceRequestId _ = Nothing
 describeError :: AWS.Error -> T.Text
 describeError (AWS.TransportError _) = "transport_error"
 describeError (AWS.SerializeError serr) =
-  T.pack (AWS.message (serr :: AWS.SerializeError))
+  T.pack ((AWS.message :: AWS.SerializeError -> String) serr)
 describeError (AWS.ServiceError svcErr) =
   let AWS.ErrorCode code = AWS.code svcErr
   in code
