@@ -132,8 +132,5 @@ in rec {
     # co-log 0.7.x is in nixpkgs-unstable; our constraint is <0.7.
     # Pin to 0.6.1.2 so the instrumentation package can build.
     co-log = final.callHackage "co-log" "0.6.1.2" {};
-    # co-log-core-0.3.2.2 test suite requires doctest < 0.23; nixpkgs-unstable
-    # has 0.24.x, so skip tests.
-    co-log-core = pkgs.haskell.lib.compose.dontCheck (final.callHackage "co-log-core" "0.3.2.2" {});
   };
 }
