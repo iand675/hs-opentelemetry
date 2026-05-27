@@ -25,6 +25,18 @@ in rec {
       "hs-opentelemetry-instrumentation-persistent-mysql"
       "hs-opentelemetry-instrumentation-postgresql-simple"
     ];
+    # bytesmith-0.3.14.0 requires text >= 2.1 (uses ByteArray in Text ctor);
+    # GHC 9.6/9.4 have text 2.0.x. honeycomb → chronos → bytesmith cascades.
+    # co-log-0.6.1.2 also fails via a transitive bytesmith dep in its test suite.
+    # TODO: release honeycomb 0.1.0.2 dropping chronos; update co-log pin.
+    ghc96 = [
+      "hs-opentelemetry-vendor-honeycomb"
+      "hs-opentelemetry-instrumentation-co-log"
+    ];
+    ghc94 = [
+      "hs-opentelemetry-vendor-honeycomb"
+      "hs-opentelemetry-instrumentation-co-log"
+    ];
   };
 
   localPackages = {
