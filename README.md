@@ -319,6 +319,9 @@ Run `make bench.save` to establish a baseline on your machine, then
 Working application examples are in the [`examples/`](examples/) directory:
 
 - [Yesod web application](examples/yesod-minimal) — WAI middleware, database spans, GHC metrics
+- [OTLP demo](examples/otlp-demo) — Basic OTLP exporter setup with traces
+- [Hspec test integration](examples/hspec) — Running Hspec tests with OpenTelemetry instrumentation
+- [Kafka client example](examples/hw-kafka-client-example) — Producer and consumer instrumentation with hw-kafka-client
 
 ## Contributing
 
