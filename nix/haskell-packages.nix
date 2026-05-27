@@ -19,7 +19,12 @@ in rec {
   skipPackagesByGHCVersion = {
     # mysql-0.2.1 Setup.hs uses Cabal [Char] paths that became SymbolicPath
     # in Cabal 3.14 (GHC 9.12). persistent-mysql pulls in mysql, so both fail.
-    ghc912 = ["hs-opentelemetry-instrumentation-persistent-mysql"];
+    # postgresql-libpq FFI stubs generate C incompatible with libpq-18.2's
+    # char* parameter type under the stricter clang in the GHC 9.12 package set.
+    ghc912 = [
+      "hs-opentelemetry-instrumentation-persistent-mysql"
+      "hs-opentelemetry-instrumentation-postgresql-simple"
+    ];
   };
 
   localPackages = {
