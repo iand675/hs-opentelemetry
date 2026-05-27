@@ -163,11 +163,12 @@ tracingResponse
   => Hook_ (AWS.Request a, AWS.ClientResponse (AWS.AWSResponse a))
   -> Hook_ (AWS.Request a, AWS.ClientResponse (AWS.AWSResponse a))
 tracingResponse baseHook env arg = do
+  result <- baseHook env arg
   ctx <- getContext
   case lookupSpan ctx of
     Just span -> endSpan span Nothing
     Nothing -> pure ()
-  baseHook env arg
+  pure result
 
 
 tracingError
