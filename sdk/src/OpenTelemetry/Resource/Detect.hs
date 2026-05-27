@@ -141,17 +141,17 @@ detectBuiltInResources = do
     Just filterStr ->
       let names = fmap T.strip $ T.splitOn "," $ T.pack filterStr
       in if names == ["all"]
-           then pure $ allDetectorsInDefaultOrder allDetectors
-           else
-             foldM
-               ( \acc name -> case H.lookup name allDetectors of
-                   Just d -> pure (acc <> [d])
-                   Nothing -> do
-                     otelLogWarning ("Unknown resource detector '" <> T.unpack name <> "' in OTEL_RESOURCE_DETECTORS, ignoring")
-                     pure acc
-               )
-               []
-               names
+          then pure $ allDetectorsInDefaultOrder allDetectors
+          else
+            foldM
+              ( \acc name -> case H.lookup name allDetectors of
+                  Just d -> pure (acc <> [d])
+                  Nothing -> do
+                    otelLogWarning ("Unknown resource detector '" <> T.unpack name <> "' in OTEL_RESOURCE_DETECTORS, ignoring")
+                    pure acc
+              )
+              []
+              names
   resources <- mapM runDetectorSafely activeDetectors
   pure $ foldl' mergeResources (mkResource []) resources
   where

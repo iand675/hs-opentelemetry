@@ -12,12 +12,12 @@ packages:
   original:
     hackage: unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
 - completed:
-    hackage: thread-utils-context-0.3.0.4@sha256:e763da1c6cab3b6d378fb670ca74aa9bf03c9b61b6fcf7628c56363fb0e3e71e,1671
+    hackage: thread-utils-context-0.4.1.0@sha256:1de6cceba464ed69689bebf3b3a6867747a6b32fde9a56360dcbe8c555f23981,2274
     pantry-tree:
-      sha256: 57d909a991b5e0b4c7a28121cb52ee9c2db6c09e0419b89af6c82fae52be88d4
-      size: 397
+      sha256: 626d897e901b77f20b0ed28cdb28e9aff123c76d59a8d2132c395cb0dcd9efad
+      size: 632
   original:
-    hackage: thread-utils-context-0.3.0.4
+    hackage: thread-utils-context-0.4.1.0
 - completed:
     hackage: thread-utils-finalizers-0.1.1.0@sha256:24944b71d9f1d01695a5908b4a3b44838fab870883114a323336d537995e0a5b,1381
     pantry-tree:
@@ -39,9 +39,23 @@ packages:
       size: 168
   original:
     hackage: proto-lens-runtime-0.7.0.7
+- completed:
+    hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
+    pantry-tree:
+      sha256: 55cabcd98ff0f5c671a93fb138b8b8cb1cf223497b0fbf9207e6c519fd54a9e9
+      size: 1944
+  original:
+    hackage: tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
+- completed:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
+    pantry-tree:
+      sha256: 2142ab3dfe2420073a56ab28eb2c82904f3e50da46b326fcdce8886538be9cc8
+      size: 175
+  original:
+    hackage: postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
 snapshots:
 - completed:
-    sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146
-    size: 720271
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
-  original: lts-22.43
+    sha256: 238fa745b64f91184f9aa518fe04bdde6552533d169b0da5256670df83a0f1a9
+    size: 721141
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/44.yaml
+  original: lts-22.44

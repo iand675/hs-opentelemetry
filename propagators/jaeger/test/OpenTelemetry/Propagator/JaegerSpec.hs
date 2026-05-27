@@ -2,6 +2,7 @@
 
 module OpenTelemetry.Propagator.JaegerSpec (spec) where
 
+import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as H
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
@@ -99,6 +100,14 @@ spec =
       it "rejects trailing garbage" $ do
         JI.decodeUberTraceId "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1:extra"
           `shouldBe` Nothing
+
+      it "rejects oversized header (> 512 bytes)" $ do
+        -- Create a header with valid format but padded to exceed 512 bytes
+        let validPart = "80f198ee56343ba864fe8b2a57d3eff7:e457b5a2e4d86bd1:0:1"
+            -- Add enough hex chars to exceed 512 bytes (valid part is ~47 bytes)
+            padding = replicate (512 - BS.length validPart + 1) '0'
+            oversized = validPart <> BS.pack (map (fromIntegral . fromEnum) padding)
+        JI.decodeUberTraceId oversized `shouldBe` Nothing
 
     describe "trace context extraction" $ do
       it "extracts SpanContext from uber-trace-id (sampled)" $ do

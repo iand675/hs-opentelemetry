@@ -5,7 +5,7 @@
 
 {- |
 Module      : OpenTelemetry.Internal.Metric.Types
-Copyright   : (c) Ian Duncan, 2024-2026
+Copyright   : (c) Ian Duncan, 2026
 License     : BSD-3
 Description : Internal types for the OpenTelemetry Metrics API.
 Stability   : experimental
@@ -267,7 +267,6 @@ data MeterProvider = MeterProvider
   , meterProviderShutdown :: !(IO ShutdownResult)
   -- ^ Shut down the provider, flushing and releasing resources.
   , meterProviderForceFlush :: !(Maybe Int -> IO FlushResult)
-  {- ^ Force a collection and export cycle. Optional timeout in microseconds;
-  @Nothing@ uses the SDK default (5s).
-  -}
+  -- ^ Force a collection and export cycle. Optional timeout in microseconds;
+  --   @Nothing@ uses the SDK default (5s).
   }

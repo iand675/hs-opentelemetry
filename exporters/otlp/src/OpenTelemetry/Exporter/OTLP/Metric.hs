@@ -223,10 +223,10 @@ materializedResourceToProto :: MaterializedResources -> Res.Resource
 materializedResourceToProto r =
   let attrs = getMaterializedResourcesAttributes r
   in defMessage
-       & Rf.vec'attributes
-         .~ attributesToProto attrs
-       & Rf.droppedAttributesCount
-         .~ fromIntegral (getDropped attrs)
+      & Rf.vec'attributes
+        .~ attributesToProto attrs
+      & Rf.droppedAttributesCount
+        .~ fromIntegral (getDropped attrs)
 
 
 scopeMetricsExportToProto :: ScopeMetricsExport -> PM.ScopeMetrics
@@ -271,12 +271,12 @@ metricExportToProto = \case
         .~ unit_
       & Mf.sum
         .~ ( defMessage
-               & Mf.aggregationTemporality
-                 .~ temporalityToProto temp
-               & Mf.isMonotonic
-                 .~ monotonic
-               & Mf.vec'dataPoints
-                 .~ V.map sumPointToProto pts
+              & Mf.aggregationTemporality
+                .~ temporalityToProto temp
+              & Mf.isMonotonic
+                .~ monotonic
+              & Mf.vec'dataPoints
+                .~ V.map sumPointToProto pts
            )
   MetricExportHistogram name desc unit_ _scope temp pts ->
     defMessage
@@ -288,10 +288,10 @@ metricExportToProto = \case
         .~ unit_
       & Mf.histogram
         .~ ( defMessage
-               & Mf.aggregationTemporality
-                 .~ temporalityToProto temp
-               & Mf.vec'dataPoints
-                 .~ V.map histogramPointToProto pts
+              & Mf.aggregationTemporality
+                .~ temporalityToProto temp
+              & Mf.vec'dataPoints
+                .~ V.map histogramPointToProto pts
            )
   MetricExportExponentialHistogram name desc unit_ _scope temp pts ->
     defMessage
@@ -303,10 +303,10 @@ metricExportToProto = \case
         .~ unit_
       & Mf.exponentialHistogram
         .~ ( defMessage
-               & Mf.aggregationTemporality
-                 .~ temporalityToProto temp
-               & Mf.vec'dataPoints
-                 .~ V.map exponentialHistogramPointToProto pts
+              & Mf.aggregationTemporality
+                .~ temporalityToProto temp
+              & Mf.vec'dataPoints
+                .~ V.map exponentialHistogramPointToProto pts
            )
   MetricExportGauge name desc unit_ _scope _isInt pts ->
     defMessage
@@ -318,8 +318,8 @@ metricExportToProto = \case
         .~ unit_
       & Mf.gauge
         .~ ( defMessage
-               & Mf.vec'dataPoints
-                 .~ V.map gaugePointToProto pts
+              & Mf.vec'dataPoints
+                .~ V.map gaugePointToProto pts
            )
 
 
@@ -421,25 +421,25 @@ exponentialHistogramPointToProto ExponentialHistogramDataPoint {..} =
       .~ exponentialHistogramDataPointZeroCount
     & Mf.maybe'positive
       .~ ( if V.null exponentialHistogramDataPointPositiveBucketCounts
-             then Nothing
-             else
-               Just $
-                 defMessage
-                   & Mf.offset
-                     .~ exponentialHistogramDataPointPositiveOffset
-                   & Mf.vec'bucketCounts
-                     .~ VG.convert exponentialHistogramDataPointPositiveBucketCounts
+            then Nothing
+            else
+              Just $
+                defMessage
+                  & Mf.offset
+                    .~ exponentialHistogramDataPointPositiveOffset
+                  & Mf.vec'bucketCounts
+                    .~ VG.convert exponentialHistogramDataPointPositiveBucketCounts
          )
     & Mf.maybe'negative
       .~ ( if V.null exponentialHistogramDataPointNegativeBucketCounts
-             then Nothing
-             else
-               Just $
-                 defMessage
-                   & Mf.offset
-                     .~ exponentialHistogramDataPointNegativeOffset
-                   & Mf.vec'bucketCounts
-                     .~ VG.convert exponentialHistogramDataPointNegativeBucketCounts
+            then Nothing
+            else
+              Just $
+                defMessage
+                  & Mf.offset
+                    .~ exponentialHistogramDataPointNegativeOffset
+                  & Mf.vec'bucketCounts
+                    .~ VG.convert exponentialHistogramDataPointNegativeBucketCounts
          )
     & Mf.maybe'min
       .~ exponentialHistogramDataPointMin
@@ -471,9 +471,9 @@ attributesToProto =
           .~ k
         & Common_Fields.value
           .~ ( case v of
-                 AttributeValue a -> primAttributeToAnyValue a
-                 AttributeArray a ->
-                   defMessage
-                     & Common_Fields.arrayValue
-                       .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
+                AttributeValue a -> primAttributeToAnyValue a
+                AttributeArray a ->
+                  defMessage
+                    & Common_Fields.arrayValue
+                      .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
              )

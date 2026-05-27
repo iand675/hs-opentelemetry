@@ -29,7 +29,7 @@ spec = do
               case bytesToSpanId (B.pack [x1, x2, x3, x4, x5, x6, x7, x8]) of
                 Right sid -> sid
                 Left err -> error err
-         in convertOpenTelemetrySpanIdToDatadogSpanId otelSpanId == v
+        in convertOpenTelemetrySpanIdToDatadogSpanId otelSpanId == v
 
   context "convertOpenTelemetryTraceIdToDatadogTraceId" $ do
     it "can conert values" $
@@ -47,4 +47,4 @@ spec = do
               case bytesToTraceId (B.pack (replicate 8 0 ++ [x1, x2, x3, x4, x5, x6, x7, x8])) of
                 Right tid -> tid
                 Left err -> error err
-         in convertOpenTelemetryTraceIdToDatadogTraceId otelTraceId == v
+        in convertOpenTelemetryTraceIdToDatadogTraceId otelTraceId == v

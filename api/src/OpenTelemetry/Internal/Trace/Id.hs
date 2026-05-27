@@ -64,6 +64,7 @@ import Prelude hiding (length)
 
 -- * C FFI
 
+
 foreign import ccall unsafe "hs_otel_encode_trace_id"
   c_encodeTraceId :: Ptr Word8 -> Ptr Word8 -> IO ()
 
@@ -81,6 +82,7 @@ foreign import ccall unsafe "hs_otel_xoshiro_next"
 
 
 -- * TraceId
+
 
 {- | A valid trace identifier is a 16-byte array with at least one non-zero byte.
 
@@ -206,6 +208,7 @@ traceIdBaseEncodedText b = decodeUtf8 . traceIdBaseEncodedByteString b
 
 -- * SpanId
 
+
 {- | A valid span identifier is an 8-byte array with at least one non-zero byte.
 
 Stored as a single machine-word @Word64@ in native byte order.
@@ -323,6 +326,7 @@ spanIdBaseEncodedText b = decodeUtf8 . spanIdBaseEncodedByteString b
 
 -- * Generation: xoshiro256++ (DefaultIdGenerator)
 
+
 {- | Generate a 'TraceId' via thread-local xoshiro256++.
 Two FFI calls returning Word64 directly. No buffer, no ByteArray#.
 -}
@@ -360,20 +364,21 @@ generateTraceAndSpanId = do
 
 -- * CustomIdGenerator SBS -> Word64 conversion
 
+
 sbsToTraceId :: ShortByteString -> TraceId
 sbsToTraceId sbs =
   let !bs = fromShort sbs
   in case bytesToTraceId bs of
-       Right tid -> tid
-       Left _ -> nilTraceId
+      Right tid -> tid
+      Left _ -> nilTraceId
 
 
 sbsToSpanId :: ShortByteString -> SpanId
 sbsToSpanId sbs =
   let !bs = fromShort sbs
   in case bytesToSpanId bs of
-       Right sid -> sid
-       Left _ -> nilSpanId
+      Right sid -> sid
+      Left _ -> nilSpanId
 
 
 {- | Base encoding scheme. Only 'Base16' (hexadecimal) is supported.
@@ -385,6 +390,7 @@ data Base = Base16
 
 
 -- * Traceparent codec (C FFI)
+
 
 foreign import ccall unsafe "hs_otel_parse_traceparent"
   c_parseTraceparent :: Ptr Word8 -> CSize -> Ptr Word64 -> IO CInt

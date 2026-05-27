@@ -2,7 +2,7 @@
 
 {- |
 Module      : OpenTelemetry.Metric.InstrumentName
-Copyright   : (c) Ian Duncan, 2024-2026
+Copyright   : (c) Ian Duncan, 2026
 License     : BSD-3
 Description : Instrument name and unit validation per the metrics API spec.
 Stability   : experimental
@@ -35,8 +35,8 @@ validateInstrumentName t
   | otherwise =
       let c0 = T.index t 0
       in if not (isAsciiAlpha c0)
-           then Just "instrument name must start with an ASCII letter"
-           else go 1
+          then Just "instrument name must start with an ASCII letter"
+          else go 1
   where
     go :: Int -> Maybe Text
     go i
@@ -44,8 +44,8 @@ validateInstrumentName t
       | otherwise =
           let c = T.index t i
           in if isValidChar c
-               then go (i + 1)
-               else Just "instrument name contains invalid characters"
+              then go (i + 1)
+              else Just "instrument name contains invalid characters"
     isAsciiAlpha c =
       isAscii c
         && ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
@@ -53,11 +53,11 @@ validateInstrumentName t
     isValidChar c =
       isAscii c
         && ( isAsciiAlpha c
-               || isAsciiDigit c
-               || c == '_'
-               || c == '.'
-               || c == '-'
-               || c == '/'
+              || isAsciiDigit c
+              || c == '_'
+              || c == '.'
+              || c == '-'
+              || c == '/'
            )
 
 

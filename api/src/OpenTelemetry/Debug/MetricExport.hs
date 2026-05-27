@@ -3,7 +3,7 @@
 
 {- |
 Module      :  OpenTelemetry.Debug.MetricExport
-Copyright   :  (c) Ian Duncan, 2024-2026
+Copyright   :  (c) Ian Duncan, 2026
 License     :  BSD-3
 Description :  Human-readable rendering of 'ResourceMetricsExport' batches for tests and debugging.
 Stability   :  experimental

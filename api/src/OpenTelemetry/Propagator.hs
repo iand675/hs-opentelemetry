@@ -107,10 +107,9 @@ Each specific Propagator type defines its expected carrier type, such as a strin
 -}
 data Propagator context inboundCarrier outboundCarrier = Propagator
   { propagatorFields :: [Text]
-  {- ^ The predefined propagation fields. For a TextMapPropagator these are
-  the header names the propagator reads and writes (e.g. @["traceparent", "tracestate"]@).
-  If your carrier is reused, you should delete these fields before calling 'inject'.
-  -}
+  -- ^ The predefined propagation fields. For a TextMapPropagator these are
+  --   the header names the propagator reads and writes (e.g. @["traceparent", "tracestate"]@).
+  --   If your carrier is reused, you should delete these fields before calling 'inject'.
   , extractor :: inboundCarrier -> context -> IO context
   , injector :: context -> outboundCarrier -> IO outboundCarrier
   }

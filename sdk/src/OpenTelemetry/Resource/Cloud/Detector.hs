@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -24,6 +25,7 @@ module OpenTelemetry.Resource.Cloud.Detector (
   detectCloud,
 ) where
 
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import OpenTelemetry.Resource.Cloud (Cloud (..))
 import OpenTelemetry.Resource.Detector.Internal (firstEnv, lookupEnvText)
@@ -32,19 +34,14 @@ import System.Environment (lookupEnv)
 
 -- | @since 0.0.1.0
 detectCloud :: IO Cloud
-detectCloud = do
-  mAws <- detectAWS
-  case mAws of
-    Just cloud -> pure cloud
-    Nothing -> do
-      mGcp <- detectGCP
-      case mGcp of
-        Just cloud -> pure cloud
-        Nothing -> do
-          mAzure <- detectAzure
-          case mAzure of
-            Just cloud -> pure cloud
-            Nothing -> pure emptyCloud
+detectCloud =
+  fmap (fromMaybe emptyCloud) $
+    detectAWS `orElse` detectGCP `orElse` detectAzure
+  where
+    orElse a b =
+      a >>= \case
+        Just r -> pure (Just r)
+        Nothing -> b
 
 
 emptyCloud :: Cloud
