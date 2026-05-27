@@ -119,9 +119,6 @@ producerAttributes record =
   let
     addSystem =
       insertAttributeByKey messaging_system (toAttribute ("kafka" :: T.Text))
-    addOperationName =
-      insertAttributeByKey messaging_operation producerOperationName
-        . insertAttributeByKey messaging_operation_name (toAttribute (producerOperationName :: T.Text))
     addOperationType =
       insertAttributeByKey messaging_operation_type (toAttribute ("send" :: T.Text))
     addDestination =
@@ -143,7 +140,7 @@ producerAttributes record =
         Just v -> insertAttributeByKey messaging_message_body_size (toAttribute (fromIntegral (BS.length v) :: Int64))
         Nothing -> id
   in
-    (addSystem . addOperationName . addOperationType . addDestination . addPartition . addKey . addBodySize)
+    (addSystem . addOperationType . addDestination . addPartition . addKey . addBodySize)
       callerAttributes
 
 
@@ -161,9 +158,6 @@ consumerAttributes consumerProperties record =
   let
     addSystem =
       insertAttributeByKey messaging_system (toAttribute ("kafka" :: T.Text))
-    addOperationName =
-      insertAttributeByKey messaging_operation consumerOperationName
-        . insertAttributeByKey messaging_operation_name (toAttribute (consumerOperationName :: T.Text))
     addOperationType =
       insertAttributeByKey messaging_operation_type (toAttribute ("process" :: T.Text))
     addDestination =
@@ -194,7 +188,6 @@ consumerAttributes consumerProperties record =
         Nothing -> id
   in
     ( addSystem
-        . addOperationName
         . addOperationType
         . addDestination
         . addConsumerGroup
