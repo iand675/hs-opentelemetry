@@ -28,22 +28,30 @@ in rec {
     hs-opentelemetry-propagator-jaeger = ../propagators/jaeger;
     hs-opentelemetry-propagator-xray = ../propagators/xray;
     hs-opentelemetry-propagator-w3c = ../propagators/w3c;
+    hs-opentelemetry-instrumentation-amazonka = ../instrumentation/amazonka;
     hs-opentelemetry-instrumentation-cloudflare = ../instrumentation/cloudflare;
+    hs-opentelemetry-instrumentation-co-log = ../instrumentation/co-log;
     hs-opentelemetry-instrumentation-conduit = ../instrumentation/conduit;
+    hs-opentelemetry-instrumentation-ghc-metrics = ../instrumentation/ghc-metrics;
+    hs-opentelemetry-instrumentation-gogol = ../instrumentation/gogol;
     hs-opentelemetry-instrumentation-hspec = ../instrumentation/hspec;
     hs-opentelemetry-instrumentation-http-client = ../instrumentation/http-client;
     hs-opentelemetry-instrumentation-hw-kafka-client = ../instrumentation/hw-kafka-client;
+    hs-opentelemetry-instrumentation-katip = ../instrumentation/katip;
+    hs-opentelemetry-instrumentation-monad-logger = ../instrumentation/monad-logger;
     hs-opentelemetry-instrumentation-persistent = ../instrumentation/persistent;
     hs-opentelemetry-instrumentation-persistent-mysql = ../instrumentation/persistent-mysql;
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
     hs-opentelemetry-instrumentation-yesod = ../instrumentation/yesod;
     hs-opentelemetry-instrumentation-wai = ../instrumentation/wai;
     hs-opentelemetry-instrumentation-tasty = ../instrumentation/tasty;
+    hs-opentelemetry-exporter-prometheus = ../exporters/prometheus;
     hs-opentelemetry-utils-exceptions = ../utils/exceptions;
     hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb;
 
     hspec-example = ../examples/hspec;
     hw-kafka-client-example = ../examples/hw-kafka-client-example;
+    otlp-demo = ../examples/otlp-demo;
     yesod-minimal = ../examples/yesod-minimal;
   };
 
