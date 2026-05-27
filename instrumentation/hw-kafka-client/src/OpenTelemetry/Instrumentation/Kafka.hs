@@ -119,8 +119,12 @@ producerAttributes record =
   let
     addSystem =
       insertAttributeByKey messaging_system (toAttribute ("kafka" :: T.Text))
+    addOperation =
+      insertAttributeByKey messaging_operation (toAttribute (producerOperationName :: T.Text))
+    addOperationName =
+      insertAttributeByKey messaging_operation_name (toAttribute (producerOperationName :: T.Text))
     addOperationType =
-      insertAttributeByKey messaging_operation_type (toAttribute ("send" :: T.Text))
+      insertAttributeByKey messaging_operation_type (toAttribute (producerOperationName :: T.Text))
     addDestination =
       insertAttributeByKey messaging_destination_name $ toAttribute . unTopicName . prTopic $ record
     addPartition =
@@ -140,7 +144,7 @@ producerAttributes record =
         Just v -> insertAttributeByKey messaging_message_body_size (toAttribute (fromIntegral (BS.length v) :: Int64))
         Nothing -> id
   in
-    (addSystem . addOperationType . addDestination . addPartition . addKey . addBodySize)
+    (addSystem . addOperation . addOperationName . addOperationType . addDestination . addPartition . addKey . addBodySize)
       callerAttributes
 
 
@@ -158,8 +162,12 @@ consumerAttributes consumerProperties record =
   let
     addSystem =
       insertAttributeByKey messaging_system (toAttribute ("kafka" :: T.Text))
+    addOperation =
+      insertAttributeByKey messaging_operation (toAttribute (consumerOperationName :: T.Text))
+    addOperationName =
+      insertAttributeByKey messaging_operation_name (toAttribute (consumerOperationName :: T.Text))
     addOperationType =
-      insertAttributeByKey messaging_operation_type (toAttribute ("process" :: T.Text))
+      insertAttributeByKey messaging_operation_type (toAttribute (consumerOperationName :: T.Text))
     addDestination =
       insertAttributeByKey messaging_destination_name $ toAttribute . unTopicName . crTopic $ record
     addConsumerGroup =
@@ -188,6 +196,8 @@ consumerAttributes consumerProperties record =
         Nothing -> id
   in
     ( addSystem
+        . addOperation
+        . addOperationName
         . addOperationType
         . addDestination
         . addConsumerGroup
