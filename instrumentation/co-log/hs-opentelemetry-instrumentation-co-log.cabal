@@ -29,7 +29,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , co-log >=0.6 && <0.7
+    , co-log >=0.6 && <0.8
     , co-log-core >=0.3 && <0.4
     , hs-opentelemetry-api >=0.4 && <0.5
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
@@ -45,7 +45,7 @@ test-suite hs-opentelemetry-instrumentation-co-log-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , co-log >=0.6 && <0.7
+    , co-log >=0.6 && <0.8
     , co-log-core >=0.3 && <0.4
     , hs-opentelemetry-api >=0.4 && <0.5
     , hs-opentelemetry-exporter-in-memory >=0.0 && <0.1
