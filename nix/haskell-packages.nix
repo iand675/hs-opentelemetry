@@ -138,6 +138,9 @@ in rec {
     # proto-lens-runtime also caps at base < 4.21 (GHC 9.12 = base 4.21).
     proto-lens = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens;
     proto-lens-runtime = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens-runtime;
+    # chronos-1.1.7.0 requires text >= 2.1.2 && < 2.2, but GHC 9.8 ships text
+    # 2.0.2 and GHC 9.4/9.6 have older text. Relax the bound.
+    chronos = pkgs.haskell.lib.compose.doJailbreak prev.chronos;
     thread-utils-context = final.callCabal2nix "thread-utils-context" (builtins.fetchTarball {
       url = "https://hackage.haskell.org/package/thread-utils-context-0.4.1.0/thread-utils-context-0.4.1.0.tar.gz";
       sha256 = "0b5jcfnrf3rss6kbcdg7q1mhlnn4405zfd6b5w9qv3nmn7vw3mks";
