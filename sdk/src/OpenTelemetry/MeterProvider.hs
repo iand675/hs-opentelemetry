@@ -262,8 +262,8 @@ bucketIndex :: Vector Double -> Double -> Int
 bucketIndex bounds v =
   let n = V.length bounds
   in case V.findIndex (\b -> v <= b) bounds of
-      Just i -> i
-      Nothing -> n
+       Just i -> i
+       Nothing -> n
 
 
 emptyHist :: Vector Double -> HistCell
@@ -316,11 +316,11 @@ mergeExpHist ehc v =
       sm = ehcSum ehc + v
       ct = ehcCount ehc + 1
   in upd
-      { ehcSum = sm
-      , ehcCount = ct
-      , ehcMin = minMaybe (ehcMin ehc) v
-      , ehcMax = maxMaybe (ehcMax ehc) v
-      }
+       { ehcSum = sm
+       , ehcCount = ct
+       , ehcMin = minMaybe (ehcMin ehc) v
+       , ehcMax = maxMaybe (ehcMax ehc) v
+       }
 
 
 intMapToOffsetCounts :: IM.IntMap Word64 -> (Int32, Vector Word64)
@@ -347,22 +347,22 @@ expHistToDataPoint startT t attrs ehc =
   let (posOff, posVec) = intMapToOffsetCounts (ehcPositive ehc)
       (negOff, negVec) = intMapToOffsetCounts (ehcNegative ehc)
   in ExponentialHistogramDataPoint
-      { exponentialHistogramDataPointStartTimeUnixNano = startT
-      , exponentialHistogramDataPointTimeUnixNano = t
-      , exponentialHistogramDataPointCount = ehcCount ehc
-      , exponentialHistogramDataPointSum = Just (ehcSum ehc)
-      , exponentialHistogramDataPointScale = ehcScale ehc
-      , exponentialHistogramDataPointZeroCount = ehcZeroCount ehc
-      , exponentialHistogramDataPointPositiveOffset = posOff
-      , exponentialHistogramDataPointPositiveBucketCounts = posVec
-      , exponentialHistogramDataPointNegativeOffset = negOff
-      , exponentialHistogramDataPointNegativeBucketCounts = negVec
-      , exponentialHistogramDataPointAttributes = attrs
-      , exponentialHistogramDataPointMin = ehcMin ehc
-      , exponentialHistogramDataPointMax = ehcMax ehc
-      , exponentialHistogramDataPointExemplars = ehcExemplars ehc
-      , exponentialHistogramDataPointZeroThreshold = 0
-      }
+       { exponentialHistogramDataPointStartTimeUnixNano = startT
+       , exponentialHistogramDataPointTimeUnixNano = t
+       , exponentialHistogramDataPointCount = ehcCount ehc
+       , exponentialHistogramDataPointSum = Just (ehcSum ehc)
+       , exponentialHistogramDataPointScale = ehcScale ehc
+       , exponentialHistogramDataPointZeroCount = ehcZeroCount ehc
+       , exponentialHistogramDataPointPositiveOffset = posOff
+       , exponentialHistogramDataPointPositiveBucketCounts = posVec
+       , exponentialHistogramDataPointNegativeOffset = negOff
+       , exponentialHistogramDataPointNegativeBucketCounts = negVec
+       , exponentialHistogramDataPointAttributes = attrs
+       , exponentialHistogramDataPointMin = ehcMin ehc
+       , exponentialHistogramDataPointMax = ehcMax ehc
+       , exponentialHistogramDataPointExemplars = ehcExemplars ehc
+       , exponentialHistogramDataPointZeroThreshold = 0
+       }
 
 
 minMaybe :: Maybe Double -> Double -> Maybe Double
@@ -521,24 +521,24 @@ addSumInt delta isMonotonic mExVal k ref lim exOpts = do
     in let m = storageCells st
            scount = seriesCountByDims st
            newCell = case H.lookup effectiveK m of
-            Nothing ->
-              CsSum $
-                SumCell
-                  { scValue = Left delta
-                  , scMonotonic = isMonotonic
-                  , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                  }
-            Just (CsSum sc) ->
-              CsSum $
-                sc
-                  { scValue = addEither (scValue sc) (Left delta)
-                  , scExemplars = case mex of
-                      Nothing -> scExemplars sc
-                      Just e -> pushExemplar cap e (scExemplars sc)
-                  }
-            Just _ ->
-              CsSum $
-                SumCell (Left delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
+             Nothing ->
+               CsSum $
+                 SumCell
+                   { scValue = Left delta
+                   , scMonotonic = isMonotonic
+                   , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                   }
+             Just (CsSum sc) ->
+               CsSum $
+                 sc
+                   { scValue = addEither (scValue sc) (Left delta)
+                   , scExemplars = case mex of
+                       Nothing -> scExemplars sc
+                       Just e -> pushExemplar cap e (scExemplars sc)
+                   }
+             Just _ ->
+               CsSum $
+                 SumCell (Left delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
            isNew = not (H.member effectiveK m)
            m' = H.insert effectiveK newCell m
            sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
@@ -562,24 +562,24 @@ addSumDbl delta isMonotonic mExVal k ref lim exOpts = do
     in let m = storageCells st
            scount = seriesCountByDims st
            newCell = case H.lookup effectiveK m of
-            Nothing ->
-              CsSum $
-                SumCell
-                  { scValue = Right delta
-                  , scMonotonic = isMonotonic
-                  , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                  }
-            Just (CsSum sc) ->
-              CsSum $
-                sc
-                  { scValue = addEither (scValue sc) (Right delta)
-                  , scExemplars = case mex of
-                      Nothing -> scExemplars sc
-                      Just e -> pushExemplar cap e (scExemplars sc)
-                  }
-            Just _ ->
-              CsSum $
-                SumCell (Right delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
+             Nothing ->
+               CsSum $
+                 SumCell
+                   { scValue = Right delta
+                   , scMonotonic = isMonotonic
+                   , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                   }
+             Just (CsSum sc) ->
+               CsSum $
+                 sc
+                   { scValue = addEither (scValue sc) (Right delta)
+                   , scExemplars = case mex of
+                       Nothing -> scExemplars sc
+                       Just e -> pushExemplar cap e (scExemplars sc)
+                   }
+             Just _ ->
+               CsSum $
+                 SumCell (Right delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
            isNew = not (H.member effectiveK m)
            m' = H.insert effectiveK newCell m
            sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
@@ -600,12 +600,12 @@ mergeHist hc v =
       sm = hcSum hc + v
       ct = hcCount hc + 1
   in hc
-      { hcBuckets = b'
-      , hcSum = sm
-      , hcCount = ct
-      , hcMin = minMaybe (hcMin hc) v
-      , hcMax = maxMaybe (hcMax hc) v
-      }
+       { hcBuckets = b'
+       , hcSum = sm
+       , hcCount = ct
+       , hcMin = minMaybe (hcMin hc) v
+       , hcMax = maxMaybe (hcMax hc) v
+       }
 
 
 recordHist
@@ -628,12 +628,12 @@ recordHist bounds v mExVal k ref lim exOpts = do
         in let m = storageCells st
                scount = seriesCountByDims st
                mergeE hc = case mex of
-                Nothing -> hc
-                Just e -> hc {hcExemplars = pushExemplar cap e (hcExemplars hc)}
+                 Nothing -> hc
+                 Just e -> hc {hcExemplars = pushExemplar cap e (hcExemplars hc)}
                newCell = case H.lookup effectiveK m of
-                Nothing -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
-                Just (CsHist hc) -> CsHist (mergeE (mergeHist hc v))
-                Just _ -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
+                 Nothing -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
+                 Just (CsHist hc) -> CsHist (mergeE (mergeHist hc v))
+                 Just _ -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
                isNew = not (H.member effectiveK m)
                m' = H.insert effectiveK newCell m
                sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
@@ -660,12 +660,12 @@ recordExpHist sc v mExVal k ref lim exOpts = do
         in let m = storageCells st
                scount = seriesCountByDims st
                mergeE ehc = case mex of
-                Nothing -> ehc
-                Just e -> ehc {ehcExemplars = pushExemplar cap e (ehcExemplars ehc)}
+                 Nothing -> ehc
+                 Just e -> ehc {ehcExemplars = pushExemplar cap e (ehcExemplars ehc)}
                newCell = case H.lookup effectiveK m of
-                Nothing -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
-                Just (CsExpHist ehc) -> CsExpHist (mergeE (mergeExpHist ehc v))
-                Just _ -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
+                 Nothing -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
+                 Just (CsExpHist ehc) -> CsExpHist (mergeE (mergeExpHist ehc v))
+                 Just _ -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
                isNew = not (H.member effectiveK m)
                m' = H.insert effectiveK newCell m
                sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
@@ -689,30 +689,30 @@ recordGauge val t mExVal k ref lim exOpts = do
     in let m = storageCells st
            scount = seriesCountByDims st
            newGauge gc =
-            case mex of
-              Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
-              Just e ->
-                gc
-                  { gcValue = val
-                  , gcTimeUnixNano = t
-                  , gcExemplars = pushExemplar cap e (gcExemplars gc)
-                  }
+             case mex of
+               Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
+               Just e ->
+                 gc
+                   { gcValue = val
+                   , gcTimeUnixNano = t
+                   , gcExemplars = pushExemplar cap e (gcExemplars gc)
+                   }
            newCell = case H.lookup effectiveK m of
-            Nothing ->
-              CsGauge
-                GaugeCell
-                  { gcValue = val
-                  , gcTimeUnixNano = t
-                  , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                  }
-            Just (CsGauge gc) -> CsGauge (newGauge gc)
-            Just _ ->
-              CsGauge
-                GaugeCell
-                  { gcValue = val
-                  , gcTimeUnixNano = t
-                  , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                  }
+             Nothing ->
+               CsGauge
+                 GaugeCell
+                   { gcValue = val
+                   , gcTimeUnixNano = t
+                   , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                   }
+             Just (CsGauge gc) -> CsGauge (newGauge gc)
+             Just _ ->
+               CsGauge
+                 GaugeCell
+                   { gcValue = val
+                   , gcTimeUnixNano = t
+                   , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                   }
            isNew = not (H.member effectiveK m)
            m' = H.insert effectiveK newCell m
            sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount

@@ -125,8 +125,8 @@ normalizeKeyToEnvVar :: T.Text -> String
 normalizeKeyToEnvVar name =
   let raw = map normalizeChar (T.unpack name)
   in case raw of
-      (c : _) | isDigit c -> '_' : map toUpper raw
-      _ -> map toUpper raw
+       (c : _) | isDigit c -> '_' : map toUpper raw
+       _ -> map toUpper raw
   where
     normalizeChar c
       | isAsciiUpper c || isAsciiLower c || isDigit c || c == '_' = c

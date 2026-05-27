@@ -369,16 +369,16 @@ sbsToTraceId :: ShortByteString -> TraceId
 sbsToTraceId sbs =
   let !bs = fromShort sbs
   in case bytesToTraceId bs of
-      Right tid -> tid
-      Left _ -> nilTraceId
+       Right tid -> tid
+       Left _ -> nilTraceId
 
 
 sbsToSpanId :: ShortByteString -> SpanId
 sbsToSpanId sbs =
   let !bs = fromShort sbs
   in case bytesToSpanId bs of
-      Right sid -> sid
-      Left _ -> nilSpanId
+       Right sid -> sid
+       Left _ -> nilSpanId
 
 
 {- | Base encoding scheme. Only 'Base16' (hexadecimal) is supported.

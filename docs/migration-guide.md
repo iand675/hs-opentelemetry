@@ -465,9 +465,110 @@ New W3C Level 2 operations: `isRandom`, `setRandom`, `unsetRandom`.
 
 ## Instrumentation packages
 
-Most instrumentation packages have updated span names, attribute keys, and
-error handling to align with semantic conventions v1.40.0. See individual
-package changelogs for details.
+All instrumentation packages have updated span names, attribute keys, and error
+handling to align with OpenTelemetry semantic conventions v1.40.0. This section
+provides a central reference for the attribute renames and the
+`OTEL_SEMCONV_STABILITY_OPT_IN` backward-compatibility mechanism.
+
+### `OTEL_SEMCONV_STABILITY_OPT_IN` — operator migration guide
+
+Several signals (HTTP, database, code source location) renamed their attributes
+between the "old" semconv era and the stabilised v1.x names. Instrumentation
+libraries gate on this env var so backends and dashboards can migrate
+independently.
+
+```
+# values are comma-separated; /dup suffix emits both old and new simultaneously
+OTEL_SEMCONV_STABILITY_OPT_IN=http,database,code
+```
+
+| Value | Meaning |
+|-------|---------|
+| *(unset)* | Old (legacy) attribute names — **default** |
+| `http` | Stable HTTP attribute names only |
+| `http/dup` | Both old and stable HTTP names (for gradual dashboard migration) |
+| `database` | Stable database attribute names only |
+| `database/dup` | Both old and stable database names |
+| `code` | Stable code source-location attribute names only |
+| `code/dup` | Both old and stable code names |
+| `messaging` | Stable messaging attribute names only |
+| `messaging/dup` | Both old and stable messaging names |
+
+Values can be combined: `OTEL_SEMCONV_STABILITY_OPT_IN=http/dup,database`.
+
+The env var is read once at process startup (cached). In tests use
+`getSemanticsOptions'` if you need per-call evaluation.
+
+### HTTP attribute renames (`wai`, `http-client`)
+
+The following attributes changed when `http` or `http/dup` is set:
+
+| Old (default) | Stable (`http` / `http/dup`) | Packages |
+|---------------|------------------------------|----------|
+| `http.method` | `http.request.method` | wai, http-client |
+| `http.url` | `url.full` | http-client |
+| `http.target` | `url.path` + `url.query` | wai, http-client |
+| `http.host` | `server.address` | http-client |
+| `http.scheme` | `url.scheme` | wai, http-client |
+| `http.flavor` | `network.protocol.version` | wai, http-client |
+| `http.status_code` | `http.response.status_code` | wai, http-client |
+| `net.peer.ip` / `net.peer.name` | `client.address` | wai |
+| `net.peer.port` | `client.port` | wai |
+| *(not emitted)* | `server.address`, `server.port` | wai |
+| *(not emitted)* | `error.type` (on 5xx) | wai |
+
+WAI and http-client **metrics** modules always use stable attribute names
+(metrics are new in this release — there are no legacy metric names to migrate
+from).
+
+### Database attribute renames (`postgresql-simple`, `persistent`, `persistent-mysql`)
+
+| Old (default) | Stable (`database` / `database/dup`) | Packages |
+|---------------|--------------------------------------|----------|
+| `db.system` | `db.system.name` | all |
+| `db.name` | `db.namespace` | all |
+| `db.statement` | `db.query.text` | postgresql-simple, persistent |
+| `db.user` | *(dropped — security)* | postgresql-simple |
+| `net.peer.name` / `net.peer.ip` | `server.address` | postgresql-simple |
+| `net.peer.port` | `server.port` | postgresql-simple |
+| *(not emitted)* | `db.operation.name` | postgresql-simple, persistent |
+
+### Messaging attribute renames (`hw-kafka-client`)
+
+| Old (default) | Stable (`messaging` / `messaging/dup`) |
+|---------------|----------------------------------------|
+| `messaging.operation` | `messaging.operation.name` + `messaging.operation.type` |
+| `messaging.kafka.consumer.group` | `messaging.consumer.group.name` |
+
+The Kafka-specific `messaging.kafka.*` attributes (`messaging.kafka.message.key`,
+`messaging.kafka.destination.partition`, `messaging.kafka.message.offset`) are
+emitted under both schemes as they have no generic equivalents.
+
+### Code source-location attribute renames (all spans)
+
+The `callerAttributes` call site injection (used by `inSpan`, `inSpan'`, etc.)
+and logging bridges (`katip`, `co-log`, `monad-logger`) respect `code` /
+`code/dup`:
+
+| Old (default) | Stable (`code` / `code/dup`) |
+|---------------|------------------------------|
+| `code.function` + `code.namespace` | `code.function.name` |
+| `code.filepath` | `code.file.path` |
+| `code.lineno` | `code.line.number` |
+
+### Yesod — `http.framework` → `webengine.name` (breaking)
+
+The Yesod instrumentation emitted `http.framework = "yesod"` in the old semconv
+era. The stable equivalent is `webengine.name = "yesod"`. This rename is gated
+on `httpOption`:
+
+- Default (unset `http`): `http.framework = "yesod"`
+- `http` opt-in: `webengine.name = "yesod"`
+- `http/dup`: both attributes emitted
+
+If you filter or alert on `http.framework`, set
+`OTEL_SEMCONV_STABILITY_OPT_IN=http/dup` during transition and update dashboards
+to use `webengine.name` before switching to `http`.
 
 ## hs-opentelemetry-otlp (proto types)
 

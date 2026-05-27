@@ -76,6 +76,7 @@ import OpenTelemetry.SemanticConventions (
   messaging_operation_type,
   messaging_system,
  )
+import OpenTelemetry.SemanticsConfig (StabilityOpt (..), getSemanticsOptions, lookupStability)
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
   SpanKind (Consumer, Producer),
@@ -114,17 +115,30 @@ rightToMaybe (Right b) = Just b
 rightToMaybe _ = Nothing
 
 
-producerAttributes :: HasCallStack => ProducerRecord -> AttributeMap
-producerAttributes record =
+{- | Build producer span attributes.
+
+Attribute names for operation and consumer-group fields are gated on
+@OTEL_SEMCONV_STABILITY_OPT_IN@:
+
+* @Old@ (default): legacy @messaging.operation@ key.
+* @Stable@ (@messaging@): stable @messaging.operation.name@ + @messaging.operation.type@.
+* @StableAndOld@ (@messaging\/dup@): both sets.
+-}
+producerAttributes :: HasCallStack => StabilityOpt -> ProducerRecord -> AttributeMap
+producerAttributes semOpts record =
   let
     addSystem =
       insertAttributeByKey messaging_system (toAttribute ("kafka" :: T.Text))
-    addOperation =
-      insertAttributeByKey messaging_operation (toAttribute (producerOperationName :: T.Text))
-    addOperationName =
-      insertAttributeByKey messaging_operation_name (toAttribute (producerOperationName :: T.Text))
-    addOperationType =
-      insertAttributeByKey messaging_operation_type (toAttribute (producerOperationName :: T.Text))
+    addOperationAttrs = case semOpts of
+      Old ->
+        insertAttributeByKey messaging_operation (toAttribute (producerOperationName :: T.Text))
+      Stable ->
+        insertAttributeByKey messaging_operation_name (toAttribute (producerOperationName :: T.Text))
+          . insertAttributeByKey messaging_operation_type (toAttribute (producerOperationName :: T.Text))
+      StableAndOld ->
+        insertAttributeByKey messaging_operation (toAttribute (producerOperationName :: T.Text))
+          . insertAttributeByKey messaging_operation_name (toAttribute (producerOperationName :: T.Text))
+          . insertAttributeByKey messaging_operation_type (toAttribute (producerOperationName :: T.Text))
     addDestination =
       insertAttributeByKey messaging_destination_name $ toAttribute . unTopicName . prTopic $ record
     addPartition =
@@ -144,7 +158,7 @@ producerAttributes record =
         Just v -> insertAttributeByKey messaging_message_body_size (toAttribute (fromIntegral (BS.length v) :: Int64))
         Nothing -> id
   in
-    (addSystem . addOperation . addOperationName . addOperationType . addDestination . addPartition . addKey . addBodySize)
+    (addSystem . addOperationAttrs . addDestination . addPartition . addKey . addBodySize)
       callerAttributes
 
 
@@ -153,28 +167,48 @@ consumerSpanArgs :: SpanArguments
 consumerSpanArgs = defaultSpanArguments {kind = Consumer}
 
 
+{- | Build consumer span attributes.
+
+Attribute names for operation and consumer-group fields are gated on
+@OTEL_SEMCONV_STABILITY_OPT_IN@:
+
+* @Old@ (default): legacy @messaging.operation@ + @messaging.kafka.consumer.group@ keys.
+* @Stable@ (@messaging@): stable @messaging.operation.name@, @messaging.operation.type@,
+  and @messaging.consumer.group.name@.
+* @StableAndOld@ (@messaging\/dup@): both sets.
+-}
 consumerAttributes
   :: HasCallStack
-  => ConsumerProperties
+  => StabilityOpt
+  -> ConsumerProperties
   -> ConsumerRecord (Maybe ByteString) (Maybe ByteString)
   -> AttributeMap
-consumerAttributes consumerProperties record =
+consumerAttributes semOpts consumerProperties record =
   let
     addSystem =
       insertAttributeByKey messaging_system (toAttribute ("kafka" :: T.Text))
-    addOperation =
-      insertAttributeByKey messaging_operation (toAttribute (consumerOperationName :: T.Text))
-    addOperationName =
-      insertAttributeByKey messaging_operation_name (toAttribute (consumerOperationName :: T.Text))
-    addOperationType =
-      insertAttributeByKey messaging_operation_type (toAttribute (consumerOperationName :: T.Text))
+    addOperationAttrs = case semOpts of
+      Old ->
+        insertAttributeByKey messaging_operation (toAttribute (consumerOperationName :: T.Text))
+      Stable ->
+        insertAttributeByKey messaging_operation_name (toAttribute (consumerOperationName :: T.Text))
+          . insertAttributeByKey messaging_operation_type (toAttribute (consumerOperationName :: T.Text))
+      StableAndOld ->
+        insertAttributeByKey messaging_operation (toAttribute (consumerOperationName :: T.Text))
+          . insertAttributeByKey messaging_operation_name (toAttribute (consumerOperationName :: T.Text))
+          . insertAttributeByKey messaging_operation_type (toAttribute (consumerOperationName :: T.Text))
     addDestination =
       insertAttributeByKey messaging_destination_name $ toAttribute . unTopicName . crTopic $ record
     addConsumerGroup =
       case M.lookup "group.id" $ cpProps consumerProperties of
-        Just groupId ->
-          insertAttributeByKey messaging_kafka_consumer_group (toAttribute groupId)
-            . insertAttributeByKey messaging_consumer_group_name (toAttribute groupId)
+        Just groupId -> case semOpts of
+          Old ->
+            insertAttributeByKey messaging_kafka_consumer_group (toAttribute groupId)
+          Stable ->
+            insertAttributeByKey messaging_consumer_group_name (toAttribute groupId)
+          StableAndOld ->
+            insertAttributeByKey messaging_kafka_consumer_group (toAttribute groupId)
+              . insertAttributeByKey messaging_consumer_group_name (toAttribute groupId)
         Nothing -> id
     addClientId =
       case M.lookup "client.id" $ cpProps consumerProperties of
@@ -196,9 +230,7 @@ consumerAttributes consumerProperties record =
         Nothing -> id
   in
     ( addSystem
-        . addOperation
-        . addOperationName
-        . addOperationType
+        . addOperationAttrs
         . addDestination
         . addConsumerGroup
         . addClientId
@@ -241,10 +273,11 @@ produceMessage producer record =
     headers = prHeaders record
     topicName = prTopic record
     spanName = producerOperationName <> " " <> unTopicName topicName
-    attributes = producerAttributes record
-    spanArguments = addAttributesToSpanArguments attributes producerSpanArgs
   in
     do
+      semOpts <- liftIO $ lookupStability "messaging" <$> getSemanticsOptions
+      let attributes = producerAttributes semOpts record
+          spanArguments = addAttributesToSpanArguments attributes producerSpanArgs
       tracer <- rdkafkaTracer
       ctxt <- getContext
       inSpan'' tracer spanName spanArguments $ \newSpan -> do
@@ -281,11 +314,12 @@ pollMessage consumerProperties consumer timeout =
       Left err -> pure $ Left err
       Right cr ->
         let
-          attributes = consumerAttributes consumerProperties cr
           topicName = crTopic cr
           spanName = consumerOperationName <> " " <> unTopicName topicName
         in
           do
+            semOpts <- liftIO $ lookupStability "messaging" <$> getSemanticsOptions
+            let attributes = consumerAttributes semOpts consumerProperties cr
             tracer <- rdkafkaTracer
             ctxt <- getContext
             propagator <- liftIO getGlobalTextMapPropagator

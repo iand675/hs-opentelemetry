@@ -62,7 +62,7 @@ import Control.Monad (void)
 import qualified Data.HashMap.Strict as H
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Stack (CallStack, getCallStack, srcLocFile, srcLocModule, srcLocStartLine)
+import GHC.Stack (CallStack, getCallStack, srcLocFile, srcLocModule, srcLocPackage, srcLocStartLine)
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Internal.Common.Types (AnyValue (..), ToValue (..))
 import OpenTelemetry.Internal.Log.Types (
@@ -72,6 +72,7 @@ import OpenTelemetry.Internal.Log.Types (
  )
 import OpenTelemetry.Log.Core (Logger, emitLogRecord)
 import qualified OpenTelemetry.SemanticConventions as SC
+import OpenTelemetry.SemanticsConfig (StabilityOpt (..), codeOption, getSemanticsOptions)
 
 
 {- | A 'LogAction' for co-log's standard 'Message' type that forwards
@@ -81,8 +82,9 @@ to the OTel Logs pipeline.
 -}
 otelLogAction :: Logger -> LogAction IO Message
 otelLogAction logger = LogAction $ \msg -> do
+  semOpts <- getSemanticsOptions
   let (sevNum, sevText) = coLogSeverity (msgSeverity msg)
-      attrs = callStackAttributes (msgStack msg)
+      attrs = callStackAttributes (codeOption semOpts) (msgStack msg)
       args =
         emptyLogRecordArguments
           { severityText = Just sevText
@@ -114,12 +116,23 @@ coLogSeverity CS.Warning = (Warn, "WARN")
 coLogSeverity CS.Error = (OpenTelemetry.Internal.Log.Types.Error, "ERROR")
 
 
-callStackAttributes :: CallStack -> H.HashMap Text AnyValue
-callStackAttributes cs = case getCallStack cs of
+callStackAttributes :: StabilityOpt -> CallStack -> H.HashMap Text AnyValue
+callStackAttributes opt cs = case getCallStack cs of
   [] -> H.empty
   ((_, loc) : _) ->
-    H.fromList
-      [ (unkey SC.code_filepath, toValue (T.pack (srcLocFile loc)))
-      , (unkey SC.code_function_name, toValue (T.pack (srcLocModule loc)))
-      , (unkey SC.code_lineno, IntValue (fromIntegral (srcLocStartLine loc)))
-      ]
+    let qualifiedName = T.pack (srcLocPackage loc) <> ":" <> T.pack (srcLocModule loc)
+        stableAttrs =
+          [ (unkey SC.code_function_name, toValue qualifiedName)
+          , (unkey SC.code_file_path, toValue (T.pack (srcLocFile loc)))
+          , (unkey SC.code_line_number, IntValue (fromIntegral (srcLocStartLine loc)))
+          ]
+        oldAttrs =
+          [ (unkey SC.code_function, toValue (T.pack (srcLocModule loc)))
+          , (unkey SC.code_namespace, toValue qualifiedName)
+          , (unkey SC.code_filepath, toValue (T.pack (srcLocFile loc)))
+          , (unkey SC.code_lineno, IntValue (fromIntegral (srcLocStartLine loc)))
+          ]
+    in H.fromList $ case opt of
+         Stable -> stableAttrs
+         Old -> oldAttrs
+         StableAndOld -> stableAttrs <> oldAttrs

@@ -68,6 +68,7 @@ import OpenTelemetry.Internal.Log.Types (
  )
 import OpenTelemetry.Log.Core (Logger, emitLogRecord)
 import qualified OpenTelemetry.SemanticConventions as SC
+import OpenTelemetry.SemanticsConfig (StabilityOpt (..), codeOption, getSemanticsOptions)
 
 
 {- | Create a Katip 'K.Scribe' that forwards log items to OTel.
@@ -98,9 +99,10 @@ makeOTelScribe logger minSev verb =
 
 emitItem :: (K.LogItem a) => Logger -> K.Verbosity -> K.Item a -> IO ()
 emitItem logger verb item = do
+  semOpts <- getSemanticsOptions
   let bodyText = TL.toStrict (TLB.toLazyText (KC.unLogStr (KC._itemMessage item)))
       (sevNum, sevText) = katipSeverity (KC._itemSeverity item)
-      attrs = itemAttributes verb item
+      attrs = itemAttributes (codeOption semOpts) verb item
       args =
         emptyLogRecordArguments
           { severityText = Just sevText
@@ -131,8 +133,8 @@ katipNamespaceKey :: AttributeKey Text
 katipNamespaceKey = AttributeKey "katip.namespace"
 
 
-itemAttributes :: (K.LogItem a) => K.Verbosity -> K.Item a -> H.HashMap Text AnyValue
-itemAttributes verb item =
+itemAttributes :: (K.LogItem a) => StabilityOpt -> K.Verbosity -> K.Item a -> H.HashMap Text AnyValue
+itemAttributes semOpts verb item =
   let KC.Namespace ns = KC._itemNamespace item
       base =
         H.fromList $
@@ -141,16 +143,28 @@ itemAttributes verb item =
             , [(unkey SC.thread_id, toValue (KC.getThreadIdText (KC._itemThread item)))]
             , [(unkey SC.server_address, toValue (T.pack (KC._itemHost item)))]
             , [(unkey SC.process_pid, toValue (T.pack (show (KC._itemProcess item))))]
-            , maybe [] locAttrs (KC._itemLoc item)
+            , maybe [] (locAttrs semOpts) (KC._itemLoc item)
             ]
       payloadAttrs = aesonToAttributes (K.itemJson verb item)
   in H.union base payloadAttrs
   where
-    locAttrs loc =
-      [ (unkey SC.code_filepath, toValue (T.pack (loc_filename loc)))
-      , (unkey SC.code_function_name, toValue (T.pack (loc_package loc) <> ":" <> T.pack (loc_module loc)))
-      , (unkey SC.code_lineno, IntValue (fromIntegral (fst (loc_start loc))))
-      ]
+    locAttrs opt loc =
+      let qualifiedName = T.pack (loc_package loc) <> ":" <> T.pack (loc_module loc)
+          stableAttrs =
+            [ (unkey SC.code_function_name, toValue qualifiedName)
+            , (unkey SC.code_file_path, toValue (T.pack (loc_filename loc)))
+            , (unkey SC.code_line_number, IntValue (fromIntegral (fst (loc_start loc))))
+            ]
+          oldAttrs =
+            [ (unkey SC.code_function, toValue (T.pack (loc_module loc)))
+            , (unkey SC.code_namespace, toValue qualifiedName)
+            , (unkey SC.code_filepath, toValue (T.pack (loc_filename loc)))
+            , (unkey SC.code_lineno, IntValue (fromIntegral (fst (loc_start loc))))
+            ]
+      in case opt of
+           Stable -> stableAttrs
+           Old -> oldAttrs
+           StableAndOld -> stableAttrs <> oldAttrs
 
 
 aesonToAttributes :: Value -> H.HashMap Text AnyValue

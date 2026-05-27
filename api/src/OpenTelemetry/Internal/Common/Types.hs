@@ -248,13 +248,15 @@ worstShutdown ShutdownSuccess ShutdownSuccess = ShutdownSuccess
 @since 0.0.1.0
 -}
 data FlushResult
-  = -- | One or more spans or @LogRecord@s did not export from all associated exporters
-    --     within the alotted timeframe.
+  = {- | One or more spans or @LogRecord@s did not export from all associated exporters
+    within the alotted timeframe.
+    -}
     FlushTimeout
   | -- | Flushing spans or @LogRecord@s to all associated exporters succeeded.
     FlushSuccess
-  | -- | One or more exporters failed to successfully export one or more
-    --     unexported spans or @LogRecord@s.
+  | {- | One or more exporters failed to successfully export one or more
+    unexported spans or @LogRecord@s.
+    -}
     FlushError
   deriving stock (Eq, Show)
 
@@ -327,10 +329,10 @@ splitPackageVersion s =
           rest = drop (i + 1) s
           version = takeWhile isVersionChar rest
       in if not (null version)
-          && isDigit (head version)
-          && isValidPackageName name
-          then Just (name, version)
-          else fallback
+           && isDigit (head version)
+           && isValidPackageName name
+           then Just (name, version)
+           else fallback
     isVersionChar c = isDigit c || c == '.'
 
 

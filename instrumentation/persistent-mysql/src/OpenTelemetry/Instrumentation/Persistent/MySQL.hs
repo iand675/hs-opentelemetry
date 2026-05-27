@@ -7,10 +7,14 @@
 
 {- | Wrapper module for @Database.Persist.MySQL@ with @OpenTelemetry.Instrumentation.Persistent@.
 
-[New HTTP semantic conventions have been declared stable.](https://opentelemetry.io/blog/2023/http-conventions-declared-stable/#migration-plan) Opt-in by setting the environment variable OTEL_SEMCONV_STABILITY_OPT_IN to
-- "http" - to use the stable conventions
-- "http/dup" - to emit both the old and the stable conventions
-Otherwise, the old conventions will be used. The stable conventions will replace the old conventions in the next major release of this library.
+New database semantic conventions have been declared stable. Opt-in by setting
+the environment variable @OTEL_SEMCONV_STABILITY_OPT_IN@ to:
+
+- @"database"@ — to use the stable database conventions
+- @"database\/dup"@ — to emit both the old and the stable conventions
+
+Otherwise, the old conventions will be used. The stable conventions will
+replace the old conventions in the next major release of this library.
 -}
 module OpenTelemetry.Instrumentation.Persistent.MySQL (
   withMySQLPool,

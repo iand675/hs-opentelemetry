@@ -107,8 +107,8 @@ parseTraceState :: ByteString -> TraceState
 parseTraceState bs =
   let !trimmed = C8.dropWhile isOWS bs
   in if BS.null trimmed
-      then empty
-      else fromList (go trimmed [])
+       then empty
+       else fromList (go trimmed [])
   where
     go !remaining !acc
       | BS.null remaining = reverse acc
@@ -141,12 +141,12 @@ parseTraceState bs =
     scanKey !input =
       let !keyLen = BS.length (C8.takeWhile isTracestateKeyChar input)
       in if keyLen == 0
-          then Left "empty tracestate key"
-          else
-            let !keyBs = BS.take keyLen input
-            in if keyLen > 256
-                then Left "tracestate key too long"
-                else validateKey keyBs >> Right (keyBs, BS.drop keyLen input)
+           then Left "empty tracestate key"
+           else
+             let !keyBs = BS.take keyLen input
+             in if keyLen > 256
+                  then Left "tracestate key too long"
+                  else validateKey keyBs >> Right (keyBs, BS.drop keyLen input)
 
     validateKey :: ByteString -> Either String ()
     validateKey !keyBs =
@@ -175,26 +175,26 @@ parseTraceState bs =
     scanValue !input =
       let !valLen = BS.length (C8.takeWhile isTracestateValueChar input)
       in if valLen == 0
-          then Left "empty tracestate value"
-          else
-            let !raw = BS.take valLen input
-                !stripped = fst (BS.spanEnd isOWSByte raw)
-            in if BS.null stripped
-                then Left "tracestate value is only whitespace"
-                else
-                  if BS.length stripped > 256
-                    then Left "tracestate value too long"
-                    else Right (stripped, BS.drop valLen input)
+           then Left "empty tracestate value"
+           else
+             let !raw = BS.take valLen input
+                 !stripped = fst (BS.spanEnd isOWSByte raw)
+             in if BS.null stripped
+                  then Left "tracestate value is only whitespace"
+                  else
+                    if BS.length stripped > 256
+                      then Left "tracestate value too long"
+                      else Right (stripped, BS.drop valLen input)
 
     skipCommaOWS :: ByteString -> ByteString
     skipCommaOWS !input =
       let !s1 = C8.dropWhile isOWS input
       in if BS.null s1
-          then s1
-          else
-            if BS.index s1 0 == 0x2c -- ','
-              then C8.dropWhile isOWS (BS.drop 1 s1)
-              else s1
+           then s1
+           else
+             if BS.index s1 0 == 0x2c -- ','
+               then C8.dropWhile isOWS (BS.drop 1 s1)
+               else s1
 
 
 isOWS :: Char -> Bool
@@ -277,8 +277,8 @@ encodeTraceStateMultiple maxSize ts =
     splitIntoHeaders limit entries =
       let (currentHeader, remaining) = buildHeader limit entries []
       in if C8.null currentHeader
-          then []
-          else currentHeader : splitIntoHeaders limit remaining
+           then []
+           else currentHeader : splitIntoHeaders limit remaining
 
     buildHeader :: Int -> [ByteString] -> [ByteString] -> (ByteString, [ByteString])
     buildHeader _ [] acc = (C8.intercalate "," (reverse acc), [])
@@ -286,8 +286,8 @@ encodeTraceStateMultiple maxSize ts =
       let currentSize = if null acc then 0 else sum (map C8.length acc) + length acc - 1
           newSize = currentSize + C8.length entry + if null acc then 0 else 1
       in if newSize <= limit || null acc -- Always include at least one entry
-          then buildHeader limit rest (entry : acc)
-          else (C8.intercalate "," (reverse acc), entry : rest)
+           then buildHeader limit rest (entry : acc)
+           else (C8.intercalate "," (reverse acc), entry : rest)
 
 
 {- | Combine multiple tracestate header values into a single TraceState.

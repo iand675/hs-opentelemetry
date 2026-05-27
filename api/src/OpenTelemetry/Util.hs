@@ -159,8 +159,8 @@ casModifyIORef_ (IORef (STRef ref#)) f = IO go#
         (# s1#, old #) ->
           let !new = f old
           in case Exts.casMutVar# ref# old new s1# of
-              (# s2#, 0#, _ #) -> (# s2#, () #)
-              (# s2#, _, _ #) -> go# s2#
+               (# s2#, 0#, _ #) -> (# s2#, () #)
+               (# s2#, _, _ #) -> go# s2#
 {-# NOINLINE casModifyIORef_ #-}
 
 
@@ -186,8 +186,8 @@ casReadModifyIORef_ (IORef (STRef ref#)) f = IO go#
         (# s1#, old #) ->
           let !new = f old
           in case Exts.casMutVar# ref# old new s1# of
-              (# s2#, 0#, _ #) -> (# s2#, old #)
-              (# s2#, _, _ #) -> go# s2#
+               (# s2#, 0#, _ #) -> (# s2#, old #)
+               (# s2#, _, _ #) -> go# s2#
 {-# NOINLINE casReadModifyIORef_ #-}
 
 
@@ -218,13 +218,13 @@ instance forall a. (Show a) => Show (AppendOnlyBoundedCollection a) where
   showsPrec d c =
     let vec = appendOnlyBoundedCollectionValues c
     in showParen (d > 10) $
-        showString "AppendOnlyBoundedCollection {collection = "
-          . shows vec
-          . showString ", maxSize = "
-          . shows (appendOnlyBoundedCollectionMaxSize c)
-          . showString ", dropped = "
-          . shows (appendOnlyBoundedCollectionDroppedElementCount c)
-          . showString "}"
+         showString "AppendOnlyBoundedCollection {collection = "
+           . shows vec
+           . showString ", maxSize = "
+           . shows (appendOnlyBoundedCollectionMaxSize c)
+           . showString ", dropped = "
+           . shows (appendOnlyBoundedCollectionDroppedElementCount c)
+           . showString "}"
 
 
 {- | Initialize a bounded collection that admits a maximum size

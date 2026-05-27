@@ -72,6 +72,7 @@ import OpenTelemetry.Internal.Log.Types (
  )
 import OpenTelemetry.Log.Core (Logger, emitLogRecord)
 import qualified OpenTelemetry.SemanticConventions as SC
+import OpenTelemetry.SemanticsConfig (StabilityOpt (..), codeOption, getSemanticsOptions)
 import System.Log.FastLogger (fromLogStr)
 
 
@@ -85,9 +86,10 @@ expects: @Loc -> LogSource -> LogLevel -> LogStr -> IO ()@.
 -}
 makeOTelLogCallback :: Logger -> (Loc -> LogSource -> LogLevel -> LogStr -> IO ())
 makeOTelLogCallback logger loc src level msg = do
+  semOpts <- getSemanticsOptions
   let bodyText = TE.decodeUtf8 (fromLogStr msg)
       (sevNum, sevText) = monadLoggerSeverity level
-      attrs = locAttributes loc <> sourceAttributes src
+      attrs = locAttributes (codeOption semOpts) loc <> sourceAttributes src
       args =
         emptyLogRecordArguments
           { severityText = Just sevText
@@ -116,13 +118,24 @@ logSourceKey :: AttributeKey Text
 logSourceKey = AttributeKey "log.source"
 
 
-locAttributes :: Loc -> H.HashMap Text AnyValue
-locAttributes loc =
-  H.fromList
-    [ (unkey SC.code_filepath, toValue (T.pack (loc_filename loc)))
-    , (unkey SC.code_function_name, toValue (T.pack (loc_module loc)))
-    , (unkey SC.code_lineno, IntValue (fromIntegral (fst (loc_start loc))))
-    ]
+locAttributes :: StabilityOpt -> Loc -> H.HashMap Text AnyValue
+locAttributes opt loc =
+  let qualifiedName = T.pack (loc_package loc) <> ":" <> T.pack (loc_module loc)
+      stableAttrs =
+        [ (unkey SC.code_function_name, toValue qualifiedName)
+        , (unkey SC.code_file_path, toValue (T.pack (loc_filename loc)))
+        , (unkey SC.code_line_number, IntValue (fromIntegral (fst (loc_start loc))))
+        ]
+      oldAttrs =
+        [ (unkey SC.code_function, toValue (T.pack (loc_module loc)))
+        , (unkey SC.code_namespace, toValue qualifiedName)
+        , (unkey SC.code_filepath, toValue (T.pack (loc_filename loc)))
+        , (unkey SC.code_lineno, IntValue (fromIntegral (fst (loc_start loc))))
+        ]
+  in H.fromList $ case opt of
+       Stable -> stableAttrs
+       Old -> oldAttrs
+       StableAndOld -> stableAttrs <> oldAttrs
 
 
 sourceAttributes :: LogSource -> H.HashMap Text AnyValue

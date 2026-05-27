@@ -267,6 +267,7 @@ data MeterProvider = MeterProvider
   , meterProviderShutdown :: !(IO ShutdownResult)
   -- ^ Shut down the provider, flushing and releasing resources.
   , meterProviderForceFlush :: !(Maybe Int -> IO FlushResult)
-  -- ^ Force a collection and export cycle. Optional timeout in microseconds;
-  --   @Nothing@ uses the SDK default (5s).
+  {- ^ Force a collection and export cycle. Optional timeout in microseconds;
+  @Nothing@ uses the SDK default (5s).
+  -}
   }

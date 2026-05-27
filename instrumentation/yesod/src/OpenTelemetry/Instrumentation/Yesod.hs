@@ -263,8 +263,15 @@ openTelemetryYesodMiddleware rr m = do
   let mspan = requestContext req >>= Context.lookupSpan
       sharedAttributes =
         H.fromList $
-          (unkey SC.webengine_name, toAttribute ("yesod" :: Text))
-            : catMaybes
+          ( case httpOption semanticsOptions of
+              Old -> [("http.framework", toAttribute ("yesod" :: Text))]
+              Stable -> [(unkey SC.webengine_name, toAttribute ("yesod" :: Text))]
+              StableAndOld ->
+                [ ("http.framework", toAttribute ("yesod" :: Text))
+                , (unkey SC.webengine_name, toAttribute ("yesod" :: Text))
+                ]
+          )
+            <> catMaybes
               [ do
                   r <- mr
                   Just (unkey SC.http_route, toAttribute $ pathRender rr r)
