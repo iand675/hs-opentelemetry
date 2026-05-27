@@ -1,15 +1,15 @@
-# Migration Guide (0.3.x / 0.1.x to 0.4 / 1.0)
+# Migration Guide (to 1.0)
 
-This guide covers all breaking changes when upgrading from what was on
-`origin/main` to the current release. Changes are grouped by package, then
-by theme.
+Upgrading from 0.3.x (API) / 0.1.x (SDK) and earlier to 1.0.
 
 ## hs-opentelemetry-api
 
 ### Module renames
 
-| Old module | New module |
-|-----------|------------|
+Update your imports:
+
+| Old | New |
+|-----|-----|
 | `OpenTelemetry.Logs.Core` | `OpenTelemetry.Log.Core` |
 | `OpenTelemetry.Internal.Logs.Core` | `OpenTelemetry.Internal.Log.Core` |
 | `OpenTelemetry.Internal.Logs.Types` | `OpenTelemetry.Internal.Log.Types` |
@@ -18,60 +18,54 @@ by theme.
 | `OpenTelemetry.Metrics` | `OpenTelemetry.Metric.Core` |
 | `OpenTelemetry.Metrics.InstrumentName` | `OpenTelemetry.Metric.InstrumentName` |
 
-### Span representation (performance rework)
+### Span internals changed
 
-The `Span` type no longer holds a mutable `IORef` at the top level. Mutable
-fields are collected into a `SpanHot` sub-record behind a single `IORef`,
-while identity fields sit directly on `ImmutableSpan`:
+`Span` no longer has a top-level `IORef`. Mutable fields moved to `SpanHot` behind one `IORef`, identity fields sit directly on `Span`:
 
 ```haskell
--- Old
+-- Before
 data Span = Span (IORef ImmutableSpan) | FrozenSpan SpanContext | Dropped SpanContext
 
--- New
+-- After
 data Span = Span !ImmutableSpan | FrozenSpan !SpanContext | Dropped !SpanContext
 ```
 
-`ImmutableSpan` now has: `spanContext`, `spanKind`, `spanStart`, `spanParent`,
-`spanTracer`, `spanHot :: IORef SpanHot`. The `SpanHot` record carries
-`hotName`, `hotEnd`, `hotAttributes`, `hotLinks`, `hotEvents`, `hotStatus`.
+`ImmutableSpan` now has: `spanContext`, `spanKind`, `spanStart`, `spanParent`, `spanTracer`, `spanHot :: IORef SpanHot`. `SpanHot` carries `hotName`, `hotEnd`, `hotAttributes`, `hotLinks`, `hotEvents`, `hotStatus`.
 
-**Why:** Eliminates an indirection on every `getSpanContext`, `isRecording`,
-etc. Hot-path mutations go through the `IORef SpanHot` with CAS. Cold
-identity fields (trace/span ID, kind, start time) are accessed without
-touching the `IORef` at all.
+This removes an indirection on `getSpanContext`, `isRecording`, etc. Hot-path writes go through `IORef SpanHot` with CAS; cold identity fields need no `IORef` touch.
 
-### TraceId / SpanId (unboxed Word64)
+> [!IMPORTANT]
+> If you have custom `SpanProcessor` implementations, update your `onStart`/`onEnd` handlers (see [SpanProcessor](#spanprocessor) below).
+
+### TraceId / SpanId (unboxed)
 
 ```haskell
--- Old
+-- Before
 newtype TraceId = TraceId ShortByteString
 newtype SpanId  = SpanId  ShortByteString
 
--- New
+-- After
 data TraceId = TraceId !Word64 !Word64
 data SpanId  = SpanId  !Word64
 ```
 
-**Why:** Eliminates pinned `ShortByteString` allocation on every span creation.
-Two `Word64`s in registers vs. a heap-allocated byte array. Hex encoding now
-uses a C FFI encoder (`hs_otel_hex.c`).
+Two unpacked `Word64`s in registers vs a heap byte array significantly reduces allocation overhead and GC pressure. Hex encoding now uses a C FFI encoder (`hs_otel_hex.c`).
 
-Use `traceIdBytes`, `spanIdBytes`, `bytesToTraceId`, `bytesToSpanId` for
-raw-byte conversions. The hex encoding functions (`traceIdBaseEncodedBuilder`,
-etc.) still work. `Base` is now `data Base = Base16` only (non-hex encodings
-removed).
+Use `traceIdBytes`, `spanIdBytes`, `bytesToTraceId`, `bytesToSpanId` for raw-byte conversions. `Base` is now `data Base = Base16` only (non-hex encodings removed—file an issue if you need them).
 
-### IdGenerator (ADT instead of record)
+> [!IMPORTANT]
+> If you store `TraceId`/`SpanId` in databases or caches, verify your serialization. The `Show` instance still produces hex, but internal representation changed.
+
+### IdGenerator (ADT)
 
 ```haskell
--- Old
+-- Before (record)
 data IdGenerator = IdGenerator
   { generateSpanIdBytes  :: IO ByteString
   , generateTraceIdBytes :: IO ByteString
   }
 
--- New
+-- After (ADT)
 data IdGenerator
   = DefaultIdGenerator     -- thread-local xoshiro256++ (zero contention)
   | CustomIdGenerator
@@ -79,40 +73,43 @@ data IdGenerator
       !(IO ShortByteString)  -- 16 bytes for trace ID
 ```
 
-**Why:** Pattern-matching on `DefaultIdGenerator` lets GHC inline the fast path
-directly at call sites, eliminating indirect function calls. The default
-generator uses thread-local xoshiro256++ seeded from the platform CSPRNG
-(no syscalls after initial seed, no contention).
+Pattern-matching on `DefaultIdGenerator` lets GHC inline the fast path. The default uses thread-local xoshiro256++ seeded from the platform CSPRNG (no syscalls after seed).
 
-Use `customIdGenerator spanIO traceIO` instead of the record constructor.
+> [!IMPORTANT]
+> If you use a custom `IdGenerator`, replace the record constructor:
+> ```haskell
+> -- Before
+> let gen = IdGenerator { generateSpanIdBytes = mySpanGen, generateTraceIdBytes = myTraceGen }
+>
+> -- After
+> let gen = customIdGenerator mySpanGen myTraceGen
+> ```
 
 ### Timestamp (Word64 nanoseconds)
 
 ```haskell
--- Old
+-- Before
 newtype Timestamp = Timestamp TimeSpec    -- from clock package
 
--- New
+-- After
 newtype Timestamp = Timestamp Word64      -- nanoseconds since Unix epoch
 ```
 
-**Why:** OTLP uses `fixed64` nanoseconds; this representation is zero-cost to
-serialize. FFI call (`hs_otel_gettime_ns`) is ~15ns faster than
-`System.Clock.getTime` on macOS.
+OTLP uses `fixed64` nanoseconds; this is zero-cost to serialize. FFI call (`hs_otel_gettime_ns`) is ~15ns faster than `System.Clock.getTime` on macOS.
 
 New helpers: `mkTimestamp`, `timestampToNanoseconds`, `OptionalTimestamp`.
 
 ### Sampler (ADT with InstrumentationScope)
 
 ```haskell
--- Old (record)
+-- Before (record)
 data Sampler = Sampler
   { getDescription :: Text
   , shouldSample :: Context -> TraceId -> Text -> SpanArguments
                  -> IO (SamplingResult, AttributeMap, TraceState)
   }
 
--- New (ADT)
+-- After (ADT)
 data Sampler
   = AlwaysOnSampler
   | AlwaysOffSampler
@@ -124,123 +121,151 @@ data Sampler
        -> InstrumentationLibrary -> IO SamplingDecision)
 ```
 
-**Key differences:**
+Key changes:
 - `shouldSample` and `getDescription` are top-level functions, not fields
-- `shouldSample` takes an additional `InstrumentationLibrary` parameter (the
-  tracer's scope), per spec requirement
-- Return type is `SamplingDecision` (record with `samplingOutcome`,
-  `samplingAttributes`, `samplingTraceState`) instead of a 3-tuple
-- Built-in samplers (`alwaysOn`, `alwaysOff`, `traceIdRatioBased`,
-  `parentBased`) still work as smart constructors
+- `shouldSample` takes an additional `InstrumentationLibrary` parameter (spec requirement)
+- Return is `SamplingDecision` (record with `samplingOutcome`, `samplingAttributes`, `samplingTraceState`) instead of a 3-tuple
+- Built-in samplers (`alwaysOn`, `alwaysOff`, `traceIdRatioBased`, `parentBased`) still work as smart constructors
 
-**Why:** GHC can case-split on known constructors and inline the decision for
-AlwaysOn/Off without going through an indirect call. The scope parameter
-satisfies the spec's MUST for `shouldSample` parameters.
+> [!IMPORTANT]
+> **Custom samplers:**
+> 1. Replace `Sampler { ... }` with `CustomSampler description yourFunction`
+> 2. Add `InstrumentationLibrary` parameter to your sampling function
+> 3. Return `SamplingDecision` instead of `(SamplingResult, AttributeMap, TraceState)`:
+>    ```haskell
+>    -- Before
+>    return (Drop, emptyAttributes, tracestate)
+>    
+>    -- After
+>    return SamplingDecision { samplingOutcome = Drop, samplingAttributes = emptyAttributes, samplingTraceState = tracestate }
+>    ```
 
-**`traceIdRatioBased` behavior change:** Now uses lower 63 bits of the trace ID
-(bytes 8-15, big-endian), matching Go/Java/Python SDKs. The description always
-follows `TraceIdRatioBased{ratio}` format (previously `traceIdRatioBased 1.0`
-returned `alwaysOn` whose description was `"AlwaysOnSampler"`).
+`traceIdRatioBased` behavior change: now uses lower 63 bits of trace ID (bytes 8-15, big-endian), matching Go/Java/Python SDKs. Description always follows `TraceIdRatioBased{ratio}` format (previously `traceIdRatioBased 1.0` returned `alwaysOn` with description `"AlwaysOnSampler"`).
 
 ### SpanProcessor
 
 ```haskell
--- Old
+-- Before
 spanProcessorOnStart   :: IORef ImmutableSpan -> Context -> IO ()
 spanProcessorOnEnd     :: IORef ImmutableSpan -> IO ()
 spanProcessorShutdown  :: IO (Async ShutdownResult)
 spanProcessorForceFlush :: IO ()
 
--- New
+-- After
 spanProcessorOnStart   :: ImmutableSpan -> Context -> IO ()
 spanProcessorOnEnd     :: ImmutableSpan -> IO ()
 spanProcessorShutdown  :: IO ShutdownResult
 spanProcessorForceFlush :: IO FlushResult
 ```
 
-**Why:** Follows from the `Span` representation change (no top-level `IORef`).
-Synchronous shutdown/flush return values allow proper result aggregation.
+Follows from the `Span` representation change (no top-level `IORef`). Synchronous shutdown/flush return values allow proper result aggregation.
+
+> [!IMPORTANT]
+> Update your `SpanProcessor` record definitions. The `onStart`/`onEnd` handlers no longer receive `IORef ImmutableSpan`—use `ImmutableSpan` directly. Change `Async ShutdownResult` to `IO ShutdownResult` and `IO ()` to `IO FlushResult`.
 
 ### SpanExporter
 
 ```haskell
--- Old
+-- Before
 spanExporterShutdown :: IO ()
 -- no forceFlush field
 
--- New
+-- After
 spanExporterShutdown   :: IO ShutdownResult
 spanExporterForceFlush :: IO FlushResult   -- new required field
 ```
 
+> [!IMPORTANT]
+> Add a `spanExporterForceFlush` field to your `SpanExporter` records.
+
 ### TracerProviderOptions
 
 ```haskell
--- Old
+-- Before
 tracerProviderOptionsPropagators :: Propagator Context RequestHeaders RequestHeaders
 
--- New
+-- After
 tracerProviderOptionsPropagators :: TextMapPropagator
 ```
 
-**Why:** `TextMap` replaces `RequestHeaders` as the carrier type, removing the
-`http-types` dependency from the API package. This is to conform to the OTel spec's updated guidance on the propagator interface. 
+`TextMap` replaces `RequestHeaders` as the carrier type, dropping the `http-types` dependency from API. Matches spec guidance.
+
+> [!IMPORTANT]
+> If you construct `TracerProviderOptions` manually, use `TextMapPropagator` instead of `Propagator Context RequestHeaders RequestHeaders`. The built-in propagators (W3C, B3, etc.) already have `TextMap` variants.
 
 New field: `tracerProviderOptionsExceptionHandlers :: [ExceptionHandler]`
 
-**Why:** Exception handlers enable classifying exceptions as Error / Recorded / Ignored per span, with
-configurable attribute enrichment.
+Exception handlers classify exceptions as Error / Recorded / Ignored per span, with configurable attribute enrichment.
 
 ### TracerOptions
 
 ```haskell
--- Old
+-- Before
 newtype TracerOptions = TracerOptions { tracerSchema :: Maybe Text }
 
--- New
+-- After
 data TracerOptions = TracerOptions
   { tracerSchema :: Maybe Text
   , tracerExceptionHandlerOptions :: [ExceptionHandler]
   }
 ```
 
-Use `tracerOptions` for the default.
+> [!TIP]
+> Use `tracerOptions` (smart constructor) for defaults rather than constructing the record directly.
 
 ### shutdownTracerProvider
 
 ```haskell
--- Old
+-- Before
 shutdownTracerProvider :: TracerProvider -> m ()
 
--- New
+-- After
 shutdownTracerProvider :: TracerProvider -> Maybe Int -> m ShutdownResult
 ```
 
-`Maybe Int` is a timeout in microseconds (default 5 seconds). Subsequent calls
-return are idempotent.
+`Maybe Int` is timeout in microseconds (default 5 seconds). Subsequent calls are idempotent.
+
+> [!IMPORTANT]
+> Add timeout argument to all `shutdownTracerProvider` calls:
+> ```haskell
+> -- Before
+> shutdownTracerProvider provider
+>
+> -- After
+> shutdownTracerProvider provider (Just 5000000)  -- 5 seconds
+> ```
 
 ### getTracer
 
 ```haskell
--- Old (pure)
+-- Before (pure)
 getTracer :: TracerProvider -> InstrumentationLibrary -> TracerOptions -> Tracer
 
--- New (monadic, cached)
+-- After (monadic, cached)
 getTracer :: MonadIO m => TracerProvider -> InstrumentationLibrary -> TracerOptions -> m Tracer
 ```
 
-**Why:** Per-scope caching avoids re-resolving attribute limits and exception
-handlers on every call. Warns on empty library name.
+Per-scope caching avoids re-resolving attribute limits and exception handlers on every call. Warns on empty library name.
+
+> [!IMPORTANT]
+> Change `let` to `<-` and add `MonadIO` constraint:
+> ```haskell
+> -- Before
+> let tracer = getTracer provider lib tracerOptions
+>
+> -- After
+> tracer <- getTracer provider lib tracerOptions
+> ```
 
 ### Context
 
-Internal representation changed from a plain `Vault` to dedicated slots:
+Internal representation changed from plain `Vault` to dedicated slots:
 
 ```haskell
--- Old
+-- Before
 newtype Context = Context Vault
 
--- New
+-- After
 data Context = Context
   { ctxSpanSlot    :: UMaybe Any
   , ctxBaggageSlot :: UMaybe Baggage
@@ -248,51 +273,72 @@ data Context = Context
   }
 ```
 
-**Why:** Span and baggage lookups are the overwhelmingly common context
-operations. Dedicated slots avoid `Vault` hash lookup overhead.
+Span and baggage lookups are the hot paths. Dedicated slots avoid `Vault` hash lookup overhead.
 
-**Removed exports:** `spanKey`, `baggageKey`.
+> [!CAUTION]
+> **Removed exports:** `spanKey`, `baggageKey`.
+>
+> **Behavior change:** `insertBaggage` now **replaces** the baggage slot instead of merging. Merging happens via `Context`'s `Semigroup` instance.
 
-**Behavior change:** `insertBaggage` now **replaces** the baggage slot instead of
-merging. Merging happens via `Context`'s `Semigroup` instance.
+> [!IMPORTANT]
+> If you were relying on `insertBaggage` merging behavior, use `<>` (the `Semigroup` instance) instead:
+> ```haskell
+> -- Before (implicitly merged)
+> let ctx' = insertBaggage newBaggage ctx
+>
+> -- After (explicit merge)
+> let ctx' = ctx <> insertBaggage newBaggage emptyContext
+> ```
 
-### Attach/detach (ThreadLocal)
+### Attach/detach (Token-based)
 
 ```haskell
--- Old
+-- Before
 attachContext :: Context -> m (Maybe Context)     -- returns previous
 detachContext :: m (Maybe Context)                 -- returns previous
 
--- New
+-- After
 attachContext :: Context -> m Token
 detachContext :: Token -> m ()
 ```
 
-**Why:** Token-based LIFO validation catches mismatched attach/detach (e.g.
-from exception paths). Mismatched detach logs a warning and still restores.
+Token-based LIFO validation catches mismatched attach/detach (e.g. from exception paths). Mismatched detach logs a warning and still restores. Spec requirement; helps detect improper context restoration.
 
-This is:
-
-- (a) a spec requirement
-- (b) useful for consumers to detect improperly restored contexts
+> [!IMPORTANT]
+> Update all attach/detach call sites to use the token pattern:
+> ```haskell
+> -- Before
+> prev <- attachContext ctx
+> -- ... do work ...
+> detachContext
+>
+> -- After
+> token <- attachContext ctx
+> -- ... do work ...
+> detachContext token
+> ```
+>
+> If you were using the returned `Maybe Context` for context switching, you now need to track previous context separately.
 
 ### Propagator / TextMap
 
 - Carrier type changed from `RequestHeaders` to `TextMap` / `TextMapPropagator`
-- `propagatorNames` renamed to `propagatorFields` (old name is deprecated alias)
+- `propagatorNames` renamed to `propagatorFields` (old name deprecated alias)
 - `extract` and `inject` now catch exceptions internally and log
 - Export list is now explicit
 
-**Why:** Removes `http-types` and `case-insensitive` dependencies from the API.
-`TextMap` handles case-insensitive key lookup internally.
+Removes `http-types` and `case-insensitive` dependencies. `TextMap` handles case-insensitive key lookup internally.
+
+> [!IMPORTANT]
+> If you have custom propagators using `RequestHeaders`, change to `TextMap`. If you use `propagatorNames`, rename to `propagatorFields`.
 
 ### Resource (runtime schema)
 
 ```haskell
--- Old
+-- Before
 newtype Resource (schema :: Maybe Symbol) = Resource Attributes
 
--- New
+-- After
 data Resource = Resource
   { resourceSchemaUrl  :: Maybe Text
   , resourceAttributes :: Attributes
@@ -303,14 +349,14 @@ data Resource = Resource
 - `materializeResources` is an ordinary function, not a typeclass method
 - Schema merge is runtime (warning on conflict) instead of compile-time
 
-**Why:** The phantom type parameter required `DataKinds` and offered no real
-safety in practice (no library actually set schema URLs in type-level instances).
-Other language SDKs all use runtime schema merging.
+The phantom type parameter required `DataKinds` and offered no real safety (no library actually set schema URLs in type-level instances). Other language SDKs use runtime schema merging.
+
+> [!IMPORTANT]
+> If you have `ToResource` instances, remove the `ResourceSchema` type synonym. Use `materializeResources` directly instead of as a typeclass method.
 
 ### InstrumentationScope (new alias)
 
-`InstrumentationScope` is a type alias for `InstrumentationLibrary`.
-`instrumentationScope` is the preferred constructor. Old names still work.
+`InstrumentationScope` is a type alias for `InstrumentationLibrary`. `instrumentationScope` is the preferred constructor. Old names still work.
 
 ### SpanStatus Ord
 
@@ -320,48 +366,54 @@ Other language SDKs all use runtime schema merging.
 
 `isRecording (FrozenSpan _)` now returns `False` (was `True`).
 
-### isValid (SpanContext), bug fix
+### isValid (SpanContext) - bug fix
 
-Fixed: requires both `TraceId` AND `SpanId` to be non-zero (spec). Previously
-used `||` instead of `&&`.
+Now requires both `TraceId` AND `SpanId` to be non-zero (spec). Previously used `||` instead of `&&`.
+
+> [!IMPORTANT]
+> If you were creating `SpanContext` with only one ID set, it will now be invalid. Ensure both trace and span IDs are non-zero.
 
 ### Baggage
 
-- `decodeBaggageHeaderP` (Attoparsec parser) removed in favor of an extremely fast C implementation.
+- `decodeBaggageHeaderP` (Attoparsec parser) removed; now uses a fast C implementation
 - `InvalidBaggage` now derives `Show, Eq`
 - `mkToken` rejects empty strings
-- New: `insertChecked` (enforces W3C size limits), `getValue`,
-  `maxBaggageBytes` / `maxMemberBytes` / `maxMembers`
+- New: `insertChecked` (enforces W3C size limits), `getValue`, `maxBaggageBytes` / `maxMemberBytes` / `maxMembers`
 
 ### LogRecordExporter.forceFlush
 
 ```haskell
--- Old
+-- Before
 logRecordExporterArgumentsForceFlush :: IO ()
 
--- New
+-- After
 logRecordExporterArgumentsForceFlush :: IO FlushResult
 ```
 
+> [!IMPORTANT]
+> Update your `LogRecordExporter` records to return `FlushResult` instead of `()`.
+
 ### ImmutableLogRecord (internal UMaybe)
 
-Fields `logRecordTimestamp`, `logRecordTracingDetails`, `logRecordSeverityText`,
-`logRecordSeverityNumber`, and `logRecordEventName` now use `UMaybe` instead of
-`Maybe`. External `LogRecordArguments` fields remain as `Maybe`.
+Fields `logRecordTimestamp`, `logRecordTracingDetails`, `logRecordSeverityText`, `logRecordSeverityNumber`, and `logRecordEventName` now use `UMaybe` instead of `Maybe`. External `LogRecordArguments` fields remain as `Maybe`.
 
 ### createLoggerProvider
 
-Now monadic: `let provider = ...` should now be `provider <- createLoggerProvider ...`
+Now monadic: `let provider = ...` should become `provider <- createLoggerProvider ...`
+
+> [!IMPORTANT]
+> Add `MonadIO` constraint and use bind syntax.
 
 ### loggerIsEnabled
 
 Returns `IO Bool` instead of `Bool`.
 
+> [!TIP]
+> Add `liftIO` or use in `IO` context.
+
 ### Span post-end mutations
 
-`addAttribute`, `addEvent`, `setStatus`, `updateName` on an ended span are now
-no-ops (previously they could mutate through the `IORef`). This matches the
-spec requirement.
+`addAttribute`, `addEvent`, `setStatus`, `updateName` on an ended span are now no-ops (previously they could mutate through the `IORef`). Matches spec requirement.
 
 ### SemanticsConfig
 
@@ -369,39 +421,35 @@ spec requirement.
 - `SemanticsOptions` is opaque (use `getSemanticsOptions`)
 - `OTEL_SEMCONV_STABILITY_OPT_IN` supports `code`, `code/dup` values
 
-### New exception handler system
+### Exception handler system
 
-`ExceptionHandler = SomeException -> Maybe ExceptionResponse` classifies
-exceptions as `ErrorException` (default), `RecordedException`, or
-`IgnoredException`, optionally adding attributes. Configurable per
-`TracerProvider` and per `Tracer`. Includes `exitSuccessHandler` for
-`ExitSuccess`.
+`ExceptionHandler = SomeException -> Maybe ExceptionResponse` classifies exceptions as `ErrorException` (default), `RecordedException`, or `IgnoredException`, optionally adding attributes. Configurable per `TracerProvider` and per `Tracer`. Includes `exitSuccessHandler` for `ExitSuccess`.
 
 ### Simple processors now export synchronously
 
-`SimpleSpanProcessor` calls `spanExporterExport` in `onEnd` (synchronously on
-the calling thread). `SimpleLogRecordProcessor` calls
-`logRecordExporterExport` in `onEmit`. Use Batch variants for production.
+`SimpleSpanProcessor` calls `spanExporterExport` in `onEnd` (synchronously on the calling thread). `SimpleLogRecordProcessor` calls `logRecordExporterExport` in `onEmit`. Use Batch variants for production.
+
+> [!TIP]
+> If you need async export, switch to `BatchSpanProcessor`.
 
 ### Batch processor changes
 
 - `Async ShutdownResult` changed to `IO ShutdownResult` (synchronous wait)
 - Shutdown and flush are idempotent (no deadlock on second call)
-- Full queues drop silently instead of throwing an exception.
-- Worker uses `unagi-chan` with bounded queue (power of two), which is significantly faster than the previous implementation.
+- Full queues drop silently instead of throwing
+- Worker uses `unagi-chan` with bounded queue (power of two), faster than previous implementation
 - Warns on non-threaded RTS instead of crashing
 
 ### Dependency removals from API
 
-`http-types`, `case-insensitive`, `binary`, `bytestring-to-vector`,
-`charset`, `regex-tdfa` are no longer dependencies of `hs-opentelemetry-api`.
+`http-types`, `case-insensitive`, `binary`, `bytestring-to-vector`, `charset`, `regex-tdfa` are no longer dependencies of `hs-opentelemetry-api`.
+
+> [!IMPORTANT]
+> If you used any of these through the `hs-opentelemetry-api` package, add them as direct dependencies to your cabal/stack files.
 
 ### Metrics (new modules)
 
-Full metrics API in `OpenTelemetry.Metric.Core`: `MeterProvider`, `Meter`,
-`Counter`, `UpDownCounter`, `Histogram`, `Gauge` (sync), observable variants
-(async), `AdvisoryParameters`, `Enabled` API. Module path uses singular
-`Metric` not `Metrics`.
+Full metrics API in `OpenTelemetry.Metric.Core`: `MeterProvider`, `Meter`, `Counter`, `UpDownCounter`, `Histogram`, `Gauge` (sync), observable variants (async), `AdvisoryParameters`, `Enabled` API. Module path uses singular `Metric` not `Metrics`.
 
 ### TraceFlags
 
@@ -420,13 +468,10 @@ New W3C Level 2 operations: `isRandom`, `setRandom`, `unsetRandom`.
 ## hs-opentelemetry-exporter-otlp
 
 - `Retry-After` parsing supports HTTP-date format
-- gRPC transport available for all three signals (traces, metrics, logs) when
-  `grpc` Cabal flag is enabled
+- gRPC transport available for all three signals (traces, metrics, logs) when `grpc` Cabal flag is enabled
 - `otlpConcurrentExports` config / `OTEL_EXPORTER_OTLP_CONCURRENT_EXPORTS` env var
 - `LogRecordExporter.forceFlush` returns `FlushSuccess`
-- OTLP field fixes: `droppedAttributesCount` uses dropped (not stored) count,
-  `Accept` header instead of `Accept-Encoding`, `Span.flags`/`Link.flags` set
-  correctly, severity `Unknown n` no longer crashes on out-of-range
+- OTLP field fixes: `droppedAttributesCount` uses dropped (not stored) count, `Accept` header instead of `Accept-Encoding`, `Span.flags`/`Link.flags` set correctly, severity `Unknown n` no longer crashes on out-of-range
 
 ## hs-opentelemetry-exporter-handle
 
@@ -465,20 +510,14 @@ New W3C Level 2 operations: `isRandom`, `setRandom`, `unsetRandom`.
 
 ## Instrumentation packages
 
-All instrumentation packages have updated span names, attribute keys, and error
-handling to align with OpenTelemetry semantic conventions v1.40.0. This section
-provides a central reference for the attribute renames and the
-`OTEL_SEMCONV_STABILITY_OPT_IN` backward-compatibility mechanism.
+All instrumentation updated to OpenTelemetry semantic conventions v1.40.0. This section covers attribute renames and the `OTEL_SEMCONV_STABILITY_OPT_IN` compatibility mechanism.
 
-### `OTEL_SEMCONV_STABILITY_OPT_IN` — operator migration guide
+### `OTEL_SEMCONV_STABILITY_OPT_IN`
 
-Several signals (HTTP, database, code source location) renamed their attributes
-between the "old" semconv era and the stabilised v1.x names. Instrumentation
-libraries gate on this env var so backends and dashboards can migrate
-independently.
+Several signals (HTTP, database, code source location, messaging) renamed attributes between the "old" semconv era and the stabilized v1.x names. Instrumentation libraries check this env var so backends and dashboards can migrate independently.
 
 ```
-# values are comma-separated; /dup suffix emits both old and new simultaneously
+# Values are comma-separated; /dup suffix emits both old and new
 OTEL_SEMCONV_STABILITY_OPT_IN=http,database,code
 ```
 
@@ -494,14 +533,18 @@ OTEL_SEMCONV_STABILITY_OPT_IN=http,database,code
 | `messaging` | Stable messaging attribute names only |
 | `messaging/dup` | Both old and stable messaging names |
 
-Values can be combined: `OTEL_SEMCONV_STABILITY_OPT_IN=http/dup,database`.
+Combine values: `OTEL_SEMCONV_STABILITY_OPT_IN=http/dup,database`.
 
-The env var is read once at process startup (cached). In tests use
-`getSemanticsOptions'` if you need per-call evaluation.
+The env var is read once at startup (cached). In tests use `getSemanticsOptions'` for per-call evaluation.
+
+> [!TIP]
+> **Migration strategy:**
+> 1. Start with `OTEL_SEMCONV_STABILITY_OPT_IN=http/dup,database,code,messaging` to emit both old and new names
+> 2. Update your dashboards, alerts, and aggregations to use the stable names (check attribute tables below)
+> 3. Once fully migrated, switch to `OTEL_SEMCONV_STABILITY_OPT_IN=http,database,code,messaging` for stable names only
+> 4. Eventually remove the env var entirely once all consumers are updated
 
 ### HTTP attribute renames (`wai`, `http-client`)
-
-The following attributes changed when `http` or `http/dup` is set:
 
 | Old (default) | Stable (`http` / `http/dup`) | Packages |
 |---------------|------------------------------|----------|
@@ -517,9 +560,10 @@ The following attributes changed when `http` or `http/dup` is set:
 | *(not emitted)* | `server.address`, `server.port` | wai |
 | *(not emitted)* | `error.type` (on 5xx) | wai |
 
-WAI and http-client **metrics** modules always use stable attribute names
-(metrics are new in this release — there are no legacy metric names to migrate
-from).
+WAI and http-client **metrics** modules always use stable attribute names (metrics are new—no legacy metric names to migrate from).
+
+> [!TIP]
+> **Dashboard updates needed:** If you query `http.method`, `http.url`, `http.target`, `http.host`, `http.scheme`, `http.flavor`, `http.status_code`, `net.peer.ip`, `net.peer.name`, or `net.peer.port`, update to the stable equivalents.
 
 ### Database attribute renames (`postgresql-simple`, `persistent`, `persistent-mysql`)
 
@@ -533,6 +577,9 @@ from).
 | `net.peer.port` | `server.port` | postgresql-simple |
 | *(not emitted)* | `db.operation.name` | postgresql-simple, persistent |
 
+> [!TIP]
+> **Dashboard updates needed:** Update queries for `db.system` → `db.system.name`, `db.name` → `db.namespace`, `db.statement` → `db.query.text`. The `db.user` attribute is removed entirely (security consideration). New `db.operation.name` attribute available in stable mode.
+
 ### Messaging attribute renames (`hw-kafka-client`)
 
 | Old (default) | Stable (`messaging` / `messaging/dup`) |
@@ -540,15 +587,14 @@ from).
 | `messaging.operation` | `messaging.operation.name` + `messaging.operation.type` |
 | `messaging.kafka.consumer.group` | `messaging.consumer.group.name` |
 
-The Kafka-specific `messaging.kafka.*` attributes (`messaging.kafka.message.key`,
-`messaging.kafka.destination.partition`, `messaging.kafka.message.offset`) are
-emitted under both schemes as they have no generic equivalents.
+The Kafka-specific `messaging.kafka.*` attributes (`messaging.kafka.message.key`, `messaging.kafka.destination.partition`, `messaging.kafka.message.offset`) are emitted under both schemes as they have no generic equivalents.
+
+> [!TIP]
+> **Dashboard updates needed:** If you group/filter by `messaging.operation`, update to use both `messaging.operation.name` and `messaging.operation.type`. Update `messaging.kafka.consumer.group` references to `messaging.consumer.group.name`.
 
 ### Code source-location attribute renames (all spans)
 
-The `callerAttributes` call site injection (used by `inSpan`, `inSpan'`, etc.)
-and logging bridges (`katip`, `co-log`, `monad-logger`) respect `code` /
-`code/dup`:
+The `callerAttributes` call site injection (used by `inSpan`, `inSpan'`, etc.) and logging bridges (`katip`, `co-log`, `monad-logger`) respect `code` / `code/dup`:
 
 | Old (default) | Stable (`code` / `code/dup`) |
 |---------------|------------------------------|
@@ -556,26 +602,24 @@ and logging bridges (`katip`, `co-log`, `monad-logger`) respect `code` /
 | `code.filepath` | `code.file.path` |
 | `code.lineno` | `code.line.number` |
 
+> [!TIP]
+> **Dashboard updates needed:** The separate `code.function` and `code.namespace` fields merge into a single `code.function.name` in stable mode. Update `code.filepath` → `code.file.path` and `code.lineno` → `code.line.number`.
+
 ### Yesod — `http.framework` → `webengine.name` (breaking)
 
-The Yesod instrumentation emitted `http.framework = "yesod"` in the old semconv
-era. The stable equivalent is `webengine.name = "yesod"`. This rename is gated
-on `httpOption`:
+Yesod emitted `http.framework = "yesod"` in the old semconv era. The stable equivalent is `webengine.name = "yesod"`. This rename is gated on `httpOption`:
 
 - Default (unset `http`): `http.framework = "yesod"`
 - `http` opt-in: `webengine.name = "yesod"`
 - `http/dup`: both attributes emitted
 
-If you filter or alert on `http.framework`, set
-`OTEL_SEMCONV_STABILITY_OPT_IN=http/dup` during transition and update dashboards
-to use `webengine.name` before switching to `http`.
+> [!TIP]
+> If you filter or alert on `http.framework`, set `OTEL_SEMCONV_STABILITY_OPT_IN=http/dup` during transition and update dashboards to use `webengine.name` before switching to `http`.
 
 ## hs-opentelemetry-otlp (proto types)
 
-Breaking wire-format changes: `AnyValue`, `KeyValue` now use proto-lens
-directly; profiles protos added. Version bumped to 0.2.0.0.
+Breaking wire-format changes: `AnyValue`, `KeyValue` now use proto-lens directly; profiles protos added. Version bumped to 0.2.0.0.
 
 ## hs-opentelemetry-api-types
 
-New leaf package for `Attribute`/`AttributeKey` types, breaking the
-`semantic-conventions` ↔ `api` dependency cycle.
+New leaf package for `Attribute`/`AttributeKey` types, breaking the `semantic-conventions` <-> `api` dependency cycle.
