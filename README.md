@@ -30,9 +30,9 @@
 [OpenTelemetry](https://opentelemetry.io), the vendor-neutral observability
 standard backed by the CNCF. It lets you instrument your Haskell code to emit
 
-- **[Traces](#traces)** — distributed request flows across services
-- **[Metrics](#metrics)** — counters, histograms, and gauges
-- **[Logs](#logs)** — structured log records correlated with traces
+- **[Traces](#traces)** - distributed request flows across services
+- **[Metrics](#metrics)** - counters, histograms, and gauges
+- **[Logs](#logs)** - structured log records correlated with traces
 
 and export them to any OpenTelemetry-compatible backend (Jaeger, Honeycomb,
 Datadog, Grafana, etc.) without coupling your code to a specific vendor.
@@ -40,7 +40,7 @@ Datadog, Grafana, etc.) without coupling your code to a specific vendor.
 The project follows the upstream [OpenTelemetry
 specification](https://opentelemetry.io/docs/specs/otel/) closely, with a clean
 separation between the **API** (for library authors) and the **SDK** (for
-application authors) — the same split used by the official Go, Python, and Java
+application authors) - the same split used by the official Go, Python, and Java
 implementations.
 
 ## Why Instrument with OpenTelemetry?
@@ -75,8 +75,8 @@ handleRequest req =
 
 One line. The span carries timing, a unique trace ID that correlates across
 service boundaries, and you can attach structured attributes to it. The SDK
-decides *where* the data goes — stdout in development, OTLP to your collector in
-production — and your application code doesn't change.
+decides *where* the data goes - stdout in development, OTLP to your collector in
+production - and your application code doesn't change.
 
 ## Getting Started
 
@@ -112,7 +112,7 @@ main = withTracerProvider $ \tp -> do
 
 `withTracerProvider` reads standard `OTEL_*` environment variables (service
 name, exporter endpoint, sampling rate, etc.), initializes the global provider,
-and shuts it down cleanly on exit — including flushing any buffered spans.
+and shuts it down cleanly on exit - including flushing any buffered spans.
 
 Use `inSpan'` when you need access to the `Span` handle, for example to attach
 attributes during execution:
@@ -318,10 +318,10 @@ Run `make bench.save` to establish a baseline on your machine, then
 
 Working application examples are in the [`examples/`](examples/) directory:
 
-- [Yesod web application](examples/yesod-minimal) — WAI middleware, database spans, GHC metrics
-- [OTLP demo](examples/otlp-demo) — Basic OTLP exporter setup with traces
-- [Hspec test integration](examples/hspec) — Running Hspec tests with OpenTelemetry instrumentation
-- [Kafka client example](examples/hw-kafka-client-example) — Producer and consumer instrumentation with hw-kafka-client
+- [Yesod web application](examples/yesod-minimal) - WAI middleware, database spans, GHC metrics
+- [OTLP demo](examples/otlp-demo) - Basic OTLP exporter setup with traces
+- [Hspec test integration](examples/hspec) - Running Hspec tests with OpenTelemetry instrumentation
+- [Kafka client example](examples/hw-kafka-client-example) - Producer and consumer instrumentation with hw-kafka-client
 
 ## Contributing
 
