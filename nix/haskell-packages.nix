@@ -134,8 +134,10 @@ in rec {
 
   nixpkgsHaskellTweaks = final: prev: {
     # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just
-    # relax the bounds of 0.7.1.5 ourselves
+    # relax the bounds of 0.7.1.5 ourselves.
+    # proto-lens-runtime also caps at base < 4.21 (GHC 9.12 = base 4.21).
     proto-lens = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens;
+    proto-lens-runtime = pkgs.haskell.lib.compose.doJailbreak prev.proto-lens-runtime;
     thread-utils-context = final.callCabal2nix "thread-utils-context" (builtins.fetchTarball {
       url = "https://hackage.haskell.org/package/thread-utils-context-0.4.1.0/thread-utils-context-0.4.1.0.tar.gz";
       sha256 = "0b5jcfnrf3rss6kbcdg7q1mhlnn4405zfd6b5w9qv3nmn7vw3mks";
