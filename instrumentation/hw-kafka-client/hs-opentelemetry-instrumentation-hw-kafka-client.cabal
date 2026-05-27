@@ -1,6 +1,6 @@
 cabal-version:   3.0
 name:            hs-opentelemetry-instrumentation-hw-kafka-client
-version:         0.1.0.0
+version:         1.0.0.0
 synopsis:        OpenTelemetry instrumentation for hw-kafka-client
 license:         BSD-3-Clause
 license-file:    LICENSE
@@ -33,7 +33,7 @@ library
     , containers
     , text
     , bytestring
-    , hs-opentelemetry-api == 0.4.*
+    , hs-opentelemetry-api ^>= 1.0
     , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     , hw-kafka-client
     , unliftio-core
@@ -50,8 +50,8 @@ test-suite hs-opentelemetry-instrumentation-hw-kafka-client-test
   ghc-options:      -threaded -rtsopts -with-rtsopts=-N
   build-depends:
     , base                  >=4.7 && <5
-    , hs-opentelemetry-instrumentation-hw-kafka-client == 0.1.*
-    , hs-opentelemetry-api == 0.4.*
+    , hs-opentelemetry-instrumentation-hw-kafka-client ^>= 1.0
+    , hs-opentelemetry-api ^>= 1.0
     , hspec
     , text
     , bytestring

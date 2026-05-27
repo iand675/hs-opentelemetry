@@ -1,6 +1,6 @@
-cabal-version: 1.12
+cabal-version: 2.0
 name:               hs-opentelemetry-instrumentation-katip
-version:            0.1.0.0
+version:            1.0.0.0
 synopsis:           Bridge Katip structured logging to OpenTelemetry Logs
 description:
   Provides a Katip Scribe that forwards structured log items to the
@@ -30,8 +30,8 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
-    , hs-opentelemetry-api >=0.4 && <0.5
-    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     , katip >=0.8 && <0.9
     , template-haskell
     , text
@@ -46,10 +46,10 @@ test-suite hs-opentelemetry-instrumentation-katip-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api >=0.4 && <0.5
-    , hs-opentelemetry-exporter-in-memory >=0.0 && <0.1
-    , hs-opentelemetry-instrumentation-katip
-    , hs-opentelemetry-sdk >=0.1 && <0.2
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-exporter-in-memory ^>= 1.0
+    , hs-opentelemetry-instrumentation-katip ^>= 1.0
+    , hs-opentelemetry-sdk ^>= 1.0
     , hspec
     , katip >=0.8 && <0.9
     , text

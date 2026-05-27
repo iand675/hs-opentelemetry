@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-wai
-version:             0.1.1.1
+version:             1.0.0.0
 
 <<: *preface
 
@@ -28,7 +28,7 @@ library:
   - case-insensitive
   - http-types
   - wai
-  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-api ^>= 1.0
   - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - vault
   - text
@@ -45,10 +45,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-wai >= 0.1 && < 0.2
-    - hs-opentelemetry-api == 0.4.*
-    - hs-opentelemetry-sdk == 0.1.*
-    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-instrumentation-wai ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-sdk ^>= 1.0
+    - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     - hspec
     - text

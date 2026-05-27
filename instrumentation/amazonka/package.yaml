@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-amazonka
-version:             0.1.0.0
+version:             1.0.0.0
 
 <<: *preface
 
@@ -24,7 +24,7 @@ library:
   - amazonka-core ^>= 2.0
   - bytestring
   - case-insensitive
-  - hs-opentelemetry-api >= 0.3 && < 0.5
+  - hs-opentelemetry-api ^>= 1.0
   - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - http-client
   - http-types
@@ -40,10 +40,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-amazonka
-    - hs-opentelemetry-api >= 0.3 && < 0.5
-    - hs-opentelemetry-sdk == 0.1.*
-    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-instrumentation-amazonka ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-sdk ^>= 1.0
+    - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - amazonka
     - amazonka-core
     - hspec

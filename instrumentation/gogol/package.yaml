@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-gogol
-version:             0.1.0.0
+version:             1.0.0.0
 
 <<: *preface
 
@@ -23,7 +23,7 @@ library:
   - exceptions
   - gogol-core ^>= 1.0
   - bytestring
-  - hs-opentelemetry-api >= 0.3 && < 0.5
+  - hs-opentelemetry-api ^>= 1.0
   - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
   - http-types
   - resourcet
@@ -39,10 +39,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-gogol == 0.1.*
-    - hs-opentelemetry-api >= 0.3 && < 0.5
-    - hs-opentelemetry-sdk == 0.1.*
-    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-instrumentation-gogol ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-sdk ^>= 1.0
+    - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - gogol-core
     - hspec
     - text

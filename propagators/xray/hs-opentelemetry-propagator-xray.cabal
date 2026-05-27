@@ -1,7 +1,7 @@
 cabal-version: 2.4
 
 name:               hs-opentelemetry-propagator-xray
-version:            0.0.1.0
+version:            1.0.0.0
 synopsis:           AWS X-Ray trace context propagation for OpenTelemetry.
 description:
   Propagator implementing the AWS X-Ray trace context format
@@ -45,7 +45,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api >=0.3 && <0.5
+    , hs-opentelemetry-api ^>= 1.0
     , text
   default-language: Haskell2010
 
@@ -63,8 +63,8 @@ test-suite hs-opentelemetry-propagator-xray-test
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api >=0.3 && <0.5
-    , hs-opentelemetry-propagator-xray
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-propagator-xray ^>= 1.0
     , hspec
     , text
     , unordered-containers

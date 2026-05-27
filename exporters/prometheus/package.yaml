@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-exporter-prometheus
-version:             0.1.0.0
+version:             1.0.0.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -25,7 +25,7 @@ library:
   - async
   - bytestring
   - containers
-  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-api ^>= 1.0
   - http-client
   - http-types
   - text
@@ -43,9 +43,9 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-api ^>= 0.4
-    - hs-opentelemetry-exporter-prometheus == 0.1.*
-    - hs-opentelemetry-semantic-conventions ^>= 1.40
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-exporter-prometheus ^>= 1.0
+    - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     - hspec
     - text
     - vector

@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.3.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-instrumentation-conduit
-version:        0.1.0.2
+version:        1.0.0.0
 synopsis:       OpenTelemetry instrumentation for Conduit streaming pipelines
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/conduit#readme>
 category:       OpenTelemetry, Conduit, Streaming
@@ -36,7 +36,7 @@ library
   build-depends:
       base >=4.7 && <5
     , conduit
-    , hs-opentelemetry-api ==0.4.*
+    , hs-opentelemetry-api ==1.0.*
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , text
   default-language: Haskell2010
@@ -52,10 +52,10 @@ test-suite hs-opentelemetry-instrumentation-conduit-test
   build-depends:
       base >=4.7 && <5
     , conduit
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-exporter-in-memory ==0.0.*
-    , hs-opentelemetry-instrumentation-conduit ==0.1.*
-    , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-exporter-in-memory ==1.0.*
+    , hs-opentelemetry-instrumentation-conduit ==1.0.*
+    , hs-opentelemetry-sdk ==1.0.*
     , hspec
     , resourcet
     , text

@@ -1,6 +1,6 @@
-cabal-version: 1.12
+cabal-version: 2.0
 name:               hs-opentelemetry-instrumentation-monad-logger
-version:            0.1.0.0
+version:            1.0.0.0
 synopsis:           Bridge monad-logger to OpenTelemetry Logs
 description:
   Provides a logging callback for @runLoggingT@ that forwards monad-logger
@@ -29,8 +29,8 @@ library
   build-depends:
       base >=4.7 && <5
     , fast-logger
-    , hs-opentelemetry-api >=0.4 && <0.5
-    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     , monad-logger >=0.3 && <0.4
     , text
     , unordered-containers
@@ -44,10 +44,10 @@ test-suite hs-opentelemetry-instrumentation-monad-logger-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api >=0.4 && <0.5
-    , hs-opentelemetry-exporter-in-memory >=0.0 && <0.1
-    , hs-opentelemetry-instrumentation-monad-logger
-    , hs-opentelemetry-sdk >=0.1 && <0.2
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-exporter-in-memory ^>= 1.0
+    , hs-opentelemetry-instrumentation-monad-logger ^>= 1.0
+    , hs-opentelemetry-sdk ^>= 1.0
     , hspec
     , monad-logger >=0.3 && <0.4
     , text

@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-exporter-handle
-version:             0.0.1.3
+version:             1.0.0.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -30,7 +30,7 @@ library:
   - OpenTelemetry.Exporter.Handle.Metric
   - OpenTelemetry.Exporter.Handle.Span
   dependencies:
-  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-api ^>= 1.0
   - text
   - vector
 
@@ -43,8 +43,8 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-exporter-handle >= 0.0.1 && < 0.1
-    - hs-opentelemetry-api == 0.4.*
+    - hs-opentelemetry-exporter-handle ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
     - hspec
     - unordered-containers
     - vector

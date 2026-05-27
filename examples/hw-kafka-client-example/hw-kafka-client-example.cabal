@@ -1,6 +1,6 @@
 cabal-version:   3.0
 name:            hw-kafka-client-example
-version:         0.1.0.0
+version:         1.0.0.0
 license:         BSD-3-Clause
 license-file:    LICENSE
 author:          Alberto Fanton
@@ -20,9 +20,9 @@ executable producer
   build-depends:
     , base
     , bytestring
-    , hs-opentelemetry-api == 0.4.*
-    , hs-opentelemetry-instrumentation-hw-kafka-client == 0.1.*
-    , hs-opentelemetry-sdk == 0.1.*
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-instrumentation-hw-kafka-client ^>= 1.0
+    , hs-opentelemetry-sdk ^>= 1.0
     , hw-kafka-client
 
   hs-source-dirs:   app/producer
@@ -35,9 +35,9 @@ executable consumer
     , base
     , bytestring
     , either
-    , hs-opentelemetry-api == 0.4.*
-    , hs-opentelemetry-instrumentation-hw-kafka-client == 0.1.*
-    , hs-opentelemetry-sdk == 0.1.*
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-instrumentation-hw-kafka-client ^>= 1.0
+    , hs-opentelemetry-sdk ^>= 1.0
     , hw-kafka-client
     , text
 

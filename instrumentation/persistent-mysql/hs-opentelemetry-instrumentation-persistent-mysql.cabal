@@ -1,7 +1,7 @@
 cabal-version: 2.4
 
 name: hs-opentelemetry-instrumentation-persistent-mysql
-version: 0.0.0.0
+version: 1.0.0.0
 synopsis: OpenTelemetry instrumentation for persistent-mysql
 license: BSD-3-Clause
 author: Kazuki Okamoto (岡本和樹)
@@ -27,8 +27,8 @@ library
   import: common
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.Instrumentation.Persistent.MySQL
-  build-depends: hs-opentelemetry-api == 0.4.*,
-                 hs-opentelemetry-instrumentation-persistent >= 0.1 && < 0.2,
+  build-depends: hs-opentelemetry-api ^>= 1.0,
+                 hs-opentelemetry-instrumentation-persistent ^>= 1.0,
                  hs-opentelemetry-semantic-conventions >= 1.40 && < 2,
                  iproute,
                  monad-logger,

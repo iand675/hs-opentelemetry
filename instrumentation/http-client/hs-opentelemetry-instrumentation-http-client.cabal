@@ -1,22 +1,22 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.1.
+-- This file has been generated from package.yaml by hpack version 0.38.3.
 --
 -- see: https://github.com/sol/hpack
 
-name:               hs-opentelemetry-instrumentation-http-client
-version:            0.1.0.2
-synopsis:           OpenTelemetry instrumentation for http-client
-description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client#readme>
-category:           OpenTelemetry, Telemetry, HTTP, Web
-homepage:           https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
-author:             Ian Duncan, Jade Lovelace
-maintainer:         ian@iankduncan.com
-copyright:          2024 Ian Duncan, Mercury Technologies
-license:            BSD3
-license-file:       LICENSE
-build-type:         Simple
+name:           hs-opentelemetry-instrumentation-http-client
+version:        1.0.0.0
+synopsis:       OpenTelemetry instrumentation for http-client
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/http-client#readme>
+category:       OpenTelemetry, Telemetry, HTTP, Web
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan, Jade Lovelace
+maintainer:     ian@iankduncan.com
+copyright:      2024 Ian Duncan, Mercury Technologies
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -42,8 +42,8 @@ library
     , bytestring
     , case-insensitive
     , conduit
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-instrumentation-conduit >=0.0.1 && <0.2
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-instrumentation-conduit ==1.0.*
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , http-client
     , http-conduit
@@ -63,10 +63,10 @@ test-suite hs-opentelemetry-instrumentation-http-client-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-exporter-in-memory ==0.0.*
-    , hs-opentelemetry-instrumentation-http-client ==0.1.*
-    , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-exporter-in-memory ==1.0.*
+    , hs-opentelemetry-instrumentation-http-client ==1.0.*
+    , hs-opentelemetry-sdk ==1.0.*
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , http-client

@@ -1,22 +1,22 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.39.1.
+-- This file has been generated from package.yaml by hpack version 0.38.3.
 --
 -- see: https://github.com/sol/hpack
 
-name:               hs-opentelemetry-instrumentation-yesod
-version:            0.1.1.1
-synopsis:           Yesod middleware for providing OpenTelemetry instrumentation
-description:        Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/yesod#readme>
-category:           OpenTelemetry, Web
-homepage:           https://github.com/iand675/hs-opentelemetry#readme
-bug-reports:        https://github.com/iand675/hs-opentelemetry/issues
-author:             Ian Duncan, Jade Lovelace
-maintainer:         ian@iankduncan.com
-copyright:          2024 Ian Duncan, Mercury Technologies
-license:            BSD3
-license-file:       LICENSE
-build-type:         Simple
+name:           hs-opentelemetry-instrumentation-yesod
+version:        1.0.0.0
+synopsis:       Yesod middleware for providing OpenTelemetry instrumentation
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/instrumentation/yesod#readme>
+category:       OpenTelemetry, Web
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan, Jade Lovelace
+maintainer:     ian@iankduncan.com
+copyright:      2024 Ian Duncan, Mercury Technologies
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
@@ -35,8 +35,8 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-instrumentation-wai >=0.0.1 && <0.2
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-instrumentation-wai ==1.0.*
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , microlens
     , template-haskell
@@ -58,11 +58,11 @@ test-suite hs-opentelemetry-instrumentation-yesod-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-exporter-in-memory ==0.0.*
-    , hs-opentelemetry-instrumentation-wai ==0.1.*
-    , hs-opentelemetry-instrumentation-yesod ==0.1.*
-    , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-exporter-in-memory ==1.0.*
+    , hs-opentelemetry-instrumentation-wai ==1.0.*
+    , hs-opentelemetry-instrumentation-yesod ==1.0.*
+    , hs-opentelemetry-sdk ==1.0.*
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , http-types

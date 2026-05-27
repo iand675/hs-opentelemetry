@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.3.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hs-opentelemetry-exporter-prometheus
-version:        0.1.0.0
+version:        1.0.0.0
 synopsis:       Prometheus text exposition for OpenTelemetry metrics export batches
 description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/exporters/prometheus#readme>
 category:       OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
@@ -40,7 +40,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , containers
-    , hs-opentelemetry-api ==0.4.*
+    , hs-opentelemetry-api ==1.0.*
     , http-client
     , http-types
     , text
@@ -61,9 +61,9 @@ test-suite hs-opentelemetry-exporter-prometheus-test
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-exporter-prometheus ==0.1.*
-    , hs-opentelemetry-semantic-conventions ==1.40.*
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-exporter-prometheus ==1.0.*
+    , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , hspec
     , http-types
     , text

@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name:          hs-opentelemetry-instrumentation-ghc-metrics
-version:       0.1.0.0
+version:       1.0.0.0
 synopsis:      OpenTelemetry metrics for the GHC runtime (RTS statistics)
 description:
   Registers observable instruments that report GHC RTS statistics as OpenTelemetry
@@ -34,8 +34,8 @@ library
   ghc-options:       -Wall
   build-depends:
       base >= 4.16 && < 5
-    , hs-opentelemetry-api == 0.4.*
-    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     , text
 
   if os(darwin)
@@ -57,10 +57,10 @@ test-suite hs-opentelemetry-instrumentation-ghc-metrics-test
   ghc-options:       -threaded -rtsopts "-with-rtsopts=-T -N"
   build-depends:
       base >= 4.16 && < 5
-    , hs-opentelemetry-api == 0.4.*
-    , hs-opentelemetry-exporter-in-memory == 0.0.*
-    , hs-opentelemetry-instrumentation-ghc-metrics
-    , hs-opentelemetry-sdk == 0.1.*
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-exporter-in-memory ^>= 1.0
+    , hs-opentelemetry-instrumentation-ghc-metrics ^>= 1.0
+    , hs-opentelemetry-sdk ^>= 1.0
     , hspec >= 2.0
     , text
     , vector

@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-utils-exceptions
-version:             0.2.0.2
+version:             1.0.0.0
 
 <<: *preface
 
@@ -24,8 +24,8 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-  - hs-opentelemetry-api ^>= 0.4
-  - hs-opentelemetry-sdk ^>= 0.1
+  - hs-opentelemetry-api ^>= 1.0
+  - hs-opentelemetry-sdk ^>= 1.0
   - text
   - exceptions
 
@@ -38,9 +38,9 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-utils-exceptions
-    - hs-opentelemetry-api == 0.4.*
-    - hs-opentelemetry-sdk == 0.1.*
-    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-utils-exceptions ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-sdk ^>= 1.0
+    - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - hspec
     - text

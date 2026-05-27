@@ -1,6 +1,6 @@
 cabal-version: 2.0
 name:          hs-opentelemetry-instrumentation-tasty
-version:       0.1.0.0
+version:       1.0.0.0
 synopsis:      OpenTelemetry instrumentation for the Tasty test framework
 category:      OpenTelemetry, Testing
 
@@ -25,8 +25,8 @@ library
   default-language: Haskell2010
   build-depends:
     base >=4.7 && <5
-    , hs-opentelemetry-api ^>= 0.4
-    , hs-opentelemetry-semantic-conventions >=1.40 && <2
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     , tagged ^>= 0.8
     , tasty ^>= 1.5
     , text
@@ -42,9 +42,9 @@ test-suite tests
     async
     , base
     , containers
-    , hs-opentelemetry-api == 0.4.*
-    , hs-opentelemetry-instrumentation-tasty
-    , hs-opentelemetry-sdk == 0.1.*
+    , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-instrumentation-tasty ^>= 1.0
+    , hs-opentelemetry-sdk ^>= 1.0
     , tasty
     , tasty-hunit
     , text

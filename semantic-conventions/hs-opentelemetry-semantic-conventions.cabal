@@ -61,7 +61,7 @@ library
   import: artifact
   hs-source-dirs: src
   exposed-modules: OpenTelemetry.SemanticConventions
-  build-depends: hs-opentelemetry-api-types ==0.1.*,
+  build-depends: hs-opentelemetry-api-types ^>= 1.0,
                  text,
 
 executable generate

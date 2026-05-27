@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-cloudflare
-version:             0.2.0.3
+version:             1.0.0.0
 
 <<: *preface
 
@@ -25,9 +25,9 @@ library:
   source-dirs: src
   dependencies:
   - case-insensitive
-  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-api ^>= 1.0
   - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
-  - hs-opentelemetry-instrumentation-wai >= 0.1 && < 0.2
+  - hs-opentelemetry-instrumentation-wai ^>= 1.0
   - text
   - unordered-containers
   - wai
@@ -41,11 +41,11 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-cloudflare >= 0.2 && < 0.3
-    - hs-opentelemetry-instrumentation-wai >= 0.1 && < 0.2
-    - hs-opentelemetry-api == 0.4.*
-    - hs-opentelemetry-sdk == 0.1.*
-    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-instrumentation-cloudflare ^>= 1.0
+    - hs-opentelemetry-instrumentation-wai ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-sdk ^>= 1.0
+    - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - hspec
     - text
     - wai

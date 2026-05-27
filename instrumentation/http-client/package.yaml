@@ -1,7 +1,7 @@
 _common/lib: !include "../../package-common.yaml"
 
 name:                hs-opentelemetry-instrumentation-http-client
-version:             0.1.0.2
+version:             1.0.0.0
 
 <<: *preface
 
@@ -29,9 +29,9 @@ library:
   - bytestring
   - case-insensitive
   - conduit
-  - hs-opentelemetry-api ^>= 0.4
+  - hs-opentelemetry-api ^>= 1.0
   - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
-  - hs-opentelemetry-instrumentation-conduit >= 0.0.1 && < 0.2
+  - hs-opentelemetry-instrumentation-conduit ^>= 1.0
   - http-client
   - http-conduit
   - http-types
@@ -48,10 +48,10 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - hs-opentelemetry-instrumentation-http-client >= 0.1 && < 0.2
-    - hs-opentelemetry-api == 0.4.*
-    - hs-opentelemetry-sdk == 0.1.*
-    - hs-opentelemetry-exporter-in-memory == 0.0.*
+    - hs-opentelemetry-instrumentation-http-client ^>= 1.0
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-sdk ^>= 1.0
+    - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
     - hspec
     - text

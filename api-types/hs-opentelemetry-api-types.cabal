@@ -1,7 +1,7 @@
 cabal-version: 2.4
 
 name:        hs-opentelemetry-api-types
-version:     0.1.0.0
+version:     1.0.0.0
 synopsis:    Core attribute types for hs-opentelemetry
 description:
   Leaf package containing 'Attribute', 'PrimitiveAttribute', and 'AttributeKey'

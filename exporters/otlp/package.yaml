@@ -1,5 +1,5 @@
 name:                hs-opentelemetry-exporter-otlp
-version:             0.1.1.0
+version:             1.0.0.0
 github:              "iand675/hs-opentelemetry"
 license:             BSD3
 author:              "Ian Duncan"
@@ -36,9 +36,9 @@ library:
   dependencies:
   - bytestring
   - case-insensitive
-  - hs-opentelemetry-api ^>= 0.4
-  - hs-opentelemetry-otlp ^>= 0.2
-  - hs-opentelemetry-propagator-w3c >= 0.1.0 && < 0.2
+  - hs-opentelemetry-api ^>= 1.0
+  - hs-opentelemetry-otlp ^>= 1.0
+  - hs-opentelemetry-propagator-w3c ^>= 1.0
   - http-client
   - http-conduit
   - http-types
@@ -73,9 +73,9 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - bytestring
-    - hs-opentelemetry-api ^>= 0.4
-    - hs-opentelemetry-exporter-otlp == 0.1.*
-    - hs-opentelemetry-otlp ^>= 0.2
+    - hs-opentelemetry-api ^>= 1.0
+    - hs-opentelemetry-exporter-otlp ^>= 1.0
+    - hs-opentelemetry-otlp ^>= 1.0
     - hspec
     - http-types
     - microlens

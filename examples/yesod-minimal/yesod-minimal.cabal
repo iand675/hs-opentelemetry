@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.38.3.
 --
 -- see: https://github.com/sol/hpack
 
@@ -19,14 +19,14 @@ executable yesod-minimal
       base >=4.7 && <5
     , bytestring
     , conduit
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-instrumentation-ghc-metrics ==0.1.*
-    , hs-opentelemetry-instrumentation-http-client ==0.1.*
-    , hs-opentelemetry-instrumentation-persistent ==0.1.*
-    , hs-opentelemetry-instrumentation-postgresql-simple ==0.2.*
-    , hs-opentelemetry-instrumentation-wai ==0.1.*
-    , hs-opentelemetry-instrumentation-yesod ==0.1.*
-    , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-instrumentation-ghc-metrics ==1.0.*
+    , hs-opentelemetry-instrumentation-http-client ==1.0.*
+    , hs-opentelemetry-instrumentation-persistent ==1.0.*
+    , hs-opentelemetry-instrumentation-postgresql-simple ==1.0.*
+    , hs-opentelemetry-instrumentation-wai ==1.0.*
+    , hs-opentelemetry-instrumentation-yesod ==1.0.*
+    , hs-opentelemetry-sdk ==1.0.*
     , monad-logger
     , persistent >=2.13.3
     , persistent-postgresql >=2.13.4

@@ -18,8 +18,8 @@ executable otlp-demo
   build-depends:
       base >=4.7 && <5
     , containers
-    , hs-opentelemetry-api ==0.4.*
-    , hs-opentelemetry-sdk ==0.1.*
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-sdk ==1.0.*
     , text
     , unordered-containers
   default-language: Haskell2010
