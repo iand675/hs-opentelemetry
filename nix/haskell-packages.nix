@@ -14,6 +14,14 @@ in rec {
 
   skipPackages = [];
 
+  # Packages incompatible with specific GHC versions. Keys must match
+  # supportedGHCVersions entries; absent keys default to [].
+  skipPackagesByGHCVersion = {
+    # mysql-0.2.1 Setup.hs uses Cabal [Char] paths that became SymbolicPath
+    # in Cabal 3.14 (GHC 9.12). persistent-mysql pulls in mysql, so both fail.
+    ghc912 = ["hs-opentelemetry-instrumentation-persistent-mysql"];
+  };
+
   localPackages = {
     hs-opentelemetry-api = ../api;
     hs-opentelemetry-api-types = ../api-types;
@@ -93,10 +101,12 @@ in rec {
       key: value: let
         myLocalPackages = pluckLocalPackages value;
         k = "hs-opentelemetry-suite-${key}";
+        versionSkips = skipPackagesByGHCVersion.${key} or [];
+        allSkips = skipPackages ++ versionSkips;
       in {
         "${k}" = pkgs.buildEnv {
           name = k;
-          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n skipPackages) myLocalPackages);
+          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n allSkips) myLocalPackages);
         };
       }
     )
