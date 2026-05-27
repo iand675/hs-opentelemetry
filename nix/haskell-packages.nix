@@ -131,6 +131,8 @@ in rec {
     amazonka-core = pkgs.haskell.lib.compose.doJailbreak prev.amazonka-core;
     # co-log 0.7.x is in nixpkgs-unstable; our constraint is <0.7.
     # Pin to 0.6.1.2 so the instrumentation package can build.
-    co-log = final.callHackage "co-log" "0.6.1.2" {};
+    # doJailbreak strips the test dep bound doctest < 0.24 so nixpkgs's
+    # doctest 0.24.x can satisfy it at configure time.
+    co-log = pkgs.haskell.lib.compose.doJailbreak (final.callHackage "co-log" "0.6.1.2" {});
   };
 }
