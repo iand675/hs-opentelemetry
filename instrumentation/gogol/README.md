@@ -1,5 +1,7 @@
 # hs-opentelemetry-instrumentation-gogol
 
+[![hs-opentelemetry-instrumentation-gogol](https://img.shields.io/hackage/v/hs-opentelemetry-instrumentation-gogol?style=flat-square&logo=haskell&label=hs-opentelemetry-instrumentation-gogol&labelColor=5D4F85)](https://hackage.haskell.org/package/hs-opentelemetry-instrumentation-gogol)
+
 OpenTelemetry instrumentation for the [Gogol](https://hackage.haskell.org/package/gogol) Google Cloud SDK.
 
 ## Usage

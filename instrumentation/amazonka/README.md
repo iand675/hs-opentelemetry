@@ -1,5 +1,7 @@
 # hs-opentelemetry-instrumentation-amazonka
 
+[![hs-opentelemetry-instrumentation-amazonka](https://img.shields.io/hackage/v/hs-opentelemetry-instrumentation-amazonka?style=flat-square&logo=haskell&label=hs-opentelemetry-instrumentation-amazonka&labelColor=5D4F85)](https://hackage.haskell.org/package/hs-opentelemetry-instrumentation-amazonka)
+
 OpenTelemetry instrumentation for the [Amazonka](https://hackage.haskell.org/package/amazonka) AWS SDK.
 
 ## GHC Compatibility

@@ -1,8 +1,8 @@
 # OpenTelemetry SDK for Haskell
 
-This package provides everything a functioning implementation of
-the OpenTelemetry the API, useful for exporting a variety of
-tracing, logging, and metric data.
+[![hs-opentelemetry-sdk](https://img.shields.io/hackage/v/hs-opentelemetry-sdk?style=flat-square&logo=haskell&label=hs-opentelemetry-sdk&labelColor=5D4F85)](https://hackage.haskell.org/package/hs-opentelemetry-sdk)
+
+This package provides everything a functioning implementation of the OpenTelemetry the API requires, useful for exporting a variety of tracing, logging, and metric data.
 
 ## Why use OpenTelemetry tracing?
 
