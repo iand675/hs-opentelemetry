@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -110,8 +111,8 @@ tracingConfiguredRequest
   -> Hook (AWS.Request a)
   -> Hook (AWS.Request a)
 tracingConfiguredRequest tracer baseHook env req = do
-  let svc = AWS.service req
-      svcAbbrev = TE.decodeUtf8 $ AWS.toBS ((AWS.abbrev :: AWS.Service -> AWS.Abbrev) svc)
+  let svc = (AWS.service req :: AWS.Service)
+      svcAbbrev = TE.decodeUtf8 $ AWS.toBS svc.abbrev
       opName = T.pack $ tyConName $ typeRepTyCon $ typeRep (Proxy @a)
       spanName = svcAbbrev <> "." <> opName
       region = AWS.fromRegion (Amazonka.Env.region env)
@@ -215,7 +216,7 @@ extractServiceRequestId _ = Nothing
 describeError :: AWS.Error -> T.Text
 describeError (AWS.TransportError _) = "transport_error"
 describeError (AWS.SerializeError serr) =
-  T.pack ((AWS.message :: AWS.SerializeError -> String) serr)
+  T.pack (serr :: AWS.SerializeError).message
 describeError (AWS.ServiceError svcErr) =
   let AWS.ErrorCode code = AWS.code svcErr
   in code
