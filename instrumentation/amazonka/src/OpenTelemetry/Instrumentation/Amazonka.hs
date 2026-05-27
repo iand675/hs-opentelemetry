@@ -45,6 +45,7 @@ import Amazonka.Env.Hooks (Finality (..), Hook, Hook_, Hooks (..))
 import qualified Amazonka.Types as AWS
 import Control.Applicative ((<|>))
 import Control.Exception (onException)
+import Data.Coerce (coerce)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -112,7 +113,7 @@ tracingConfiguredRequest
   -> Hook (AWS.Request a)
 tracingConfiguredRequest tracer baseHook env req = do
   let svc = (AWS.service req :: AWS.Service)
-      svcAbbrev = TE.decodeUtf8 $ AWS.toBS svc.abbrev
+      svcAbbrev = coerce svc.abbrev :: T.Text
       opName = T.pack $ tyConName $ typeRepTyCon $ typeRep (Proxy @a)
       spanName = svcAbbrev <> "." <> opName
       region = AWS.fromRegion (Amazonka.Env.region env)
