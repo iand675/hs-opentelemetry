@@ -432,7 +432,6 @@ instrumentResponse
 instrumentResponse conf ctxt resp = do
   propagator <- liftIO getGlobalTextMapPropagator
   ctxt' <- extractFromHeaders propagator (responseHeaders resp) ctxt
-  _ <- attachContext ctxt'
   forM_ (lookupSpan ctxt') $ \s ->
     instrumentResponseOnSpan conf s resp
 
