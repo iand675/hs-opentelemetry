@@ -60,7 +60,7 @@ data FaaS = FaaS
   , faasMaxMemory :: Maybe Int
   {- ^ The amount of memory available to the serverless function converted to bytes.
 
-  It's recommended to set this attribute since e.g. too little memory can easily stop a Java AWS Lambda function from working correctly. On AWS Lambda, the environment variable AWS_LAMBDA_FUNCTION_MEMORY_SIZE provides this information (which must be multiplied by 1,048,576).
+  It's recommended to set this attribute since e.g. too little memory can easily stop an AWS Lambda function from working correctly. On AWS Lambda, the environment variable AWS_LAMBDA_FUNCTION_MEMORY_SIZE provides this information (which must be multiplied by 1,048,576).
 
   Examples: '134217728'
   -}
