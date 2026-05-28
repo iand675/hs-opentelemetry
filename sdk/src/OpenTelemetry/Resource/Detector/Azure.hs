@@ -68,8 +68,8 @@ detectAzureVM client = do
       mK8sHost <- lookupEnv "KUBERNETES_SERVICE_HOST"
       let platform :: Text
           platform = case mK8sHost of
-            Just _ -> "azure_aks"
-            Nothing -> "azure_vm"
+            Just _ -> "azure.aks"
+            Nothing -> "azure.vm"
       pure $
         mkResource
           [ unkey SC.cloud_provider .= ("azure" :: Text)
