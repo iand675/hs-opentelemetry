@@ -265,7 +265,7 @@ guaranteed to see a consistent point-in-time view.
 @since 0.0.1.0
 -}
 mkReadableLogRecord :: ReadWriteLogRecord -> IO ReadableLogRecord
-mkReadableLogRecord rw@(ReadWriteLogRecord logger ref) = do
+mkReadableLogRecord (ReadWriteLogRecord logger ref) = do
   snapshot <- readIORef ref
   pure
     ReadableLogRecord

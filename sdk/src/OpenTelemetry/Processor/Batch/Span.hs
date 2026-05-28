@@ -33,7 +33,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.IORef (IORef, atomicModifyIORef', newIORef)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import OpenTelemetry.Exporter.Span (ExportResult (..), SpanExporter)
+import OpenTelemetry.Exporter.Span (SpanExporter)
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
 import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Processor.Span
@@ -370,7 +370,7 @@ batchProcessor BatchTimeoutConfig {..} exporter = liftIO $ do
             -- make sure the worker comes down if we timed out.
             cancel worker
             -- OTel spec: Processor.Shutdown MUST shut down the exporter
-            SpanExporter.spanExporterShutdown exporter
+            _ <- SpanExporter.spanExporterShutdown exporter
 
             pure $ case shutdownResult of
               Nothing ->

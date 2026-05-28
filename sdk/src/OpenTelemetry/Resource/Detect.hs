@@ -37,7 +37,7 @@ import Data.Text.Encoding (decodeUtf8)
 import OpenTelemetry.Attributes.Attribute (Attribute, ToAttribute (..))
 import OpenTelemetry.Baggage (decodeBaggageHeader)
 import qualified OpenTelemetry.Baggage as Baggage
-import OpenTelemetry.Internal.Logging (otelLogDebug, otelLogError, otelLogWarning)
+import OpenTelemetry.Internal.Logging (otelLogError, otelLogWarning)
 import qualified OpenTelemetry.Registry as Registry
 import OpenTelemetry.Resource
 import OpenTelemetry.Resource.Cloud ()

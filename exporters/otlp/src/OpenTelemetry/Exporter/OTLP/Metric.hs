@@ -21,7 +21,6 @@ import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
-import Data.Int (Int64)
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
@@ -141,7 +140,7 @@ otlpMetricExporter conf = liftIO $ do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
       case eResp of
-        Left err@(HttpExceptionRequest _req' e)
+        Left (HttpExceptionRequest _req' e)
           | isRetryableException e -> exponentialBackoff
         Left err -> pure $ Failure $ Just $ SomeException err
         Right resp ->

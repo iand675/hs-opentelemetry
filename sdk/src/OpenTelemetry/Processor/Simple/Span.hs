@@ -13,10 +13,9 @@ import Control.Monad
 import qualified Data.HashMap.Strict as HashMap
 import Data.IORef
 import qualified OpenTelemetry.Exporter.Span as SpanExporter
-import OpenTelemetry.Internal.Common.Types (ShutdownResult (..))
 import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Processor.Span
-import OpenTelemetry.Trace.Core (ImmutableSpan, spanTracer, tracerName)
+import OpenTelemetry.Trace.Core (spanTracer, tracerName)
 
 
 data SimpleProcessorConfig = SimpleProcessorConfig
@@ -105,7 +104,7 @@ simpleProcessor SimpleProcessorConfig {..} = do
       , spanProcessorShutdown = do
           atomically $ writeTVar shutdownVar True
           wait exportWorker
-          SpanExporter.spanExporterShutdown spanExporter
+          _ <- SpanExporter.spanExporterShutdown spanExporter
           pure ShutdownSuccess
       , spanProcessorForceFlush = do
           isShut <- readTVarIO shutdownVar
