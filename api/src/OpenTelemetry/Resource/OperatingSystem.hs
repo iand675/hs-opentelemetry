@@ -50,7 +50,7 @@ data OperatingSystem = OperatingSystem
   +-----------------+---------------------------------------+
   | @solaris@       | Oracle Solaris                        |
   +-----------------+---------------------------------------+
-  | @z_os@          | IBM z/OS                              |
+  | @zos@           | IBM z/OS                              |
   +-----------------+---------------------------------------+
   -}
   , osDescription :: Maybe Text

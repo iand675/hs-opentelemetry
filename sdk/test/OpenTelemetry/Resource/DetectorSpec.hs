@@ -171,21 +171,21 @@ cloudSpec = describe "Cloud" $ do
       setEnv "WEBSITE_SITE_NAME" "my-app"
       cloud <- detectCloud
       cloudProvider cloud `shouldBe` Just "azure"
-      cloudPlatform cloud `shouldBe` Just "azure_app_service"
+      cloudPlatform cloud `shouldBe` Just "azure.app_service"
 
     it "detects Azure Functions" $ do
       setEnv "FUNCTIONS_WORKER_RUNTIME" "custom"
       setEnv "REGION_NAME" "eastus"
       cloud <- detectCloud
       cloudProvider cloud `shouldBe` Just "azure"
-      cloudPlatform cloud `shouldBe` Just "azure_functions"
+      cloudPlatform cloud `shouldBe` Just "azure.functions"
       cloudRegion cloud `shouldBe` Just "eastus"
 
     it "detects Azure Container Apps" $ do
       setEnv "CONTAINER_APP_NAME" "my-container-app"
       cloud <- detectCloud
       cloudProvider cloud `shouldBe` Just "azure"
-      cloudPlatform cloud `shouldBe` Just "azure_container_apps"
+      cloudPlatform cloud `shouldBe` Just "azure.container_apps"
 
     it "detects AWS EKS from KUBERNETES_SERVICE_HOST + AWS env" $ do
       setEnv "AWS_REGION" "us-east-1"
@@ -257,7 +257,7 @@ faasSpec = describe "FaaS" $ do
           faasName faas `shouldBe` "my-handler"
           faasVersion faas `shouldBe` Just "$LATEST"
           faasInstance faas `shouldBe` Just "2024/01/01/[$LATEST]abc123"
-          faasMaxMemory faas `shouldBe` Just 256
+          faasMaxMemory faas `shouldBe` Just (256 * 1048576)
 
     it "detects GCP Cloud Functions" $ do
       setEnv "FUNCTION_TARGET" "helloWorld"
@@ -269,7 +269,7 @@ faasSpec = describe "FaaS" $ do
         Just faas -> do
           faasName faas `shouldBe` "helloWorld"
           faasVersion faas `shouldBe` Just "helloWorld-00001"
-          faasMaxMemory faas `shouldBe` Just 256
+          faasMaxMemory faas `shouldBe` Just (256 * 1048576)
 
     it "detects Azure Functions" $ do
       setEnv "FUNCTIONS_WORKER_RUNTIME" "custom"
