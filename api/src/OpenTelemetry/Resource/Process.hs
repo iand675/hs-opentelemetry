@@ -55,6 +55,23 @@ data Process = Process
 
   Example: @root@
   -}
+  , processCreationTime :: Maybe Text
+  {- ^ The date and time the process was created, in ISO 8601 format.
+
+  Example: @"2023-11-21T09:25:34.853Z"@
+  -}
+  , processArgsCount :: Maybe Int
+  -- ^ Length of the process.command_args array. Opt-In.
+  , processParentPid :: Maybe Int
+  -- ^ Parent Process identifier (PPID). Opt-In.
+  , processWorkingDirectory :: Maybe Text
+  -- ^ The working directory of the process. Opt-In.
+  , processInteractive :: Maybe Bool
+  -- ^ Whether the process is connected to an interactive shell. Opt-In.
+  , processTitle :: Maybe Text
+  -- ^ Process title (proctitle). Opt-In.
+  , processLinuxCgroup :: Maybe Text
+  -- ^ The control group associated with the process. Opt-In.
   }
 
 
@@ -69,6 +86,13 @@ instance ToResource Process where
       , unkey SC.process_commandLine .=? processCommandLine
       , unkey SC.process_commandArgs .=? processCommandArgs
       , unkey SC.process_owner .=? processOwner
+      , unkey SC.process_creation_time .=? processCreationTime
+      , unkey SC.process_argsCount .=? processArgsCount
+      , unkey SC.process_parentPid .=? processParentPid
+      , unkey SC.process_workingDirectory .=? processWorkingDirectory
+      , unkey SC.process_interactive .=? processInteractive
+      , unkey SC.process_title .=? processTitle
+      , unkey SC.process_linux_cgroup .=? processLinuxCgroup
       ]
 
 
