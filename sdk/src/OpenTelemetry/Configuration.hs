@@ -31,7 +31,8 @@ module OpenTelemetry.Configuration (
   initializeFromText,
 
   -- * Components
-  OTelComponents (..),
+  OTelSignals (..),
+  OTelComponents,
 
   -- * Configuration model
   OTelConfiguration (..),
@@ -54,7 +55,6 @@ import OpenTelemetry.Configuration.Parse
 import OpenTelemetry.Configuration.Types
 import OpenTelemetry.Internal.Logging (otelLogDebug)
 import System.Environment (lookupEnv)
-import System.IO.Error (userError)
 
 
 {- | Check for a declarative config file and initialize from it if set.
@@ -66,7 +66,7 @@ Returns @Nothing@ if neither env var is set.
 
 @since 0.1.0.0
 -}
-initializeFromConfigFile :: IO (Maybe OTelComponents)
+initializeFromConfigFile :: IO (Maybe OTelSignals)
 initializeFromConfigFile = do
   mPath <- lookupEnv "OTEL_EXPERIMENTAL_CONFIG_FILE"
   mPathLegacy <- lookupEnv "OTEL_CONFIG_FILE"
@@ -81,7 +81,7 @@ initializeFromConfigFile = do
 
 @since 0.1.0.0
 -}
-initializeFromFile :: FilePath -> IO OTelComponents
+initializeFromFile :: FilePath -> IO OTelSignals
 initializeFromFile path = do
   result <- parseConfigFile path
   case result of
@@ -93,7 +93,7 @@ initializeFromFile path = do
 
 @since 0.1.0.0
 -}
-initializeFromText :: Text -> IO OTelComponents
+initializeFromText :: Text -> IO OTelSignals
 initializeFromText content = do
   result <- parseConfigBytes content
   case result of

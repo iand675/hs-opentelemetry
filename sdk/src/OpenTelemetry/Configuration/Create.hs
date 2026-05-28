@@ -9,10 +9,10 @@ See: https://opentelemetry.io/docs/specs/otel/configuration/sdk/#create
 -}
 module OpenTelemetry.Configuration.Create (
   createFromConfig,
-  OTelComponents (..),
+  OTelSignals (..),
+  OTelComponents,
 ) where
 
-import Control.Exception (finally)
 import Control.Monad (when)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Map.Strict as Map
@@ -32,11 +32,11 @@ import OpenTelemetry.Exporter.OTLP.LogRecord (otlpLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.Metric (otlpMetricExporter)
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..), otlpExporter)
 import OpenTelemetry.Exporter.Span (SpanExporter (..))
-import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Common.Types (ExportResult (..))
 import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Log.Core (LoggerProvider, LoggerProviderOptions (..), createLoggerProvider, emptyLoggerProviderOptions, shutdownLoggerProvider)
 import OpenTelemetry.MeterProvider
-import OpenTelemetry.Metric.Core (MeterProvider (..))
+import OpenTelemetry.Metric.Core (MeterProvider (..), shutdownMeterProvider)
 import OpenTelemetry.MetricReader
 import OpenTelemetry.Processor.Batch.LogRecord (batchLogRecordProcessor)
 import qualified OpenTelemetry.Processor.Batch.LogRecord as BlogProc
@@ -55,8 +55,8 @@ import OpenTelemetry.Trace.Id.Generator.Default (defaultIdGenerator)
 import OpenTelemetry.Trace.Sampler
 
 
--- | @since 0.1.0.0
-data OTelComponents = OTelComponents
+-- | @since 1.0.0.0
+data OTelSignals = OTelSignals
   { otelTracerProvider :: !TracerProvider
   , otelMeterProvider :: !MeterProvider
   , otelLoggerProvider :: !LoggerProvider
@@ -65,12 +65,18 @@ data OTelComponents = OTelComponents
   }
 
 
+{-# DEPRECATED OTelComponents "Use OTelSignals instead" #-}
+
+
+type OTelComponents = OTelSignals
+
+
 {- | Create SDK components from a parsed configuration model.
 Returns all three providers and the composite propagator.
 
 @since 0.1.0.0
 -}
-createFromConfig :: OTelConfiguration -> IO OTelComponents
+createFromConfig :: OTelConfiguration -> IO OTelSignals
 createFromConfig cfg = do
   let disabled = fromMaybe False (configDisabled cfg)
   if disabled
@@ -79,7 +85,7 @@ createFromConfig cfg = do
       (mp, _env) <- createMeterProvider emptyMaterializedResources defaultSdkMeterProviderOptions
       lp <- createLoggerProvider [] emptyLoggerProviderOptions
       pure
-        OTelComponents
+        OTelSignals
           { otelTracerProvider = tp
           , otelMeterProvider = mp
           , otelLoggerProvider = lp
@@ -110,22 +116,19 @@ createFromConfig cfg = do
       tp <- createTracerProvider spanProcessors tpOpts
 
       -- MeterProvider
-      (mp, meterShutdown) <- buildMeterProvider cfg res
+      mp <- buildMeterProvider cfg res
 
       -- LoggerProvider
       (lp, _logShutdowns) <- buildLoggerProvider cfg globalAttrLimits res
 
       let shutdown = do
             _ <- shutdownTracerProvider tp Nothing
-            -- Stop the periodic reader thread before shutting down the meter
-            -- provider; the provider shutdown flushes + closes the exporter,
-            -- so the reader must not try to export after that point.
-            meterShutdown `finally` meterProviderShutdown mp
+            _ <- shutdownMeterProvider mp
             _ <- shutdownLoggerProvider lp Nothing
             pure ()
 
       pure
-        OTelComponents
+        OTelSignals
           { otelTracerProvider = tp
           , otelMeterProvider = mp
           , otelLoggerProvider = lp
@@ -251,16 +254,16 @@ buildSpanExporter SpanExporterNone =
       }
 
 
-buildMeterProvider :: OTelConfiguration -> MaterializedResources -> IO (MeterProvider, IO ())
+buildMeterProvider :: OTelConfiguration -> MaterializedResources -> IO MeterProvider
 buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
   Nothing -> do
     (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
-    pure (mp, pure ())
+    pure mp
   Just readers -> do
     case readers of
       [] -> do
         (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
-        pure (mp, pure ())
+        pure mp
       (MetricReaderPeriodic pmc : rest) -> do
         when (not (null rest)) $
           otelLogWarning "Multiple metric readers configured; only the first is currently supported — additional readers will be ignored"
@@ -275,10 +278,15 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
             let interval = fromMaybe 60000 (pmrInterval pmc)
                 readerOpts = PeriodicMetricReaderOptions {periodicIntervalMicros = interval * 1000}
             handle <- forkPeriodicMetricReader env ex readerOpts
-            pure (mp, stopPeriodicMetricReader handle)
+            pure
+              mp
+                { meterProviderShutdown = do
+                    stopPeriodicMetricReader handle
+                    meterProviderShutdown mp
+                }
           Nothing -> do
             (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
-            pure (mp, pure ())
+            pure mp
 
 
 buildMetricExporter :: PushMetricExporterConfig -> IO (Maybe MetricExporter)
