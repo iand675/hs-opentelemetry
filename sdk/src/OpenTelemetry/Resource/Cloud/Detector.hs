@@ -26,10 +26,8 @@ module OpenTelemetry.Resource.Cloud.Detector (
 ) where
 
 import Data.Maybe (fromMaybe)
-import qualified Data.Text as T
 import OpenTelemetry.Resource.Cloud (Cloud (..))
 import OpenTelemetry.Resource.Detector.Internal (firstEnv, lookupEnvText)
-import System.Environment (lookupEnv)
 
 
 -- | @since 0.0.1.0
@@ -157,12 +155,11 @@ detectAzure = do
     else do
       mRegion <- lookupEnvText "REGION_NAME"
       mSub <- lookupEnvText "AZURE_SUBSCRIPTION_ID"
-      let platform = case () of
-            _
-              | mFunctions /= Nothing || mAzureEnv /= Nothing -> Just "azure_functions"
-              | mContainerApp /= Nothing -> Just "azure_container_apps"
-              | mWebsite /= Nothing -> Just "azure_app_service"
-              | otherwise -> Nothing
+      let platform
+            | mFunctions /= Nothing || mAzureEnv /= Nothing = Just "azure.functions"
+            | mContainerApp /= Nothing = Just "azure.container_apps"
+            | mWebsite /= Nothing = Just "azure.app_service"
+            | otherwise = Nothing
       pure $
         Just
           Cloud
