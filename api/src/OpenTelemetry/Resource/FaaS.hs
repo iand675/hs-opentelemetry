@@ -1,6 +1,6 @@
 {- |
  Module      :  OpenTelemetry.Resource.FaaS
- Copyright   :  (c) Ian Duncan, 2021
+ Copyright   :  (c) Ian Duncan, 2026
  License     :  BSD-3
  Description :  Resource information about a "function as a service" aka "serverless function" instance
  Maintainer  :  Ian Duncan
@@ -27,29 +27,12 @@ data FaaS = FaaS
 
   Examples: 'my-function'
   -}
-  , faasId :: Maybe Text
-  {- ^ The unique ID of the single function that this runtime instance executes.
+  , faasCloudResourceId :: Maybe Text
+  {- ^ The cloud resource ID (@cloud.resource_id@) of the function.
 
   Depending on the cloud provider, use:
 
-  - AWS Lambda: The function ARN. Take care not to use the "invoked ARN" directly but replace any alias suffix with the resolved function version, as the same runtime instance may be invokable with multiple different aliases.
-  - GCP: The URI of the resource
-  - Azure: The Fully Qualified Resource ID.
-
-  Examples: 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
-  -}
-  , -- \^ The name of the single function that this runtime instance executes.
-    --
-    --  This is the name of the function as configured/deployed on the FaaS platform and is usually different from the name of the callback function (which may be stored in the code.namespace/code.function span attributes).
-    --
-    --  Examples: 'my-function'
-    --
-    faasCloudResourceId :: Maybe Text
-  {- ^ The unique ID of the single function that this runtime instance executes.
-
-  Depending on the cloud provider, use:
-
-  - AWS Lambda: The function ARN. Take care not to use the "invoked ARN" directly but replace any alias suffix with the resolved function version, as the same runtime instance may be invokable with multiple different aliases.
+  - AWS Lambda: The function ARN.
   - GCP: The URI of the resource
   - Azure: The Fully Qualified Resource ID.
 
@@ -75,11 +58,11 @@ data FaaS = FaaS
   Examples: '2021/06/28/[$LATEST]2f399eb14537447da05ab2a2e39309de'
   -}
   , faasMaxMemory :: Maybe Int
-  {- ^ The amount of memory available to the serverless function in MiB.
+  {- ^ The amount of memory available to the serverless function converted to bytes.
 
-  It's recommended to set this attribute since e.g. too little memory can easily an AWS Lambda function from working correctly. On AWS Lambda, the environment variable AWS_LAMBDA_FUNCTION_MEMORY_SIZE provides this information.
+  It's recommended to set this attribute since e.g. too little memory can easily stop a Java AWS Lambda function from working correctly. On AWS Lambda, the environment variable AWS_LAMBDA_FUNCTION_MEMORY_SIZE provides this information (which must be multiplied by 1,048,576).
 
-  Examples: '128'
+  Examples: '134217728'
   -}
   }
   deriving (Show)

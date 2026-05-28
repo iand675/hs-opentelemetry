@@ -25,7 +25,6 @@ module OpenTelemetry.Resource.FaaS.Detector (
   detectFaaS,
 ) where
 
-import qualified Data.Text as T
 import OpenTelemetry.Resource.Detector.Internal (lookupEnvText)
 import OpenTelemetry.Resource.FaaS (FaaS (..))
 import System.Environment (lookupEnv)
@@ -54,7 +53,7 @@ detectLambda = do
       mVersion <- lookupEnvText "AWS_LAMBDA_FUNCTION_VERSION"
       mLogStream <- lookupEnvText "AWS_LAMBDA_LOG_STREAM_NAME"
       mMemStr <- lookupEnv "AWS_LAMBDA_FUNCTION_MEMORY_SIZE"
-      let mMem = mMemStr >>= readMaybe
+      let mMem = fmap (* 1048576) (mMemStr >>= readMaybe)
       mRegion <- lookupEnvText "AWS_REGION"
       mAcctAndFn <- buildLambdaArn name mRegion
       pure $
@@ -84,7 +83,7 @@ detectGCF = do
     Just target -> do
       mRevision <- lookupEnvText "K_REVISION"
       mMemStr <- lookupEnv "FUNCTION_MEMORY_MB"
-      let mMem = mMemStr >>= readMaybe
+      let mMem = fmap (* 1048576) (mMemStr >>= readMaybe)
       pure $
         Just
           FaaS
@@ -102,10 +101,15 @@ detectAzureFunctions = do
   case mRuntime of
     Nothing -> pure Nothing
     Just _ -> do
-      mName <- lookupEnvText "WEBSITE_SITE_NAME"
-      case mName of
+      mSiteName <- lookupEnvText "WEBSITE_SITE_NAME"
+      case mSiteName of
         Nothing -> pure Nothing
-        Just name ->
+        Just siteName -> do
+          -- Spec: Azure faas.name = "<WEBSITE_SITE_NAME>/<FUNCTION_NAME>"
+          mFuncName <- lookupEnvText "FUNCTION_NAME"
+          let name = case mFuncName of
+                Just funcName -> siteName <> "/" <> funcName
+                Nothing -> siteName
           pure $
             Just
               FaaS
