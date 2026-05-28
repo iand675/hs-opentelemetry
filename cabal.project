@@ -35,10 +35,10 @@ packages:
   -- , instrumentation/amazonka (amazonka-core < base 4.20)
   -- , instrumentation/gogol (gogol-core)
   -- , instrumentation/hw-kafka-client
-  -- , instrumentation/persistent
+  , instrumentation/persistent
   -- , instrumentation/persistent-mysql
   -- , examples/hw-kafka-client-example
-  -- , examples/yesod-minimal (needs persistent)
+  , examples/yesod-minimal
 
 allow-newer:
     *:hs-opentelemetry-api

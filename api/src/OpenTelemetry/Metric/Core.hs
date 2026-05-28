@@ -133,7 +133,11 @@ getMeter = meterProviderGetMeter
 
 
 -- | @since 0.0.1.0
-shutdownMeterProvider :: MeterProvider -> IO ShutdownResult
+shutdownMeterProvider
+  :: MeterProvider
+  -> Maybe Int
+  -- ^ Optional timeout in microseconds. @Nothing@ uses the SDK default (5s).
+  -> IO ShutdownResult
 shutdownMeterProvider = meterProviderShutdown
 
 
@@ -240,7 +244,7 @@ noopMeterProvider :: MeterProvider
 noopMeterProvider =
   MeterProvider
     { meterProviderGetMeter = \scope -> pure (noopMeter scope)
-    , meterProviderShutdown = pure ShutdownSuccess
+    , meterProviderShutdown = \_ -> pure ShutdownSuccess
     , meterProviderForceFlush = \_ -> pure FlushSuccess
     }
 

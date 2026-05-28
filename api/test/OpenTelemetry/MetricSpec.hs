@@ -60,5 +60,5 @@ spec = do
   -- https://opentelemetry.io/docs/specs/otel/metrics/api/#meterprovider-operations
   describe "noopMeterProvider shutdown" $ do
     it "implements Shutdown and ForceFlush without error" $ do
-      shutdownMeterProvider noopMeterProvider `shouldReturn` ShutdownSuccess
+      shutdownMeterProvider noopMeterProvider Nothing `shouldReturn` ShutdownSuccess
       forceFlushMeterProvider noopMeterProvider Nothing `shouldReturn` FlushSuccess

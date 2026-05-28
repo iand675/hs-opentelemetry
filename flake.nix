@@ -104,6 +104,7 @@
                 zlib
                 zstd
                 claude-code
+                opentelemetry-collector-contrib
               ];
 
               dotenv.enable = true;

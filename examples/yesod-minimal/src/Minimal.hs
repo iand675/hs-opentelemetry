@@ -20,13 +20,17 @@ import Database.Persist.Sql.Raw.QQ
 import Database.Persist.SqlBackend.SqlPoolHooks
 import GHC.Stack
 import Network.Wai.Handler.Warp (run)
+import OpenTelemetry.Configuration.Create (OTelSignals (..))
 import OpenTelemetry.Instrumentation.GHCMetrics (registerGHCMetrics)
 import OpenTelemetry.Instrumentation.HttpClient
+import OpenTelemetry.Instrumentation.MonadLogger (makeOTelLogCallback)
 import OpenTelemetry.Instrumentation.Persistent
 import OpenTelemetry.Instrumentation.PostgresqlSimple (staticConnectionAttributes)
 import OpenTelemetry.Instrumentation.Wai
 import OpenTelemetry.Instrumentation.Yesod
-import OpenTelemetry.Metric.Core (getGlobalMeterProvider, getMeter)
+import OpenTelemetry.Log.Core (makeLogger)
+import OpenTelemetry.Metric.Core (getMeter)
+import OpenTelemetry.SDK (withOpenTelemetry)
 import OpenTelemetry.Trace hiding (inSpan, inSpan', inSpan'')
 import OpenTelemetry.Trace.Monad
 import UnliftIO hiding (Handler)
@@ -116,24 +120,17 @@ getApiR = do
 
 
 main :: IO ()
-main = do
-  bracket
-    initializeGlobalTracerProvider
-    (\tp -> void $ shutdownTracerProvider tp Nothing)
-    $ \_ -> do
-      -- Register GHC runtime metrics (heap size, GC counts, etc.)
-      -- as async instruments on the global MeterProvider.
-      mp <- getGlobalMeterProvider
-      meter <- getMeter mp "yesod-minimal"
-      void $ registerGHCMetrics meter
+main = withOpenTelemetry $ \otel -> do
+  meter <- getMeter (otelMeterProvider otel) "yesod-minimal"
+  void $ registerGHCMetrics meter
 
-      -- Metrics are exported via OTLP (configured by OTEL_METRICS_EXPORTER).
-      -- To also expose a Prometheus scrape endpoint, set
-      -- OTEL_METRICS_EXPORTER=prometheus and the SDK will start a server
-      -- on :9464/metrics (configurable via OTEL_EXPORTER_PROMETHEUS_HOST/PORT).
+  let logger = OpenTelemetry.Log.Core.makeLogger (otelLoggerProvider otel) "yesod-minimal"
+      logCallback = makeOTelLogCallback logger
 
-      runNoLoggingT $ withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
+  runLoggingT
+    ( withPostgresqlPool "host=localhost dbname=otel" 5 $ \pool -> liftIO $ do
         waiApp <- toWaiApp $ Minimal pool
-        openTelemetryWaiMiddleware <- newOpenTelemetryWaiMiddleware
-
-        run 3000 $ openTelemetryWaiMiddleware waiApp
+        otelMiddleware <- newOpenTelemetryWaiMiddleware
+        run 3000 $ otelMiddleware waiApp
+    )
+    logCallback

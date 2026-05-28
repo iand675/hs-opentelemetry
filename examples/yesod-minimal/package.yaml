@@ -31,4 +31,5 @@ executables:
       - hs-opentelemetry-instrumentation-persistent ^>= 1.0
       - hs-opentelemetry-instrumentation-postgresql-simple ^>= 1.0
       - hs-opentelemetry-instrumentation-ghc-metrics ^>= 1.0
+      - hs-opentelemetry-instrumentation-monad-logger ^>= 1.0
       - hs-opentelemetry-api ^>= 1.0

@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.Wai
-      OpenTelemetry.Instrumentation.Wai.Metrics
   other-modules:
       Paths_hs_opentelemetry_instrumentation_wai
   hs-source-dirs:

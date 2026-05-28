@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       OpenTelemetry.Instrumentation.HttpClient
-      OpenTelemetry.Instrumentation.HttpClient.Metrics
       OpenTelemetry.Instrumentation.HttpClient.Raw
       OpenTelemetry.Instrumentation.HttpClient.Simple
   other-modules:
