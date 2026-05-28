@@ -20,7 +20,6 @@ import qualified Data.HashMap.Strict as H
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
-import qualified Data.ProtoLens as ProtoLens
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -41,7 +40,7 @@ import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources
 import OpenTelemetry.Trace.Core (timestampNanoseconds, traceFlagsValue)
 import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest)
 import qualified Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields as LSF
-import Proto.Opentelemetry.Proto.Common.V1.Common (InstrumentationScope, KeyValue)
+import Proto.Opentelemetry.Proto.Common.V1.Common (KeyValue)
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common as Common
 import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as CF
 import Proto.Opentelemetry.Proto.Logs.V1.Logs (ResourceLogs, ScopeLogs)
@@ -120,7 +119,7 @@ otlpLogRecordExporter conf = liftIO $ do
                 threadDelay (retryDelay `shiftL` backoffCount)
                 sendReq req (backoffCount + 1)
       case eResp of
-        Left err@(HttpExceptionRequest _req' e)
+        Left (HttpExceptionRequest _req' e)
           | isRetryableException e -> exponentialBackoff
         Left err -> pure $ Failure $ Just $ SomeException err
         Right resp ->

@@ -35,6 +35,10 @@ data Container = Container
   -- ^ Container image tag.
   , containerImageId :: Maybe Text
   -- ^ Runtime-specific image identifier (e.g., digest).
+  , ociManifestDigest :: Maybe Text
+  -- ^ The digest of the OCI image manifest.
+  , containerImageRepoDigests :: Maybe [Text]
+  -- ^ Repo digests of the container image.
   }
 
 
@@ -49,4 +53,6 @@ instance ToResource Container where
       , unkey SC.container_image_name .=? containerImageName
       , unkey SC.container_image_id .=? containerImageId
       , unkey SC.container_image_tags .=? ((: []) <$> containerImageTag)
+      , unkey SC.oci_manifest_digest .=? ociManifestDigest
+      , unkey SC.container_image_repoDigests .=? containerImageRepoDigests
       ]

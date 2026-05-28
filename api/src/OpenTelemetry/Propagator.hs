@@ -87,7 +87,6 @@ module OpenTelemetry.Propagator (
 ) where
 
 import Control.Exception (SomeException, catch)
-import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.HashMap.Strict as H
 import Data.IORef

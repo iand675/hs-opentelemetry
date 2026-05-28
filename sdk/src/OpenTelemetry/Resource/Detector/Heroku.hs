@@ -26,12 +26,10 @@ module OpenTelemetry.Resource.Detector.Heroku (
 ) where
 
 import Data.Text (Text)
-import qualified Data.Text as T
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Resource (Resource, mkResource, (.=), (.=?))
 import OpenTelemetry.Resource.Detector.Internal (lookupEnvText)
 import qualified OpenTelemetry.SemanticConventions as SC
-import System.Environment (lookupEnv)
 
 
 {- | Detect Heroku dyno attributes from environment variables.

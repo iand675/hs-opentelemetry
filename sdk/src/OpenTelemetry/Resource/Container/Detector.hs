@@ -41,6 +41,8 @@ detectContainer = do
       , containerImageName = Nothing
       , containerImageTag = Nothing
       , containerImageId = Nothing
+      , ociManifestDigest = Nothing
+      , containerImageRepoDigests = Nothing
       }
 
 
