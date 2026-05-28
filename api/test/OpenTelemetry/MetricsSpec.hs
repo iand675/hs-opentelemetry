@@ -43,5 +43,5 @@ spec = do
 
   describe "noopMeterProvider shutdown" $ do
     it "implements Shutdown and ForceFlush without error" $ do
-      shutdownMeterProvider noopMeterProvider `shouldReturn` ShutdownSuccess
+      shutdownMeterProvider noopMeterProvider Nothing `shouldReturn` ShutdownSuccess
       forceFlushMeterProvider noopMeterProvider `shouldReturn` FlushSuccess

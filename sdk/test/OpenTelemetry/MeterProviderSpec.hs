@@ -454,7 +454,7 @@ spec = do
       m <- getMeter provider scope
       c <- meterCreateCounterInt64 m "pre.shutdown" Nothing Nothing defaultAdvisoryParameters
       counterAdd c 10 emptyAttributes
-      result <- shutdownMeterProvider provider
+      result <- shutdownMeterProvider provider Nothing
       result `shouldBe` ShutdownSuccess
       -- After shutdown, getMeter returns noop
       m2 <- getMeter provider scope

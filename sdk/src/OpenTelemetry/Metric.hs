@@ -53,8 +53,6 @@ module OpenTelemetry.Metric (
   -- * Provider lifecycle
   withMeterProvider,
   initializeGlobalMeterProvider,
-  MeterProviderHandle (..),
-  shutdownMeterProviderHandle,
 
   -- * Metric API types (re-exported from "OpenTelemetry.Metric.Core")
 
@@ -127,6 +125,7 @@ module OpenTelemetry.Metric (
 ) where
 
 import Control.Exception (bracket)
+import Control.Monad (void)
 import Data.IORef (newIORef)
 import qualified Data.Sequence as Seq
 import OpenTelemetry.Attributes (Attributes, emptyAttributes)
@@ -166,17 +165,6 @@ import OpenTelemetry.Resource (emptyMaterializedResources, materializeResources,
 import OpenTelemetry.Resource.Detect (detectBuiltInResources, detectResourceAttributes)
 
 
-{- | Opaque handle for an initialized SDK 'MeterProvider' and its background
-periodic reader. Use 'shutdownMeterProviderHandle' or the bracket in
-'withMeterProvider' to tear it down.
--}
-data MeterProviderHandle = MeterProviderHandle
-  { meterProviderHandleProvider :: !MeterProvider
-  , meterProviderHandleEnv :: !SdkMeterEnv
-  , meterProviderHandleReaderHandle :: !(Maybe PeriodicMetricReaderHandle)
-  }
-
-
 {- | Build an inert 'SdkMeterEnv' for the disabled-SDK case. All mutable
 fields are properly allocated (not bottom) so shutdown and flush never crash.
 -}
@@ -199,16 +187,6 @@ noopSdkMeterEnv = do
       }
 
 
--- | Shut down the meter provider and stop the periodic reader.
-shutdownMeterProviderHandle :: MeterProviderHandle -> IO ()
-shutdownMeterProviderHandle MeterProviderHandle {..} = do
-  case meterProviderHandleReaderHandle of
-    Just h -> stopPeriodicMetricReader h
-    Nothing -> pure ()
-  _ <- shutdownMeterProvider meterProviderHandleProvider
-  pure ()
-
-
 {- | Initialize a 'MeterProvider' from environment variables, set it as the
 global meter provider, and run an action. The provider is shut down on exit
 (including exceptions).
@@ -228,15 +206,15 @@ withMeterProvider :: (MeterProvider -> IO a) -> IO a
 withMeterProvider body =
   bracket
     initializeGlobalMeterProvider
-    shutdownMeterProviderHandle
-    (\h -> body (meterProviderHandleProvider h))
+    (\mp -> void $ shutdownMeterProvider mp Nothing)
+    body
 
 
 {- | Create a 'MeterProvider' from @OTEL_*@ environment variables and install
 it as the global provider via 'setGlobalMeterProvider'.
 
-Returns a 'MeterProviderHandle' that the caller must shut down (via
-'shutdownMeterProviderHandle') when the application exits.
+The returned 'MeterProvider' has the periodic reader lifecycle baked into
+its shutdown — call 'shutdownMeterProvider' when the application exits.
 
 Reads:
 
@@ -247,20 +225,14 @@ Reads:
 
 @since 0.0.1.0
 -}
-initializeGlobalMeterProvider :: IO MeterProviderHandle
+initializeGlobalMeterProvider :: IO MeterProvider
 initializeGlobalMeterProvider = do
   disabled <- lookupBooleanEnv "OTEL_SDK_DISABLED"
   if disabled
     then do
       otelLogDebug "OTEL_SDK_DISABLED=true, using no-op MeterProvider"
       setGlobalMeterProvider noopMeterProvider
-      noopEnv <- noopSdkMeterEnv
-      pure
-        MeterProviderHandle
-          { meterProviderHandleProvider = noopMeterProvider
-          , meterProviderHandleEnv = noopEnv
-          , meterProviderHandleReaderHandle = Nothing
-          }
+      pure noopMeterProvider
     else do
       exporter <- resolveMetricExporter
       readerOpts <- periodicMetricReaderOptionsFromEnv
@@ -268,12 +240,13 @@ initializeGlobalMeterProvider = do
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
       let rs = materializeResources (mergeResources envVarRs builtInRs)
       (provider, env) <- createMeterProvider rs defaultSdkMeterProviderOptions
-      setGlobalMeterProvider provider
       readerHandle <- forkPeriodicMetricReader env exporter readerOpts
+      let provider' =
+            provider
+              { meterProviderShutdown = \timeout -> do
+                  stopPeriodicMetricReader readerHandle
+                  meterProviderShutdown provider timeout
+              }
+      setGlobalMeterProvider provider'
       otelLogDebug "MeterProvider initialized from environment"
-      pure
-        MeterProviderHandle
-          { meterProviderHandleProvider = provider
-          , meterProviderHandleEnv = env
-          , meterProviderHandleReaderHandle = Just readerHandle
-          }
+      pure provider'

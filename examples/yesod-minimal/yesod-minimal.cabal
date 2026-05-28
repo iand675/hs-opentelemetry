@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.3.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -22,6 +22,7 @@ executable yesod-minimal
     , hs-opentelemetry-api ==1.0.*
     , hs-opentelemetry-instrumentation-ghc-metrics ==1.0.*
     , hs-opentelemetry-instrumentation-http-client ==1.0.*
+    , hs-opentelemetry-instrumentation-monad-logger ==1.0.*
     , hs-opentelemetry-instrumentation-persistent ==1.0.*
     , hs-opentelemetry-instrumentation-postgresql-simple ==1.0.*
     , hs-opentelemetry-instrumentation-wai ==1.0.*

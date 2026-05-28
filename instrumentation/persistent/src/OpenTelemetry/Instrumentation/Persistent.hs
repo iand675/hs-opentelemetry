@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -86,11 +87,13 @@ import Database.Persist.SqlBackend (MkSqlBackendArgs (connRDBMS), emptySqlBacken
 import Database.Persist.SqlBackend.Internal
 import Database.Persist.SqlBackend.Internal.IsolationLevel (IsolationLevel (..))
 import OpenTelemetry.Attributes (Attribute (..), Attributes)
+import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Attributes.Key (AttributeKey (..), unkey)
 import OpenTelemetry.Attributes.Map (AttributeMap)
 import OpenTelemetry.Common
 import OpenTelemetry.Context
 import OpenTelemetry.Context.ThreadLocal (adjustContext, getContext)
+import OpenTelemetry.Metric.Core
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
 import OpenTelemetry.Trace.Core
@@ -186,6 +189,19 @@ wrapSqlBackend' tp attrs conn_ = do
   connParentSpan <- liftIO $ newIORef Nothing
   connSpanInFlight <- liftIO $ newIORef Nothing
   dbSemOpt <- liftIO $ databaseOption <$> getSemanticsOptions
+  mp <- liftIO getGlobalMeterProvider
+  meter <- liftIO $ getMeter mp "hs-opentelemetry-instrumentation-persistent"
+  dbDurHistogram <-
+    liftIO $
+      meterCreateHistogram
+        meter
+        "db.client.operation.duration"
+        (Just "s")
+        (Just "Duration of database client operations")
+        defaultAdvisoryParameters
+          { advisoryExplicitBucketBoundaries =
+              Just [0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0]
+          }
   let t = makeTracer tp $detectInstrumentationLibrary tracerOptions
       dbNamespace = lookupDbNamespace dbSemOpt attrs
       rdbms = getRDBMS conn
@@ -210,6 +226,18 @@ wrapSqlBackend' tp attrs conn_ = do
              StableAndOld -> H.insert (unkey SC.db_query_text) v $ H.insert (unkey SC.db_statement) v attrs
              Old -> H.insert (unkey SC.db_statement) v attrs
       spanName sql = dbSpanName (extractSqlOperation sql) dbNamespace
+      metricAttrs sql =
+        let base = A.addAttribute A.defaultAttributeLimits A.emptyAttributes (unkey SC.db_system_name) rdbms
+            withOp = case extractSqlOperation sql of
+              Just op -> A.addAttribute A.defaultAttributeLimits base (unkey SC.db_operation_name) op
+              Nothing -> base
+        in case dbNamespace of
+             Just ns -> A.addAttribute A.defaultAttributeLimits withOp (unkey SC.db_namespace) ns
+             Nothing -> withOp
+      recordDbDuration sql startNs = do
+        Timestamp endNs <- getTimestamp
+        let !durationSec = fromIntegral @Word64 @Double (endNs - startNs) / 1_000_000_000
+        histogramRecord dbDurHistogram durationSec (metricAttrs sql)
   -- We use createSpanWithoutCallStack/inSpan'' because these spans are created
   -- from persistent's internal hooks, not from user code. Using the callstack
   -- variants would capture this instrumentation library's source location,
@@ -222,6 +250,7 @@ wrapSqlBackend' tp attrs conn_ = do
                   { stmtQuery = \ps -> do
                       ctxt <- getContext
                       let spanCreator = do
+                            Timestamp sNs <- getTimestamp
                             s <-
                               createSpanWithoutCallStack
                                 t
@@ -229,13 +258,14 @@ wrapSqlBackend' tp attrs conn_ = do
                                 (spanName sql)
                                 (defaultSpanArguments {kind = Client, attributes = queryAttrs sql})
                             adjustContext (insertSpan s)
-                            pure (lookupSpan ctxt, s)
-                          spanCleanup (parent, s) = do
+                            pure (lookupSpan ctxt, s, sNs)
+                          spanCleanup (parent, s, sNs) = do
+                            recordDbDuration sql sNs
                             s `endSpan` Nothing
                             adjustContext $ \ctx ->
                               maybe (removeSpan ctx) (`insertSpan` ctx) parent
 
-                      (p, child) <- mkAcquire spanCreator spanCleanup
+                      (_p, child, _startNs) <- mkAcquire spanCreator spanCleanup
 
                       addAttributes child dbSystemAttrs
                       case stmtQuery stmt ps of
@@ -248,9 +278,12 @@ wrapSqlBackend' tp attrs conn_ = do
                             )
                             (stmtQueryAcquireF f)
                   , stmtExecute = \ps -> do
-                      inSpan'' t (spanName sql) (defaultSpanArguments {kind = Client, attributes = queryAttrs sql}) $ \s -> do
+                      Timestamp startNs <- getTimestamp
+                      result <- inSpan'' t (spanName sql) (defaultSpanArguments {kind = Client, attributes = queryAttrs sql}) $ \s -> do
                         addAttributes s dbSystemAttrs
                         stmtExecute stmt ps
+                      recordDbDuration sql startNs
+                      pure result
                   , stmtReset = stmtReset stmt
                   , stmtFinalize = stmtFinalize stmt
                   }

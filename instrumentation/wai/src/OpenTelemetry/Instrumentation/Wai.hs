@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -59,11 +60,12 @@ module OpenTelemetry.Instrumentation.Wai (
   requestContext,
 ) where
 
-import Control.Exception (bracket)
+import Control.Exception (bracket, finally)
 import Control.Monad
 import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
 import Data.IP (fromHostAddress, fromHostAddress6)
+import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
@@ -74,10 +76,12 @@ import GHC.Stack (HasCallStack)
 import Network.HTTP.Types
 import Network.Socket
 import Network.Wai
-import OpenTelemetry.Attributes (lookupAttribute)
+import OpenTelemetry.Attributes (lookupAttribute, lookupAttributeByKey)
+import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Attributes.Key (unkey)
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Metric.Core
 import OpenTelemetry.Propagator (emptyTextMap, extract, getGlobalTextMapPropagator, inject, textMapFromList, textMapToList)
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
@@ -87,24 +91,41 @@ import Text.Read (readMaybe)
 
 
 newOpenTelemetryWaiMiddleware :: (HasCallStack) => IO Middleware
-newOpenTelemetryWaiMiddleware = newOpenTelemetryWaiMiddleware' <$> getGlobalTracerProvider
+newOpenTelemetryWaiMiddleware = do
+  tp <- getGlobalTracerProvider
+  mp <- getGlobalMeterProvider
+  meter <- getMeter mp "hs-opentelemetry-instrumentation-wai"
+  newOpenTelemetryWaiMiddleware' tp meter
 
 
 newOpenTelemetryWaiMiddleware'
   :: (HasCallStack)
   => TracerProvider
-  -> Middleware
-newOpenTelemetryWaiMiddleware' tp =
+  -> Meter
+  -> IO Middleware
+newOpenTelemetryWaiMiddleware' tp meter = do
+  dur <-
+    meterCreateHistogram
+      meter
+      "http.server.request.duration"
+      (Just "s")
+      (Just "Duration of inbound HTTP requests")
+      defaultAdvisoryParameters
+        { advisoryExplicitBucketBoundaries =
+            Just [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
+        }
+  active <- meterCreateUpDownCounterInt64 meter "http.server.active_requests" (Just "{request}") (Just "Number of active HTTP server requests") defaultAdvisoryParameters
+  reqCount <- meterCreateCounterInt64 meter "http.server.request.count" (Just "{request}") (Just "Total number of HTTP server requests") defaultAdvisoryParameters
   let waiTracer =
         makeTracer
           tp
           $detectInstrumentationLibrary
           tracerOptions
-  in middleware waiTracer
+  pure $ middleware waiTracer dur active reqCount
   where
     usefulCallsite = callerAttributes
-    middleware :: Tracer -> Middleware
-    middleware tracer app req sendResp = do
+    middleware :: Tracer -> Histogram -> UpDownCounter Int64 -> Counter Int64 -> Middleware
+    middleware tracer dur active reqCount app req sendResp = do
       propagator <- getGlobalTextMapPropagator
       let parentContextM = do
             ctx <- getContext
@@ -140,6 +161,14 @@ newOpenTelemetryWaiMiddleware' tp =
       -- context from being inherited by any subsequent requests served by the
       -- same thread. Warp supports HTTP keep-alive/persistent connections,
       -- which means a thread can handle multiple requests before exiting.
+      let metricReqAttrs =
+            A.addAttribute
+              A.defaultAttributeLimits
+              (A.addAttribute A.defaultAttributeLimits A.emptyAttributes (unkey SC.http_request_method) (T.decodeUtf8 (requestMethod req)))
+              (unkey SC.url_scheme)
+              (if isSecure req then ("https" :: T.Text) else "http")
+      upDownCounterAdd active 1 metricReqAttrs
+      startNs <- getTimestamp
       bracket parentContextM detachContext $ \_ -> inSpan'' tracer spanName_ args $ \requestSpan -> do
         ctxt <- getContext
 
@@ -259,7 +288,22 @@ newOpenTelemetryWaiMiddleware' tp =
           respReceived <- sendResp resp'
           ts <- getTimestamp
           endSpan requestSpan (Just ts)
-          pure respReceived
+
+          flip finally (upDownCounterAdd active (-1) metricReqAttrs) $ do
+            let durationSec = fromIntegral (timestampNanoseconds ts - timestampNanoseconds startNs) / 1_000_000_000 :: Double
+                mRoute = lookupAttributeByKey attrs SC.http_route
+                withRoute = case mRoute of
+                  Just route -> A.addAttribute A.defaultAttributeLimits metricReqAttrs (unkey SC.http_route) route
+                  Nothing -> metricReqAttrs
+                metricRespAttrs =
+                  let a1 = A.addAttribute A.defaultAttributeLimits withRoute (unkey SC.http_response_statusCode) sc
+                      a2 = A.addAttribute A.defaultAttributeLimits a1 (unkey SC.network_protocol_version) (httpVersionText (httpVersion req))
+                  in if sc >= 500
+                       then A.addAttribute A.defaultAttributeLimits a2 (unkey SC.error_type) (T.pack (show sc))
+                       else a2
+            histogramRecord dur durationSec metricRespAttrs
+            counterAdd reqCount 1 metricRespAttrs
+            pure respReceived
 
 
 contextKey :: Vault.Key Context.Context

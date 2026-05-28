@@ -1,3 +1,4 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -28,6 +29,11 @@ module OpenTelemetry.Instrumentation.HttpClient.Raw (
   HttpClientInstrumentationConfig (..),
   httpClientInstrumentationConfig,
 
+  -- * Metrics
+  HttpClientMetrics (..),
+  createHttpClientMetrics,
+  createHttpClientMetricsFromMeter,
+
   -- * Internal
   httpTracerProvider,
   httpVersionText,
@@ -35,24 +41,29 @@ module OpenTelemetry.Instrumentation.HttpClient.Raw (
 
 import Control.Applicative ((<|>))
 import Control.Exception (SomeException, catch, throwIO)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, when)
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
 import Data.CaseInsensitive (foldedCase)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
+import Data.Int (Int64)
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.Builder (toLazyText)
 import Data.Text.Lazy.Builder.Int (decimal)
+import Data.Typeable (tyConName, typeOf, typeRepTyCon)
+import Data.Word (Word64)
 import Network.HTTP.Client
 import Network.HTTP.Types
+import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Context (insertSpan, lookupSpan)
 import qualified OpenTelemetry.Context as Ctx
 import OpenTelemetry.Context.ThreadLocal
+import OpenTelemetry.Metric.Core
 import OpenTelemetry.Propagator (TextMap, TextMapPropagator, extract, getGlobalTextMapPropagator, inject, textMapFromList, textMapToList)
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.SemanticsConfig
@@ -64,6 +75,7 @@ data HttpClientInstrumentationConfig = HttpClientInstrumentationConfig
   { requestName :: Maybe T.Text
   , requestHeadersToRecord :: [HeaderName]
   , responseHeadersToRecord :: [HeaderName]
+  , httpClientMetrics :: Maybe HttpClientMetrics
   }
 
 
@@ -73,6 +85,7 @@ instance Semigroup HttpClientInstrumentationConfig where
       { requestName = requestName r <|> requestName l
       , requestHeadersToRecord = requestHeadersToRecord l <> requestHeadersToRecord r
       , responseHeadersToRecord = responseHeadersToRecord l <> responseHeadersToRecord r
+      , httpClientMetrics = httpClientMetrics r <|> httpClientMetrics l
       }
 
 
@@ -82,6 +95,7 @@ instance Monoid HttpClientInstrumentationConfig where
       { requestName = Nothing
       , requestHeadersToRecord = mempty
       , responseHeadersToRecord = mempty
+      , httpClientMetrics = Nothing
       }
 
 
@@ -104,10 +118,82 @@ parentTokenKey = unsafePerformIO $ Ctx.newKey "http-client.parent-token"
 {-# NOINLINE parentTokenKey #-}
 
 
+metricStartKey :: Ctx.Key (Word64, Request)
+metricStartKey = unsafePerformIO $ Ctx.newKey "http-client.metric-start"
+{-# NOINLINE metricStartKey #-}
+
+
 httpTracerProvider :: (MonadIO m) => m Tracer
 httpTracerProvider = do
   tp <- getGlobalTracerProvider
   pure $ makeTracer tp $detectInstrumentationLibrary tracerOptions
+
+
+data HttpClientMetrics = HttpClientMetrics
+  { hcmDuration :: !Histogram
+  , hcmActive :: !(UpDownCounter Int64)
+  , hcmCount :: !(Counter Int64)
+  }
+
+
+createHttpClientMetrics :: IO HttpClientMetrics
+createHttpClientMetrics = do
+  mp <- getGlobalMeterProvider
+  meter <- getMeter mp "hs-opentelemetry-instrumentation-http-client"
+  createHttpClientMetricsFromMeter meter
+
+
+createHttpClientMetricsFromMeter :: Meter -> IO HttpClientMetrics
+createHttpClientMetricsFromMeter meter = do
+  dur <-
+    meterCreateHistogram
+      meter
+      "http.client.request.duration"
+      (Just "s")
+      (Just "Duration of outbound HTTP requests")
+      defaultAdvisoryParameters
+        { advisoryExplicitBucketBoundaries =
+            Just [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
+        }
+  active <- meterCreateUpDownCounterInt64 meter "http.client.active_requests" (Just "{request}") (Just "Number of active outbound HTTP requests") defaultAdvisoryParameters
+  cnt <- meterCreateCounterInt64 meter "http.client.request.count" (Just "{request}") (Just "Total number of outbound HTTP requests") defaultAdvisoryParameters
+  pure HttpClientMetrics {hcmDuration = dur, hcmActive = active, hcmCount = cnt}
+
+
+resolveMetrics :: HttpClientInstrumentationConfig -> IO HttpClientMetrics
+resolveMetrics conf = maybe createHttpClientMetrics pure (httpClientMetrics conf)
+
+
+metricRequestAttrs :: Request -> A.Attributes
+metricRequestAttrs req =
+  let a1 = A.addAttribute A.defaultAttributeLimits A.emptyAttributes (unkey SC.http_request_method) (T.decodeUtf8 (method req))
+      a2 = A.addAttribute A.defaultAttributeLimits a1 (unkey SC.server_address) (T.decodeUtf8 (host req))
+      a3 = A.addAttribute A.defaultAttributeLimits a2 (unkey SC.server_port) (port req)
+  in a3
+
+
+recordResponseMetrics :: HttpClientMetrics -> Request -> Word64 -> Word64 -> Response a -> IO ()
+recordResponseMetrics hcm req startNs endNs resp = do
+  let sc = statusCode (responseStatus resp)
+      durationSec = fromIntegral (endNs - startNs) / 1_000_000_000 :: Double
+      base = metricRequestAttrs req
+      a1 = A.addAttribute A.defaultAttributeLimits base (unkey SC.http_response_statusCode) sc
+      a2 = A.addAttribute A.defaultAttributeLimits a1 (unkey SC.network_protocol_version) (httpVersionText (responseVersion resp))
+      respAttrs
+        | sc >= 400 = A.addAttribute A.defaultAttributeLimits a2 (unkey SC.error_type) (T.pack (show sc))
+        | otherwise = a2
+  histogramRecord (hcmDuration hcm) durationSec respAttrs
+  counterAdd (hcmCount hcm) 1 respAttrs
+
+
+recordErrorMetrics :: HttpClientMetrics -> Request -> Word64 -> Word64 -> SomeException -> IO ()
+recordErrorMetrics hcm req startNs endNs ex = do
+  let durationSec = fromIntegral (endNs - startNs) / 1_000_000_000 :: Double
+      base = metricRequestAttrs req
+      errType = T.pack $ tyConName $ typeRepTyCon $ typeOf ex
+      errAttrs = A.addAttribute A.defaultAttributeLimits base (unkey SC.error_type) errType
+  histogramRecord (hcmDuration hcm) durationSec errAttrs
+  counterAdd (hcmCount hcm) 1 errAttrs
 
 
 {- | Instrument a 'ManagerSettings' to automatically trace all HTTP requests.
@@ -139,6 +225,7 @@ instrumentManagerSettings
   -> IO ManagerSettings
 instrumentManagerSettings conf settings = do
   tracer <- httpTracerProvider
+  hcm <- resolveMetrics conf
   pure $
     settings
       { managerModifyRequest = \req -> do
@@ -163,11 +250,15 @@ instrumentManagerSettings conf settings = do
           tok <- attachContext newCtx
           adjustContext (Ctx.insert parentTokenKey tok)
 
+          upDownCounterAdd (hcmActive hcm) 1 (metricRequestAttrs req')
+
           addRequestAttributes conf s req'
 
           propagator <- getGlobalTextMapPropagator
           ctx' <- getContext
           hdrs <- injectToHeaders propagator ctx' (requestHeaders req')
+          startTs <- getTimestamp
+          adjustContext (Ctx.insert metricStartKey (timestampNanoseconds startTs, req'))
           pure req' {requestHeaders = hdrs}
       , managerModifyResponse = \resp -> do
           resp' <- managerModifyResponse settings resp
@@ -175,6 +266,10 @@ instrumentManagerSettings conf settings = do
           forM_ (Ctx.lookup managedSpanKey ctx) $ \s -> do
             instrumentResponseOnSpan conf s resp'
             endSpan s Nothing
+          forM_ (Ctx.lookup metricStartKey ctx) $ \(startNs, origReq) -> do
+            endTs <- getTimestamp
+            upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs origReq)
+            recordResponseMetrics hcm origReq startNs (timestampNanoseconds endTs) resp'
           forM_ (Ctx.lookup parentTokenKey ctx) detachContext
           pure resp'
       , managerWrapException = \req action ->
@@ -185,6 +280,10 @@ instrumentManagerSettings conf settings = do
               addAttributes s [(unkey SC.error_type, toAttribute errText)]
               setStatus s (Error errText)
               endSpan s Nothing
+            forM_ (Ctx.lookup metricStartKey ctx) $ \(startNs, origReq) -> do
+              endTs <- getTimestamp
+              upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs origReq)
+              recordErrorMetrics hcm origReq startNs (timestampNanoseconds endTs) e
             forM_ (Ctx.lookup parentTokenKey ctx) detachContext
             throwIO e
       }
@@ -250,6 +349,7 @@ tracedHttpRequest
   -> IO (Response a)
 tracedHttpRequest conf req action = do
   tracer <- httpTracerProvider
+  hcm <- resolveMetrics conf
   let methodText = T.decodeUtf8 (method req)
       reqSpanName = fromMaybe methodText (requestName conf)
   ctx <- getContext
@@ -263,12 +363,17 @@ tracedHttpRequest conf req action = do
   tok <- attachContext ctx'
 
   addRequestAttributes conf s req
+  upDownCounterAdd (hcmActive hcm) 1 (metricRequestAttrs req)
+  startTs <- getTimestamp
 
   propagator <- getGlobalTextMapPropagator
   hdrs <- injectToHeaders propagator ctx' (requestHeaders req)
   let req' = req {requestHeaders = hdrs}
 
   let onError (e :: SomeException) = do
+        endTs <- getTimestamp
+        upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs req)
+        recordErrorMetrics hcm req (timestampNanoseconds startTs) (timestampNanoseconds endTs) e
         let errText = T.pack (show e)
         addAttributes s [(unkey SC.error_type, toAttribute errText)]
         setStatus s (Error errText)
@@ -279,6 +384,9 @@ tracedHttpRequest conf req action = do
   resp <-
     action req' `catch` onError
 
+  endTs <- getTimestamp
+  upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs req)
+  recordResponseMetrics hcm req (timestampNanoseconds startTs) (timestampNanoseconds endTs) resp
   instrumentResponseOnSpan conf s resp
   endSpan s Nothing
   detachContext tok

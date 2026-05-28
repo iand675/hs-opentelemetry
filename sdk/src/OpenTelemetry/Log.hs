@@ -125,7 +125,7 @@ module OpenTelemetry.Log (
 
 import Control.Applicative ((<|>))
 import Control.Exception (bracket)
-import Control.Monad (when)
+import Control.Monad (void, when)
 import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
@@ -134,13 +134,15 @@ import OpenTelemetry.Environment (LogsExporterSelection (..), lookupBooleanEnv, 
 import OpenTelemetry.Exporter.Handle.LogRecord (stdoutLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.LogRecord (otlpLogRecordExporter)
 import OpenTelemetry.Exporter.OTLP.Span (loadExporterEnvironmentVariables)
-import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Common.Types (FlushResult (..))
 import OpenTelemetry.Internal.Log.Types (LogRecordExporter, emptyLogRecordArguments)
 import OpenTelemetry.Internal.Logging (otelLogDebug, otelLogWarning)
 import OpenTelemetry.Log.Core
 import OpenTelemetry.Processor.Batch.LogRecord (BatchLogRecordProcessorConfig (..), batchLogRecordProcessor, defaultBatchLogRecordProcessorConfig)
 import OpenTelemetry.Processor.Simple.LogRecord (SimpleLogRecordProcessorConfig (..), simpleLogRecordProcessor)
 import qualified OpenTelemetry.Registry as Registry
+import OpenTelemetry.Resource (materializeResources, mergeResources, mkResource)
+import OpenTelemetry.Resource.Detect (detectBuiltInResources, detectResourceAttributes)
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
 
@@ -159,11 +161,10 @@ main = withLoggerProvider $ \\lp -> do
 @since 0.0.1.0
 -}
 withLoggerProvider :: (LoggerProvider -> IO a) -> IO a
-withLoggerProvider body =
+withLoggerProvider =
   bracket
     initializeGlobalLoggerProvider
-    (\lp -> shutdownLoggerProvider lp Nothing >> pure ())
-    body
+    (\lp -> void $ shutdownLoggerProvider lp Nothing)
 
 
 {- | Create a 'LoggerProvider' from @OTEL_*@ environment variables and install
@@ -205,7 +206,14 @@ initializeGlobalLoggerProvider = do
 initializeLoggerProvider :: IO LoggerProvider
 initializeLoggerProvider = do
   attrLimits <- detectLogRecordAttributeLimits
-  let opts = emptyLoggerProviderOptions {loggerProviderOptionsAttributeLimits = attrLimits}
+  builtInRs <- detectBuiltInResources
+  envVarRs <- mkResource . map Just <$> detectResourceAttributes
+  let rs = materializeResources (mergeResources envVarRs builtInRs)
+      opts =
+        emptyLoggerProviderOptions
+          { loggerProviderOptionsResource = rs
+          , loggerProviderOptionsAttributeLimits = attrLimits
+          }
   sel <- lookupLogsExporterSelection
   case sel of
     Just LogsExporterNone -> createLoggerProvider [] opts

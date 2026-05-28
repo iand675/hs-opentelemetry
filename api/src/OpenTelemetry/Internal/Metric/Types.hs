@@ -264,8 +264,10 @@ data Meter = Meter
 data MeterProvider = MeterProvider
   { meterProviderGetMeter :: !(InstrumentationLibrary -> IO Meter)
   -- ^ Get or create a Meter for the given instrumentation scope.
-  , meterProviderShutdown :: !(IO ShutdownResult)
-  -- ^ Shut down the provider, flushing and releasing resources.
+  , meterProviderShutdown :: !(Maybe Int -> IO ShutdownResult)
+  {- ^ Shut down the provider, flushing and releasing resources.
+  Optional timeout in microseconds; @Nothing@ uses the SDK default (5s).
+  -}
   , meterProviderForceFlush :: !(Maybe Int -> IO FlushResult)
   {- ^ Force a collection and export cycle. Optional timeout in microseconds;
   @Nothing@ uses the SDK default (5s).

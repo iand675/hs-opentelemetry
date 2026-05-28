@@ -768,7 +768,7 @@ mkMeter env scope =
     exOpts = sdkMeterExemplarOptions env
 
     mkCounterI64 :: SdkMeterEnv -> InstrumentationLibrary -> InstrumentKind -> Bool -> Bool -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Int64)
-    mkCounterI64 e sc k mono isInt name mUnit mDesc adv = do
+    mkCounterI64 e sc k mono _isInt name mUnit mDesc adv = do
       if shouldDropInstrument views k name
         then pure $ Counter (\_ _ -> pure ()) (pure False)
         else do
@@ -790,7 +790,7 @@ mkMeter env scope =
             else pure $ Counter (\_ _ -> pure ()) (pure False)
 
     mkCounterDbl :: SdkMeterEnv -> InstrumentationLibrary -> InstrumentKind -> Bool -> Bool -> Text -> Maybe Text -> Maybe Text -> AdvisoryParameters -> IO (Counter Double)
-    mkCounterDbl e sc k mono isInt name mUnit mDesc adv = do
+    mkCounterDbl e sc k mono _isInt name mUnit mDesc adv = do
       if shouldDropInstrument views k name
         then pure $ Counter (\_ _ -> pure ()) (pure False)
         else do
@@ -1303,7 +1303,7 @@ createMeterProvider res opts = do
           { meterProviderGetMeter = \scope -> do
               shut <- readIORef sd
               if shut then pure (noopMeter scope) else pure (mkMeter env scope)
-          , meterProviderShutdown = do
+          , meterProviderShutdown = \_timeoutMicros -> do
               writeIORef sd True
               batches <- collectResourceMetrics env
               shutdownRes <- case mExporter of
