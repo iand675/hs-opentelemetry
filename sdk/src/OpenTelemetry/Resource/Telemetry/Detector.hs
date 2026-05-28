@@ -12,7 +12,7 @@ import Paths_hs_opentelemetry_sdk
 detectTelemetry :: Telemetry
 detectTelemetry =
   Telemetry
-    { telemetrySdkName = "hs-opentelemetry-sdk"
+    { telemetrySdkName = "opentelemetry"
     , telemetrySdkLanguage = Just "haskell"
     , telemetrySdkVersion = Just $ T.pack $ showVersion version
     , telemetryDistroName = Nothing
