@@ -10,3 +10,7 @@ import qualified Data.Text as T
 
 tryGetUser :: IO (Maybe T.Text)
 tryGetUser = pure Nothing
+
+
+tryGetParentProcessID :: IO (Maybe Int)
+tryGetParentProcessID = pure Nothing
