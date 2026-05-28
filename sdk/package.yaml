@@ -30,6 +30,7 @@ flags:
 
 library:
   exposed-modules:
+  - OpenTelemetry.SDK
   - OpenTelemetry.Configuration
   - OpenTelemetry.Configuration.Create
   - OpenTelemetry.Configuration.Parse
@@ -89,6 +90,7 @@ library:
   - aeson
   - async
   - bytestring
+  - directory
   - case-insensitive
   - clock
   - containers
@@ -101,6 +103,7 @@ library:
   - scientific
   - stm
   - text
+  - time
   - unix-compat >= 0.7.1 # for getProcessID
   - unordered-containers
   - vector

@@ -6,7 +6,7 @@ import Control.Exception (bracket, bracket_)
 import qualified Data.Map.Strict as Map
 import Data.Text (Text, pack)
 import OpenTelemetry.Attributes (lookupAttribute, toAttribute)
-import OpenTelemetry.Configuration.Create (OTelComponents (..), createFromConfig)
+import OpenTelemetry.Configuration.Create (OTelSignals (..), createFromConfig)
 import OpenTelemetry.Configuration.Parse (ConfigParseError (..), parseConfigBytes, parseConfigFile)
 import OpenTelemetry.Configuration.Types
 import OpenTelemetry.Propagator (Propagator (..))

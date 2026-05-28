@@ -1,6 +1,6 @@
 cabal-version: 1.22
 
--- This file has been generated from package.yaml by hpack version 0.38.3.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -34,6 +34,7 @@ flag tls-metadata
 
 library
   exposed-modules:
+      OpenTelemetry.SDK
       OpenTelemetry.Configuration
       OpenTelemetry.Configuration.Create
       OpenTelemetry.Configuration.Parse
@@ -113,6 +114,7 @@ library
     , case-insensitive
     , clock
     , containers
+    , directory
     , hashable
     , hs-opentelemetry-api ==1.0.*
     , hs-opentelemetry-exporter-handle ==1.0.*
@@ -131,6 +133,7 @@ library
     , scientific
     , stm
     , text
+    , time
     , unix-compat >=0.7.1
     , unordered-containers
     , vector
