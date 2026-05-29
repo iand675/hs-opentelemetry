@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 ### Full Spec conformance against 1.55.0
 - **`InstrumentationScope` type alias added.**
   The OTel spec renamed "Instrumentation Library" to "Instrumentation Scope".

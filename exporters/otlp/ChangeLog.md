@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - **Spec: `Retry-After` now supports HTTP-date format in addition to delay-seconds.**
   Previous implementation only parsed integer seconds. Now handles both RFC 7231
   Section 7.1.3 formats. Applied to all three signal exporters (Span, Metric, LogRecord).

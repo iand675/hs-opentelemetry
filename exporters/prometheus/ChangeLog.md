@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - Support `startTimeUnixNano` on all data point types
 - Comprehensive Prometheus text rendering tests
 - Exponential histogram rendering (approximate `le` labels), exemplar comments on samples.

@@ -15,6 +15,8 @@ description:
   OpenTelemetry Semantic Conventions for Haskell is a library that is automatically generated
   based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.40.
 
+extra-doc-files: CHANGELOG.md
+
 source-repository head
   type: git
   location: https://github.com/iand675/hs-opentelemetry

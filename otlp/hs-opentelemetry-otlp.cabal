@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 1.18
 
 -- This file has been generated from package.yaml by hpack version 0.38.3.
 --
@@ -6,8 +6,8 @@ cabal-version: 1.12
 
 name:           hs-opentelemetry-otlp
 version:        1.0.0.0
-synopsis:       OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
-description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
+synopsis:       OTLP protocol buffer modules for OpenTelemetry, generated via proto-lens
+description:    proto-lens generated Haskell modules for the OpenTelemetry Protocol (OTLP) protocol buffer definitions. Provides the wire types used by OTLP exporters. Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>.
 category:       OpenTelemetry
 homepage:       https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
@@ -19,7 +19,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
     proto/opentelemetry/proto/collector/logs/v1/logs_service.proto
     proto/opentelemetry/proto/collector/metrics/v1/metrics_service.proto
     proto/opentelemetry/proto/collector/profiles/v1development/profiles_service.proto
@@ -30,6 +29,8 @@ extra-source-files:
     proto/opentelemetry/proto/profiles/v1development/profiles.proto
     proto/opentelemetry/proto/resource/v1/resource.proto
     proto/opentelemetry/proto/trace/v1/trace.proto
+extra-doc-files:
+    ChangeLog.md
 
 source-repository head
   type: git

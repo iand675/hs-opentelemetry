@@ -7,16 +7,20 @@ version:             1.0.0.0
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 - proto/**/*/*.proto
+extra-doc-files:
+- ChangeLog.md
 
-synopsis:            OpenTelemetry protocol buffer modules generated for the OTLP protocol by the proto-lens package
+synopsis:            OTLP protocol buffer modules for OpenTelemetry, generated via proto-lens
 category:            OpenTelemetry
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>
+description:
+  proto-lens generated Haskell modules for the OpenTelemetry Protocol (OTLP)
+  protocol buffer definitions. Provides the wire types used by OTLP exporters.
+  Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>.
 
 dependencies:
 - base >= 4.7 && < 5

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 * Add required `messaging.system` attribute (`"kafka"`).
 * Add `messaging.operation.name` and `messaging.operation.type` (stable convention names).
 * Add `messaging.consumer.group.name` (generic, alongside kafka-specific key).

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - **Fix: initial span name is now low-cardinality.** Previously used `{method} {raw_path}`
   which includes IDs, UUIDs, etc. Now uses just `{method}` (e.g. `GET`) until a framework
   sets the `http.route` attribute, at which point the name updates to `{method} {route}`.

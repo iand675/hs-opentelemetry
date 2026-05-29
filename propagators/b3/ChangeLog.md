@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - Fix: B3 multi-header extraction now gives `X-B3-Flags` (debug) precedence over
   `X-B3-Sampled`. Previously `sampled <|> debug` meant `X-B3-Sampled: 0` overrode
   `X-B3-Flags: 1`, violating Zipkin's "debug implies accept" rule.

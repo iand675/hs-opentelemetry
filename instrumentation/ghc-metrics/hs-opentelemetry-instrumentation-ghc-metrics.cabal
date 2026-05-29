@@ -18,6 +18,7 @@ copyright:     2024-2026 Ian Duncan, Mercury Technologies
 license:       BSD-3-Clause
 license-file:  LICENSE
 build-type:    Simple
+extra-doc-files: ChangeLog.md
 
 source-repository head
   type:     git

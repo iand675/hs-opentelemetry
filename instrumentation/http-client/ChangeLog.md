@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - **Fix: stable attribute `http.host` → `server.address`.** The stable
   HTTP semantic conventions use `server.address` and `server.port` instead
   of the legacy `http.host`.

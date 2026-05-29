@@ -7,9 +7,10 @@ version:             1.0.0.0
 
 extra-source-files:
 - README.md
+extra-doc-files:
 - ChangeLog.md
 
-synopsis:            OpenTelemetry API for use by libraries for direct instrumentation or wrapper packages.
+synopsis:            OpenTelemetry API for libraries to instrument code or build wrappers.
 category:            OpenTelemetry, Telemetry, Monitoring, Observability, Metrics
 
 # To avoid duplicated efforts in documentation and dealing with the

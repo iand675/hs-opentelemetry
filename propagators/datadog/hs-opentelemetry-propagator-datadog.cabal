@@ -12,6 +12,7 @@ homepage: https://github.com/iand675/hs-opentelemetry#readme
 bug-reports: https://github.com/iand675/hs-opentelemetry/issues
 synopsis: Datadog Propagator for OpenTelemetry
 description: This package provides a Datadog style propagator for hs-opentelemetry suite.
+extra-doc-files: Changelog.md
 
 source-repository head
   type: git

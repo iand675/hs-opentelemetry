@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - **Breaking: `http.framework` attribute renamed to `webengine.name`.**
   Uses the standard OTel semantic convention (`webengine.name = "yesod"`) instead of
   the custom `http.framework` key. Update any dashboards or alerts that reference

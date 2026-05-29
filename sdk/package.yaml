@@ -7,8 +7,8 @@ version:             1.0.0.0
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 extra-doc-files:
+- ChangeLog.md
 - docs/img/*
 
 synopsis:            OpenTelemetry SDK for use in applications.

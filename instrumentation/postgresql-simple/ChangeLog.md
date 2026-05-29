@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - **Fix: Use `databaseOption` instead of `httpOption` for database convention selection.**
   Database attribute naming is now controlled independently via `OTEL_SEMCONV_STABILITY_OPT_IN=database`
   (or `database/dup`) rather than piggybacking on the HTTP stability setting.

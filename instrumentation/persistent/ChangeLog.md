@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - Internal: `db.transaction.*` attribute keys are now typed `AttributeKey` constants
   (`db.transaction.isolation`, `db.transaction.outcome`,
   `db.transaction.commit_duration_us`, `db.transaction.rollback_duration_us`).

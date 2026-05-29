@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 ### Spec conformance (1.55.0 audit)
 - **NaN/Inf silently dropped for all metric instrument types.**
   Previously only histograms filtered non-finite double values. Now

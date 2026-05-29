@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0.0 - 2026-05-29
+
 - Fix: extractor now derives `traceFlags` from `x-datadog-sampling-priority` header.
   Previously always set `TraceFlags 1` (sampled) regardless of the priority value.
   Priority <= 0 now correctly yields unsampled `TraceFlags 0`.
