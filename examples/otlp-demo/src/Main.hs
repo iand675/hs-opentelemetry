@@ -41,7 +41,7 @@ import OpenTelemetry.Attributes (
  )
 import OpenTelemetry.Attributes.Attribute (ToAttribute (..))
 import OpenTelemetry.Configuration (
-  OTelComponents (..),
+  OTelSignals (..),
   initializeFromConfigFile,
   initializeFromText,
  )
@@ -125,8 +125,8 @@ main = do
   finally (runDemo components) (otelShutdown components)
 
 
-runDemo :: OTelComponents -> IO ()
-runDemo OTelComponents {..} = do
+runDemo :: OTelSignals -> IO ()
+runDemo OTelSignals {..} = do
   let lib = instrumentationLibrary "hs-otel-demo" "0.1.0"
       tracer = makeTracer otelTracerProvider "hs-otel-demo" tracerOptions
       logger = makeLogger otelLoggerProvider lib

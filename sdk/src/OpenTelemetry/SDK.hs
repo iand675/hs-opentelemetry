@@ -48,7 +48,7 @@ import Control.Exception (SomeException, bracket, catch)
 import Control.Monad (void)
 import OpenTelemetry.Configuration.Create (OTelSignals (..))
 import OpenTelemetry.Log (initializeGlobalLoggerProvider, shutdownLoggerProvider)
-import OpenTelemetry.Metric (MeterProviderHandle (..), initializeGlobalMeterProvider, shutdownMeterProviderHandle)
+import OpenTelemetry.Metric (initializeGlobalMeterProvider, shutdownMeterProvider)
 import OpenTelemetry.Trace (initializeGlobalTracerProvider, shutdownTracerProvider)
 
 
@@ -60,16 +60,16 @@ install them as globals, and return an 'OTelSignals' with a unified shutdown han
 initializeOpenTelemetry :: IO OTelSignals
 initializeOpenTelemetry = do
   tp <- initializeGlobalTracerProvider
-  mph <- initializeGlobalMeterProvider
+  mp <- initializeGlobalMeterProvider
   lp <- initializeGlobalLoggerProvider
   let shutdown = do
         void (shutdownTracerProvider tp Nothing) `catch` \(_ :: SomeException) -> pure ()
-        shutdownMeterProviderHandle mph `catch` \(_ :: SomeException) -> pure ()
+        void (shutdownMeterProvider mp Nothing) `catch` \(_ :: SomeException) -> pure ()
         void (shutdownLoggerProvider lp Nothing) `catch` \(_ :: SomeException) -> pure ()
   pure
     OTelSignals
       { otelTracerProvider = tp
-      , otelMeterProvider = meterProviderHandleProvider mph
+      , otelMeterProvider = mp
       , otelLoggerProvider = lp
       , otelPropagators = mempty
       , otelShutdown = shutdown

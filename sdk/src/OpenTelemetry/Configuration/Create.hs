@@ -123,7 +123,7 @@ createFromConfig cfg = do
 
       let shutdown = do
             _ <- shutdownTracerProvider tp Nothing
-            _ <- shutdownMeterProvider mp
+            _ <- shutdownMeterProvider mp Nothing
             _ <- shutdownLoggerProvider lp Nothing
             pure ()
 
@@ -280,9 +280,9 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
             handle <- forkPeriodicMetricReader env ex readerOpts
             pure
               mp
-                { meterProviderShutdown = do
+                { meterProviderShutdown = \mTimeout -> do
                     stopPeriodicMetricReader handle
-                    meterProviderShutdown mp
+                    meterProviderShutdown mp mTimeout
                 }
           Nothing -> do
             (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions

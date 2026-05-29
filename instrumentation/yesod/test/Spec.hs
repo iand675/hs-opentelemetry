@@ -22,6 +22,8 @@ import OpenTelemetry.Attributes.Key (unkey)
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
 import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware')
 import OpenTelemetry.Instrumentation.Yesod
+import OpenTelemetry.Internal.Common.Types (instrumentationLibrary)
+import OpenTelemetry.Metric.Core (noopMeter)
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core
 import System.Environment (setEnv)
@@ -234,7 +236,7 @@ spec = do
     it "adds http.route attribute to WAI span" $ do
       (processor, ref) <- inMemoryListExporter
       tp <- createTracerProvider [processor] emptyTracerProviderOptions
-      let waiMw = newOpenTelemetryWaiMiddleware' tp
+      waiMw <- newOpenTelemetryWaiMiddleware' tp (noopMeter (instrumentationLibrary "test" "0.0.0"))
       app <- toWaiAppPlain TestApp
       let fullApp = waiMw app
           req =
@@ -262,7 +264,7 @@ spec = do
     it "uses route pattern for UserR" $ do
       (processor, ref) <- inMemoryListExporter
       tp <- createTracerProvider [processor] emptyTracerProviderOptions
-      let waiMw = newOpenTelemetryWaiMiddleware' tp
+      waiMw <- newOpenTelemetryWaiMiddleware' tp (noopMeter (instrumentationLibrary "test" "0.0.0"))
       app <- toWaiAppPlain TestApp
       let fullApp = waiMw app
           req =
@@ -287,7 +289,7 @@ spec = do
     it "uses /** pattern for subsite routes" $ do
       (processor, ref) <- inMemoryListExporter
       tp <- createTracerProvider [processor] emptyTracerProviderOptions
-      let waiMw = newOpenTelemetryWaiMiddleware' tp
+      waiMw <- newOpenTelemetryWaiMiddleware' tp (noopMeter (instrumentationLibrary "test" "0.0.0"))
       app <- toWaiAppPlain TestApp
       let fullApp = waiMw app
           req =
@@ -314,7 +316,7 @@ spec = do
     it "uses /** pattern for subsite nested routes" $ do
       (processor, ref) <- inMemoryListExporter
       tp <- createTracerProvider [processor] emptyTracerProviderOptions
-      let waiMw = newOpenTelemetryWaiMiddleware' tp
+      waiMw <- newOpenTelemetryWaiMiddleware' tp (noopMeter (instrumentationLibrary "test" "0.0.0"))
       app <- toWaiAppPlain TestApp
       let fullApp = waiMw app
           req =

@@ -13,6 +13,8 @@ import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (.
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
 import OpenTelemetry.Instrumentation.Cloudflare (cloudflareInstrumentationMiddleware)
 import OpenTelemetry.Instrumentation.Wai (newOpenTelemetryWaiMiddleware')
+import OpenTelemetry.Internal.Common.Types (instrumentationLibrary)
+import OpenTelemetry.Metric.Core (noopMeter)
 import OpenTelemetry.Trace.Core
 import System.Environment (setEnv)
 import Test.Hspec
@@ -81,8 +83,8 @@ withCloudflareMiddleware :: RequestHeaders -> IO [ImmutableSpan]
 withCloudflareMiddleware headers = do
   (processor, ref) <- inMemoryListExporter
   tp <- createTracerProvider [processor] emptyTracerProviderOptions
-  let waiMw = newOpenTelemetryWaiMiddleware' tp
-      cfMw = cloudflareInstrumentationMiddleware
+  waiMw <- newOpenTelemetryWaiMiddleware' tp (noopMeter (instrumentationLibrary "test" "0.0.0"))
+  let cfMw = cloudflareInstrumentationMiddleware
       app _req respond = respond $ responseLBS ok200 [] "ok"
       req =
         defaultRequest
