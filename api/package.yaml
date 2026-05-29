@@ -95,9 +95,7 @@ tests:
     - OpenTelemetry.InstrumentationLibrarySpec
     - OpenTelemetry.Internal.LoggingSpec
     - OpenTelemetry.Log.CoreSpec
-    - OpenTelemetry.Logs.CoreSpec
     - OpenTelemetry.MetricSpec
-    - OpenTelemetry.MetricsSpec
     - OpenTelemetry.PropagatorSpec
     - OpenTelemetry.RegistrySpec
     - OpenTelemetry.ResourceSpec
