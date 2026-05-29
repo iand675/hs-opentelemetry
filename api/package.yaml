@@ -34,6 +34,8 @@ library:
   - cbits/hs_otel_time.c
   include-dirs:
   - include
+  install-includes:
+  - hs_otel_hex.h
   reexported-modules:
   - OpenTelemetry.Attributes.Attribute
   - OpenTelemetry.Attributes.Key
@@ -84,17 +86,24 @@ tests:
     - OpenTelemetry.AttributesSpec
     - OpenTelemetry.BaggageSpec
     - OpenTelemetry.Context.EnvironmentSpec
+    - OpenTelemetry.Context.PropagationSpec
+    - OpenTelemetry.Context.ThreadLocalSpec
+    - OpenTelemetry.ContextSpec
     - OpenTelemetry.Contrib.CarryOnsSpec
     - OpenTelemetry.Contrib.SpanTraversalsSpec
     - OpenTelemetry.EnvironmentSpec
     - OpenTelemetry.InstrumentationLibrarySpec
     - OpenTelemetry.Internal.LoggingSpec
     - OpenTelemetry.Log.CoreSpec
+    - OpenTelemetry.Logs.CoreSpec
     - OpenTelemetry.MetricSpec
+    - OpenTelemetry.MetricsSpec
+    - OpenTelemetry.PropagatorSpec
     - OpenTelemetry.RegistrySpec
     - OpenTelemetry.ResourceSpec
     - OpenTelemetry.SemanticsConfigSpec
     - OpenTelemetry.Trace.ExceptionHandlerSpec
+    - OpenTelemetry.Trace.IdCodecSpec
     - OpenTelemetry.Trace.MonadSpec
     - OpenTelemetry.Trace.SamplerSpec
     - OpenTelemetry.Trace.TraceFlagsSpec
