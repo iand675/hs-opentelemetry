@@ -60,7 +60,6 @@ import OpenTelemetry.Context (insertSpan, lookupSpan)
 import OpenTelemetry.Context.ThreadLocal (getAndAdjustContext, getContext)
 import qualified OpenTelemetry.SemanticConventions as SC
 import OpenTelemetry.Trace.Core (
-  Span,
   SpanArguments (..),
   SpanKind (Client),
   SpanStatus (Error),
@@ -71,7 +70,7 @@ import OpenTelemetry.Trace.Core (
   endSpan,
   setStatus,
  )
-import Prelude hiding (error)
+import Prelude hiding (error, span)
 
 
 {- | Add OpenTelemetry tracing hooks to an Amazonka 'Env'.
@@ -117,7 +116,7 @@ tracingConfiguredRequest tracer baseHook env req = do
       svcAbbrev = toText svc.abbrev
       opName = T.pack $ tyConName $ typeRepTyCon $ typeRep (Proxy @a)
       spanName = svcAbbrev <> "." <> opName
-      region = AWS.fromRegion (Amazonka.Env.region env)
+      region_ = AWS.fromRegion (Amazonka.Env.region env)
       endpoint_ = AWS.endpoint (AWS.service req) (Amazonka.Env.region env)
       host = TE.decodeUtf8 (AWS.host endpoint_)
 
@@ -131,7 +130,7 @@ tracingConfiguredRequest tracer baseHook env req = do
               [ (unkey SC.rpc_system, toAttribute ("aws-api" :: T.Text))
               , (unkey SC.rpc_service, toAttribute svcAbbrev)
               , (unkey SC.rpc_method, toAttribute opName)
-              , (unkey SC.cloud_region, toAttribute region)
+              , (unkey SC.cloud_region, toAttribute region_)
               , (unkey SC.server_address, toAttribute host)
               ]
         }
