@@ -43,10 +43,21 @@ module OpenTelemetry.Instrumentation.Amazonka (
 
 import Amazonka.Data.Text (toText)
 import Amazonka.Env (Env, Env' (..))
-import Amazonka.Env.Hooks (Finality (..), Hook, Hook_, Hooks (..))
+import Amazonka.Env.Hooks (
+  Finality (..),
+  Hook,
+  Hook_,
+  Hooks (..),
+  addHook_,
+  clientResponseHook,
+  configuredRequestHook,
+  errorHook,
+  responseHook,
+ )
 import qualified Amazonka.Types as AWS
 import Control.Applicative ((<|>))
 import Control.Exception (onException)
+import Data.Function ((&))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -98,20 +109,21 @@ control over hook composition.
 instrumentHooks :: Tracer -> Hooks -> Hooks
 instrumentHooks tracer baseHooks =
   baseHooks
-    { configuredRequest = tracingConfiguredRequest tracer (configuredRequest baseHooks)
-    , clientResponse = tracingClientResponse (clientResponse baseHooks)
-    , response = tracingResponse (response baseHooks)
-    , error = tracingError (error baseHooks)
-    }
+    & configuredRequestHook (addTracingConfiguredRequest tracer)
+    & clientResponseHook (addHook_ tracingClientResponse)
+    & responseHook (addHook_ tracingResponse)
+    & errorHook (addHook_ tracingError)
 
 
-tracingConfiguredRequest
+-- Unlike the other hooks in this module, we have to call the base
+-- hook ourselves to catch exceptions here.
+addTracingConfiguredRequest
   :: forall a
    . (AWS.AWSRequest a, Typeable a)
   => Tracer
   -> Hook (AWS.Request a)
   -> Hook (AWS.Request a)
-tracingConfiguredRequest tracer baseHook env req = do
+addTracingConfiguredRequest tracer baseHook env req = do
   let svc = (AWS.service req :: AWS.Service)
       svcAbbrev = toText svc.abbrev
       opName = T.pack $ tyConName $ typeRepTyCon $ typeRep (Proxy @a)
@@ -143,8 +155,7 @@ tracingClientResponse
   :: forall a
    . (AWS.AWSRequest a, Typeable a)
   => Hook_ (AWS.Request a, AWS.ClientResponse ())
-  -> Hook_ (AWS.Request a, AWS.ClientResponse ())
-tracingClientResponse baseHook env arg@(_req, resp) = do
+tracingClientResponse _ (_, resp) = do
   ctx <- getContext
   case lookupSpan ctx of
     Just span -> do
@@ -158,47 +169,39 @@ tracingClientResponse baseHook env arg@(_req, resp) = do
                   Nothing -> []
       addAttributes span attrs
     Nothing -> pure ()
-  baseHook env arg
 
 
 tracingResponse
   :: forall a
    . (AWS.AWSRequest a, Typeable a)
   => Hook_ (AWS.Request a, AWS.ClientResponse (AWS.AWSResponse a))
-  -> Hook_ (AWS.Request a, AWS.ClientResponse (AWS.AWSResponse a))
-tracingResponse baseHook env arg = do
-  result <- baseHook env arg
+tracingResponse _ _ = do
   ctx <- getContext
   case lookupSpan ctx of
     Just span -> endSpan span Nothing
     Nothing -> pure ()
-  pure result
 
 
 tracingError
   :: forall a
    . (AWS.AWSRequest a, Typeable a)
   => Hook_ (Finality, AWS.Request a, AWS.Error)
-  -> Hook_ (Finality, AWS.Request a, AWS.Error)
-tracingError baseHook env arg@(finality, _req, err) = do
-  case finality of
-    Final -> do
-      ctx <- getContext
-      case lookupSpan ctx of
-        Just span -> do
-          let errDesc = describeError err
-              attrs =
-                HM.fromList $
-                  (unkey SC.error_type, toAttribute errDesc)
-                    : case extractServiceRequestId err of
-                      Just reqId -> [(unkey SC.aws_requestId, toAttribute reqId)]
-                      Nothing -> []
-          addAttributes span attrs
-          setStatus span (Error errDesc)
-          endSpan span Nothing
-        Nothing -> pure ()
-    NotFinal -> pure ()
-  baseHook env arg
+tracingError _ (Final, _, err) = do
+  ctx <- getContext
+  case lookupSpan ctx of
+    Just span -> do
+      let errDesc = describeError err
+          attrs =
+            HM.fromList $
+              (unkey SC.error_type, toAttribute errDesc)
+                : case extractServiceRequestId err of
+                  Just reqId -> [(unkey SC.aws_requestId, toAttribute reqId)]
+                  Nothing -> []
+      addAttributes span attrs
+      setStatus span (Error errDesc)
+      endSpan span Nothing
+    Nothing -> pure ()
+tracingError _ _ = pure ()
 
 
 requestIdFromHeaders :: [Header] -> Maybe T.Text
