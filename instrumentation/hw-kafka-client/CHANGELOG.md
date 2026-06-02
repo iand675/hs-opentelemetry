@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Add instrumented version of `produceMessage'`
+
 ## 1.0.0.0 - 2026-05-29
 
 * Add required `messaging.system` attribute (`"kafka"`).
