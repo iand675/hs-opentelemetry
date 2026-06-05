@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Switch protobuf code generation from `proto-lens` to
+  [`wireform-proto`](https://github.com/iand675/wireform-). The generated
+  modules are now plain Haskell records (with `default<Type>` values) rather
+  than the lens-based `proto-lens` API, and live under the
+  `Proto.OpenTelemetry.Proto.*` module hierarchy. Encoding/decoding is provided
+  by `Proto.Encode`/`Proto.Decode`.
+- Because `wireform-proto` (via `wireform-core`) requires `base >= 4.18`, this
+  package now requires GHC 9.6 or newer.
+- The regeneration workflow no longer needs `protoc`/`proto-lens-protoc`; the
+  bundled `hs-opentelemetry-otlp-gen` executable (behind the `codegen` flag)
+  drives `wireform-proto`'s code generator.
+
 ## 1.0.0.0 - 2026-05-29
 
 - Update to OTLP specification v1.10.0 (profiles: reference-based attributes, common: ref→strindex rename)

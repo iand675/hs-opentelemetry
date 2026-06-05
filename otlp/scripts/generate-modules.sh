@@ -1,23 +1,15 @@
 #!/usr/bin/env bash
 #
-# Regenerate Haskell proto-lens bindings from the opentelemetry-proto repo.
+# Regenerate Haskell OTLP bindings from the opentelemetry-proto repo using
+# wireform-proto's code generator (no protoc / proto-lens required).
+#
 # Reads the target version from OTLP_VERSION in the otlp package directory.
 #
-# Requirements: protoc, proto-lens-protoc (both available via nix develop)
+# Requirements: a GHC toolchain + cabal able to build hs-opentelemetry-otlp
+# (which depends on wireform-proto). The generator itself is the
+# hs-opentelemetry-otlp-gen executable, guarded behind the `codegen` flag.
 
 set -eo pipefail
-
-if ! command -v protoc >/dev/null 2>&1; then
-  printf '%s\n' 'protoc is not available' 1>&2
-  exit 1
-fi
-
-if ! command -v proto-lens-protoc >/dev/null 2>&1; then
-  printf '%s\n' 'proto-lens-protoc is not available' 1>&2
-  exit 1
-fi
-
-PROTO_LENS=$(command -v proto-lens-protoc)
 
 OTLP_PACKAGE_DIR='otlp'
 
@@ -55,27 +47,22 @@ find "$OTLP_REPO_DIR" -type f -name '*.proto' -print0 |
   tar -cf - --null -s "|${OTLP_REPO_DIR}/||" --files-from=- |
   tar -xf - -C "$OTLP_PROTO_DIR"
 
+rm -fr "$OTLP_REPO_DIR"
+
+# wireform-proto's IDL parser does not accept the trailing ';' that protoc
+# tolerates after a message/enum block (e.g. `};`). Strip those so the
+# vendored proto files parse cleanly.
+find "$OTLP_PROTO_DIR" -type f -name '*.proto' -print0 |
+  xargs -0 sed -i 's/}[[:space:]]*;/}/g'
+
 HASKELL_OUT_DIR='src'
 rm -fr "$HASKELL_OUT_DIR"
 mkdir "$HASKELL_OUT_DIR"
 
-# Generate Haskell proto-lens modules (xargs -0 works on both GNU and BSD)
-find "$OTLP_REPO_DIR" -type f -name '*.proto' -print0 |
-  xargs -0 -L1 protoc --plugin=protoc-gen-haskell="$PROTO_LENS" \
-    --haskell_out="$HASKELL_OUT_DIR" --proto_path="$OTLP_REPO_DIR"
-
-# Prepend HLINT ignore pragma (sed -i '' is macOS; GNU sed uses sed -i)
-if sed --version >/dev/null 2>&1; then
-  # GNU sed
-  find "$HASKELL_OUT_DIR" -type f -name '*.hs' -print0 |
-    xargs -0 sed -i '1i{- HLINT ignore -}'
-else
-  # BSD sed (macOS)
-  find "$HASKELL_OUT_DIR" -type f -name '*.hs' -print0 |
-    xargs -0 sed -i '' $'1i\\\n{- HLINT ignore -}\n'
-fi
-
-rm -fr "$OTLP_REPO_DIR"
+# Generate Haskell modules via the wireform-proto code generator. The generator
+# is shipped as an executable in this package, guarded behind the `codegen`
+# flag so that it is not built as part of the normal library build.
+cabal run -v0 --flag codegen hs-opentelemetry-otlp-gen -- "$OTLP_PROTO_DIR" "$HASKELL_OUT_DIR"
 
 printf 'Done. Generated %d modules in %s/\n' \
   "$(find "$HASKELL_OUT_DIR" -name '*.hs' | wc -l | tr -d ' ')" \

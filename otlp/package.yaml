@@ -11,21 +11,61 @@ extra-source-files:
 extra-doc-files:
 - ChangeLog.md
 
-synopsis:            OTLP protocol buffer modules for OpenTelemetry, generated via proto-lens
+synopsis:            OTLP protocol buffer modules for OpenTelemetry, generated via wireform-proto
 category:            OpenTelemetry
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
 description:
-  proto-lens generated Haskell modules for the OpenTelemetry Protocol (OTLP)
+  wireform-proto generated Haskell modules for the OpenTelemetry Protocol (OTLP)
   protocol buffer definitions. Provides the wire types used by OTLP exporters.
   Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry#readme>.
 
+# The generated modules require GHC2021 (for ImportQualifiedPost) plus a
+# handful of extensions that the wireform code generator assumes are enabled
+# at the call site.
+language: GHC2021
+
+default-extensions:
+- LambdaCase
+- OverloadedRecordDot
+- OverloadedStrings
+
+# wireform-core (pulled in transitively by wireform-proto) requires base >= 4.18,
+# i.e. GHC 9.6 or newer. The package therefore cannot be built with GHC 9.4.
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.18 && < 5
 
 library:
   source-dirs: src
   dependencies:
-  - proto-lens-runtime
+  - aeson
+  - bytestring
+  - containers
+  - deepseq
+  - hashable
+  - reflection
+  - text
+  - vector
+  - wireform-core
+  - wireform-proto
+
+flags:
+  codegen:
+    description: Build the OTLP module code generator executable.
+    manual: true
+    default: false
+
+executables:
+  hs-opentelemetry-otlp-gen:
+    main: Main.hs
+    source-dirs: gen
+    when:
+    - condition: "!flag(codegen)"
+      buildable: false
+    dependencies:
+    - directory
+    - filepath
+    - text
+    - wireform-proto
