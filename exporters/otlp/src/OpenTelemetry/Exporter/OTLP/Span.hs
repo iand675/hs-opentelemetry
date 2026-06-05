@@ -58,19 +58,17 @@ import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.CaseInsensitive as CI
 import Data.Char (toLower)
+import Data.Function ((&))
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Data.IORef (readIORef)
 import Data.Maybe
-import Data.ProtoLens.Encoding
-import Data.ProtoLens.Message
 import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector as Vector
 import qualified Data.Word
-import Lens.Micro
 import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
@@ -87,11 +85,12 @@ import OpenTelemetry.Trace.Core (timestampNanoseconds)
 import qualified OpenTelemetry.Trace.Core as OT
 import OpenTelemetry.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.Util
-import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
-import Proto.Opentelemetry.Proto.Common.V1.Common
-import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
-import Proto.Opentelemetry.Proto.Trace.V1.Trace
-import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Trace_Fields
+import Proto.Encode (encodeMessage)
+import Proto.OpenTelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest, defaultExportTraceServiceRequest)
+import qualified Proto.OpenTelemetry.Proto.Collector.Trace.V1.TraceService as PCT
+import qualified Proto.OpenTelemetry.Proto.Common.V1.Common as PC
+import qualified Proto.OpenTelemetry.Proto.Resource.V1.Resource as PR
+import qualified Proto.OpenTelemetry.Proto.Trace.V1.Trace as PT
 import System.Environment
 import qualified System.IO as IO
 import Text.Read (readMaybe)
@@ -429,23 +428,23 @@ immutableSpansToProtobuf :: (MonadIO m) => HashMap OT.InstrumentationLibrary (Ve
 immutableSpansToProtobuf completedSpans = do
   spansByLibrary <- mapM makeScopeSpans spanGroupList
   pure $
-    defMessage
-      & Trace_Fields.vec'resourceSpans
-        .~ Vector.singleton
-          ( defMessage
-              & Trace_Fields.resource
-                .~ ( defMessage
-                       & Trace_Fields.vec'attributes
-                         .~ attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
-                       -- TODO
-                       & Trace_Fields.droppedAttributesCount
-                         .~ 0
-                   )
-              -- TODO, seems like spans need to be emitted via an API
-              -- that lets us keep them grouped by instrumentation originator
-              & Trace_Fields.scopeSpans
-                .~ spansByLibrary
-          )
+    defaultExportTraceServiceRequest
+      { PCT.exportTraceServiceRequestResourceSpans =
+          Vector.singleton
+            PT.defaultResourceSpans
+              { PT.resourceSpansResource =
+                  Just
+                    PR.defaultResource
+                      { PR.resourceAttributes =
+                          attributesToProto (getMaterializedResourcesAttributes someResourceGroup)
+                      , -- TODO
+                        PR.resourceDroppedAttributesCount = 0
+                      }
+              , -- TODO, seems like spans need to be emitted via an API
+                -- that lets us keep them grouped by instrumentation originator
+                PT.resourceSpansScopeSpans = Vector.fromList spansByLibrary
+              }
+      }
   where
     -- TODO this won't work right if multiple TracerProviders are exporting to a single OTLP exporter with different resources
     someResourceGroup = case spanGroupList of
@@ -461,131 +460,96 @@ immutableSpansToProtobuf completedSpans = do
 Internal helper.
 Translate a collection of `OT.ImmutableSpan` spans to OTLP `ScopeSpans`.
 -}
-makeScopeSpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m ScopeSpans
+makeScopeSpans :: (MonadIO m) => (OT.InstrumentationLibrary, Vector OT.ImmutableSpan) -> m PT.ScopeSpans
 makeScopeSpans (library, completedSpans_) = do
   spans_ <- mapM makeSpan completedSpans_
   pure $
-    defMessage
-      & Trace_Fields.scope
-        .~ ( defMessage
-               & Trace_Fields.name
-                 .~ OT.libraryName library
-               & Common_Fields.version
-                 .~ OT.libraryVersion library
-           )
-      & Trace_Fields.vec'spans
-        .~ spans_
+    PT.defaultScopeSpans
+      { PT.scopeSpansScope =
+          Just
+            PC.defaultInstrumentationScope
+              { PC.instrumentationScopeName = OT.libraryName library
+              , PC.instrumentationScopeVersion = OT.libraryVersion library
+              }
+      , PT.scopeSpansSpans = spans_
+      }
 
-
--- & schemaUrl .~ "" -- TODO
 
 {- |
 Internal helper.
 Translate an `OT.ImmutableSpan` span to an OTLP `Span`.
 -}
-makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m Span
+makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m PT.Span
 makeSpan completedSpan = do
   hot <- liftIO $ readIORef (OT.spanHot completedSpan)
   let startTime = timestampNanoseconds (OT.spanStart completedSpan)
-  parentSpanF <- do
-    case OT.spanParent completedSpan of
-      Nothing -> pure id
-      Just s -> do
-        spanCtxt <- OT.spanId <$> OT.getSpanContext s
-        pure (\otlpSpan -> otlpSpan & Trace_Fields.parentSpanId .~ spanIdBytes spanCtxt)
+  parentSpanId_ <- case OT.spanParent completedSpan of
+    Nothing -> pure mempty
+    Just s -> spanIdBytes . OT.spanId <$> OT.getSpanContext s
 
   pure $
-    defMessage
-      & Trace_Fields.traceId
-        .~ traceIdBytes (OT.traceId $ OT.spanContext completedSpan)
-      & Trace_Fields.spanId
-        .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
-      & Trace_Fields.traceState
-        .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
-      & Trace_Fields.flags
-        .~ fromIntegral (OT.traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
-      & Trace_Fields.name
-        .~ OT.hotName hot
-      & Trace_Fields.kind
-        .~ ( case OT.spanKind completedSpan of
-               OT.Server -> Span'SPAN_KIND_SERVER
-               OT.Client -> Span'SPAN_KIND_CLIENT
-               OT.Producer -> Span'SPAN_KIND_PRODUCER
-               OT.Consumer -> Span'SPAN_KIND_CONSUMER
-               OT.Internal -> Span'SPAN_KIND_INTERNAL
-           )
-      & Trace_Fields.startTimeUnixNano
-        .~ startTime
-      & Trace_Fields.endTimeUnixNano
-        .~ maybe startTime timestampNanoseconds (optionalTimestampToMaybe (OT.hotEnd hot))
-      & Trace_Fields.vec'attributes
-        .~ attributesToProto (OT.hotAttributes hot)
-      & Trace_Fields.droppedAttributesCount
-        .~ fromIntegral (getDropped $ OT.hotAttributes hot)
-      & Trace_Fields.vec'events
-        .~ fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.hotEvents hot)
-      & Trace_Fields.droppedEventsCount
-        .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.hotEvents hot))
-      & Trace_Fields.vec'links
-        .~ fmap makeLink (appendOnlyBoundedCollectionValues $ OT.hotLinks hot)
-      & Trace_Fields.droppedLinksCount
-        .~ fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.hotLinks hot))
-      & Trace_Fields.status
-        .~ ( case OT.hotStatus hot of
-               OT.Unset ->
-                 defMessage
-                   & Trace_Fields.code
-                     .~ Status'STATUS_CODE_UNSET
-               OT.Ok ->
-                 defMessage
-                   & Trace_Fields.code
-                     .~ Status'STATUS_CODE_OK
-               (OT.Error e) ->
-                 defMessage
-                   & Trace_Fields.code
-                     .~ Status'STATUS_CODE_ERROR
-                   & Trace_Fields.message
-                     .~ e
-           )
-      & parentSpanF
+    PT.defaultSpan
+      { PT.spanTraceId = traceIdBytes (OT.traceId $ OT.spanContext completedSpan)
+      , PT.spanSpanId = spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
+      , PT.spanParentSpanId = parentSpanId_
+      , PT.spanTraceState = T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
+      , PT.spanFlags = fromIntegral (OT.traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
+      , PT.spanName = OT.hotName hot
+      , PT.spanKind =
+          case OT.spanKind completedSpan of
+            OT.Server -> PT.Span'SpanKind'SpanKindServer
+            OT.Client -> PT.Span'SpanKind'SpanKindClient
+            OT.Producer -> PT.Span'SpanKind'SpanKindProducer
+            OT.Consumer -> PT.Span'SpanKind'SpanKindConsumer
+            OT.Internal -> PT.Span'SpanKind'SpanKindInternal
+      , PT.spanStartTimeUnixNano = startTime
+      , PT.spanEndTimeUnixNano = maybe startTime timestampNanoseconds (optionalTimestampToMaybe (OT.hotEnd hot))
+      , PT.spanAttributes = attributesToProto (OT.hotAttributes hot)
+      , PT.spanDroppedAttributesCount = fromIntegral (getDropped $ OT.hotAttributes hot)
+      , PT.spanEvents = fmap makeEvent (appendOnlyBoundedCollectionValues $ OT.hotEvents hot)
+      , PT.spanDroppedEventsCount = fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.hotEvents hot))
+      , PT.spanLinks = fmap makeLink (appendOnlyBoundedCollectionValues $ OT.hotLinks hot)
+      , PT.spanDroppedLinksCount = fromIntegral (appendOnlyBoundedCollectionDroppedElementCount (OT.hotLinks hot))
+      , PT.spanStatus =
+          Just $ case OT.hotStatus hot of
+            OT.Unset -> PT.defaultStatus {PT.statusCode = PT.Status'StatusCode'StatusCodeUnset}
+            OT.Ok -> PT.defaultStatus {PT.statusCode = PT.Status'StatusCode'StatusCodeOk}
+            OT.Error e ->
+              PT.defaultStatus
+                { PT.statusCode = PT.Status'StatusCode'StatusCodeError
+                , PT.statusMessage = e
+                }
+      }
 
 
 {- |
 Internal helper.
 Translate an `OT.Event` to an OTLP `Span'Event`.
 -}
-makeEvent :: OT.Event -> Span'Event
+makeEvent :: OT.Event -> PT.Span'Event
 makeEvent e =
-  defMessage
-    & Trace_Fields.timeUnixNano
-      .~ timestampNanoseconds (OT.eventTimestamp e)
-    & Trace_Fields.name
-      .~ OT.eventName e
-    & Trace_Fields.vec'attributes
-      .~ attributesToProto (OT.eventAttributes e)
-    & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (getDropped $ OT.eventAttributes e)
+  PT.defaultSpan'Event
+    { PT.spanEventTimeUnixNano = timestampNanoseconds (OT.eventTimestamp e)
+    , PT.spanEventName = OT.eventName e
+    , PT.spanEventAttributes = attributesToProto (OT.eventAttributes e)
+    , PT.spanEventDroppedAttributesCount = fromIntegral (getDropped $ OT.eventAttributes e)
+    }
 
 
 {- |
 Internal helper.
 Translate an `OT.Link` to an OTLP `Span'Link`.
 -}
-makeLink :: OT.Link -> Span'Link
+makeLink :: OT.Link -> PT.Span'Link
 makeLink l =
-  defMessage
-    & Trace_Fields.traceId
-      .~ traceIdBytes (OT.traceId ctx)
-    & Trace_Fields.spanId
-      .~ spanIdBytes (OT.spanId ctx)
-    & Trace_Fields.traceState
-      .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState ctx)
-    & Trace_Fields.flags
-      .~ linkFlags ctx
-    & Trace_Fields.vec'attributes
-      .~ attributesToProto (OT.frozenLinkAttributes l)
-    & Trace_Fields.droppedAttributesCount
-      .~ fromIntegral (getDropped $ OT.frozenLinkAttributes l)
+  PT.defaultSpan'Link
+    { PT.spanLinkTraceId = traceIdBytes (OT.traceId ctx)
+    , PT.spanLinkSpanId = spanIdBytes (OT.spanId ctx)
+    , PT.spanLinkTraceState = T.decodeUtf8 (encodeTraceStateFull $ OT.traceState ctx)
+    , PT.spanLinkFlags = linkFlags ctx
+    , PT.spanLinkAttributes = attributesToProto (OT.frozenLinkAttributes l)
+    , PT.spanLinkDroppedAttributesCount = fromIntegral (getDropped $ OT.frozenLinkAttributes l)
+    }
   where
     ctx = OT.frozenLinkContext l
 
@@ -604,7 +568,7 @@ linkFlags ctx =
   in w8flags .|. hasIsRemote .|. isRemoteBit
 
 
-attributesToProto :: Attributes -> Vector KeyValue
+attributesToProto :: Attributes -> Vector PC.KeyValue
 attributesToProto =
   V.fromList
     . fmap attributeToKeyValue
@@ -613,20 +577,23 @@ attributesToProto =
     . ((,) <$> getCount <*> getAttributeMap)
   where
     primAttributeToAnyValue = \case
-      TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
-      BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b
-      DoubleAttribute d -> defMessage & Common_Fields.doubleValue .~ d
-      IntAttribute i -> defMessage & Common_Fields.intValue .~ i
-    attributeToKeyValue :: (Text, Attribute) -> KeyValue
+      TextAttribute t -> wrapAnyValue (PC.AnyValue'Value'StringValue t)
+      BoolAttribute b -> wrapAnyValue (PC.AnyValue'Value'BoolValue b)
+      DoubleAttribute d -> wrapAnyValue (PC.AnyValue'Value'DoubleValue d)
+      IntAttribute i -> wrapAnyValue (PC.AnyValue'Value'IntValue i)
+    attributeToKeyValue :: (Text, Attribute) -> PC.KeyValue
     attributeToKeyValue (k, v) =
-      defMessage
-        & Common_Fields.key
-          .~ k
-        & Common_Fields.value
-          .~ ( case v of
-                 AttributeValue a -> primAttributeToAnyValue a
-                 AttributeArray a ->
-                   defMessage
-                     & Common_Fields.arrayValue
-                       .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
-             )
+      PC.defaultKeyValue
+        { PC.keyValueKey = k
+        , PC.keyValueValue =
+            Just $ case v of
+              AttributeValue a -> primAttributeToAnyValue a
+              AttributeArray a ->
+                wrapAnyValue
+                  ( PC.AnyValue'Value'ArrayValue
+                      PC.defaultArrayValue
+                        {PC.arrayValueValues = V.fromList (fmap primAttributeToAnyValue a)}
+                  )
+        }
+    wrapAnyValue :: PC.AnyValue'Value -> PC.AnyValue
+    wrapAnyValue v = PC.defaultAnyValue {PC.anyValueValue = Just v}

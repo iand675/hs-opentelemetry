@@ -23,13 +23,11 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
-import Data.ProtoLens (defMessage, encodeMessage)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
-import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
@@ -51,14 +49,13 @@ import OpenTelemetry.Exporter.Metric (
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
-import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest)
-import qualified Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields as MSF
-import Proto.Opentelemetry.Proto.Common.V1.Common (InstrumentationScope, KeyValue)
-import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as Common_Fields
-import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
-import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
-import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
-import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Rf
+import Proto.Encode (encodeMessage)
+import Proto.OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest, defaultExportMetricsServiceRequest)
+import qualified Proto.OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService as MSF
+import Proto.OpenTelemetry.Proto.Common.V1.Common (InstrumentationScope, KeyValue)
+import qualified Proto.OpenTelemetry.Proto.Common.V1.Common as Common
+import qualified Proto.OpenTelemetry.Proto.Metrics.V1.Metrics as PM
+import qualified Proto.OpenTelemetry.Proto.Resource.V1.Resource as Res
 import Text.Read (readMaybe)
 
 
@@ -80,9 +77,9 @@ httpProtobufMimeType = "application/x-protobuf"
 -- | Encode metric batches to an OTLP 'ExportMetricsServiceRequest'.
 resourceMetricsToExportRequest :: Vector ResourceMetricsExport -> ExportMetricsServiceRequest
 resourceMetricsToExportRequest rms =
-  defMessage
-    & MSF.vec'resourceMetrics
-      .~ V.map resourceMetricsExportToProto rms
+  defaultExportMetricsServiceRequest
+    { MSF.exportMetricsServiceRequestResourceMetrics = V.map resourceMetricsExportToProto rms
+    }
 
 
 -- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
@@ -209,245 +206,181 @@ anyMetricsToExport batches =
 
 resourceMetricsExportToProto :: ResourceMetricsExport -> PM.ResourceMetrics
 resourceMetricsExportToProto ResourceMetricsExport {..} =
-  defMessage
-    & Mf.resource
-      .~ materializedResourceToProto resourceMetricsResource
-    & Mf.vec'scopeMetrics
-      .~ V.map scopeMetricsExportToProto resourceMetricsScopes
-    & Mf.schemaUrl
-      .~ maybe T.empty T.pack (getMaterializedResourcesSchema resourceMetricsResource)
+  PM.defaultResourceMetrics
+    { PM.resourceMetricsResource = Just (materializedResourceToProto resourceMetricsResource)
+    , PM.resourceMetricsScopeMetrics = V.map scopeMetricsExportToProto resourceMetricsScopes
+    , PM.resourceMetricsSchemaUrl = maybe T.empty T.pack (getMaterializedResourcesSchema resourceMetricsResource)
+    }
 
 
 materializedResourceToProto :: MaterializedResources -> Res.Resource
 materializedResourceToProto r =
   let attrs = getMaterializedResourcesAttributes r
-  in defMessage
-       & Rf.vec'attributes
-         .~ attributesToProto attrs
-       & Rf.droppedAttributesCount
-         .~ fromIntegral (getDropped attrs)
+  in Res.defaultResource
+       { Res.resourceAttributes = attributesToProto attrs
+       , Res.resourceDroppedAttributesCount = fromIntegral (getDropped attrs)
+       }
 
 
 scopeMetricsExportToProto :: ScopeMetricsExport -> PM.ScopeMetrics
 scopeMetricsExportToProto ScopeMetricsExport {..} =
-  defMessage
-    & Mf.scope
-      .~ instrumentationLibraryToProto scopeMetricsScope
-    & Mf.vec'metrics
-      .~ V.map metricExportToProto scopeMetricsExports
-    & Mf.schemaUrl
-      .~ librarySchemaUrl scopeMetricsScope
+  PM.defaultScopeMetrics
+    { PM.scopeMetricsScope = Just (instrumentationLibraryToProto scopeMetricsScope)
+    , PM.scopeMetricsMetrics = V.map metricExportToProto scopeMetricsExports
+    , PM.scopeMetricsSchemaUrl = librarySchemaUrl scopeMetricsScope
+    }
 
 
 instrumentationLibraryToProto :: InstrumentationLibrary -> InstrumentationScope
 instrumentationLibraryToProto InstrumentationLibrary {..} =
-  defMessage
-    & Common_Fields.name
-      .~ libraryName
-    & Common_Fields.version
-      .~ libraryVersion
-    & Common_Fields.vec'attributes
-      .~ attributesToProto libraryAttributes
-    & Common_Fields.droppedAttributesCount
-      .~ fromIntegral (getDropped libraryAttributes)
+  Common.defaultInstrumentationScope
+    { Common.instrumentationScopeName = libraryName
+    , Common.instrumentationScopeVersion = libraryVersion
+    , Common.instrumentationScopeAttributes = attributesToProto libraryAttributes
+    , Common.instrumentationScopeDroppedAttributesCount = fromIntegral (getDropped libraryAttributes)
+    }
 
 
 temporalityToProto :: AggregationTemporality -> PM.AggregationTemporality
 temporalityToProto = \case
-  AggregationDelta -> PM.AGGREGATION_TEMPORALITY_DELTA
-  AggregationCumulative -> PM.AGGREGATION_TEMPORALITY_CUMULATIVE
+  AggregationDelta -> PM.AggregationTemporality'AggregationTemporalityDelta
+  AggregationCumulative -> PM.AggregationTemporality'AggregationTemporalityCumulative
 
 
 metricExportToProto :: MetricExport -> PM.Metric
 metricExportToProto = \case
   MetricExportSum name desc unit_ _scope monotonic _isInt temp pts ->
-    defMessage
-      & Mf.name
-        .~ name
-      & Mf.description
-        .~ desc
-      & Mf.unit
-        .~ unit_
-      & Mf.sum
-        .~ ( defMessage
-               & Mf.aggregationTemporality
-                 .~ temporalityToProto temp
-               & Mf.isMonotonic
-                 .~ monotonic
-               & Mf.vec'dataPoints
-                 .~ V.map sumPointToProto pts
-           )
+    baseMetric name desc unit_ $
+      PM.Metric'Data'Sum
+        PM.defaultSum
+          { PM.sumAggregationTemporality = temporalityToProto temp
+          , PM.sumIsMonotonic = monotonic
+          , PM.sumDataPoints = V.map sumPointToProto pts
+          }
   MetricExportHistogram name desc unit_ _scope temp pts ->
-    defMessage
-      & Mf.name
-        .~ name
-      & Mf.description
-        .~ desc
-      & Mf.unit
-        .~ unit_
-      & Mf.histogram
-        .~ ( defMessage
-               & Mf.aggregationTemporality
-                 .~ temporalityToProto temp
-               & Mf.vec'dataPoints
-                 .~ V.map histogramPointToProto pts
-           )
+    baseMetric name desc unit_ $
+      PM.Metric'Data'Histogram
+        PM.defaultHistogram
+          { PM.histogramAggregationTemporality = temporalityToProto temp
+          , PM.histogramDataPoints = V.map histogramPointToProto pts
+          }
   MetricExportExponentialHistogram name desc unit_ _scope temp pts ->
-    defMessage
-      & Mf.name
-        .~ name
-      & Mf.description
-        .~ desc
-      & Mf.unit
-        .~ unit_
-      & Mf.exponentialHistogram
-        .~ ( defMessage
-               & Mf.aggregationTemporality
-                 .~ temporalityToProto temp
-               & Mf.vec'dataPoints
-                 .~ V.map exponentialHistogramPointToProto pts
-           )
+    baseMetric name desc unit_ $
+      PM.Metric'Data'ExponentialHistogram
+        PM.defaultExponentialHistogram
+          { PM.exponentialHistogramAggregationTemporality = temporalityToProto temp
+          , PM.exponentialHistogramDataPoints = V.map exponentialHistogramPointToProto pts
+          }
   MetricExportGauge name desc unit_ _scope _isInt pts ->
-    defMessage
-      & Mf.name
-        .~ name
-      & Mf.description
-        .~ desc
-      & Mf.unit
-        .~ unit_
-      & Mf.gauge
-        .~ ( defMessage
-               & Mf.vec'dataPoints
-                 .~ V.map gaugePointToProto pts
-           )
+    baseMetric name desc unit_ $
+      PM.Metric'Data'Gauge
+        PM.defaultGauge
+          { PM.gaugeDataPoints = V.map gaugePointToProto pts
+          }
+  where
+    baseMetric name desc unit_ d =
+      PM.defaultMetric
+        { PM.metricName = name
+        , PM.metricDescription = desc
+        , PM.metricUnit = unit_
+        , PM.metricData = Just d
+        }
 
 
 sumPointToProto :: SumDataPoint -> PM.NumberDataPoint
 sumPointToProto SumDataPoint {..} =
   numberDataPointFromValue sumDataPointValue $
-    defMessage
-      & Mf.vec'attributes
-        .~ attributesToProto sumDataPointAttributes
-      & Mf.startTimeUnixNano
-        .~ sumDataPointStartTimeUnixNano
-      & Mf.timeUnixNano
-        .~ sumDataPointTimeUnixNano
-      & Mf.vec'exemplars
-        .~ V.map metricExemplarToProto sumDataPointExemplars
+    PM.defaultNumberDataPoint
+      { PM.numberDataPointAttributes = attributesToProto sumDataPointAttributes
+      , PM.numberDataPointStartTimeUnixNano = sumDataPointStartTimeUnixNano
+      , PM.numberDataPointTimeUnixNano = sumDataPointTimeUnixNano
+      , PM.numberDataPointExemplars = V.map metricExemplarToProto sumDataPointExemplars
+      }
 
 
 gaugePointToProto :: GaugeDataPoint -> PM.NumberDataPoint
 gaugePointToProto GaugeDataPoint {..} =
   numberDataPointFromValue gaugeDataPointValue $
-    defMessage
-      & Mf.vec'attributes
-        .~ attributesToProto gaugeDataPointAttributes
-      & Mf.startTimeUnixNano
-        .~ gaugeDataPointStartTimeUnixNano
-      & Mf.timeUnixNano
-        .~ gaugeDataPointTimeUnixNano
-      & Mf.vec'exemplars
-        .~ V.map metricExemplarToProto gaugeDataPointExemplars
+    PM.defaultNumberDataPoint
+      { PM.numberDataPointAttributes = attributesToProto gaugeDataPointAttributes
+      , PM.numberDataPointStartTimeUnixNano = gaugeDataPointStartTimeUnixNano
+      , PM.numberDataPointTimeUnixNano = gaugeDataPointTimeUnixNano
+      , PM.numberDataPointExemplars = V.map metricExemplarToProto gaugeDataPointExemplars
+      }
 
 
 numberDataPointFromValue :: NumberValue -> PM.NumberDataPoint -> PM.NumberDataPoint
 numberDataPointFromValue val dp = case val of
-  IntNumber i -> dp & Mf.asInt .~ i
-  DoubleNumber d -> dp & Mf.asDouble .~ d
+  IntNumber i -> dp {PM.numberDataPointValue = Just (PM.NumberDataPoint'Value'AsInt i)}
+  DoubleNumber d -> dp {PM.numberDataPointValue = Just (PM.NumberDataPoint'Value'AsDouble d)}
 
 
 histogramPointToProto :: HistogramDataPoint -> PM.HistogramDataPoint
 histogramPointToProto HistogramDataPoint {..} =
-  defMessage
-    & Mf.vec'attributes
-      .~ attributesToProto histogramDataPointAttributes
-    & Mf.startTimeUnixNano
-      .~ histogramDataPointStartTimeUnixNano
-    & Mf.timeUnixNano
-      .~ histogramDataPointTimeUnixNano
-    & Mf.count
-      .~ histogramDataPointCount
-    & Mf.maybe'sum
-      .~ Just histogramDataPointSum
-    & Mf.vec'bucketCounts
-      .~ VG.convert histogramDataPointBucketCounts
-    & Mf.vec'explicitBounds
-      .~ VG.convert histogramDataPointExplicitBounds
-    & Mf.maybe'min
-      .~ histogramDataPointMin
-    & Mf.maybe'max
-      .~ histogramDataPointMax
-    & Mf.vec'exemplars
-      .~ V.map metricExemplarToProto histogramDataPointExemplars
+  PM.defaultHistogramDataPoint
+    { PM.histogramDataPointAttributes = attributesToProto histogramDataPointAttributes
+    , PM.histogramDataPointStartTimeUnixNano = histogramDataPointStartTimeUnixNano
+    , PM.histogramDataPointTimeUnixNano = histogramDataPointTimeUnixNano
+    , PM.histogramDataPointCount = histogramDataPointCount
+    , PM.histogramDataPointSum = Just histogramDataPointSum
+    , PM.histogramDataPointBucketCounts = VG.convert histogramDataPointBucketCounts
+    , PM.histogramDataPointExplicitBounds = VG.convert histogramDataPointExplicitBounds
+    , PM.histogramDataPointMin = histogramDataPointMin
+    , PM.histogramDataPointMax = histogramDataPointMax
+    , PM.histogramDataPointExemplars = V.map metricExemplarToProto histogramDataPointExemplars
+    }
 
 
 metricExemplarToProto :: MetricExemplar -> PM.Exemplar
 metricExemplarToProto MetricExemplar {..} =
-  defMessage
-    & Mf.traceId
-      .~ metricExemplarTraceId
-    & Mf.spanId
-      .~ metricExemplarSpanId
-    & Mf.timeUnixNano
-      .~ metricExemplarTimeUnixNano
-    & Mf.vec'filteredAttributes
-      .~ attributesToProto metricExemplarFilteredAttributes
-    & Mf.maybe'value
-      .~ fmap
-        ( \case
-            IntNumber i -> PM.Exemplar'AsInt i
-            DoubleNumber d -> PM.Exemplar'AsDouble d
-        )
-        metricExemplarValue
+  PM.defaultExemplar
+    { PM.exemplarTraceId = metricExemplarTraceId
+    , PM.exemplarSpanId = metricExemplarSpanId
+    , PM.exemplarTimeUnixNano = metricExemplarTimeUnixNano
+    , PM.exemplarFilteredAttributes = attributesToProto metricExemplarFilteredAttributes
+    , PM.exemplarValue =
+        fmap
+          ( \case
+              IntNumber i -> PM.Exemplar'Value'AsInt i
+              DoubleNumber d -> PM.Exemplar'Value'AsDouble d
+          )
+          metricExemplarValue
+    }
 
 
 exponentialHistogramPointToProto :: ExponentialHistogramDataPoint -> PM.ExponentialHistogramDataPoint
 exponentialHistogramPointToProto ExponentialHistogramDataPoint {..} =
-  defMessage
-    & Mf.vec'attributes
-      .~ attributesToProto exponentialHistogramDataPointAttributes
-    & Mf.startTimeUnixNano
-      .~ exponentialHistogramDataPointStartTimeUnixNano
-    & Mf.timeUnixNano
-      .~ exponentialHistogramDataPointTimeUnixNano
-    & Mf.count
-      .~ exponentialHistogramDataPointCount
-    & Mf.maybe'sum
-      .~ exponentialHistogramDataPointSum
-    & Mf.scale
-      .~ exponentialHistogramDataPointScale
-    & Mf.zeroCount
-      .~ exponentialHistogramDataPointZeroCount
-    & Mf.maybe'positive
-      .~ ( if V.null exponentialHistogramDataPointPositiveBucketCounts
-             then Nothing
-             else
-               Just $
-                 defMessage
-                   & Mf.offset
-                     .~ exponentialHistogramDataPointPositiveOffset
-                   & Mf.vec'bucketCounts
-                     .~ VG.convert exponentialHistogramDataPointPositiveBucketCounts
-         )
-    & Mf.maybe'negative
-      .~ ( if V.null exponentialHistogramDataPointNegativeBucketCounts
-             then Nothing
-             else
-               Just $
-                 defMessage
-                   & Mf.offset
-                     .~ exponentialHistogramDataPointNegativeOffset
-                   & Mf.vec'bucketCounts
-                     .~ VG.convert exponentialHistogramDataPointNegativeBucketCounts
-         )
-    & Mf.maybe'min
-      .~ exponentialHistogramDataPointMin
-    & Mf.maybe'max
-      .~ exponentialHistogramDataPointMax
-    & Mf.vec'exemplars
-      .~ V.map metricExemplarToProto exponentialHistogramDataPointExemplars
-    & Mf.zeroThreshold
-      .~ exponentialHistogramDataPointZeroThreshold
+  PM.defaultExponentialHistogramDataPoint
+    { PM.exponentialHistogramDataPointAttributes = attributesToProto exponentialHistogramDataPointAttributes
+    , PM.exponentialHistogramDataPointStartTimeUnixNano = exponentialHistogramDataPointStartTimeUnixNano
+    , PM.exponentialHistogramDataPointTimeUnixNano = exponentialHistogramDataPointTimeUnixNano
+    , PM.exponentialHistogramDataPointCount = exponentialHistogramDataPointCount
+    , PM.exponentialHistogramDataPointSum = exponentialHistogramDataPointSum
+    , PM.exponentialHistogramDataPointScale = exponentialHistogramDataPointScale
+    , PM.exponentialHistogramDataPointZeroCount = exponentialHistogramDataPointZeroCount
+    , PM.exponentialHistogramDataPointPositive =
+        if V.null exponentialHistogramDataPointPositiveBucketCounts
+          then Nothing
+          else
+            Just
+              PM.defaultExponentialHistogramDataPoint'Buckets
+                { PM.exponentialHistogramDataPointBucketsOffset = exponentialHistogramDataPointPositiveOffset
+                , PM.exponentialHistogramDataPointBucketsBucketCounts = VG.convert exponentialHistogramDataPointPositiveBucketCounts
+                }
+    , PM.exponentialHistogramDataPointNegative =
+        if V.null exponentialHistogramDataPointNegativeBucketCounts
+          then Nothing
+          else
+            Just
+              PM.defaultExponentialHistogramDataPoint'Buckets
+                { PM.exponentialHistogramDataPointBucketsOffset = exponentialHistogramDataPointNegativeOffset
+                , PM.exponentialHistogramDataPointBucketsBucketCounts = VG.convert exponentialHistogramDataPointNegativeBucketCounts
+                }
+    , PM.exponentialHistogramDataPointMin = exponentialHistogramDataPointMin
+    , PM.exponentialHistogramDataPointMax = exponentialHistogramDataPointMax
+    , PM.exponentialHistogramDataPointExemplars = V.map metricExemplarToProto exponentialHistogramDataPointExemplars
+    , PM.exponentialHistogramDataPointZeroThreshold = exponentialHistogramDataPointZeroThreshold
+    }
 
 
 attributesToProto :: Attributes -> Vector KeyValue
@@ -459,20 +392,24 @@ attributesToProto =
     . ((,) <$> getCount <*> getAttributeMap)
   where
     primAttributeToAnyValue = \case
-      TextAttribute t -> defMessage & Common_Fields.stringValue .~ t
-      BoolAttribute b -> defMessage & Common_Fields.boolValue .~ b
-      DoubleAttribute d -> defMessage & Common_Fields.doubleValue .~ d
-      IntAttribute i -> defMessage & Common_Fields.intValue .~ i
+      TextAttribute t -> wrapAnyValue (Common.AnyValue'Value'StringValue t)
+      BoolAttribute b -> wrapAnyValue (Common.AnyValue'Value'BoolValue b)
+      DoubleAttribute d -> wrapAnyValue (Common.AnyValue'Value'DoubleValue d)
+      IntAttribute i -> wrapAnyValue (Common.AnyValue'Value'IntValue i)
     attributeToKeyValue :: (Text, Attribute) -> KeyValue
     attributeToKeyValue (k, v) =
-      defMessage
-        & Common_Fields.key
-          .~ k
-        & Common_Fields.value
-          .~ ( case v of
-                 AttributeValue a -> primAttributeToAnyValue a
-                 AttributeArray a ->
-                   defMessage
-                     & Common_Fields.arrayValue
-                       .~ (defMessage & Common_Fields.values .~ fmap primAttributeToAnyValue a)
-             )
+      Common.defaultKeyValue
+        { Common.keyValueKey = k
+        , Common.keyValueValue =
+            Just
+              ( case v of
+                  AttributeValue a -> primAttributeToAnyValue a
+                  AttributeArray a ->
+                    wrapAnyValue
+                      ( Common.AnyValue'Value'ArrayValue
+                          Common.defaultArrayValue {Common.arrayValueValues = V.fromList (fmap primAttributeToAnyValue a)}
+                      )
+              )
+        }
+    wrapAnyValue :: Common.AnyValue'Value -> Common.AnyValue
+    wrapAnyValue v = Common.defaultAnyValue {Common.anyValueValue = Just v}

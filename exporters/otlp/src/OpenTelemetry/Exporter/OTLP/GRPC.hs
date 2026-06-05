@@ -1,15 +1,24 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-{- | gRPC transport for OTLP export via grapesy.
+{- | gRPC transport for OTLP export via @wireform-grpc@.
 
 Provides gRPC-based span, metric, and log exporters that speak the native
 OTLP\/gRPC protocol (default port 4317).
+
+The gRPC service glue (the @Protobuf@-tagged RPC types and their @IsRPC@ \/
+@SupportsClientRpc@ instances) is written by hand here against the
+@wireform-proto@ generated message types, mirroring what
+@Network.GRPC.Protobuf.TH.loadProtoServices@ would emit. There is exactly one
+unary method per service (@Export@), so the boilerplate is small.
 
 Requires the @grpc@ cabal flag to be enabled.
 
@@ -35,7 +44,6 @@ import Data.List (isPrefixOf)
 import Data.Vector (Vector)
 import Network.GRPC.Client (
   Address (..),
-  CertificateStoreSpec,
   Server (..),
   ServerValidation (..),
   certStoreFromPath,
@@ -52,7 +60,17 @@ import Network.GRPC.Common (
   ResponseTrailingMetadata,
   def,
  )
-import Network.GRPC.Common.Protobuf (Proto (..), Protobuf)
+import Network.GRPC.Common.Protobuf (Proto (..), Protobuf, getProto)
+import Network.GRPC.Spec (
+  HasStreamingType (..),
+  Input,
+  IsRPC (..),
+  Output,
+  StreamingType (..),
+  SupportsClientRpc (..),
+  SupportsStreamingType,
+ )
+import Network.GRPC.Spec.Util.Protobuf (buildLazy, parseLazy)
 import OpenTelemetry.Exporter.Metric (MetricExporter (..), ResourceMetricsExport)
 import OpenTelemetry.Exporter.OTLP.Internal.Config (
   OTLPExporterConfig (..),
@@ -66,10 +84,27 @@ import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..),
 import OpenTelemetry.Internal.Log.Types (LogRecordExporter, LogRecordExporterArguments (..), ReadableLogRecord, mkLogRecordExporter)
 import OpenTelemetry.Internal.Logging (otelLogWarning)
 import qualified OpenTelemetry.Trace.Core as OT
-import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest, LogsService)
-import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest, MetricsService)
-import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest, TraceService)
+import Proto.OpenTelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest, ExportLogsServiceResponse)
+import Proto.OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest, ExportMetricsServiceResponse)
+import Proto.OpenTelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest, ExportTraceServiceResponse)
 import System.Timeout (timeout)
+
+
+--------------------------------------------------------------------------------
+-- gRPC service definitions for the OTLP collector services.
+--
+-- Each service has a single unary method, @Export@. These declarations
+-- replicate what @Network.GRPC.Protobuf.TH.loadProtoServices@ would generate,
+-- but bound to the @wireform-proto@ generated request/response records.
+--------------------------------------------------------------------------------
+
+data TraceService
+
+
+data MetricsService
+
+
+data LogsService
 
 
 type ExportTracesRPC = Protobuf TraceService "export"
@@ -79,6 +114,81 @@ type ExportMetricsRPC = Protobuf MetricsService "export"
 
 
 type ExportLogsRPC = Protobuf LogsService "export"
+
+
+type instance Input ExportTracesRPC = Proto ExportTraceServiceRequest
+
+
+type instance Output ExportTracesRPC = Proto ExportTraceServiceResponse
+
+
+type instance Input ExportMetricsRPC = Proto ExportMetricsServiceRequest
+
+
+type instance Output ExportMetricsRPC = Proto ExportMetricsServiceResponse
+
+
+type instance Input ExportLogsRPC = Proto ExportLogsServiceRequest
+
+
+type instance Output ExportLogsRPC = Proto ExportLogsServiceResponse
+
+
+instance IsRPC ExportTracesRPC where
+  rpcContentType _ = "application/grpc+proto"
+  rpcServiceName _ = "opentelemetry.proto.collector.trace.v1.TraceService"
+  rpcMethodName _ = "Export"
+  rpcMessageType _ = Just "opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest"
+
+
+instance IsRPC ExportMetricsRPC where
+  rpcContentType _ = "application/grpc+proto"
+  rpcServiceName _ = "opentelemetry.proto.collector.metrics.v1.MetricsService"
+  rpcMethodName _ = "Export"
+  rpcMessageType _ = Just "opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceRequest"
+
+
+instance IsRPC ExportLogsRPC where
+  rpcContentType _ = "application/grpc+proto"
+  rpcServiceName _ = "opentelemetry.proto.collector.logs.v1.LogsService"
+  rpcMethodName _ = "Export"
+  rpcMessageType _ = Just "opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest"
+
+
+instance SupportsClientRpc ExportTracesRPC where
+  rpcSerializeInput _ = buildLazy . getProto
+  rpcDeserializeOutput _ = fmap Proto . parseLazy
+
+
+instance SupportsClientRpc ExportMetricsRPC where
+  rpcSerializeInput _ = buildLazy . getProto
+  rpcDeserializeOutput _ = fmap Proto . parseLazy
+
+
+instance SupportsClientRpc ExportLogsRPC where
+  rpcSerializeInput _ = buildLazy . getProto
+  rpcDeserializeOutput _ = fmap Proto . parseLazy
+
+
+instance SupportsStreamingType ExportTracesRPC 'NonStreaming
+
+
+instance SupportsStreamingType ExportMetricsRPC 'NonStreaming
+
+
+instance SupportsStreamingType ExportLogsRPC 'NonStreaming
+
+
+instance HasStreamingType ExportTracesRPC where
+  type RpcStreamingType ExportTracesRPC = 'NonStreaming
+
+
+instance HasStreamingType ExportMetricsRPC where
+  type RpcStreamingType ExportMetricsRPC = 'NonStreaming
+
+
+instance HasStreamingType ExportLogsRPC where
+  type RpcStreamingType ExportLogsRPC = 'NonStreaming
 
 
 type instance RequestMetadata (Protobuf TraceService meth) = NoMetadata

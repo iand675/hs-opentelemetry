@@ -19,12 +19,10 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
-import Data.ProtoLens (defMessage, encodeMessage)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import Data.Word (Word64)
-import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
 import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
@@ -38,16 +36,14 @@ import OpenTelemetry.Internal.Trace.Id (spanIdBytes, traceIdBytes)
 import OpenTelemetry.LogAttributes (AnyValue (..), LogAttributes (..))
 import OpenTelemetry.Resource (MaterializedResources, emptyMaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
 import OpenTelemetry.Trace.Core (timestampNanoseconds, traceFlagsValue)
-import Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest)
-import qualified Proto.Opentelemetry.Proto.Collector.Logs.V1.LogsService_Fields as LSF
-import Proto.Opentelemetry.Proto.Common.V1.Common (KeyValue)
-import qualified Proto.Opentelemetry.Proto.Common.V1.Common as Common
-import qualified Proto.Opentelemetry.Proto.Common.V1.Common_Fields as CF
-import Proto.Opentelemetry.Proto.Logs.V1.Logs (ResourceLogs, ScopeLogs)
-import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs as PL
-import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields as LF
-import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
-import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as RF
+import Proto.Encode (encodeMessage)
+import Proto.OpenTelemetry.Proto.Collector.Logs.V1.LogsService (ExportLogsServiceRequest, defaultExportLogsServiceRequest)
+import qualified Proto.OpenTelemetry.Proto.Collector.Logs.V1.LogsService as LSF
+import Proto.OpenTelemetry.Proto.Common.V1.Common (KeyValue)
+import qualified Proto.OpenTelemetry.Proto.Common.V1.Common as Common
+import Proto.OpenTelemetry.Proto.Logs.V1.Logs (ResourceLogs, ScopeLogs)
+import qualified Proto.OpenTelemetry.Proto.Logs.V1.Logs as PL
+import qualified Proto.OpenTelemetry.Proto.Resource.V1.Resource as Res
 import Text.Read (readMaybe)
 
 
@@ -100,9 +96,9 @@ otlpLogRecordExporter conf = liftIO $ do
       rl <- buildResourceLogsFromBatch lrs
       let exportReq :: ExportLogsServiceRequest
           exportReq =
-            defMessage
-              & LSF.vec'resourceLogs
-                .~ V.singleton rl
+            defaultExportLogsServiceRequest
+              { LSF.exportLogsServiceRequestResourceLogs = V.singleton rl
+              }
       let msg = encodeMessage exportReq
       let req =
             baseReq
@@ -152,26 +148,22 @@ buildResourceLogsFromBatch lrs = do
   scopeLogsList <- mapM (uncurry buildScopeLogs) (H.toList grouped)
   let res = if V.null lrs then emptyMaterializedResources else readLogRecordResource (V.head lrs)
   pure $
-    defMessage
-      & LF.resource
-        .~ materializedResourceToProto res
-      & LF.vec'scopeLogs
-        .~ V.fromList scopeLogsList
-      & LF.schemaUrl
-        .~ maybe T.empty T.pack (getMaterializedResourcesSchema res)
+    PL.defaultResourceLogs
+      { PL.resourceLogsResource = Just (materializedResourceToProto res)
+      , PL.resourceLogsScopeLogs = V.fromList scopeLogsList
+      , PL.resourceLogsSchemaUrl = maybe T.empty T.pack (getMaterializedResourcesSchema res)
+      }
 
 
 buildScopeLogs :: InstrumentationLibrary -> [ReadableLogRecord] -> IO ScopeLogs
 buildScopeLogs scope lrs = do
   protoRecords <- mapM readableLogRecordToProtoIO lrs
   pure $
-    defMessage
-      & LF.scope
-        .~ instrumentationLibraryToProto scope
-      & LF.vec'logRecords
-        .~ V.fromList protoRecords
-      & LF.schemaUrl
-        .~ librarySchemaUrl scope
+    PL.defaultScopeLogs
+      { PL.scopeLogsScope = Just (instrumentationLibraryToProto scope)
+      , PL.scopeLogsLogRecords = V.fromList protoRecords
+      , PL.scopeLogsSchemaUrl = librarySchemaUrl scope
+      }
 
 
 readableLogRecordToProtoIO :: ReadableLogRecord -> IO PL.LogRecord
@@ -182,35 +174,29 @@ readableLogRecordToProtoIO rlr = do
 
 immutableLogRecordToProto :: ImmutableLogRecord -> PL.LogRecord
 immutableLogRecordToProto ImmutableLogRecord {..} =
-  defMessage
-    & LF.timeUnixNano
-      .~ maybe 0 tsToNanos (toBaseMaybe logRecordTimestamp)
-    & LF.observedTimeUnixNano
-      .~ tsToNanos logRecordObservedTimestamp
-    & LF.severityNumber
-      .~ maybe PL.SEVERITY_NUMBER_UNSPECIFIED severityToProto (toBaseMaybe logRecordSeverityNumber)
-    & LF.severityText
-      .~ fromMaybe "" (toBaseMaybe logRecordSeverityText)
-    & LF.maybe'body
-      .~ Just (anyValueToProto logRecordBody)
-    & LF.vec'attributes
-      .~ logAttributesToProto logRecordAttributes
-    & LF.droppedAttributesCount
-      .~ fromIntegral (attributesDropped logRecordAttributes)
-    & LF.traceId
-      .~ case logRecordTracingDetails of
-        TracingDetails tid _ _ -> traceIdBytes tid
-        NoTracingDetails -> BS.empty
-    & LF.spanId
-      .~ case logRecordTracingDetails of
-        TracingDetails _ sid _ -> spanIdBytes sid
-        NoTracingDetails -> BS.empty
-    & LF.flags
-      .~ case logRecordTracingDetails of
-        TracingDetails _ _ fl -> fromIntegral (traceFlagsValue fl)
-        NoTracingDetails -> 0
-    & LF.eventName
-      .~ fromMaybe "" (toBaseMaybe logRecordEventName)
+  PL.defaultLogRecord
+    { PL.logRecordTimeUnixNano = maybe 0 tsToNanos (toBaseMaybe logRecordTimestamp)
+    , PL.logRecordObservedTimeUnixNano = tsToNanos logRecordObservedTimestamp
+    , PL.logRecordSeverityNumber =
+        maybe PL.SeverityNumber'SeverityNumberUnspecified severityToProto (toBaseMaybe logRecordSeverityNumber)
+    , PL.logRecordSeverityText = fromMaybe "" (toBaseMaybe logRecordSeverityText)
+    , PL.logRecordBody = Just (anyValueToProto logRecordBody)
+    , PL.logRecordAttributes = logAttributesToProto logRecordAttributes
+    , PL.logRecordDroppedAttributesCount = fromIntegral (attributesDropped logRecordAttributes)
+    , PL.logRecordTraceId =
+        case logRecordTracingDetails of
+          TracingDetails tid _ _ -> traceIdBytes tid
+          NoTracingDetails -> BS.empty
+    , PL.logRecordSpanId =
+        case logRecordTracingDetails of
+          TracingDetails _ sid _ -> spanIdBytes sid
+          NoTracingDetails -> BS.empty
+    , PL.logRecordFlags =
+        case logRecordTracingDetails of
+          TracingDetails _ _ fl -> fromIntegral (traceFlagsValue fl)
+          NoTracingDetails -> 0
+    , PL.logRecordEventName = fromMaybe "" (toBaseMaybe logRecordEventName)
+    }
 
 
 tsToNanos :: Timestamp -> Word64
@@ -219,31 +205,35 @@ tsToNanos = fromIntegral . timestampNanoseconds
 
 severityToProto :: SeverityNumber -> PL.SeverityNumber
 severityToProto = \case
-  Trace -> PL.SEVERITY_NUMBER_TRACE
-  Trace2 -> PL.SEVERITY_NUMBER_TRACE2
-  Trace3 -> PL.SEVERITY_NUMBER_TRACE3
-  Trace4 -> PL.SEVERITY_NUMBER_TRACE4
-  Debug -> PL.SEVERITY_NUMBER_DEBUG
-  Debug2 -> PL.SEVERITY_NUMBER_DEBUG2
-  Debug3 -> PL.SEVERITY_NUMBER_DEBUG3
-  Debug4 -> PL.SEVERITY_NUMBER_DEBUG4
-  Info -> PL.SEVERITY_NUMBER_INFO
-  Info2 -> PL.SEVERITY_NUMBER_INFO2
-  Info3 -> PL.SEVERITY_NUMBER_INFO3
-  Info4 -> PL.SEVERITY_NUMBER_INFO4
-  Warn -> PL.SEVERITY_NUMBER_WARN
-  Warn2 -> PL.SEVERITY_NUMBER_WARN2
-  Warn3 -> PL.SEVERITY_NUMBER_WARN3
-  Warn4 -> PL.SEVERITY_NUMBER_WARN4
-  Error -> PL.SEVERITY_NUMBER_ERROR
-  Error2 -> PL.SEVERITY_NUMBER_ERROR2
-  Error3 -> PL.SEVERITY_NUMBER_ERROR3
-  Error4 -> PL.SEVERITY_NUMBER_ERROR4
-  Fatal -> PL.SEVERITY_NUMBER_FATAL
-  Fatal2 -> PL.SEVERITY_NUMBER_FATAL2
-  Fatal3 -> PL.SEVERITY_NUMBER_FATAL3
-  Fatal4 -> PL.SEVERITY_NUMBER_FATAL4
-  Unknown _ -> PL.SEVERITY_NUMBER_UNSPECIFIED
+  Trace -> PL.SeverityNumber'SeverityNumberTrace
+  Trace2 -> PL.SeverityNumber'SeverityNumberTrace2
+  Trace3 -> PL.SeverityNumber'SeverityNumberTrace3
+  Trace4 -> PL.SeverityNumber'SeverityNumberTrace4
+  Debug -> PL.SeverityNumber'SeverityNumberDebug
+  Debug2 -> PL.SeverityNumber'SeverityNumberDebug2
+  Debug3 -> PL.SeverityNumber'SeverityNumberDebug3
+  Debug4 -> PL.SeverityNumber'SeverityNumberDebug4
+  Info -> PL.SeverityNumber'SeverityNumberInfo
+  Info2 -> PL.SeverityNumber'SeverityNumberInfo2
+  Info3 -> PL.SeverityNumber'SeverityNumberInfo3
+  Info4 -> PL.SeverityNumber'SeverityNumberInfo4
+  Warn -> PL.SeverityNumber'SeverityNumberWarn
+  Warn2 -> PL.SeverityNumber'SeverityNumberWarn2
+  Warn3 -> PL.SeverityNumber'SeverityNumberWarn3
+  Warn4 -> PL.SeverityNumber'SeverityNumberWarn4
+  Error -> PL.SeverityNumber'SeverityNumberError
+  Error2 -> PL.SeverityNumber'SeverityNumberError2
+  Error3 -> PL.SeverityNumber'SeverityNumberError3
+  Error4 -> PL.SeverityNumber'SeverityNumberError4
+  Fatal -> PL.SeverityNumber'SeverityNumberFatal
+  Fatal2 -> PL.SeverityNumber'SeverityNumberFatal2
+  Fatal3 -> PL.SeverityNumber'SeverityNumberFatal3
+  Fatal4 -> PL.SeverityNumber'SeverityNumberFatal4
+  Unknown _ -> PL.SeverityNumber'SeverityNumberUnspecified
+
+
+wrapAnyValue :: Common.AnyValue'Value -> Common.AnyValue
+wrapAnyValue v = Common.defaultAnyValue {Common.anyValueValue = Just v}
 
 
 logAttributesToProto :: LogAttributes -> V.Vector KeyValue
@@ -252,46 +242,61 @@ logAttributesToProto LogAttributes {..} =
   where
     anyValueToKeyValue :: (Text, OpenTelemetry.LogAttributes.AnyValue) -> KeyValue
     anyValueToKeyValue (k, v) =
-      defMessage
-        & CF.key .~ k
-        & CF.value .~ anyValueToProto v
+      Common.defaultKeyValue
+        { Common.keyValueKey = k
+        , Common.keyValueValue = Just (anyValueToProto v)
+        }
 
 
 anyValueToProto :: OpenTelemetry.LogAttributes.AnyValue -> Common.AnyValue
 anyValueToProto = \case
-  TextValue t -> defMessage & CF.stringValue .~ t
-  BoolValue b -> defMessage & CF.boolValue .~ b
-  DoubleValue d -> defMessage & CF.doubleValue .~ d
-  IntValue i -> defMessage & CF.intValue .~ fromIntegral i
-  ByteStringValue bs -> defMessage & CF.bytesValue .~ bs
+  TextValue t -> wrapAnyValue (Common.AnyValue'Value'StringValue t)
+  BoolValue b -> wrapAnyValue (Common.AnyValue'Value'BoolValue b)
+  DoubleValue d -> wrapAnyValue (Common.AnyValue'Value'DoubleValue d)
+  IntValue i -> wrapAnyValue (Common.AnyValue'Value'IntValue (fromIntegral i))
+  ByteStringValue bs -> wrapAnyValue (Common.AnyValue'Value'BytesValue bs)
   ArrayValue arr ->
-    defMessage
-      & CF.arrayValue
-        .~ (defMessage & CF.values .~ fmap anyValueToProto arr)
+    wrapAnyValue
+      ( Common.AnyValue'Value'ArrayValue
+          Common.defaultArrayValue {Common.arrayValueValues = V.fromList (fmap anyValueToProto arr)}
+      )
   HashMapValue hm ->
-    defMessage
-      & CF.kvlistValue
-        .~ (defMessage & CF.values .~ fmap (\(k, v) -> defMessage & CF.key .~ k & CF.value .~ anyValueToProto v) (H.toList hm))
-  NullValue -> defMessage
+    wrapAnyValue
+      ( Common.AnyValue'Value'KvlistValue
+          Common.defaultKeyValueList
+            { Common.keyValueListValues =
+                V.fromList
+                  ( fmap
+                      ( \(k, v) ->
+                          Common.defaultKeyValue
+                            { Common.keyValueKey = k
+                            , Common.keyValueValue = Just (anyValueToProto v)
+                            }
+                      )
+                      (H.toList hm)
+                  )
+            }
+      )
+  NullValue -> Common.defaultAnyValue
 
 
 materializedResourceToProto :: MaterializedResources -> Res.Resource
 materializedResourceToProto r =
   let attrs = getMaterializedResourcesAttributes r
-  in defMessage
-       & RF.vec'attributes
-         .~ attrsToProto attrs
-       & RF.droppedAttributesCount
-         .~ fromIntegral (A.getDropped attrs)
+  in Res.defaultResource
+       { Res.resourceAttributes = attrsToProto attrs
+       , Res.resourceDroppedAttributesCount = fromIntegral (A.getDropped attrs)
+       }
 
 
 instrumentationLibraryToProto :: InstrumentationLibrary -> Common.InstrumentationScope
 instrumentationLibraryToProto InstrumentationLibrary {..} =
-  defMessage
-    & CF.name .~ libraryName
-    & CF.version .~ libraryVersion
-    & CF.vec'attributes .~ attrsToProto libraryAttributes
-    & CF.droppedAttributesCount .~ fromIntegral (A.getDropped libraryAttributes)
+  Common.defaultInstrumentationScope
+    { Common.instrumentationScopeName = libraryName
+    , Common.instrumentationScopeVersion = libraryVersion
+    , Common.instrumentationScopeAttributes = attrsToProto libraryAttributes
+    , Common.instrumentationScopeDroppedAttributesCount = fromIntegral (A.getDropped libraryAttributes)
+    }
 
 
 attrsToProto :: A.Attributes -> V.Vector KeyValue
@@ -302,22 +307,25 @@ attrsToProto =
     . A.getAttributeMap
   where
     primToAnyValue = \case
-      A.TextAttribute t -> defMessage & CF.stringValue .~ t
-      A.BoolAttribute b -> defMessage & CF.boolValue .~ b
-      A.DoubleAttribute d -> defMessage & CF.doubleValue .~ d
-      A.IntAttribute i -> defMessage & CF.intValue .~ i
+      A.TextAttribute t -> wrapAnyValue (Common.AnyValue'Value'StringValue t)
+      A.BoolAttribute b -> wrapAnyValue (Common.AnyValue'Value'BoolValue b)
+      A.DoubleAttribute d -> wrapAnyValue (Common.AnyValue'Value'DoubleValue d)
+      A.IntAttribute i -> wrapAnyValue (Common.AnyValue'Value'IntValue i)
     attrToKeyValue :: (Text, A.Attribute) -> KeyValue
     attrToKeyValue (k, v) =
-      defMessage
-        & CF.key .~ k
-        & CF.value
-          .~ ( case v of
-                 A.AttributeValue a -> primToAnyValue a
-                 A.AttributeArray a ->
-                   defMessage
-                     & CF.arrayValue
-                       .~ (defMessage & CF.values .~ fmap primToAnyValue a)
-             )
+      Common.defaultKeyValue
+        { Common.keyValueKey = k
+        , Common.keyValueValue =
+            Just
+              ( case v of
+                  A.AttributeValue a -> primToAnyValue a
+                  A.AttributeArray a ->
+                    wrapAnyValue
+                      ( Common.AnyValue'Value'ArrayValue
+                          Common.defaultArrayValue {Common.arrayValueValues = V.fromList (fmap primToAnyValue a)}
+                      )
+              )
+        }
 
 
 type Encoder = L.ByteString -> L.ByteString
