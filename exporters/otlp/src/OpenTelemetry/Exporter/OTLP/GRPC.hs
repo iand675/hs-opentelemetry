@@ -38,10 +38,13 @@ import Control.Applicative ((<|>))
 import Control.Exception (SomeException (..), catch)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Char (isDigit)
 import Data.HashMap.Strict (HashMap)
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
+import Data.Maybe (fromMaybe)
 import Data.Vector (Vector)
+import Text.Read (readMaybe)
 import Network.GRPC.Client (
   Address (..),
   Server (..),
@@ -220,13 +223,10 @@ type instance ResponseTrailingMetadata (Protobuf LogsService meth) = NoMetadata
 
 parseGrpcAddress :: String -> Address
 parseGrpcAddress url =
-  let stripped = dropScheme url
-      (host, portPart) = break (== ':') stripped
+  let hostPort = takeWhile (/= '/') (dropScheme url)
+      (host, portPart) = break (== ':') hostPort
       port = case portPart of
-        ':' : rest -> case reads rest of
-          [(p, "")] -> p
-          [(p, "/")] -> p
-          _ -> 4317
+        ':' : rest -> fromMaybe 4317 (readMaybe (takeWhile isDigit rest))
         _ -> 4317
   in Address
        { addressHost = host
@@ -234,9 +234,11 @@ parseGrpcAddress url =
        , addressAuthority = Nothing
        }
   where
-    dropScheme s = case break (== '/') (drop 1 $ dropWhile (/= ':') s) of
-      (_, '/' : rest) -> rest
-      _ -> s
+    -- Strip a leading @scheme:\/\/@ if present, otherwise leave the input as-is
+    -- (so both @http:\/\/host:port@ and bare @host:port@ parse correctly).
+    dropScheme ('/' : '/' : rest) = rest
+    dropScheme (_ : rest) = dropScheme rest
+    dropScheme [] = url
 
 
 resolveGrpcServer :: Bool -> Maybe FilePath -> String -> Server
