@@ -48,6 +48,23 @@ allow-newer:
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
 
--- snappy C library is not always available; disable it for grpc-spec
-package grpc-spec
-  flags: -snappy
+-- wireform packages are not published to Hackage yet. hs-opentelemetry-otlp
+-- (and, transitively, hs-opentelemetry-exporter-otlp) depend on wireform-proto
+-- for the OTLP wire types.
+--
+-- The exporter's optional `grpc` flag additionally needs wireform-grpc,
+-- grpc-spec, wireform-http2, wireform-network and the http-semantics fork.
+-- Those are intentionally NOT listed here: at the pinned revision
+-- wireform-grpc.cabal references an `extra-source-files` data file that is not
+-- tracked in git, which makes cabal's source-repository-package extraction
+-- fail for the whole project. To build with `-fgrpc`, add those subdirs to a
+-- local cabal.project (e.g. via a checkout where the data file is present) —
+-- see exporters/otlp/README.md.
+source-repository-package
+  type: git
+  location: https://github.com/iand675/wireform-
+  tag: f919d4636293f209c01f2df4ffc2b0a190be3c15
+  subdir:
+    wireform-core
+    wireform-derive
+    wireform-proto

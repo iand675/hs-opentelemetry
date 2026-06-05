@@ -27,15 +27,16 @@ The project uses both Cabal and Stack as build tools, with Nix for environment m
 Stack files exist for each supported GHC version:
 | GHC | Stack file | Resolver | Notes |
 |-----|-----------|----------|-------|
-| 9.4 | `stack-ghc-9.4.yaml` | lts-21.25 | No hw-kafka-client, no gogol, no amazonka |
+| 9.4 | `stack-ghc-9.4.yaml` | lts-21.25 | No hw-kafka-client, no gogol, no amazonka; no otlp/exporter-otlp (wireform-proto needs base >= 4.18) |
 | 9.6 | `stack-ghc-9.6.yaml` | lts-22.44 | No gogol |
 | 9.8 | `stack-ghc-9.8.yaml` | lts-23.28 | No gogol |
 | 9.10 | `stack-ghc-9.10.yaml` | lts-24.35 | No amazonka |
-| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-04-04 | No persistent-mysql, no amazonka; proto-lens via allow-newer |
+| 9.12 | `stack-ghc-9.12.yaml` | nightly-2026-04-04 | No persistent-mysql, no amazonka |
 
 Key compat notes:
 - `foldl'` moved to Prelude in GHC 9.10; older versions need `import Data.List (foldl')`
-- `proto-lens` caps at `base < 4.21`; GHC 9.12 uses `allow-newer`
+- `hs-opentelemetry-otlp` and `hs-opentelemetry-exporter-otlp` use `wireform-proto` for OTLP wire types; `wireform-core` requires `base >= 4.18`, so both are excluded on GHC 9.4. The wireform packages are not on Hackage and are pulled in via a `source-repository-package` (cabal) / git `extra-deps` (stack).
+- The exporter's optional `grpc` flag uses `wireform-grpc` (a wireform-native fork of grapesy); see `exporters/otlp/README.md`.
 - `gogol-core` only available in LTS 24+ / nightly
 - hw-kafka-client headers API only in LTS 22+
 - `amazonka 2.0` requires `base < 4.19`; excluded from GHC 9.10+ (base 4.20/4.21)

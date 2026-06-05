@@ -1,14 +1,23 @@
 resolver: lts-21.25
 
+# NOTE: hs-opentelemetry-otlp now generates its OTLP wire types with
+# wireform-proto, whose wireform-core dependency requires base >= 4.18
+# (GHC 9.6+). That rules out GHC 9.4 for hs-opentelemetry-otlp,
+# hs-opentelemetry-exporter-otlp, and — because the SDK uses the OTLP exporter
+# as its default exporter — hs-opentelemetry-sdk and everything that depends on
+# it. Those packages are excluded from this resolver below.
 packages:
 - api-types
 - api
-- sdk
-- otlp
+# sdk excluded (GHC 9.6+): depends on hs-opentelemetry-exporter-otlp.
+# - sdk
+# otlp excluded (GHC 9.6+): wireform-core needs base >= 4.18.
+# - otlp
 - semantic-conventions
 - exporters/handle
 - exporters/in-memory
-- exporters/otlp
+# exporters/otlp excluded (GHC 9.6+): depends on hs-opentelemetry-otlp.
+# - exporters/otlp
 - exporters/prometheus
 - propagators/b3
 - propagators/jaeger
@@ -16,12 +25,16 @@ packages:
 - propagators/datadog
 - propagators/w3c
 # amazonka excluded: instrumentation/amazonka has API compatibility issues (toBS, abbrev ambiguity)
-- instrumentation/cloudflare
+# The following instrumentation packages depend on hs-opentelemetry-sdk and are
+# therefore excluded on GHC 9.4 (see the note above):
+# - instrumentation/cloudflare
+# - instrumentation/conduit
+# - instrumentation/hspec
+# - instrumentation/http-client
+# - instrumentation/wai
+# - instrumentation/yesod
 - instrumentation/co-log
-- instrumentation/conduit
 - instrumentation/ghc-metrics
-- instrumentation/hspec
-- instrumentation/http-client
 # hw-kafka-client excluded: LTS 21 version lacks headers API
 - instrumentation/katip
 - instrumentation/monad-logger
@@ -29,20 +42,18 @@ packages:
 - instrumentation/persistent-mysql
 - instrumentation/postgresql-simple
 - instrumentation/tasty
-- instrumentation/wai
-- instrumentation/yesod
-- utils/exceptions
-- examples/hspec
-- examples/otlp-demo
-- examples/yesod-minimal
+# utils/exceptions excluded (GHC 9.6+): depends on hs-opentelemetry-sdk.
+# - utils/exceptions
+# examples depend on the SDK and/or the OTLP exporter (GHC 9.6+):
+# - examples/hspec
+# - examples/otlp-demo
+# - examples/yesod-minimal
 # hw-kafka-client-example excluded: requires hw-kafka-client with headers API
 
 extra-deps:
 - unix-compat-0.7.1@sha256:bd5bb4e04b2ed707f3e3466470a452354310389506cf0a7a73bf10e4d533f6d1,3619
 - thread-utils-context-0.4.1.0
 - thread-utils-finalizers-0.1.1.0
-- proto-lens-0.7.1.6
-- proto-lens-runtime-0.7.0.7
 - tasty-1.5.3@sha256:6b5dda3f16db1274a0b3e6c4073ac57172a1e96b1dca05666c5cbd1183639412,2923
 - postgresql-libpq-pkgconfig-0.11@sha256:9d6edd8ee105cfe7145b138c8f8bf582cddbd13af36c4302aeff891003efdc6f,1270
 # co-log 0.6.1.2 is not in LTS 21
@@ -56,9 +67,6 @@ allow-newer-deps:
 flags:
   postgresql-libpq:
     use-pkg-config: true
-  hs-opentelemetry-sdk:
-    # LTS 21.25 lacks crypton-connection; disable TLS-based EKS metadata detection
-    tls-metadata: false
 
 nix:
   enable: true

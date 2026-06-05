@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Port the OTLP exporters to the `wireform-proto` wire types (from
+  `hs-opentelemetry-otlp`). The HTTP/protobuf span, metric, and log exporters
+  now build OTLP messages as plain records and encode them with
+  `Proto.Encode.encodeMessage`.
+- Replace grapesy with [`wireform-grpc`](https://github.com/iand675/wireform-)
+  for the optional `grpc` flag. The gRPC service bindings are hand-written
+  against the generated request/response records. See `README.md` for how to
+  enable the `grpc` flag.
+- Requires GHC 9.6+ (`wireform-core` needs `base >= 4.18`).
+
 ## 1.0.0.0 - 2026-05-29
 
 - **Spec: `Retry-After` now supports HTTP-date format in addition to delay-seconds.**
