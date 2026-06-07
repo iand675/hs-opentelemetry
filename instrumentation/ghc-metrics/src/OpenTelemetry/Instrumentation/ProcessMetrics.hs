@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Module      : OpenTelemetry.Instrumentation.ProcessMetrics
@@ -86,6 +87,7 @@ import System.IO.Unsafe (unsafePerformIO)
 #if defined(linux_HOST_OS)
 import Control.Exception (SomeException, catch)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as Char8
 import System.Directory (listDirectory)
 #endif
 
@@ -379,7 +381,7 @@ parseProcCountField label =
     `catch` \(_ :: SomeException) -> pure Nothing
 
 extractCountField :: BS.ByteString -> BS.ByteString -> Maybe Int64
-extractCountField label bs = go (BS.lines bs)
+extractCountField label bs = go (Char8.lines bs)
   where
     go [] = Nothing
     go (line : rest)
@@ -394,7 +396,7 @@ extractCountField label bs = go (BS.lines bs)
     isDigit w = w >= 0x30 && w <= 0x39
 
 extractKbField :: BS.ByteString -> BS.ByteString -> Maybe Int64
-extractKbField label bs = go (BS.lines bs)
+extractKbField label bs = go (Char8.lines bs)
   where
     go [] = Nothing
     go (line : rest)

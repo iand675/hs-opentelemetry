@@ -1,5 +1,9 @@
 # Changelog for hs-opentelemetry-instrumentation-ghc-metrics
 
+## 1.0.0.1
+
+- Fixed compilation errors in `OpenTelemetry.Instrumentation.ProcessMetrics`.
+
 ## 1.0.0.0 - 2026-05-29
 
 - Promoted to 1.0.0.0 for the hs-opentelemetry 1.0 release.
