@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Added `recordSomeException`.** Records an exception using the
+  `Backtraces` annotation attached to a `SomeException`'s `ExceptionContext`
+  (introduced in base 4.20 / GHC 9.10), so `exception.stacktrace` reflects
+  the richer stacks captured by `HasCallStack`, IPE, and other backtrace
+  mechanisms — not just cost-centre stacks. Falls back to `whoCreated` when
+  no `Backtraces` annotation is present or on older GHCs. Internal span
+  machinery (`inSpan`, `bracketError`-based helpers, and the persistent /
+  yesod / conduit instrumentations) now uses it so that any context attached
+  to a caught `SomeException` survives recording. (#239)
+
 ## 1.0.0.0 - 2026-05-29
 
 ### Full Spec conformance against 1.55.0

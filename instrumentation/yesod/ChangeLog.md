@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Use `recordSomeException` when recording exceptions caught by the
+  Yesod error middleware, so `exception.stacktrace` reflects the
+  `Backtraces` attached by the runtime on GHC 9.10+. (#239)
+
 ## 1.0.0.0 - 2026-05-29
 
 - **Breaking: `http.framework` attribute renamed to `webengine.name`.**
