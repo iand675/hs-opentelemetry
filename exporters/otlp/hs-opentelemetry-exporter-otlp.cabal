@@ -64,6 +64,7 @@ library
   if flag(grpc)
     exposed-modules:
         OpenTelemetry.Exporter.OTLP.GRPC
+    cpp-options: -DGRPC_ENABLED
     build-depends:
         grapesy
 

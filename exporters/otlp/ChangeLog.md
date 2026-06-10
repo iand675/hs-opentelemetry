@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- **gRPC: exporters now reconnect after the connection drops.** ([#305](https://github.com/iand675/hs-opentelemetry/issues/305))
+  `grpcOtlpSpanExporter`, `grpcOtlpMetricExporter`, and `grpcOtlpLogRecordExporter`
+  previously opened their grapesy connection with the default `DontReconnect`
+  policy, so a collector restart or idle-connection close permanently broke
+  export for the rest of the process lifetime. The exporters now use an
+  indefinite reconnect policy with capped exponential backoff (1s doubling up
+  to 30s); grapesy resets the policy after each successful connection.
+- **gRPC: fixed endpoint parsing for scheme-prefixed URLs.**
+  `http://localhost:4317` (including the documented default endpoint) was
+  parsed to host `/localhost`, so every connection attempt failed. The scheme
+  and any URL path are now stripped correctly.
+- **The `grpc` cabal flag now defines `GRPC_ENABLED`.**
+  Previously the flag exposed `OpenTelemetry.Exporter.OTLP.GRPC` but did not
+  set the CPP define, so `Protocol` was still missing the `GRpc` constructor
+  and `OTEL_EXPORTER_OTLP_PROTOCOL=grpc` was rejected as unsupported unless
+  consumers passed `-DGRPC_ENABLED` themselves.
+
 ## 1.0.0.0 - 2026-05-29
 
 - **Spec: `Retry-After` now supports HTTP-date format in addition to delay-seconds.**
