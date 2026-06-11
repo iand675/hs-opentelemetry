@@ -26,6 +26,7 @@ module OpenTelemetry.Exporter.OTLP.GRPC (
 ) where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent (threadDelay)
 import Control.Exception (SomeException (..), catch)
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -36,6 +37,11 @@ import Data.Vector (Vector)
 import Network.GRPC.Client (
   Address (..),
   CertificateStoreSpec,
+  ConnParams (..),
+  Reconnect (..),
+  ReconnectDecision (..),
+  ReconnectPolicy (..),
+  ReconnectTo (..),
   Server (..),
   ServerValidation (..),
   certStoreFromPath,
@@ -110,12 +116,11 @@ type instance ResponseTrailingMetadata (Protobuf LogsService meth) = NoMetadata
 
 parseGrpcAddress :: String -> Address
 parseGrpcAddress url =
-  let stripped = dropScheme url
-      (host, portPart) = break (== ':') stripped
+  let authority = takeWhile (/= '/') (dropScheme url)
+      (host, portPart) = break (== ':') authority
       port = case portPart of
         ':' : rest -> case reads rest of
           [(p, "")] -> p
-          [(p, "/")] -> p
           _ -> 4317
         _ -> 4317
   in Address
@@ -124,9 +129,33 @@ parseGrpcAddress url =
        , addressAuthority = Nothing
        }
   where
-    dropScheme s = case break (== '/') (drop 1 $ dropWhile (/= ':') s) of
-      (_, '/' : rest) -> rest
+    dropScheme s = case break (== ':') s of
+      (_, ':' : '/' : '/' : rest) -> rest
       _ -> s
+
+
+{- | Connection parameters shared by the gRPC exporters.
+
+grapesy's default 'ReconnectPolicy' is 'DontReconnect', which means a single
+dropped connection (collector restart, idle timeout, proxy reset) would
+permanently break export for the rest of the process lifetime. Telemetry
+should instead ride out collector outages, so reconnect indefinitely with
+capped exponential backoff. grapesy resets the policy after each successful
+connection, so the backoff always starts small again after a recovery.
+-}
+exporterConnParams :: ConnParams
+exporterConnParams = def {connReconnectPolicy = reconnectPolicy 1}
+  where
+    maxDelaySeconds = 30
+    reconnectPolicy delaySeconds = ReconnectPolicy $ do
+      threadDelay (delaySeconds * 1_000_000)
+      pure $
+        DoReconnect
+          Reconnect
+            { reconnectTo = ReconnectToOriginal
+            , onReconnect = Nothing
+            , nextPolicy = reconnectPolicy (min maxDelaySeconds (delaySeconds * 2))
+            }
 
 
 resolveGrpcServer :: Bool -> Maybe FilePath -> String -> Server
@@ -154,7 +183,7 @@ grpcOtlpSpanExporter
 grpcOtlpSpanExporter conf toProto = liftIO $ do
   let endpoint = grpcTracesEndpoint conf
       server = resolveGrpcServer (otlpTracesInsecure conf || otlpInsecure conf) (otlpTracesCertificate conf <|> otlpCertificate conf) endpoint
-  conn <- openConnection def server
+  conn <- openConnection exporterConnParams server
   shutdownRef <- newIORef False
   pure $
     SpanExporter
@@ -197,7 +226,7 @@ grpcOtlpMetricExporter
 grpcOtlpMetricExporter conf toProto = liftIO $ do
   let endpoint = grpcMetricsEndpoint conf
       server = resolveGrpcServer (otlpMetricsInsecure conf || otlpInsecure conf) (otlpMetricsCertificate conf <|> otlpCertificate conf) endpoint
-  conn <- openConnection def server
+  conn <- openConnection exporterConnParams server
   shutdownRef <- newIORef False
   pure $
     MetricExporter
@@ -240,7 +269,7 @@ grpcOtlpLogRecordExporter
 grpcOtlpLogRecordExporter conf toProto = liftIO $ do
   let endpoint = grpcLogsEndpoint conf
       server = resolveGrpcServer (otlpLogsInsecure conf || otlpInsecure conf) (otlpLogsCertificate conf <|> otlpCertificate conf) endpoint
-  conn <- openConnection def server
+  conn <- openConnection exporterConnParams server
   shutdownRef <- newIORef False
   mkLogRecordExporter
     LogRecordExporterArguments
