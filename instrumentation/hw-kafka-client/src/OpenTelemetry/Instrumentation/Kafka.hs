@@ -14,6 +14,7 @@ automatically propagating context between services via Kafka message headers.
 module OpenTelemetry.Instrumentation.Kafka (
   -- * Producer
   produceMessage,
+  produceMessage',
 
   -- * Consumer
   pollMessage,
@@ -42,6 +43,8 @@ import Kafka.Consumer (
  )
 import qualified Kafka.Consumer as KC
 import Kafka.Producer (
+  DeliveryReport,
+  ImmediateError (ImmediateError),
   KafkaError,
   KafkaProducer,
   ProducePartition (SpecifiedPartition, UnassignedPartition),
@@ -261,14 +264,34 @@ textMapToKafkaHeaders = headersFromList . map (\(k, v) -> (TE.encodeUtf8 k, TE.e
 
 This function wraps the standard Kafka producer with OpenTelemetry tracing.
 It creates a new span for the produce operation and injects the current context
-into the message headers.
+into the message headers. For delivery acknowledgement, use 'produceMessage''.
 -}
 produceMessage
   :: (MonadUnliftIO m, HasCallStack)
   => KafkaProducer
   -> ProducerRecord
   -> m (Maybe KafkaError)
-produceMessage producer record =
+produceMessage kp m = produceMessage' kp m (pure . mempty) >>= adjustRes
+  where
+    adjustRes = \case
+      Right () -> pure Nothing
+      Left (ImmediateError err) -> pure (Just err)
+
+
+{- | Produce a message to Kafka with OpenTelemetry instrumentation, calling a
+callback upon delivery acknowledgement.
+
+This function wraps the standard Kafka producer with OpenTelemetry tracing.
+It creates a new span for the produce operation and injects the current context
+into the message headers.
+-}
+produceMessage'
+  :: (MonadUnliftIO m, HasCallStack)
+  => KafkaProducer
+  -> ProducerRecord
+  -> (DeliveryReport -> IO ())
+  -> m (Either ImmediateError ())
+produceMessage' producer record cb =
   let
     headers = prHeaders record
     topicName = prTopic record
@@ -285,13 +308,13 @@ produceMessage producer record =
         extraTm <- inject propagator (Context.insertSpan newSpan ctxt) emptyTextMap
         let newKafkaHeaders = headers <> textMapToKafkaHeaders extraTm
         let newKafkaRecord = record {prHeaders = newKafkaHeaders}
-        result <- KP.produceMessage producer newKafkaRecord
+        result <- KP.produceMessage' producer newKafkaRecord cb
         case result of
-          Just err -> do
+          Left err -> do
             let errText = T.pack $ show err
             addAttribute newSpan (unkey error_type) errText
             setStatus newSpan (Error errText)
-          Nothing -> pure ()
+          Right () -> pure ()
         pure result
 
 
