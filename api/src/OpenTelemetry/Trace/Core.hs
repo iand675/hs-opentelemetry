@@ -210,6 +210,7 @@ module OpenTelemetry.Trace.Core (
 
   -- ** Recording error information
   recordException,
+  recordSomeException,
   recordError,
   setStatus,
   SpanStatus (..),
@@ -261,6 +262,17 @@ import Control.Concurrent.Async
 import Control.Concurrent.Thread.Storage (getCurrentThreadId)
 import Control.Exception (Exception (..), SomeException (..), catch, displayException)
 import qualified Control.Exception as EUnsafe
+
+
+#if MIN_VERSION_base(4,20,0)
+import Control.Exception (someExceptionContext)
+import Control.Exception.Annotation (displayExceptionAnnotation)
+import Control.Exception.Backtrace (Backtraces)
+import Control.Exception.Context (ExceptionContext, getExceptionAnnotations)
+#endif
+#if MIN_VERSION_base(4,21,0)
+import Control.Exception (WhileHandling)
+#endif
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
@@ -694,9 +706,9 @@ inSpanInternal t n args extraAttrs f
           case classification of
             ErrorException -> do
               setStatus s $ Error $ T.pack $ displayException inner
-              recordException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing inner
+              recordSomeException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing someEx
             RecordedException ->
-              recordException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing inner
+              recordSomeException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing someEx
             IgnoredException ->
               pure ()
           endSpan s Nothing
@@ -1023,30 +1035,83 @@ endSpan (Dropped _) _ = pure ()
 {-# SPECIALIZE endSpan :: Span -> Maybe Timestamp -> IO () #-}
 
 
-{- | A specialized variant of @addEvent@ that records attributes conforming to
- the OpenTelemetry specification's
- <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>
+{- | A specialized variant of @recordSomeException@.
 
- @since 0.0.1.0
+Prefer using @recordSomeException@ to preserve exception context.
+
+@since 0.0.1.0
 -}
 recordException :: (MonadIO m, Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> m ()
-recordException s attrs ts e = liftIO $ do
-  cs <- whoCreated e
-  let message = T.pack $ displayException e
+recordException s attrs ts e = recordSomeException s attrs ts (toException e)
+{-# INLINEABLE recordException #-}
+{-# SPECIALIZE recordException :: (Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> IO () #-}
+
+
+{- | Like 'recordException', but takes a 'SomeException' directly so that any
+'ExceptionContext' attached to it is preserved.
+
+Library code that catches a 'SomeException' should prefer this function over
+'recordException', and pass the outer 'SomeException' without unwrapping to avoid
+losing exception context.
+
+Records attributres conforming to the OpenTelemetry specification's
+ <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>.
+
+@since 1.0.1.0
+-}
+recordSomeException :: (MonadIO m) => Span -> AttributeMap -> Maybe Timestamp -> SomeException -> m ()
+recordSomeException s attrs ts someEx@(SomeException inner) = liftIO $ do
+  stack <- exceptionStackText someEx
+  let message = T.pack $ displayException inner
   addEvent s $
     NewEvent
       { newEventName = "exception"
       , newEventAttributes =
           H.union
             attrs
-            [ (unkey SC.exception_type, A.toAttribute $ T.pack $ show $ typeOf e)
+            [ (unkey SC.exception_type, A.toAttribute $ T.pack $ show $ typeOf inner)
             , (unkey SC.exception_message, A.toAttribute message)
-            , (unkey SC.exception_stacktrace, A.toAttribute $ T.unlines $ map T.pack cs)
+            , (unkey SC.exception_stacktrace, A.toAttribute stack)
             ]
       , newEventTimestamp = ts
       }
-{-# INLINEABLE recordException #-}
-{-# SPECIALIZE recordException :: (Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> IO () #-}
+{-# INLINEABLE recordSomeException #-}
+{-# SPECIALIZE recordSomeException :: Span -> AttributeMap -> Maybe Timestamp -> SomeException -> IO () #-}
+
+
+{- | Render the stacktrace text for an exception.
+
+On base 4.20+ (GHC 9.10+), this walks the exception's 'ExceptionContext' and
+renders any 'Backtraces' annotation. On
+base 4.21+ (GHC 9.12+), it also renders the 'WhileHandling' annotation, so an
+exception thrown while handling another exception carries the originating
+exception's display in its rendered output too.
+
+On older bases without the Backtraces API, this uses 'whoCreated' to keep
+the historical behaviour of the SDK.
+
+@since 1.0.1.0
+-}
+exceptionStackText :: SomeException -> IO Text
+#if MIN_VERSION_base(4,20,0)
+exceptionStackText se = pure $ T.pack $ unlines $ filter (not . null) sections
+  where
+    annotations :: ExceptionContext
+    annotations = someExceptionContext se
+
+    sections :: [String]
+    sections =
+      -- We use 'displayExceptionAnnotation' so we get the same rendering as GHC
+      -- would use
+      map displayExceptionAnnotation (getExceptionAnnotations annotations :: [Backtraces])
+#if MIN_VERSION_base(4,21,0)
+        ++ map displayExceptionAnnotation (getExceptionAnnotations annotations :: [WhileHandling])
+#endif
+#else
+exceptionStackText (SomeException inner) = do
+  cs <- whoCreated inner
+  pure $ T.unlines $ map T.pack cs
+#endif
 
 
 {- | Record an error and set the span status in one call.
