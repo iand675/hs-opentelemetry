@@ -34,10 +34,39 @@
   #include <stdio.h>
 #endif
 
+/*
+ * TLS access model for the per-thread xoshiro state below.
+ *
+ * A file-local `static __thread` defaults to the local-exec model: a
+ * single `%fs:offset` MOV, the fastest possible TLS access.  That is
+ * only valid when the object ends up in the main executable's static
+ * TLS block.  When the object is built position-independent for a
+ * shared library (GHC's dynamic `.dyn_o` -> `.so` way, used whenever
+ * this package sits in a Template-Haskell dependency closure), the
+ * local-exec / local-dynamic `R_X86_64_TPOFF32` / `R_X86_64_DTPOFF32`
+ * relocations cannot be linked into the `.so` on x86_64-linux — `ld`
+ * reports "relocation truncated to fit".
+ *
+ * `__PIC__` is defined by GCC/Clang precisely when compiling
+ * position-independent (i.e. the `.dyn_o` way), and undefined for the
+ * plain static `.o`.  So keep the fast local-exec model for the static
+ * object and only step down to initial-exec (a single GOT indirection,
+ * `R_X86_64_GOTTPOFF`, which links into a `.so`) when actually building
+ * PIC.  initial-exec keeps the symbol file-local — unlike
+ * global-dynamic, which would require an exported symbol — and its few
+ * words of TLS sit comfortably within glibc's static-TLS surplus when
+ * the library is dlopen'd.
+ */
 #if defined(_MSC_VER)
   #define THREAD_LOCAL __declspec(thread)
+  #define TLS_IE_MODEL
+#elif defined(__PIC__)
+  #define THREAD_LOCAL __thread
+  #define TLS_IE_MODEL __attribute__((tls_model("initial-exec")))
+  #include <pthread.h>
 #else
   #define THREAD_LOCAL __thread
+  #define TLS_IE_MODEL
   #include <pthread.h>
 #endif
 
@@ -85,8 +114,8 @@ static inline uint64_t rotl64(uint64_t x, int k) {
     return (x << k) | (x >> (64 - k));
 }
 
-static THREAD_LOCAL uint64_t xoshiro_s[4];
-static THREAD_LOCAL int       xoshiro_init;
+static THREAD_LOCAL uint64_t xoshiro_s[4] TLS_IE_MODEL;
+static THREAD_LOCAL int       xoshiro_init TLS_IE_MODEL;
 
 static void xoshiro_seed(void) {
     fill_random_platform((uint8_t *)xoshiro_s, sizeof(xoshiro_s));
