@@ -1,7 +1,5 @@
 packages:
     api-types
-  , ../thread-utils/thread-utils-context
-  , ../thread-utils/thread-utils-finalizers
   , api
   , sdk
   , otlp
