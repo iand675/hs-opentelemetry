@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
@@ -92,9 +93,20 @@ import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Trace_Fields
 import Text.Read (readMaybe)
 
 
+#ifdef GRPC_ENABLED
+import OpenTelemetry.Exporter.OTLP.GRPC
+#endif
+
+
 -- | Initial the OTLP 'Exporter'
 otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
+#ifdef GRPC_ENABLED
+otlpExporter conf = case otlpTracesProtocol conf of
+  Just GRpc -> grpcOtlpSpanExporter conf immutableSpansToProtobuf
+  _ -> httpOtlpExporter conf
+#else
 otlpExporter conf = httpOtlpExporter conf
+#endif
 
 
 --------------------------------------------------------------------------------
