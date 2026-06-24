@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,6 +10,7 @@ module OpenTelemetry.Exporter.OTLP.LogRecord (
 ) where
 
 import Codec.Compression.GZip (compress)
+import Control.Applicative
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -31,7 +33,7 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
-import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
+import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..), Protocol (..))
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Log.Types
 import OpenTelemetry.Internal.Trace.Id (spanIdBytes, traceIdBytes)
@@ -51,6 +53,11 @@ import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as RF
 import Text.Read (readMaybe)
 
 
+#ifdef GRPC_ENABLED
+import OpenTelemetry.Exporter.OTLP.GRPC
+#endif
+
+
 defaultExporterTimeout :: Int
 defaultExporterTimeout = 10_000
 
@@ -60,7 +67,17 @@ httpProtobufMimeType = "application/x-protobuf"
 
 
 otlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
-otlpLogRecordExporter conf = liftIO $ do
+#ifdef GRPC_ENABLED
+otlpLogRecordExporter conf = case otlpLogsProtocol conf <|> otlpProtocol conf of
+  Just GRpc -> grpcOtlpLogRecordExporter conf buildExportReqFromBatch
+  _ -> httpOtlpLogRecordExporter conf
+#else
+otlpLogRecordExporter conf = httpOtlpLogRecordExporter conf
+#endif
+
+
+httpOtlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
+httpOtlpLogRecordExporter conf = liftIO $ do
   req <- parseRequest (logsEndpointUrl conf)
   let (encodingHeaders, encoder) = httpLogsCompression conf
   let baseReq =
@@ -97,12 +114,7 @@ otlpLogRecordExporter conf = liftIO $ do
       _ -> False
 
     exporterExportCall encoder baseReq lrs = do
-      rl <- buildResourceLogsFromBatch lrs
-      let exportReq :: ExportLogsServiceRequest
-          exportReq =
-            defMessage
-              & LSF.vec'resourceLogs
-                .~ V.singleton rl
+      exportReq <- buildExportReqFromBatch lrs
       let msg = encodeMessage exportReq
       let req =
             baseReq
@@ -159,6 +171,12 @@ buildResourceLogsFromBatch lrs = do
         .~ V.fromList scopeLogsList
       & LF.schemaUrl
         .~ maybe T.empty T.pack (getMaterializedResourcesSchema res)
+
+
+buildExportReqFromBatch :: V.Vector ReadableLogRecord -> IO ExportLogsServiceRequest
+buildExportReqFromBatch lrs = do
+  rl <- buildResourceLogsFromBatch lrs
+  pure (defMessage & LSF.vec'resourceLogs .~ V.singleton rl)
 
 
 buildScopeLogs :: InstrumentationLibrary -> [ReadableLogRecord] -> IO ScopeLogs
