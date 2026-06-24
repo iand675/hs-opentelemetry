@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -48,7 +49,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
-import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
+import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..), Protocol (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
 import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest)
@@ -60,6 +61,11 @@ import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Rf
 import Text.Read (readMaybe)
+
+
+#ifdef GRPC_ENABLED
+import OpenTelemetry.Exporter.OTLP.GRPC
+#endif
 
 
 -- | Default OTLP timeout (milliseconds), aligned with "OpenTelemetry.Exporter.OTLP.Span".
@@ -85,9 +91,22 @@ resourceMetricsToExportRequest rms =
       .~ V.map resourceMetricsExportToProto rms
 
 
--- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
+{- | OTLP 'MetricExporter' using either HTTP\/Protobuf or grpc depending on
+OTLP_EXPORTER_OTLP_METRICS_PROTOCOL.
+-}
 otlpMetricExporter :: (MonadIO m) => OTLPExporterConfig -> m MetricExporter
-otlpMetricExporter conf = liftIO $ do
+#ifdef GRPC_ENABLED
+otlpMetricExporter conf = case otlpMetricsProtocol conf <|> otlpProtocol conf of
+  Just GRpc -> grpcOtlpMetricExporter conf resourceMetricsToExportRequest
+  _ -> httpOtlpMetricExporter conf
+#else
+otlpMetricExporter conf = httpOtlpMetricExporter conf
+#endif
+
+
+-- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
+httpOtlpMetricExporter :: (MonadIO m) => OTLPExporterConfig -> m MetricExporter
+httpOtlpMetricExporter conf = liftIO $ do
   req <- parseRequest (metricsEndpointUrl conf)
   let (encodingHeaders, encoder) = httpMetricsCompression conf
   let baseReq =
