@@ -109,6 +109,9 @@ import Paths_hs_opentelemetry_exporter_otlp (version)
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
 
+--------------------------------------------------------------------------------
+-- OTLP Exporter configuration.
+--------------------------------------------------------------------------------
 
 data OTLPExporterConfig = OTLPExporterConfig
   { otlpEndpoint :: Maybe String
@@ -207,6 +210,9 @@ loadExporterEnvironmentVariables = liftIO $ do
       if p then pure True else lookupBooleanEnv fallback
 
 
+{- |
+The OpenTelemetry Protocol Compression Format.
+-}
 data CompressionFormat
   = None
   | GZip
@@ -225,6 +231,11 @@ data Protocol
 #endif
 
 
+{- |
+Internal helper.
+Read the `CompressionFormat` from a `String`.
+Defaults to `None` for unsupported values.
+-}
 readCompressionFormat :: (MonadIO m) => String -> m CompressionFormat
 readCompressionFormat compressionFormat =
   compressionFormat & fmap toLower & \case
@@ -235,6 +246,11 @@ readCompressionFormat compressionFormat =
       pure None
 
 
+{- |
+Internal helper.
+Read a `Protocol` from a `String`.
+Defaults to `HttpProtobuf` for unsupported values.
+-}
 readProtocol :: (MonadIO m) => String -> m Protocol
 readProtocol protocol =
   protocol & fmap toLower & \case
@@ -247,6 +263,10 @@ readProtocol protocol =
       pure HttpProtobuf
 
 
+{- |
+Internal helper.
+Read a timeout from a `String`.
+-}
 readTimeout :: (MonadIO m) => String -> m Int
 readTimeout timeout =
   case readMaybe timeout of
@@ -256,14 +276,24 @@ readTimeout timeout =
       pure defaultExporterTimeout
 
 
+{- |
+Internal helper.
+The default OTLP timeout in milliseconds.
+-}
 defaultExporterTimeout :: Int
 defaultExporterTimeout = 10_000
 
 
+{- |
+The default OTLP HTTP endpoint.
+-}
 otlpExporterHttpEndpoint :: C.ByteString
 otlpExporterHttpEndpoint = "http://localhost:4318"
 
 
+{- |
+The default OTLP gRPC endpoint.
+-}
 otlpExporterGRpcEndpoint :: C.ByteString
 otlpExporterGRpcEndpoint = "http://localhost:4317"
 
@@ -302,6 +332,10 @@ grpcLogsEndpoint conf =
   fromMaybe (grpcEndpoint conf) (otlpLogsEndpoint conf)
 
 
+{- |
+Internal helper.
+Print a warning to stderr
+-}
 putWarningLn :: (MonadIO m) => String -> m ()
 putWarningLn = liftIO . otelLogWarning
 
