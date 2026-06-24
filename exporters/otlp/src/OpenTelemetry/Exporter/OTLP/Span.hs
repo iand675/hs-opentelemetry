@@ -101,7 +101,7 @@ import OpenTelemetry.Exporter.OTLP.GRPC
 -- | Initial the OTLP 'Exporter'
 otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
 #ifdef GRPC_ENABLED
-otlpExporter conf = case otlpTracesProtocol conf of
+otlpExporter conf = case otlpTracesProtocol conf <|> otlpProtocol conf of
   Just GRpc -> grpcOtlpSpanExporter conf immutableSpansToProtobuf
   _ -> httpOtlpExporter conf
 #else
