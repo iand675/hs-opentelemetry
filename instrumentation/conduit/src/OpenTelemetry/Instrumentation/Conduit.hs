@@ -57,5 +57,5 @@ inSpan t n args f = do
     $ \span_ -> do
       catchC (f span_) $ \e -> do
         liftIO $ do
-          recordException span_ [(unkey SC.exception_escaped, toAttribute True)] Nothing (e :: SomeException)
+          recordSomeException span_ [(unkey SC.exception_escaped, toAttribute True)] Nothing (e :: SomeException)
           throwIO e

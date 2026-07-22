@@ -39,13 +39,6 @@ packages:
       size: 168
   original:
     hackage: proto-lens-runtime-0.7.0.7
-- completed:
-    hackage: co-log-0.6.1.2@sha256:86d61e07356a5cb45b8ec28217b579a21f555d025dc0d9e1eecd9ff8d288f6fc,6512
-    pantry-tree:
-      sha256: 8a03f66e378e8653f3a5784b14ba1b01fca3cfce1350eec8d323bd27aa894a34
-      size: 1198
-  original:
-    hackage: co-log-0.6.1.2
 snapshots:
 - completed:
     sha256: 6406d8039dd538f18fc0d242f01c7066ee386d81ba3c8751b914ac1ae193ec5d

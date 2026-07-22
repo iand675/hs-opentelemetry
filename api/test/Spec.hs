@@ -16,6 +16,7 @@ import qualified OpenTelemetry.PropagatorSpec as PropagatorSpec
 import qualified OpenTelemetry.RegistrySpec as Registry
 import qualified OpenTelemetry.ResourceSpec as Resource
 import qualified OpenTelemetry.SemanticsConfigSpec as SemanticsConfigSpec
+import qualified OpenTelemetry.Trace.ExceptionContextSpec as ExceptionContext
 import qualified OpenTelemetry.Trace.ExceptionHandlerSpec as ExceptionHandler
 import qualified OpenTelemetry.Trace.IdCodecSpec as IdCodec
 import qualified OpenTelemetry.Trace.MonadSpec as TraceMonad
@@ -41,6 +42,7 @@ main = hspec $ do
   InstrumentationLibrary.spec
   Logging.spec
   ExceptionHandler.spec
+  ExceptionContext.spec
   IdCodec.spec
   TraceMonad.spec
   Sampler.spec

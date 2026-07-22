@@ -95,7 +95,7 @@ event with stack trace), set the span status to Error, and re-throw. You
 can also manually set error status:
 
 > setStatus span (Error "payment declined")
-> recordException span mempty Nothing myException
+> recordSomeException span mempty Nothing (toException myException)
 
 = Source location
 
@@ -210,7 +210,12 @@ module OpenTelemetry.Trace.Core (
 
   -- ** Recording error information
   recordException,
+  recordSomeException,
+  recordExceptionWithContext,
+  ExceptionWithContext,
   recordError,
+  recordSomeError,
+  recordErrorWithContext,
   setStatus,
   SpanStatus (..),
 
@@ -288,6 +293,8 @@ import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Log.Core (emitOTelLogRecord)
 import qualified OpenTelemetry.Internal.Log.Types as SeverityNumber (SeverityNumber (..))
 import OpenTelemetry.Internal.Logging (otelLogWarning)
+import OpenTelemetry.Internal.Trace.ExceptionContext (ExceptionWithContext)
+import qualified OpenTelemetry.Internal.Trace.ExceptionContext as ExCtx
 import OpenTelemetry.Internal.Trace.Types
 import qualified OpenTelemetry.Internal.Trace.Types as Types
 import OpenTelemetry.Propagator (TextMapPropagator)
@@ -694,9 +701,9 @@ inSpanInternal t n args extraAttrs f
           case classification of
             ErrorException -> do
               setStatus s $ Error $ T.pack $ displayException inner
-              recordException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing inner
+              recordSomeException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing someEx
             RecordedException ->
-              recordException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing inner
+              recordSomeException s (H.union [(unkey SC.exception_escaped, toAttribute True)] exAttrs) Nothing someEx
             IgnoredException ->
               pure ()
           endSpan s Nothing
@@ -1023,51 +1030,138 @@ endSpan (Dropped _) _ = pure ()
 {-# SPECIALIZE endSpan :: Span -> Maybe Timestamp -> IO () #-}
 
 
-{- | A specialized variant of @addEvent@ that records attributes conforming to
- the OpenTelemetry specification's
- <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>
+{- | Record an exception on a span by 'toException'-converting it to a
+'SomeException' first.
 
- @since 0.0.1.0
+Note that this throws away any 'Control.Exception.Context.ExceptionContext'
+already attached to @e@: if @e@ is a 'SomeException', use 'recordSomeException'
+instead, and if you have an exception together with a context, use
+'recordExceptionWithContext'.
+
+@since 0.0.1.0
 -}
 recordException :: (MonadIO m, Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> m ()
-recordException s attrs ts e = liftIO $ do
-  cs <- whoCreated e
-  let message = T.pack $ displayException e
+recordException s attrs ts e = recordSomeException s attrs ts (toException e)
+{-# INLINEABLE recordException #-}
+{-# SPECIALIZE recordException :: (Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> IO () #-}
+{-# DEPRECATED
+  recordException
+  "This silently discards any ExceptionContext attached to the exception. Prefer recordSomeException (when you have a SomeException) or recordExceptionWithContext (when you can supply an ExceptionWithContext)."
+  #-}
+
+
+{- | Like 'recordException', but takes a 'SomeException' directly so that any
+'Control.Exception.Context.ExceptionContext' attached to it is preserved.
+
+Library code that catches a 'SomeException' should prefer this function over
+'recordException', and pass the outer 'SomeException' without unwrapping to avoid
+losing exception context.
+
+Records attributes conforming to the OpenTelemetry specification's
+ <https://github.com/open-telemetry/opentelemetry-specification/blob/49c2f56f3c0468ceb2b69518bcadadd96e0a5a8b/specification/trace/semantic_conventions/exceptions.md semantic conventions>.
+
+@since 1.0.1.0
+-}
+recordSomeException :: (MonadIO m) => Span -> AttributeMap -> Maybe Timestamp -> SomeException -> m ()
+recordSomeException s attrs ts someEx@(SomeException inner) = liftIO $ do
+  stack <- ExCtx.exceptionStackText someEx
+  let message = T.pack $ displayException inner
   addEvent s $
     NewEvent
       { newEventName = "exception"
       , newEventAttributes =
           H.union
             attrs
-            [ (unkey SC.exception_type, A.toAttribute $ T.pack $ show $ typeOf e)
+            [ (unkey SC.exception_type, A.toAttribute $ T.pack $ show $ typeOf inner)
             , (unkey SC.exception_message, A.toAttribute message)
-            , (unkey SC.exception_stacktrace, A.toAttribute $ T.unlines $ map T.pack cs)
+            , (unkey SC.exception_stacktrace, A.toAttribute stack)
             ]
       , newEventTimestamp = ts
       }
-{-# INLINEABLE recordException #-}
-{-# SPECIALIZE recordException :: (Exception e) => Span -> AttributeMap -> Maybe Timestamp -> e -> IO () #-}
+{-# INLINEABLE recordSomeException #-}
+{-# SPECIALIZE recordSomeException :: Span -> AttributeMap -> Maybe Timestamp -> SomeException -> IO () #-}
 
 
-{- | Record an error and set the span status in one call.
+{- | Like 'recordException', but accepts an 'ExceptionWithContext' so that
+any exception context bundled with the exception (in particular, any
+@Backtraces@ annotation attached by the GHC runtime) is preserved when the
+exception event is recorded.
 
-Combines 'setStatus' with 'Error' and 'recordException'. This is a common
-pattern when handling errors outside of 'inSpan' (which does this
-automatically for uncaught exceptions).
+Prefer this over 'recordException' when you have access to the exception's
+context at the catch site.
 
-@
-case result of
-  Left err -> recordError span err
-  Right _  -> setStatus span Ok
-@
+'ExceptionWithContext' can only be obtained on @base-4.20+@ (GHC 9.10+). On
+older bases this function still exists with the same signature (so no CPP is
+needed at use sites or in re-exports), but the argument type is an
+uninhabited stub, so any code that obtains a value to pass here — e.g. a
+@catch@ handler typed at @ExceptionWithContext e@ — will fail to compile
+with an error explaining the situation.
+
+@since 1.0.1.0
+-}
+recordExceptionWithContext
+  :: (MonadIO m, Exception e)
+  => Span
+  -> AttributeMap
+  -> Maybe Timestamp
+  -> ExceptionWithContext e
+  -> m ()
+recordExceptionWithContext s attrs ts e = recordSomeException s attrs ts (ExCtx.exceptionWithContextToSomeException e)
+{-# INLINEABLE recordExceptionWithContext #-}
+{-# SPECIALIZE recordExceptionWithContext :: (Exception e) => Span -> AttributeMap -> Maybe Timestamp -> ExceptionWithContext e -> IO () #-}
+
+
+{- | Record an error and set the span status in one call, by
+'toException'-converting the exception to a 'SomeException' first.
+
+Note that, like 'recordException', this throws away any
+'Control.Exception.Context.ExceptionContext' already attached to @e@:
+prefer 'recordSomeError' or 'recordErrorWithContext'.
 
 @since 0.4.1.0
 -}
 recordError :: (MonadIO m, Exception e) => Span -> e -> m ()
-recordError s e = do
-  setStatus s $ Error $ T.pack $ displayException e
-  recordException s H.empty Nothing e
+recordError s e = recordSomeError s (toException e)
 {-# INLINE recordError #-}
+{-# DEPRECATED
+  recordError
+  "This silently discards any ExceptionContext attached to the exception. Prefer recordSomeError (when you have a SomeException) or recordErrorWithContext (when you can supply an ExceptionWithContext)."
+  #-}
+
+
+{- | Record an error and set the span status in one call. Takes a
+'SomeException' directly so that any
+'Control.Exception.Context.ExceptionContext' attached to it is preserved.
+
+Combines 'setStatus' with 'Error' and 'recordSomeException'. This is a
+common pattern when handling errors outside of 'inSpan' (which does this
+automatically for uncaught exceptions).
+
+@
+case result of
+  Left err -> recordSomeError span (toException err)
+  Right _  -> setStatus span Ok
+@
+
+@since 1.0.1.0
+-}
+recordSomeError :: (MonadIO m) => Span -> SomeException -> m ()
+recordSomeError s someEx@(SomeException inner) = do
+  setStatus s $ Error $ T.pack $ displayException inner
+  recordSomeException s H.empty Nothing someEx
+{-# INLINE recordSomeError #-}
+
+
+{- | Like 'recordError', but accepts an 'ExceptionWithContext' so that any
+exception context bundled with the exception is preserved when the
+exception event is recorded. See 'recordExceptionWithContext', including
+its note on availability across base versions.
+
+@since 1.0.1.0
+-}
+recordErrorWithContext :: (MonadIO m, Exception e) => Span -> ExceptionWithContext e -> m ()
+recordErrorWithContext s e = recordSomeError s (ExCtx.exceptionWithContextToSomeException e)
+{-# INLINE recordErrorWithContext #-}
 
 
 {- | Returns @True@ if the @SpanContext@ has a non-zero @TraceID@ and a non-zero @SpanID@.

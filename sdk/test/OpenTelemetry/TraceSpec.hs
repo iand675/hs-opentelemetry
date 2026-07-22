@@ -3,6 +3,8 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+-- This file exercises the deprecated 'recordException' wrapper directly.
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 module OpenTelemetry.TraceSpec where
 
