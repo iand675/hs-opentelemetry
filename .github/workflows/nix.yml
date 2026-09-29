@@ -1,0 +1,66 @@
+name: Nix
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# Every job substitutes from hs-opentelemetry.cachix.org; only builds of main
+# push to it, so the cache holds what a fresh checkout of main needs.
+env:
+  CACHIX_NAME: hs-opentelemetry
+  # Local packages and examples change on every commit and nothing outside CI
+  # consumes their store paths, so they are not pushed.
+  CACHIX_PUSH_FILTER: ^/nix/store/[a-z0-9]{32}-(hs-opentelemetry-|hspec-example-|hw-kafka-client-example-|otlp-demo-|yesod-minimal-)
+
+jobs:
+  pre-commit:
+    name: pre-commit-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: accept-flake-config = true
+      - uses: cachix/cachix-action@v17
+        with:
+          name: ${{ env.CACHIX_NAME }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          skipPush: ${{ github.ref != 'refs/heads/main' }}
+          pushFilter: ${{ env.CACHIX_PUSH_FILTER }}
+      - run: nix build --print-build-logs --no-link .#checks.x86_64-linux.pre-commit-check
+
+  haskell:
+    name: ${{ matrix.ghc }} (${{ matrix.platform.system }})
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - {os: ubuntu-latest, system: x86_64-linux}
+          - {os: macos-latest, system: aarch64-darwin}
+        ghc: [ghc94, ghc96, ghc98, ghc910]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: accept-flake-config = true
+      - uses: cachix/cachix-action@v17
+        with:
+          name: ${{ env.CACHIX_NAME }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          skipPush: ${{ github.ref != 'refs/heads/main' }}
+          pushFilter: ${{ env.CACHIX_PUSH_FILTER }}
+      # devenv shells read the checkout path from $PWD, hence --impure.
+      - run: >-
+          nix build --impure --print-build-logs --no-link
+          .#packages.${{ matrix.platform.system }}.hs-opentelemetry-suite-${{ matrix.ghc }}
+          .#devShells.${{ matrix.platform.system }}.${{ matrix.ghc }}
