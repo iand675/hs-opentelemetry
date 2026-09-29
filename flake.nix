@@ -115,6 +115,9 @@
                   hpkgs:
                     lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet myHaskellPackages)) hpkgs
                 );
+                # haskell-language-server 2.12 dropped GHC 9.4, and the
+                # nixpkgs HLS no longer evaluates for it.
+                languageServer = lib.mkIf (ghcVersion == "ghc94") null;
               };
 
               # Use a consistent hpack version across shells.
@@ -148,17 +151,16 @@
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
-    # This sets the flake to use the IOG nix cache.
-    # Nix should ask for permission before using it,
-    # but remove it here if you do not want it to.
+    # Extra binary caches. Nix asks before using them unless the flake
+    # config is accepted; remove them here if you do not want them.
     extra-substituters = [
+      "https://hs-opentelemetry.cachix.org"
       "https://cache.iog.io"
-      "https://cache.garnix.io"
       "https://devenv.cachix.org"
     ];
     extra-trusted-public-keys = [
+      "hs-opentelemetry.cachix.org-1:H/aGb88afuonK0areObmAl3bjqo7jDZCc5KcQBjUXR0="
       "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
-      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
       "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
     ];
     allow-import-from-derivation = "true";
