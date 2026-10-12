@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Allow `tagged` 0.9.
+
 ## 1.0.0.0 - 2026-05-29
 
 - Update to `hs-opentelemetry-api` 0.4.
