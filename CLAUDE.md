@@ -45,6 +45,11 @@ Key compat notes:
 - Run tests via the build commands above (`--test` flag for Stack, `cabal test` for Cabal)
 - Tests are located in `test/` directories within each package
 
+### CI
+- GitHub Actions (`.github/workflows/nix.yml`) runs `checks.x86_64-linux.pre-commit-check`, plus `packages.<system>.hs-opentelemetry-suite-<ghc>` and `devShells.<system>.<ghc>` for ghc94, ghc96, ghc98 and ghc910 on x86_64-linux and aarch64-darwin
+- Every job substitutes from `hs-opentelemetry.cachix.org`, which the flake `nixConfig` also lists, so `nix develop` on a fresh checkout downloads dependencies instead of building them. Only builds of `main` push to it (secret `CACHIX_AUTH_TOKEN`), and local packages and examples are excluded from the push
+- Reproduce a CI job locally with `nix build --impure -L .#packages.x86_64-linux.hs-opentelemetry-suite-ghc910 .#devShells.x86_64-linux.ghc910` (needs an x86_64-linux builder on macOS)
+
 ### Benchmark Regression Detection
 - `make bench.save` - Save a baseline on your machine (takes ~4 minutes)
 - `make bench.check` - Compare against baseline, fail if >20% regression
