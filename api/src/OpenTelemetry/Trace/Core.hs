@@ -410,7 +410,11 @@ createSpanHelper t ctxt n args@SpanArguments {..} extraAttrs !tidInt = do
           -- fresh regardless of sampling outcome, which this satisfies.
           -- Child spans: inherit TraceId, generate only SpanId (1 call).
           (!tId, !preSpanId) <- case parentSc of
-            Nothing -> newTraceAndSpanId idGen
+            Nothing -> case lookupExternalTraceId ctxt of
+              Just etid -> do
+                !sid <- newSpanId idGen
+                pure (etid, sid)
+              Nothing -> newTraceAndSpanId idGen
             Just sc -> do
               !sid <- newSpanId idGen
               pure (traceId sc, sid)
