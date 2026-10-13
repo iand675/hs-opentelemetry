@@ -65,6 +65,7 @@ in rec {
     hs-opentelemetry-instrumentation-tasty = ../instrumentation/tasty;
     hs-opentelemetry-exporter-prometheus = ../exporters/prometheus;
     hs-opentelemetry-utils-exceptions = ../utils/exceptions;
+    hs-opentelemetry-utils-sqlcommenter = ../utils/sqlcommenter;
     hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb;
 
     hspec-example = ../examples/hspec;
