@@ -271,8 +271,8 @@ wrapSqlBackend' tp attrs conn_ = do
                       case stmtQuery stmt ps of
                         Acquire stmtQueryAcquireF -> Acquire $ \f ->
                           handleAny
-                            ( \(SomeException err) -> do
-                                recordException child [(unkey SC.exception_escaped, toAttribute True)] Nothing err
+                            ( \someEx@(SomeException err) -> do
+                                recordSomeException child [(unkey SC.exception_escaped, toAttribute True)] Nothing someEx
                                 endSpan child Nothing
                                 throwIO err
                             )
@@ -324,8 +324,8 @@ wrapSqlBackend' tp attrs conn_ = do
                         ]
                       endSpan s Nothing
                       case result of
-                        Left (SomeException err) -> do
-                          recordException s [(unkey SC.exception_escaped, toAttribute True)] Nothing err
+                        Left someEx@(SomeException err) -> do
+                          recordSomeException s [(unkey SC.exception_escaped, toAttribute True)] Nothing someEx
                           throwIO err
                         Right _ -> pure ()
               act `finally` do
@@ -348,8 +348,8 @@ wrapSqlBackend' tp attrs conn_ = do
                         ]
                       endSpan s Nothing
                       case result of
-                        Left (SomeException err) -> do
-                          recordException s [(unkey SC.exception_escaped, toAttribute True)] Nothing err
+                        Left someEx@(SomeException err) -> do
+                          recordSomeException s [(unkey SC.exception_escaped, toAttribute True)] Nothing someEx
                           throwIO err
                         Right _ -> pure ()
               act `finally` do

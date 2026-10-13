@@ -57,6 +57,7 @@ library:
   - OpenTelemetry.Context.Types
   - OpenTelemetry.Internal.Metric.Export
   - OpenTelemetry.Internal.Metric.Types
+  - OpenTelemetry.Internal.Trace.ExceptionContext
   - OpenTelemetry.Internal.Trace.Types
   - OpenTelemetry.Internal.UnpackedMaybe
   - Paths_hs_opentelemetry_api
@@ -100,7 +101,9 @@ tests:
     - OpenTelemetry.RegistrySpec
     - OpenTelemetry.ResourceSpec
     - OpenTelemetry.SemanticsConfigSpec
+    - OpenTelemetry.Trace.ExceptionContextSpec
     - OpenTelemetry.Trace.ExceptionHandlerSpec
+    - OpenTelemetry.Trace.ExceptionHandlerSpec.Helpers
     - OpenTelemetry.Trace.IdCodecSpec
     - OpenTelemetry.Trace.MonadSpec
     - OpenTelemetry.Trace.SamplerSpec

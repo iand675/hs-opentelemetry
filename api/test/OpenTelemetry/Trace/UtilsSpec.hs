@@ -1,13 +1,17 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+-- This file exercises the deprecated 'recordError' wrapper directly.
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 module OpenTelemetry.Trace.UtilsSpec where
 
+import Control.Exception (toException)
 import qualified Data.HashMap.Strict as H
 import Data.IORef
 import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import OpenTelemetry.Attributes (lookupAttribute)
 import qualified OpenTelemetry.Attributes as A
@@ -134,5 +138,24 @@ spec = describe "Trace utilities" $ do
       V.length evts `shouldBe` 1
       let evt = V.head evts
       eventName evt `shouldBe` "exception"
+      lookupAttribute (eventAttributes evt) "exception.type" `shouldSatisfy` isJust
+      lookupAttribute (eventAttributes evt) "exception.message" `shouldSatisfy` isJust
+
+  describe "recordSomeError" $ do
+    it "sets span status to Error and records exception event" $ withTracer $ \t -> do
+      s <- createSpan t empty "test-span" defaultSpanArguments
+      let err = toException (userError "something broke")
+      recordSomeError s err
+      endSpan s Nothing
+      is <- unsafeReadSpan s
+      hot <- readIORef (spanHot is)
+      hotStatus hot `shouldSatisfy` \case Error _ -> True; _ -> False
+      let evts = appendOnlyBoundedCollectionValues (hotEvents hot)
+      V.length evts `shouldBe` 1
+      let evt = V.head evts
+      eventName evt `shouldBe` "exception"
+      -- The status message and exception.type should describe the inner
+      -- exception, not the SomeException wrapper.
+      hotStatus hot `shouldSatisfy` \case Error msg -> not (T.null msg); _ -> False
       lookupAttribute (eventAttributes evt) "exception.type" `shouldSatisfy` isJust
       lookupAttribute (eventAttributes evt) "exception.message" `shouldSatisfy` isJust
