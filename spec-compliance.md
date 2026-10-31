@@ -290,7 +290,7 @@ in this release; items marked **deferred** are tracked but not blocking 1.0.
 | Metrics | NaN/Inf not filtered for sum/gauge doubles | [metrics/sdk](https://opentelemetry.io/docs/specs/otel/metrics/sdk/) | **done** (`addSumDbl`, `setSumDbl`, `recordGauge`) |
 | Logs | `LogRecordExporter.forceFlush` returns `IO ()` not `FlushResult` | [logs/sdk#logrecordexporter](https://opentelemetry.io/docs/specs/otel/logs/sdk/#logrecordexporter) | **done** (returns `IO FlushResult`) |
 | Propagation | W3C multi-header `tracestate` not wired through propagator | [W3C trace-context](https://www.w3.org/TR/trace-context/) | **done** (already works: `decodeTraceState` parses comma-separated combined headers; helpers `decodeTraceStateMultiple`/`encodeTraceStateMultiple` available) |
-| OTLP | `Retry-After` only parses integer seconds, not HTTP-date | [OTLP#failures](https://opentelemetry.io/docs/specs/otlp/#failures) | **done** (`parseRetryAfterMicros` handles both formats) |
+| OTLP | `Retry-After` only parses integer seconds, not HTTP-date | [OTLP#failures](https://opentelemetry.io/docs/specs/otlp/#failures) | **done** (shared HTTP retry loop calls `parseRetryAfterMicros` for traces, metrics, and logs; loopback transport tests cover HTTP-date waits) |
 | OTLP | TLS certificate env vars read; application must supply custom Manager for non-default CAs | [OTLP](https://opentelemetry.io/docs/specs/otlp/) | **documented** (see migration guide) |
 | OTLP | Concurrent export config available (`otlpConcurrentExports`); default sequential | [OTLP](https://opentelemetry.io/docs/specs/otlp/) | **done** (config + env var) |
 | OTLP | No OTLP/HTTP JSON exporter | [OTLP](https://opentelemetry.io/docs/specs/otlp/) | deferred (1.1) |

@@ -14,10 +14,8 @@ module OpenTelemetry.Exporter.OTLP.Metric (
 
 import Codec.Compression.GZip (compress)
 import Control.Applicative ((<|>))
-import Control.Concurrent (threadDelay)
-import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Exception (SomeAsyncException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
@@ -31,9 +29,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
-import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
 import OpenTelemetry.Exporter.Metric (
   AggregationTemporality (..),
@@ -48,6 +44,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
+import OpenTelemetry.Exporter.OTLP.Internal.Retry (sendHttpRequestWithRetry)
 import OpenTelemetry.Exporter.OTLP.Internal.Timeout (withExportTimeout)
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
@@ -60,7 +57,6 @@ import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as Rf
-import Text.Read (readMaybe)
 
 
 -- | Default OTLP timeout (milliseconds), aligned with "OpenTelemetry.Exporter.OTLP.Span".
@@ -113,17 +109,6 @@ otlpMetricExporter conf = liftIO $ do
       , metricExporterForceFlush = pure FlushSuccess
       }
   where
-    retryDelay = 100_000
-    maxRetryCount = 5
-    isRetryableStatusCode status_ =
-      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
-    isRetryableException = \case
-      ResponseTimeout -> True
-      ConnectionTimeout -> True
-      ConnectionFailure _ -> True
-      ConnectionClosed -> True
-      _ -> False
-
     exporterExportCall encoder baseReq batches = do
       let msg = encodeMessage (resourceMetricsToExportRequest batches)
       let req =
@@ -131,32 +116,7 @@ otlpMetricExporter conf = liftIO $ do
               { requestBody =
                   RequestBodyLBS $ encoder $ L.fromStrict msg
               }
-      sendReq req 0
-    sendReq req backoffCount = do
-      eResp <- try $ httpBS req
-      let exponentialBackoff =
-            if backoffCount == maxRetryCount
-              then pure $ Failure Nothing
-              else do
-                threadDelay (retryDelay `shiftL` backoffCount)
-                sendReq req (backoffCount + 1)
-      case eResp of
-        Left (HttpExceptionRequest _req' e)
-          | isRetryableException e -> exponentialBackoff
-        Left err -> pure $ Failure $ Just $ SomeException err
-        Right resp ->
-          if isRetryableStatusCode (responseStatus resp)
-            then case lookup hRetryAfter $ responseHeaders resp of
-              Nothing -> exponentialBackoff
-              Just retryAfter -> case readMaybe $ C.unpack retryAfter of
-                Nothing -> exponentialBackoff
-                Just seconds -> do
-                  threadDelay (seconds * 1_000_000)
-                  sendReq req (backoffCount + 1)
-            else
-              if statusCode (responseStatus resp) >= 300
-                then pure $ Failure Nothing
-                else pure Success
+      sendHttpRequestWithRetry req
 
 
 type Encoder = L.ByteString -> L.ByteString

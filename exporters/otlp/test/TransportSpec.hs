@@ -1,7 +1,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module TransportSpec (spec) where
+module TransportSpec (spec, Signal (..), newExport, respondWith, completedSuccessfully, completedWithFailure) where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (AsyncCancelled (..), cancel, waitCatch, withAsync)

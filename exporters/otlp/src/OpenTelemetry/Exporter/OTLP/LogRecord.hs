@@ -9,10 +9,8 @@ module OpenTelemetry.Exporter.OTLP.LogRecord (
 ) where
 
 import Codec.Compression.GZip (compress)
-import Control.Concurrent (threadDelay)
-import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Exception (SomeAsyncException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Bits (shiftL)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
@@ -26,11 +24,10 @@ import qualified Data.Vector as V
 import Data.Word (Word64)
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
-import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
+import OpenTelemetry.Exporter.OTLP.Internal.Retry (sendHttpRequestWithRetry)
 import OpenTelemetry.Exporter.OTLP.Internal.Timeout (withExportTimeout)
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types
@@ -49,7 +46,6 @@ import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs as PL
 import qualified Proto.Opentelemetry.Proto.Logs.V1.Logs_Fields as LF
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource as Res
 import qualified Proto.Opentelemetry.Proto.Resource.V1.Resource_Fields as RF
-import Text.Read (readMaybe)
 
 
 defaultExporterTimeout :: Int
@@ -86,17 +82,6 @@ otlpLogRecordExporter conf = liftIO $ do
       , logRecordExporterArgumentsShutdown = pure ()
       }
   where
-    retryDelay = 100_000
-    maxRetryCount = 5
-    isRetryableStatusCode status_ =
-      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
-    isRetryableException = \case
-      ResponseTimeout -> True
-      ConnectionTimeout -> True
-      ConnectionFailure _ -> True
-      ConnectionClosed -> True
-      _ -> False
-
     exporterExportCall encoder baseReq lrs = do
       rl <- buildResourceLogsFromBatch lrs
       let exportReq :: ExportLogsServiceRequest
@@ -109,33 +94,7 @@ otlpLogRecordExporter conf = liftIO $ do
             baseReq
               { requestBody = RequestBodyLBS $ encoder $ L.fromStrict msg
               }
-      sendReq req 0
-
-    sendReq req backoffCount = do
-      eResp <- try $ httpBS req
-      let exponentialBackoff =
-            if backoffCount == maxRetryCount
-              then pure $ Failure Nothing
-              else do
-                threadDelay (retryDelay `shiftL` backoffCount)
-                sendReq req (backoffCount + 1)
-      case eResp of
-        Left (HttpExceptionRequest _req' e)
-          | isRetryableException e -> exponentialBackoff
-        Left err -> pure $ Failure $ Just $ SomeException err
-        Right resp ->
-          if isRetryableStatusCode (responseStatus resp)
-            then case lookup hRetryAfter $ responseHeaders resp of
-              Nothing -> exponentialBackoff
-              Just retryAfter -> case readMaybe $ C.unpack retryAfter of
-                Nothing -> exponentialBackoff
-                Just seconds -> do
-                  threadDelay (seconds * 1_000_000)
-                  sendReq req (backoffCount + 1)
-            else
-              if statusCode (responseStatus resp) >= 300
-                then pure $ Failure Nothing
-                else pure Success
+      sendHttpRequestWithRetry req
 
 
 groupByScope
