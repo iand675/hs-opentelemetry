@@ -79,6 +79,7 @@ import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Common (optionalTimestampToMaybe)
 import OpenTelemetry.Environment
+import OpenTelemetry.Exporter.OTLP.Internal.Timeout (withExportTimeout)
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
 import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
@@ -281,7 +282,7 @@ httpOtlpExporter conf = do
       { spanExporterExport = \spans_ -> do
           let anySpansToExport = H.size spans_ /= 0 && not (all V.null $ H.elems spans_)
           if anySpansToExport
-            then do
+            then withExportTimeout (otlpTracesTimeout conf <|> otlpTimeout conf) $ do
               result <- try $ exporterExportCall encoder baseReq spans_
               case result of
                 Left err -> do
@@ -319,7 +320,7 @@ httpOtlpExporter conf = do
               { requestBody =
                   RequestBodyLBS $ encoder $ L.fromStrict msg
               }
-      sendReq req 0 -- TODO =<< getTime for maximum cutoff
+      sendReq req 0
     sendReq req backoffCount = do
       eResp <- try $ httpBS req
 

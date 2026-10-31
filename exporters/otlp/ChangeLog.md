@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **HTTP: enforce the configured timeout across the whole batch export.**
+  Serialization, request attempts, exponential backoff, and `Retry-After` waits
+  share one timeout instead of restarting it on every attempt. A timeout returns
+  export failure; earlier caller cancellation still propagates. Explicit zero
+  keeps its existing no-timeout meaning.
+
 - **gRPC: exporters now reconnect after the connection drops.** ([#305](https://github.com/iand675/hs-opentelemetry/issues/305))
   `grpcOtlpSpanExporter`, `grpcOtlpMetricExporter`, and `grpcOtlpLogRecordExporter`
   previously opened their grapesy connection with the default `DontReconnect`

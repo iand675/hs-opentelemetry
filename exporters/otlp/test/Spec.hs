@@ -27,6 +27,7 @@ import qualified Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_F
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import Test.Hspec
+import qualified TransportSpec
 
 
 decodeExport :: [ResourceMetricsExport] -> Either String ExportMetricsServiceRequest
@@ -36,6 +37,7 @@ decodeExport rms =
 
 main :: IO ()
 main = hspec $ do
+  TransportSpec.spec
   describe "resourceMetricsToExportRequest" $ do
     it "round-trips SumDataPoint through protobuf decode" $ do
       let lib = "lib" :: InstrumentationLibrary

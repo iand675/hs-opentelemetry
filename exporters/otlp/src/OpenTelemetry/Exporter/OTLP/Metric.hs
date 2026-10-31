@@ -48,6 +48,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
+import OpenTelemetry.Exporter.OTLP.Internal.Timeout (withExportTimeout)
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
@@ -101,7 +102,7 @@ otlpMetricExporter conf = liftIO $ do
       { metricExporterExport = \batches -> do
           if not (anyMetricsToExport batches)
             then pure Success
-            else do
+            else withExportTimeout (otlpMetricsTimeout conf <|> otlpTimeout conf) $ do
               result <- try $ exporterExportCall encoder baseReq batches
               case result of
                 Left err -> case fromException err of

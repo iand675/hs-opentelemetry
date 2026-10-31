@@ -37,6 +37,7 @@ library
       OpenTelemetry.Exporter.OTLP.Span
       OpenTelemetry.Exporter.OTLP.Metric
       OpenTelemetry.Exporter.OTLP.Internal.Config
+      OpenTelemetry.Exporter.OTLP.Internal.Timeout
   other-modules:
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
@@ -72,12 +73,14 @@ test-suite hs-opentelemetry-exporter-otlp-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      TransportSpec
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      async
+    , base >=4.7 && <5
     , bytestring
     , hs-opentelemetry-api ==1.0.*
     , hs-opentelemetry-exporter-otlp ==1.0.*
@@ -89,4 +92,6 @@ test-suite hs-opentelemetry-exporter-otlp-test
     , text
     , unordered-containers
     , vector
+    , wai
+    , warp
   default-language: Haskell2010
