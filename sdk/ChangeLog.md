@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Store metric series in individual transactional cells. Recording an existing
+  series no longer rebuilds or replaces a provider-wide immutable map, reducing
+  allocation and contention between unrelated series. Cardinality admission and
+  delta collection retain atomic accounting and snapshot/reset semantics. The
+  snapshot briefly pauses writers so collection can finish under sustained load;
+  export construction runs after recording resumes. The existing `SdkMeterEnv`
+  storage field and `emptyStorageState` initializer remain source-compatible.
+
 ## 1.0.0.0 - 2026-05-29
 
 ### Spec conformance (1.55.0 audit)
