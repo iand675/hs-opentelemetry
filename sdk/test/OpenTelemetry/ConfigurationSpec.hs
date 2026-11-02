@@ -118,7 +118,7 @@ spec = do
 
     -- Configuration: ${ENV} substitution in config file
     -- https://opentelemetry.io/docs/specs/otel/configuration/
-    it "substitutes environment variables in YAML before parsing" $ do
+    it "substitutes environment variables in YAML scalar values" $ do
       let varName :: String
           varName = "HS_OTEL_CONFIG_PARSE_TEST_SUBST_913847"
           yaml :: Text
@@ -322,15 +322,15 @@ spec = do
         Left err -> expectationFailure $ "expected Right, got Left: " ++ show err
         Right cfg -> configFileFormat cfg `shouldBe` "${UNCLOSED"
 
-    -- Implementation-specific: empty ${} substitution
-    it "env substitution: empty variable name ${} is handled gracefully" $ do
+    -- Empty braces are not a complete SUBSTITUTION-REF in the spec grammar.
+    it "env substitution: empty ${} is preserved as literal text" $ do
       let yaml :: Text
           yaml =
             "file_format: '${}'\n"
       result <- parseConfigBytes yaml
       case result of
         Left err -> expectationFailure $ "expected Right, got Left: " ++ show err
-        Right cfg -> configFileFormat cfg `shouldBe` ""
+        Right cfg -> configFileFormat cfg `shouldBe` "${}"
 
     -- Configuration: tracer_provider.limits (span limits)
     -- https://opentelemetry.io/docs/specs/otel/configuration/

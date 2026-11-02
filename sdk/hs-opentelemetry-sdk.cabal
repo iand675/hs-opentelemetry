@@ -113,6 +113,7 @@ library
     , bytestring
     , case-insensitive
     , clock
+    , conduit >=1.3
     , containers
     , directory
     , hashable
@@ -127,6 +128,7 @@ library
     , hs-opentelemetry-semantic-conventions >=1.40 && <2
     , http-client
     , http-types
+    , libyaml >=0.1
     , network-bsd
     , process
     , random >=1.2.0
@@ -138,7 +140,7 @@ library
     , unordered-containers
     , vector
     , vector-builder
-    , yaml
+    , yaml ==0.11.*
   default-language: Haskell2010
   if os(windows)
     other-modules:
@@ -167,6 +169,7 @@ test-suite hs-opentelemetry-sdk-test
   other-modules:
       OpenTelemetry.BaggageSpec
       OpenTelemetry.ConfigurationSpec
+      OpenTelemetry.ConfigurationSubstitutionSpec
       OpenTelemetry.ContextInSpanSpec
       OpenTelemetry.ContextSpec
       OpenTelemetry.LogSpec

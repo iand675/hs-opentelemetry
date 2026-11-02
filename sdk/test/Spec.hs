@@ -6,6 +6,7 @@ import Control.Concurrent (myThreadId)
 import Control.Exception (AsyncException (UserInterrupt), SomeException, throwTo, try)
 import qualified OpenTelemetry.BaggageSpec as BaggageSpec
 import qualified OpenTelemetry.ConfigurationSpec as ConfigurationSpec
+import qualified OpenTelemetry.ConfigurationSubstitutionSpec as ConfigurationSubstitutionSpec
 import qualified OpenTelemetry.ContextInSpanSpec as ContextInSpanSpec
 import qualified OpenTelemetry.ContextSpec as ContextSpec
 import qualified OpenTelemetry.LogSpec as LogSpec
@@ -34,6 +35,7 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
+    ["--config-empty-env-helper"] -> ConfigurationSubstitutionSpec.emptyEnvironmentHelper
     ("--signal-test-helper" : rest) -> signalTestHelper rest
     _ -> runTests
 
@@ -55,6 +57,7 @@ runTests = do
     MeterProviderSpec.spec
     MetricReaderSpec.spec
     ConfigurationSpec.spec
+    ConfigurationSubstitutionSpec.spec
 
 
 signalTestHelper :: [String] -> IO ()
