@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* Add explicit `messaging/1.45` and `messaging/1.45/dup` attribute migration
+  options. Preserve defaults and existing `messaging`/`messaging/dup` behavior.
+* Add options-aware attribute builders, Kafka namespace replacements, string
+  partition IDs and tombstone attributes. Document migration and remaining limits.
+* Require semantic-conventions >= 1.45 for the new keys.
 * Add instrumented version of `produceMessage'`
 
 ## 1.0.0.0 - 2026-05-29

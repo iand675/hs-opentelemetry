@@ -8,7 +8,6 @@
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
 import Control.Applicative (Alternative ((<|>)))
-import Control.Monad (when)
 import qualified Data.Aeson as Json
 import qualified Data.Aeson.Types as Json (Parser)
 import qualified Data.Char as Char
@@ -20,14 +19,13 @@ import qualified Data.List as List
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Traversable (for)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import qualified Data.Yaml as Yaml
 import System.Directory (createDirectoryIfMissing)
+import System.Environment (getArgs)
 import qualified System.FilePath as FilePath
-import qualified System.FilePath.Glob as Glob
-import System.IO (IOMode (WriteMode), hPutStrLn, hSetNewlineMode, noNewlineTranslation, stderr, withFile)
+import System.IO (IOMode (WriteMode), hSetNewlineMode, noNewlineTranslation, withFile)
 import Prelude (
   Applicative (pure, (<*>)),
   Bool (False, True),
@@ -174,7 +172,7 @@ type Extends = Text
 
 
 type Stability :: Kind.Type
-data Stability = Deprecated | Development | Experimental | Beta | ReleaseCandidate | Stable
+data Stability = Deprecated | Development | Experimental | Alpha | Beta | ReleaseCandidate | Stable
   deriving stock (Show, Read, Eq, Ord, Prelude.Enum)
 
 
@@ -182,6 +180,7 @@ instance Json.FromJSON Stability where
   parseJSON (Json.String "deprecated") = pure Deprecated
   parseJSON (Json.String "development") = pure Development
   parseJSON (Json.String "experimental") = pure Experimental
+  parseJSON (Json.String "alpha") = pure Alpha
   parseJSON (Json.String "beta") = pure Beta
   parseJSON (Json.String "release_candidate") = pure ReleaseCandidate
   parseJSON (Json.String "stable") = pure Stable
@@ -197,12 +196,13 @@ instance Json.FromJSON DeprecatedMsg where
   parseJSON (Json.Object o) = do
     reason <- o Json..:? "reason"
     renamedTo <- o Json..:? "renamed_to"
+    note <- o Json..:? "note"
     let msg = case (reason :: Maybe Text, renamedTo :: Maybe Text) of
           (Just r, Just t) -> r <> ": " <> t
           (Just r, Nothing) -> r
           (Nothing, Just t) -> "renamed to " <> t
           (Nothing, Nothing) -> "deprecated"
-    pure (DeprecatedMsg msg)
+    pure (DeprecatedMsg (msg <> maybe "" ("\n" <>) note))
   parseJSON _ = fail "expected a string or object for deprecated"
 
 
@@ -506,28 +506,26 @@ instance Json.FromJSON a => Json.FromJSON (OneOrSome a) where
 
 
 main :: IO ()
-main = generate "src/OpenTelemetry/SemanticConventions.hs"
+main = do
+  args <- getArgs
+  case args of
+    [modelFile] -> generate modelFile "src/OpenTelemetry/SemanticConventions.hs"
+    _ -> fail "usage: generate .generated/model.json (run make to resolve the model with Weaver)"
 
 
-generate :: FilePath -> IO ()
-generate targetFile = do
+generate :: FilePath -> FilePath -> IO ()
+generate modelFile targetFile = do
   let
-    yamlPattern = Glob.compile "model/model/**/*.y*ml"
     targetDirectory :: FilePath
     targetDirectory = FilePath.takeDirectory targetFile
-  yamlFiles <- Glob.globDir1 yamlPattern "."
-  when (List.null yamlFiles) $ fail "no YAML files found"
-  models <-
-    for yamlFiles $ \yamlFile -> do
-      printLog $ "processing " ++ yamlFile
-      Yaml.decodeFileThrow yamlFile :: IO Model
+  model <- Yaml.decodeFileThrow modelFile :: IO Model
   createDirectoryIfMissing True targetDirectory
   withFile targetFile WriteMode $ \targetHandle -> do
     hSetNewlineMode targetHandle noNewlineTranslation
     let
       (exports, bodies) =
         Vector.unzip $ do
-          Model (Groups semconvs) <- Vector.fromList models
+          Model (Groups semconvs) <- Vector.singleton model
           Semconv {id, prefix, attributes, brief, note, stability, deprecated} <- semconvs
           let
             id' = convertId id
@@ -611,31 +609,32 @@ generate targetFile = do
             )
             $ Vector.zip exports bodies
     TextIO.hPutStrLn targetHandle $
-      Text.unlines $
-        fold
-          [
-            [ "------------------------------------------"
-            , "-- DO NOT EDIT. THIS FILE IS GENERATED. --"
-            , "------------------------------------------"
-            , ""
-            , "{-# LANGUAGE DerivingStrategies #-}"
-            , "{-# LANGUAGE DeriveGeneric #-}"
-            , "{-# LANGUAGE OverloadedStrings #-}"
-            , "-- | This module is OpenTelemetry Semantic Conventions for Haskell."
-            , "-- This is automatically generated"
-            , "-- based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.40."
-            , "module OpenTelemetry.SemanticConventions ("
+      normalizeWhitespace $
+        Text.unlines $
+          fold
+            [
+              [ "------------------------------------------"
+              , "-- DO NOT EDIT. THIS FILE IS GENERATED. --"
+              , "------------------------------------------"
+              , ""
+              , "{-# LANGUAGE DerivingStrategies #-}"
+              , "{-# LANGUAGE DeriveGeneric #-}"
+              , "{-# LANGUAGE OverloadedStrings #-}"
+              , "-- | This module is OpenTelemetry Semantic Conventions for Haskell."
+              , "-- This is automatically generated"
+              , "-- based on [semantic-conventions](https://github.com/open-telemetry/semantic-conventions/) v1.45.0."
+              , "module OpenTelemetry.SemanticConventions ("
+              ]
+            , fold exports
+            ,
+              [ ") where"
+              , "import Data.Text (Text)"
+              , "import Data.Int (Int64)"
+              , "import OpenTelemetry.Attributes.Key (AttributeKey (AttributeKey))"
+              , "{-# ANN module (\"HLint: ignore Use camelCase\" :: String) #-}"
+              ]
+            , fold $ List.intersperse [""] $ Vector.toList bodies
             ]
-          , fold exports
-          ,
-            [ ") where"
-            , "import Data.Text (Text)"
-            , "import Data.Int (Int64)"
-            , "import OpenTelemetry.Attributes.Key (AttributeKey (AttributeKey))"
-            , "{-# ANN module (\"HLint: ignore Use camelCase\" :: String) #-}"
-            ]
-          , fold $ List.intersperse [""] $ Vector.toList bodies
-          ]
 
 
 convertMarkupFromMarkdownToHaddock :: Text -> Text
@@ -700,6 +699,7 @@ convertStability :: Stability -> Text
 convertStability Deprecated = "deprecated"
 convertStability Development = "development"
 convertStability Experimental = "experimental"
+convertStability Alpha = "alpha"
 convertStability Beta = "beta"
 convertStability ReleaseCandidate = "release candidate"
 convertStability Stable = "stable"
@@ -731,5 +731,5 @@ fieldLine :: Maybe a -> (a -> Text) -> [Text]
 fieldLine a f = maybe [] (\b -> ["", f b]) a
 
 
-printLog :: String -> IO ()
-printLog message = hPutStrLn stderr $ "Setup.hs: " ++ message
+normalizeWhitespace :: Text -> Text
+normalizeWhitespace = Text.stripEnd . Text.unlines . fmap Text.stripEnd . Text.lines

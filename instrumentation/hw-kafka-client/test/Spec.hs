@@ -9,14 +9,20 @@ import Kafka.Consumer.ConsumerProperties (ConsumerProperties, clientId, groupId)
 import Kafka.Consumer.Types (ConsumerGroupId (..))
 import Kafka.Producer (ProducePartition (..), ProducerRecord (..))
 import Kafka.Types (ClientId (..), PartitionId (..), TopicName (..), headersFromList)
+import qualified MigrationSpec
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
 import OpenTelemetry.Instrumentation.Kafka (consumerAttributes, producerAttributes)
 import OpenTelemetry.SemanticsConfig (StabilityOpt (..))
+import System.Environment (getArgs, withArgs)
 import Test.Hspec
 
 
 main :: IO ()
-main = hspec spec
+main = do
+  args <- getArgs
+  case args of
+    ["--migration-producer-helper"] -> withArgs [] MigrationSpec.producerHelper
+    _ -> hspec spec
 
 
 testProducerRecord :: ProducerRecord
@@ -51,6 +57,7 @@ testConsumerProps =
 
 spec :: Spec
 spec = do
+  MigrationSpec.spec
   describe "producerAttributes (Old — default)" $ do
     let attrs = producerAttributes Old testProducerRecord
 
