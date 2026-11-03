@@ -143,17 +143,6 @@ in rec {
     (localDevPackageDeps ghcVersion hsPackageSet);
 
   nixpkgsHaskellTweaks = final: prev: {
-    # The old filesystem C shim uses _BSD_SOURCE and readdir_r. With modern
-    # glibc, GHC 9.8 treats their compiler diagnostics as build errors. Keep
-    # the shim's behavior and suppress only those two Linux diagnostics.
-    system-fileio =
-      if pkgs.stdenv.hostPlatform.isLinux
-      then
-        pkgs.haskell.lib.appendConfigureFlags prev.system-fileio [
-          "--ghc-option=-optc-D_DEFAULT_SOURCE"
-          "--ghc-option=-optc-Wno-deprecated-declarations"
-        ]
-      else prev.system-fileio;
     # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just
     # relax the bounds of 0.7.1.5 ourselves.
     # proto-lens-runtime also caps at base < 4.21 (GHC 9.12 = base 4.21).
