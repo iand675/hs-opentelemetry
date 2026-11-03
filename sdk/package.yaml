@@ -152,6 +152,23 @@ library:
     - OpenTelemetry.Trace.TraceState
     - OpenTelemetry.Util
 
+benchmarks:
+  metric-storage-contention:
+    main: MetricContention.hs
+    other-modules: []
+    source-dirs: bench
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-T
+    dependencies:
+    - async
+    - hs-opentelemetry-api
+    - hs-opentelemetry-sdk
+    - text
+    - vector
+
 tests:
   hs-opentelemetry-sdk-test:
     main:                Spec.hs

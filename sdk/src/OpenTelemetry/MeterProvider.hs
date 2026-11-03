@@ -27,6 +27,8 @@ module OpenTelemetry.MeterProvider (
   deltaTemporality,
 ) where
 
+import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVar, newTVarIO, readTVar, writeTVar)
+import Control.Exception (bracket_)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
 import Data.Foldable (toList)
@@ -137,18 +139,111 @@ defaultSdkMeterProviderOptions =
     }
 
 
-data SdkMeterStorageState = SdkMeterStorageState
-  { storageCells :: !(H.HashMap DimKey Cell)
-  , seriesCountByDims :: !(H.HashMap InstrumentDims Int)
-  }
+-- The outer IORef is retained for compatibility with SdkMeterEnv and callers
+-- constructing it with newIORef emptyStorageState. It is initialized once;
+-- measurements subsequently update only the transactional registry and cells.
+data SdkMeterStorageState
+  = EmptyStorageState
+  | SdkMeterStorageState !(TVar MetricStorage)
 
 
 emptyStorageState :: SdkMeterStorageState
-emptyStorageState =
-  SdkMeterStorageState
-    { storageCells = H.empty
-    , seriesCountByDims = H.empty
-    }
+emptyStorageState = EmptyStorageState
+
+
+data MetricStorage = MetricStorage
+  { storageCells :: !(H.HashMap DimKey (TVar Cell))
+  , seriesCountByDims :: !(H.HashMap InstrumentDims Int)
+  , storageCollecting :: !Bool
+  }
+
+
+emptyMetricStorage :: MetricStorage
+emptyMetricStorage = MetricStorage H.empty H.empty False
+
+
+newStorageState :: IO SdkMeterStorageState
+newStorageState = SdkMeterStorageState <$> newTVarIO emptyMetricStorage
+
+
+getMetricStorage :: IORef SdkMeterStorageState -> IO (TVar MetricStorage)
+getMetricStorage ref = do
+  state <- readIORef ref
+  case state of
+    SdkMeterStorageState storage -> pure storage
+    EmptyStorageState -> do
+      -- Only legacy/manual environments take this path. Concurrent first uses
+      -- must all receive the same registry; discarded candidates contain no data.
+      candidate <- newTVarIO emptyMetricStorage
+      atomicModifyIORef' ref $ \current -> case current of
+        EmptyStorageState -> (SdkMeterStorageState candidate, candidate)
+        SdkMeterStorageState storage -> (current, storage)
+
+
+{- | Existing series only read the registry and write their own cell. Admission
+and cardinality accounting share one transaction, including the overflow cell.
+-}
+updateMetricCell :: IORef SdkMeterStorageState -> Int -> DimKey -> (Maybe Cell -> Cell) -> IO ()
+updateMetricCell ref lim key update = do
+  storage <- getMetricStorage ref
+  atomically $ do
+    registry <- readTVar storage
+    check (not (storageCollecting registry))
+    case H.lookup key (storageCells registry) of
+      Just cell -> modifyTVar' cell (update . Just)
+      Nothing -> do
+        let dims = fst key
+            count = H.lookupDefault 0 dims (seriesCountByDims registry)
+            effectiveKey = if lim <= 0 || count < lim then key else overflowKey dims
+        case H.lookup effectiveKey (storageCells registry) of
+          Just cell -> modifyTVar' cell (update . Just)
+          Nothing -> do
+            let !value = update Nothing
+            cell <- newTVar value
+            writeTVar storage $
+              registry
+                { storageCells = H.insert effectiveKey cell (storageCells registry)
+                , seriesCountByDims = H.insert dims (count + 1) (seriesCountByDims registry)
+                }
+
+
+{- | Read every cell (and reset delta aggregations) in one transaction. Reading
+the registry in that transaction also orders new-series admission with the
+snapshot. Export construction runs afterwards, outside the transaction.
+-}
+snapshotMetricStorage :: AggregationTemporality -> IORef SdkMeterStorageState -> IO (H.HashMap DimKey Cell)
+snapshotMetricStorage temp ref = do
+  storage <- getMetricStorage ref
+  -- A large snapshot can otherwise restart indefinitely under sustained writes.
+  -- Close admission/recording before reading the cells, then reopen it before
+  -- building the export. bracket_ releases the gate even if collection is killed.
+  bracket_
+    ( atomically $ do
+        registry <- readTVar storage
+        check (not (storageCollecting registry))
+        writeTVar storage registry {storageCollecting = True}
+    )
+    (atomically $ modifyTVar' storage (\registry -> registry {storageCollecting = False}))
+    ( atomically $ do
+        registry <- readTVar storage
+        traverse snapshotCell (storageCells registry)
+    )
+  where
+    snapshotCell cell = do
+      value <- readTVar cell
+      case temp of
+        AggregationDelta -> writeTVar cell $! resetCellForDelta value
+        AggregationCumulative -> pure ()
+      pure value
+
+
+clearMetricStorage :: IORef SdkMeterStorageState -> IO ()
+clearMetricStorage ref = do
+  storage <- getMetricStorage ref
+  atomically $ do
+    registry <- readTVar storage
+    check (not (storageCollecting registry))
+    writeTVar storage emptyMetricStorage
 
 
 data SdkMeterEnv = SdkMeterEnv
@@ -236,13 +331,6 @@ defaultHistogramBounds =
   V.fromList [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]
 
 
-canAcceptNewSeries :: Int -> DimKey -> SdkMeterStorageState -> Bool
-canAcceptNewSeries lim k@(dims, _) st
-  | H.member k (storageCells st) = True
-  | lim <= 0 = True
-  | otherwise = H.lookupDefault 0 dims (seriesCountByDims st) < lim
-
-
 overflowAttributes :: Attributes
 overflowAttributes =
   addAttribute defaultAttributeLimits emptyAttributes (pack "otel.metric.overflow") True
@@ -250,12 +338,6 @@ overflowAttributes =
 
 overflowKey :: InstrumentDims -> DimKey
 overflowKey dims = (dims, overflowAttributes)
-
-
-bumpSeriesCount :: InstrumentDims -> H.HashMap InstrumentDims Int -> H.HashMap InstrumentDims Int
-bumpSeriesCount dims sc =
-  let n = H.lookupDefault 0 dims sc
-  in H.insert dims (n + 1) sc
 
 
 bucketIndex :: Vector Double -> Double -> Int
@@ -516,33 +598,27 @@ addSumInt
 addSumInt delta isMonotonic mExVal k ref lim exOpts = do
   mex <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
-  atomicModifyIORef' ref $ \st ->
-    let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
-    in let m = storageCells st
-           scount = seriesCountByDims st
-           newCell = case H.lookup effectiveK m of
-             Nothing ->
-               CsSum $
-                 SumCell
-                   { scValue = Left delta
-                   , scMonotonic = isMonotonic
-                   , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                   }
-             Just (CsSum sc) ->
-               CsSum $
-                 sc
-                   { scValue = addEither (scValue sc) (Left delta)
-                   , scExemplars = case mex of
-                       Nothing -> scExemplars sc
-                       Just e -> pushExemplar cap e (scExemplars sc)
-                   }
-             Just _ ->
-               CsSum $
-                 SumCell (Left delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
-           isNew = not (H.member effectiveK m)
-           m' = H.insert effectiveK newCell m
-           sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
-       in (SdkMeterStorageState m' sc', ())
+  updateMetricCell ref lim k $ \oldCell ->
+    let newCell = case oldCell of
+          Nothing ->
+            CsSum $
+              SumCell
+                { scValue = Left delta
+                , scMonotonic = isMonotonic
+                , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                }
+          Just (CsSum sc) ->
+            CsSum $
+              sc
+                { scValue = addEither (scValue sc) (Left delta)
+                , scExemplars = case mex of
+                    Nothing -> scExemplars sc
+                    Just e -> pushExemplar cap e (scExemplars sc)
+                }
+          Just _ ->
+            CsSum $
+              SumCell (Left delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
+    in newCell
 
 
 addSumDbl
@@ -557,40 +633,34 @@ addSumDbl
 addSumDbl delta isMonotonic mExVal k ref lim exOpts = do
   mex <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
-  atomicModifyIORef' ref $ \st ->
-    let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
-    in let m = storageCells st
-           scount = seriesCountByDims st
-           newCell = case H.lookup effectiveK m of
-             Nothing ->
-               CsSum $
-                 SumCell
-                   { scValue = Right delta
-                   , scMonotonic = isMonotonic
-                   , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                   }
-             Just (CsSum sc) ->
-               CsSum $
-                 sc
-                   { scValue = addEither (scValue sc) (Right delta)
-                   , scExemplars = case mex of
-                       Nothing -> scExemplars sc
-                       Just e -> pushExemplar cap e (scExemplars sc)
-                   }
-             Just _ ->
-               CsSum $
-                 SumCell (Right delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
-           isNew = not (H.member effectiveK m)
-           m' = H.insert effectiveK newCell m
-           sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
-       in (SdkMeterStorageState m' sc', ())
+  updateMetricCell ref lim k $ \oldCell ->
+    let newCell = case oldCell of
+          Nothing ->
+            CsSum $
+              SumCell
+                { scValue = Right delta
+                , scMonotonic = isMonotonic
+                , scExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                }
+          Just (CsSum sc) ->
+            CsSum $
+              sc
+                { scValue = addEither (scValue sc) (Right delta)
+                , scExemplars = case mex of
+                    Nothing -> scExemplars sc
+                    Just e -> pushExemplar cap e (scExemplars sc)
+                }
+          Just _ ->
+            CsSum $
+              SumCell (Right delta) isMonotonic (maybe V.empty (\e -> pushExemplar cap e V.empty) mex)
+    in newCell
 
 
 addEither :: Either Int64 Double -> Either Int64 Double -> Either Int64 Double
-addEither (Left a) (Left b) = Left (a + b)
-addEither (Left a) (Right b) = Right (fromIntegral a + b)
-addEither (Right a) (Left b) = Right (a + fromIntegral b)
-addEither (Right a) (Right b) = Right (a + b)
+addEither (Left a) (Left b) = Left $! a + b
+addEither (Left a) (Right b) = Right $! fromIntegral a + b
+addEither (Right a) (Left b) = Right $! a + fromIntegral b
+addEither (Right a) (Right b) = Right $! a + b
 
 
 mergeHist :: HistCell -> Double -> HistCell
@@ -623,21 +693,15 @@ recordHist bounds v mExVal k ref lim exOpts = do
     else do
       mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
       let cap = exemplarReservoirLimit exOpts
-      atomicModifyIORef' ref $ \st ->
-        let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
-        in let m = storageCells st
-               scount = seriesCountByDims st
-               mergeE hc = case mex of
-                 Nothing -> hc
-                 Just e -> hc {hcExemplars = pushExemplar cap e (hcExemplars hc)}
-               newCell = case H.lookup effectiveK m of
-                 Nothing -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
-                 Just (CsHist hc) -> CsHist (mergeE (mergeHist hc v))
-                 Just _ -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
-               isNew = not (H.member effectiveK m)
-               m' = H.insert effectiveK newCell m
-               sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
-           in (SdkMeterStorageState m' sc', ())
+      updateMetricCell ref lim k $ \oldCell ->
+        let mergeE hc = case mex of
+              Nothing -> hc
+              Just e -> hc {hcExemplars = pushExemplar cap e (hcExemplars hc)}
+            newCell = case oldCell of
+              Nothing -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
+              Just (CsHist hc) -> CsHist (mergeE (mergeHist hc v))
+              Just _ -> CsHist (mergeE (mergeHist (emptyHist bounds) v))
+        in newCell
 
 
 recordExpHist
@@ -655,21 +719,15 @@ recordExpHist sc v mExVal k ref lim exOpts = do
     else do
       mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
       let cap = exemplarReservoirLimit exOpts
-      atomicModifyIORef' ref $ \st ->
-        let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
-        in let m = storageCells st
-               scount = seriesCountByDims st
-               mergeE ehc = case mex of
-                 Nothing -> ehc
-                 Just e -> ehc {ehcExemplars = pushExemplar cap e (ehcExemplars ehc)}
-               newCell = case H.lookup effectiveK m of
-                 Nothing -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
-                 Just (CsExpHist ehc) -> CsExpHist (mergeE (mergeExpHist ehc v))
-                 Just _ -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
-               isNew = not (H.member effectiveK m)
-               m' = H.insert effectiveK newCell m
-               sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
-           in (SdkMeterStorageState m' sc', ())
+      updateMetricCell ref lim k $ \oldCell ->
+        let mergeE ehc = case mex of
+              Nothing -> ehc
+              Just e -> ehc {ehcExemplars = pushExemplar cap e (ehcExemplars ehc)}
+            newCell = case oldCell of
+              Nothing -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
+              Just (CsExpHist ehc) -> CsExpHist (mergeE (mergeExpHist ehc v))
+              Just _ -> CsExpHist (mergeE (mergeExpHist (emptyExpHist sc) v))
+        in newCell
 
 
 recordGauge
@@ -684,39 +742,33 @@ recordGauge
 recordGauge val t mExVal k ref lim exOpts = do
   mex <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
-  atomicModifyIORef' ref $ \st ->
-    let effectiveK = if canAcceptNewSeries lim k st then k else overflowKey (fst k)
-    in let m = storageCells st
-           scount = seriesCountByDims st
-           newGauge gc =
-             case mex of
-               Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
-               Just e ->
-                 gc
-                   { gcValue = val
-                   , gcTimeUnixNano = t
-                   , gcExemplars = pushExemplar cap e (gcExemplars gc)
-                   }
-           newCell = case H.lookup effectiveK m of
-             Nothing ->
-               CsGauge
-                 GaugeCell
-                   { gcValue = val
-                   , gcTimeUnixNano = t
-                   , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                   }
-             Just (CsGauge gc) -> CsGauge (newGauge gc)
-             Just _ ->
-               CsGauge
-                 GaugeCell
-                   { gcValue = val
-                   , gcTimeUnixNano = t
-                   , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
-                   }
-           isNew = not (H.member effectiveK m)
-           m' = H.insert effectiveK newCell m
-           sc' = if isNew then bumpSeriesCount (fst effectiveK) scount else scount
-       in (SdkMeterStorageState m' sc', ())
+  updateMetricCell ref lim k $ \oldCell ->
+    let newGauge gc =
+          case mex of
+            Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
+            Just e ->
+              gc
+                { gcValue = val
+                , gcTimeUnixNano = t
+                , gcExemplars = pushExemplar cap e (gcExemplars gc)
+                }
+        newCell = case oldCell of
+          Nothing ->
+            CsGauge
+              GaugeCell
+                { gcValue = val
+                , gcTimeUnixNano = t
+                , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                }
+          Just (CsGauge gc) -> CsGauge (newGauge gc)
+          Just _ ->
+            CsGauge
+              GaugeCell
+                { gcValue = val
+                , gcTimeUnixNano = t
+                , gcExemplars = maybe V.empty (\e -> pushExemplar cap e V.empty) mex
+                }
+    in newCell
 
 
 resetCellForDelta :: Cell -> Cell
@@ -735,14 +787,6 @@ resetCellForDelta = \case
     CsExpHist (emptyExpHist (ehcScale ehc))
   CsGauge gc ->
     CsGauge gc
-
-
-applyDeltaReset :: SdkMeterStorageState -> SdkMeterStorageState
-applyDeltaReset st =
-  SdkMeterStorageState
-    { storageCells = H.map resetCellForDelta (storageCells st)
-    , seriesCountByDims = seriesCountByDims st
-    }
 
 
 mkMeter :: SdkMeterEnv -> InstrumentationLibrary -> Meter
@@ -1121,12 +1165,8 @@ collectResourceMetrics env = liftIO $ do
       startT = sdkMeterStartTimeNanos env
   -- For delta temporality, snapshot and reset must be atomic so concurrent
   -- record* calls between read and reset cannot be silently dropped.
-  st <- case temp of
-    AggregationDelta ->
-      atomicModifyIORef' (sdkMeterStorage env) $ \s -> (applyDeltaReset s, s)
-    AggregationCumulative ->
-      readIORef (sdkMeterStorage env)
-  let rme = buildResourceExport (sdkMeterResource env) startT t temp (storageCells st)
+  cells <- snapshotMetricStorage temp (sdkMeterStorage env)
+  let rme = buildResourceExport (sdkMeterResource env) startT t temp cells
   pure [rme]
 
 
@@ -1273,7 +1313,7 @@ createMeterProvider
   -> SdkMeterProviderOptions
   -> IO (MeterProvider, SdkMeterEnv)
 createMeterProvider res opts = do
-  st <- newIORef emptyStorageState
+  st <- newStorageState >>= newIORef
   cbs <- newIORef Seq.empty
   sd <- newIORef False
   startT <- nowNanos
@@ -1311,7 +1351,7 @@ createMeterProvider res opts = do
                   _ <- metricExporterExport ex (V.fromList batches)
                   metricExporterShutdown ex
                 Nothing -> pure ShutdownSuccess
-              writeIORef st emptyStorageState
+              clearMetricStorage st
               writeIORef cbs Seq.empty
               pure shutdownRes
           , meterProviderForceFlush = \_timeoutMicros -> do

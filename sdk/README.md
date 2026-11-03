@@ -201,6 +201,38 @@ Visit the [GitHub project](https://github.com/iand675/hs-opentelemetry#readme) f
 
 <hr/>
 
+### Metric storage contention benchmark
+
+The `metric-storage-contention` benchmark measures recording throughput and
+allocated bytes per measurement, and checks that exported counts match recorded
+measurements. Build the SDK with optimization enabled for comparisons:
+
+```shell
+cabal bench hs-opentelemetry-sdk:bench:metric-storage-contention --enable-optimization=2 \
+  --benchmark-options='shared counter 4 150000 +RTS -N4 -T'
+cabal bench hs-opentelemetry-sdk:bench:metric-storage-contention --enable-optimization=2 \
+  --benchmark-options='series histogram 4 250000 collect +RTS -N4 -T'
+```
+
+Arguments are `<mode> <counter|histogram> <workers> <records-per-worker> [collect]`.
+Modes cover one shared series (`shared`), different instruments on one provider
+(`instruments`), independent providers (`providers`), 1,024 series per worker
+(`series`), and a new series on every measurement (`churn`). The benchmark disables
+the cardinality cap so `series` and `churn` measure registry growth rather than
+overflow aggregation. Use fewer records for `churn` to bound memory consumption.
+Exemplar configuration follows the environment; use the same configuration for
+both revisions being compared.
+
+The optional `collect` argument runs delta collection in a background thread with
+a 1ms delay between collections. JSON output includes recording throughput,
+throughput including final collection, allocated bytes per record, GC time, the
+number of background collections, and their maximum duration. Collection duration
+includes export construction and count validation; it is not the writer-pause
+duration. Allocation includes
+collection and count validation, excludes instrument creation, and does not
+measure live heap size. Repeat runs on the same machine with the same compiler,
+optimization level, and RTS options; individual timings are sensitive to scheduling.
+
 ### Useful Links
 - For more information on OpenTelemetry, visit: <https://opentelemetry.io/>
 - For more about OpenTelemetry Haskell: <https://github.com/iand675/hs-opentelemetry>
