@@ -113,7 +113,7 @@
                 enable = true;
                 package = myHaskellPackages.ghc.withHoogle (
                   hpkgs:
-                    lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet myHaskellPackages)) hpkgs
+                    lib.attrVals (builtins.attrNames (haskellPackageUtils.localDevPackageDepsAsAttrSet ghcVersion myHaskellPackages)) hpkgs
                 );
                 # haskell-language-server 2.12 dropped GHC 9.4, and the
                 # nixpkgs HLS no longer evaluates for it.
