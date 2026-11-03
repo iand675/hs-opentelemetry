@@ -1,0 +1,10182 @@
+-- Generated from OpenTelemetry semantic conventions 1.45.0 by Weaver 0.28.0.
+-- Edit the templates, not this file.
+{-# LANGUAGE OverloadedStrings #-}
+
+{- | Metric constructors with upstream names, units and descriptions.
+
+Choose synchronous or observable factories for the measurement being made.
+Supply advisory parameters and record measurements in each metric's unit.
+The generated catalogue documents attributes, stability and deprecations.
+-}
+module OpenTelemetry.SemanticConventions.Metrics (
+  create_aspnetcore_authentication_authenticate_duration,
+  create_aspnetcore_authentication_challenges_int64,
+  create_observable_aspnetcore_authentication_challenges_int64,
+  create_aspnetcore_authentication_forbids_int64,
+  create_observable_aspnetcore_authentication_forbids_int64,
+  create_aspnetcore_authentication_signIns_int64,
+  create_observable_aspnetcore_authentication_signIns_int64,
+  create_aspnetcore_authentication_signOuts_int64,
+  create_observable_aspnetcore_authentication_signOuts_int64,
+  create_aspnetcore_authorization_attempts_int64,
+  create_observable_aspnetcore_authorization_attempts_int64,
+  create_aspnetcore_diagnostics_exceptions_int64,
+  create_observable_aspnetcore_diagnostics_exceptions_int64,
+  create_aspnetcore_identity_signIn_authenticate_duration,
+  create_aspnetcore_identity_signIn_checkPasswordAttempts_int64,
+  create_observable_aspnetcore_identity_signIn_checkPasswordAttempts_int64,
+  create_aspnetcore_identity_signIn_signIns_int64,
+  create_observable_aspnetcore_identity_signIn_signIns_int64,
+  create_aspnetcore_identity_signIn_signOuts_int64,
+  create_observable_aspnetcore_identity_signIn_signOuts_int64,
+  create_aspnetcore_identity_signIn_twoFactorClientsForgotten_int64,
+  create_observable_aspnetcore_identity_signIn_twoFactorClientsForgotten_int64,
+  create_aspnetcore_identity_signIn_twoFactorClientsRemembered_int64,
+  create_observable_aspnetcore_identity_signIn_twoFactorClientsRemembered_int64,
+  create_aspnetcore_identity_user_checkPasswordAttempts_int64,
+  create_observable_aspnetcore_identity_user_checkPasswordAttempts_int64,
+  create_aspnetcore_identity_user_create_duration,
+  create_aspnetcore_identity_user_delete_duration,
+  create_aspnetcore_identity_user_generatedTokens_int64,
+  create_observable_aspnetcore_identity_user_generatedTokens_int64,
+  create_aspnetcore_identity_user_update_duration,
+  create_aspnetcore_identity_user_verifyTokenAttempts_int64,
+  create_observable_aspnetcore_identity_user_verifyTokenAttempts_int64,
+  create_aspnetcore_memoryPool_allocated_int64,
+  create_observable_aspnetcore_memoryPool_allocated_int64,
+  create_aspnetcore_memoryPool_evicted_int64,
+  create_observable_aspnetcore_memoryPool_evicted_int64,
+  create_aspnetcore_memoryPool_pooled_int64,
+  create_observable_aspnetcore_memoryPool_pooled_int64,
+  create_aspnetcore_memoryPool_rented_int64,
+  create_observable_aspnetcore_memoryPool_rented_int64,
+  create_aspnetcore_rateLimiting_activeRequestLeases_int64,
+  create_observable_aspnetcore_rateLimiting_activeRequestLeases_int64,
+  create_aspnetcore_rateLimiting_queuedRequests_int64,
+  create_observable_aspnetcore_rateLimiting_queuedRequests_int64,
+  create_aspnetcore_rateLimiting_request_timeInQueue,
+  create_aspnetcore_rateLimiting_requestLease_duration,
+  create_aspnetcore_rateLimiting_requests_int64,
+  create_observable_aspnetcore_rateLimiting_requests_int64,
+  create_aspnetcore_routing_matchAttempts_int64,
+  create_observable_aspnetcore_routing_matchAttempts_int64,
+  create_azure_cosmosdb_client_activeInstance_count_int64,
+  create_observable_azure_cosmosdb_client_activeInstance_count_int64,
+  create_azure_cosmosdb_client_operation_requestCharge,
+  create_cicd_pipeline_run_active_int64,
+  create_observable_cicd_pipeline_run_active_int64,
+  create_cicd_pipeline_run_duration,
+  create_cicd_pipeline_run_errors_int64,
+  create_observable_cicd_pipeline_run_errors_int64,
+  create_cicd_system_errors_int64,
+  create_observable_cicd_system_errors_int64,
+  create_cicd_worker_count_int64,
+  create_observable_cicd_worker_count_int64,
+  create_container_cpu_time_double,
+  create_observable_container_cpu_time_double,
+  create_container_cpu_usage_double,
+  create_observable_container_cpu_usage_double,
+  create_container_disk_io_int64,
+  create_observable_container_disk_io_int64,
+  create_container_filesystem_available_int64,
+  create_observable_container_filesystem_available_int64,
+  create_container_filesystem_capacity_int64,
+  create_observable_container_filesystem_capacity_int64,
+  create_container_filesystem_usage_int64,
+  create_observable_container_filesystem_usage_int64,
+  create_container_memory_available_int64,
+  create_observable_container_memory_available_int64,
+  create_container_memory_paging_faults_int64,
+  create_observable_container_memory_paging_faults_int64,
+  create_container_memory_rss_int64,
+  create_observable_container_memory_rss_int64,
+  create_container_memory_usage_int64,
+  create_observable_container_memory_usage_int64,
+  create_container_memory_workingSet_int64,
+  create_observable_container_memory_workingSet_int64,
+  create_container_network_io_int64,
+  create_observable_container_network_io_int64,
+  create_container_paging_faults_int64,
+  create_observable_container_paging_faults_int64,
+  create_container_uptime_double,
+  create_observable_container_uptime_double,
+  create_cpu_frequency_int64,
+  create_observable_cpu_frequency_int64,
+  create_cpu_time_double,
+  create_observable_cpu_time_double,
+  create_cpu_utilization_double,
+  create_observable_cpu_utilization_double,
+  create_cpython_gc_collectedObjects_int64,
+  create_observable_cpython_gc_collectedObjects_int64,
+  create_cpython_gc_collections_int64,
+  create_observable_cpython_gc_collections_int64,
+  create_cpython_gc_uncollectableObjects_int64,
+  create_observable_cpython_gc_uncollectableObjects_int64,
+  create_db_client_connection_count_int64,
+  create_observable_db_client_connection_count_int64,
+  create_db_client_connection_createTime,
+  create_db_client_connection_idle_max_int64,
+  create_observable_db_client_connection_idle_max_int64,
+  create_db_client_connection_idle_min_int64,
+  create_observable_db_client_connection_idle_min_int64,
+  create_db_client_connection_limit_int64,
+  create_observable_db_client_connection_limit_int64,
+  create_db_client_connection_max_int64,
+  create_observable_db_client_connection_max_int64,
+  create_db_client_connection_pendingRequests_int64,
+  create_observable_db_client_connection_pendingRequests_int64,
+  create_db_client_connection_timeouts_int64,
+  create_observable_db_client_connection_timeouts_int64,
+  create_db_client_connection_useTime,
+  create_db_client_connection_waitTime,
+  create_db_client_connections_createTime,
+  create_db_client_connections_idle_max_int64,
+  create_observable_db_client_connections_idle_max_int64,
+  create_db_client_connections_idle_min_int64,
+  create_observable_db_client_connections_idle_min_int64,
+  create_db_client_connections_max_int64,
+  create_observable_db_client_connections_max_int64,
+  create_db_client_connections_pendingRequests_int64,
+  create_observable_db_client_connections_pendingRequests_int64,
+  create_db_client_connections_timeouts_int64,
+  create_observable_db_client_connections_timeouts_int64,
+  create_db_client_connections_usage_int64,
+  create_observable_db_client_connections_usage_int64,
+  create_db_client_connections_useTime,
+  create_db_client_connections_waitTime,
+  create_db_client_cosmosdb_activeInstance_count_int64,
+  create_observable_db_client_cosmosdb_activeInstance_count_int64,
+  create_db_client_cosmosdb_operation_requestCharge,
+  create_db_client_operation_duration,
+  create_db_client_response_returnedRows,
+  create_dns_lookup_duration,
+  create_dotnet_assembly_count_int64,
+  create_observable_dotnet_assembly_count_int64,
+  create_dotnet_exceptions_int64,
+  create_observable_dotnet_exceptions_int64,
+  create_dotnet_gc_collections_int64,
+  create_observable_dotnet_gc_collections_int64,
+  create_dotnet_gc_heap_totalAllocated_int64,
+  create_observable_dotnet_gc_heap_totalAllocated_int64,
+  create_dotnet_gc_lastCollection_heap_fragmentation_size_int64,
+  create_observable_dotnet_gc_lastCollection_heap_fragmentation_size_int64,
+  create_dotnet_gc_lastCollection_heap_size_int64,
+  create_observable_dotnet_gc_lastCollection_heap_size_int64,
+  create_dotnet_gc_lastCollection_memory_committedSize_int64,
+  create_observable_dotnet_gc_lastCollection_memory_committedSize_int64,
+  create_dotnet_gc_pause_time_double,
+  create_observable_dotnet_gc_pause_time_double,
+  create_dotnet_jit_compilation_time_double,
+  create_observable_dotnet_jit_compilation_time_double,
+  create_dotnet_jit_compiledIl_size_int64,
+  create_observable_dotnet_jit_compiledIl_size_int64,
+  create_dotnet_jit_compiledMethods_int64,
+  create_observable_dotnet_jit_compiledMethods_int64,
+  create_dotnet_monitor_lockContentions_int64,
+  create_observable_dotnet_monitor_lockContentions_int64,
+  create_dotnet_process_cpu_count_int64,
+  create_observable_dotnet_process_cpu_count_int64,
+  create_dotnet_process_cpu_time_double,
+  create_observable_dotnet_process_cpu_time_double,
+  create_dotnet_process_memory_workingSet_int64,
+  create_observable_dotnet_process_memory_workingSet_int64,
+  create_dotnet_threadPool_queue_length_int64,
+  create_observable_dotnet_threadPool_queue_length_int64,
+  create_dotnet_threadPool_thread_count_int64,
+  create_observable_dotnet_threadPool_thread_count_int64,
+  create_dotnet_threadPool_workItem_count_int64,
+  create_observable_dotnet_threadPool_workItem_count_int64,
+  create_dotnet_timer_count_int64,
+  create_observable_dotnet_timer_count_int64,
+  create_faas_coldstarts_int64,
+  create_observable_faas_coldstarts_int64,
+  create_faas_cpuUsage,
+  create_faas_errors_int64,
+  create_observable_faas_errors_int64,
+  create_faas_initDuration,
+  create_faas_invocations_int64,
+  create_observable_faas_invocations_int64,
+  create_faas_invokeDuration,
+  create_faas_memUsage,
+  create_faas_netIo,
+  create_faas_timeouts_int64,
+  create_observable_faas_timeouts_int64,
+  create_genAi_client_operation_duration,
+  create_genAi_client_operation_timePerOutputChunk,
+  create_genAi_client_operation_timeToFirstChunk,
+  create_genAi_client_token_usage,
+  create_genAi_server_request_duration,
+  create_genAi_server_timePerOutputToken,
+  create_genAi_server_timeToFirstToken,
+  create_go_config_gogc_double,
+  create_observable_go_config_gogc_double,
+  create_go_cpu_time_double,
+  create_observable_go_cpu_time_double,
+  create_go_goroutine_count_int64,
+  create_observable_go_goroutine_count_int64,
+  create_go_memory_allocated_int64,
+  create_observable_go_memory_allocated_int64,
+  create_go_memory_allocations_int64,
+  create_observable_go_memory_allocations_int64,
+  create_go_memory_gc_cycles_int64,
+  create_observable_go_memory_gc_cycles_int64,
+  create_go_memory_gc_goal_int64,
+  create_observable_go_memory_gc_goal_int64,
+  create_go_memory_gc_pause_duration,
+  create_go_memory_limit_int64,
+  create_observable_go_memory_limit_int64,
+  create_go_memory_used_int64,
+  create_observable_go_memory_used_int64,
+  create_go_processor_limit_int64,
+  create_observable_go_processor_limit_int64,
+  create_go_schedule_duration,
+  create_http_client_activeRequests_int64,
+  create_observable_http_client_activeRequests_int64,
+  create_http_client_connection_duration,
+  create_http_client_openConnections_int64,
+  create_observable_http_client_openConnections_int64,
+  create_http_client_request_body_size,
+  create_http_client_request_duration,
+  create_http_client_response_body_size,
+  create_http_server_activeRequests_int64,
+  create_observable_http_server_activeRequests_int64,
+  create_http_server_request_body_size,
+  create_http_server_request_duration,
+  create_http_server_response_body_size,
+  create_hw_battery_charge_double,
+  create_observable_hw_battery_charge_double,
+  create_hw_battery_charge_limit_double,
+  create_observable_hw_battery_charge_limit_double,
+  create_hw_battery_timeLeft_double,
+  create_observable_hw_battery_timeLeft_double,
+  create_hw_cpu_speed_int64,
+  create_observable_hw_cpu_speed_int64,
+  create_hw_cpu_speed_limit_int64,
+  create_observable_hw_cpu_speed_limit_int64,
+  create_hw_energy_double,
+  create_observable_hw_energy_double,
+  create_hw_errors_int64,
+  create_observable_hw_errors_int64,
+  create_hw_fan_speed_int64,
+  create_observable_hw_fan_speed_int64,
+  create_hw_fan_speed_limit_int64,
+  create_observable_hw_fan_speed_limit_int64,
+  create_hw_fan_speedRatio_double,
+  create_observable_hw_fan_speedRatio_double,
+  create_hw_gpu_io_int64,
+  create_observable_hw_gpu_io_int64,
+  create_hw_gpu_memory_limit_int64,
+  create_observable_hw_gpu_memory_limit_int64,
+  create_hw_gpu_memory_usage_int64,
+  create_observable_hw_gpu_memory_usage_int64,
+  create_hw_gpu_memory_utilization_double,
+  create_observable_hw_gpu_memory_utilization_double,
+  create_hw_gpu_utilization_double,
+  create_observable_hw_gpu_utilization_double,
+  create_hw_host_ambientTemperature_double,
+  create_observable_hw_host_ambientTemperature_double,
+  create_hw_host_energy_int64,
+  create_observable_hw_host_energy_int64,
+  create_hw_host_heatingMargin_double,
+  create_observable_hw_host_heatingMargin_double,
+  create_hw_host_power_double,
+  create_observable_hw_host_power_double,
+  create_hw_logicalDisk_limit_int64,
+  create_observable_hw_logicalDisk_limit_int64,
+  create_hw_logicalDisk_usage_int64,
+  create_observable_hw_logicalDisk_usage_int64,
+  create_hw_logicalDisk_utilization_double,
+  create_observable_hw_logicalDisk_utilization_double,
+  create_hw_memory_size_int64,
+  create_observable_hw_memory_size_int64,
+  create_hw_network_bandwidth_limit_int64,
+  create_observable_hw_network_bandwidth_limit_int64,
+  create_hw_network_bandwidth_utilization_double,
+  create_observable_hw_network_bandwidth_utilization_double,
+  create_hw_network_io_int64,
+  create_observable_hw_network_io_int64,
+  create_hw_network_packets_int64,
+  create_observable_hw_network_packets_int64,
+  create_hw_network_up_int64,
+  create_observable_hw_network_up_int64,
+  create_hw_physicalDisk_enduranceUtilization_double,
+  create_observable_hw_physicalDisk_enduranceUtilization_double,
+  create_hw_physicalDisk_size_int64,
+  create_observable_hw_physicalDisk_size_int64,
+  create_hw_physicalDisk_smart_int64,
+  create_observable_hw_physicalDisk_smart_int64,
+  create_hw_power_double,
+  create_observable_hw_power_double,
+  create_hw_powerSupply_limit_int64,
+  create_observable_hw_powerSupply_limit_int64,
+  create_hw_powerSupply_usage_double,
+  create_observable_hw_powerSupply_usage_double,
+  create_hw_powerSupply_utilization_double,
+  create_observable_hw_powerSupply_utilization_double,
+  create_hw_status_int64,
+  create_observable_hw_status_int64,
+  create_hw_tapeDrive_operations_int64,
+  create_observable_hw_tapeDrive_operations_int64,
+  create_hw_temperature_double,
+  create_observable_hw_temperature_double,
+  create_hw_temperature_limit_double,
+  create_observable_hw_temperature_limit_double,
+  create_hw_voltage_double,
+  create_observable_hw_voltage_double,
+  create_hw_voltage_limit_double,
+  create_observable_hw_voltage_limit_double,
+  create_hw_voltage_nominal_double,
+  create_observable_hw_voltage_nominal_double,
+  create_jvm_buffer_count_int64,
+  create_observable_jvm_buffer_count_int64,
+  create_jvm_buffer_memory_limit_int64,
+  create_observable_jvm_buffer_memory_limit_int64,
+  create_jvm_buffer_memory_usage_int64,
+  create_observable_jvm_buffer_memory_usage_int64,
+  create_jvm_buffer_memory_used_int64,
+  create_observable_jvm_buffer_memory_used_int64,
+  create_jvm_class_count_int64,
+  create_observable_jvm_class_count_int64,
+  create_jvm_class_loaded_int64,
+  create_observable_jvm_class_loaded_int64,
+  create_jvm_class_unloaded_int64,
+  create_observable_jvm_class_unloaded_int64,
+  create_jvm_cpu_count_int64,
+  create_observable_jvm_cpu_count_int64,
+  create_jvm_cpu_recentUtilization_double,
+  create_observable_jvm_cpu_recentUtilization_double,
+  create_jvm_cpu_time_double,
+  create_observable_jvm_cpu_time_double,
+  create_jvm_executor_queue_capacity_int64,
+  create_observable_jvm_executor_queue_capacity_int64,
+  create_jvm_executor_queue_size_int64,
+  create_observable_jvm_executor_queue_size_int64,
+  create_jvm_executor_task_completed_int64,
+  create_observable_jvm_executor_task_completed_int64,
+  create_jvm_executor_task_rejected_int64,
+  create_observable_jvm_executor_task_rejected_int64,
+  create_jvm_executor_thread_core_int64,
+  create_observable_jvm_executor_thread_core_int64,
+  create_jvm_executor_thread_count_int64,
+  create_observable_jvm_executor_thread_count_int64,
+  create_jvm_executor_thread_limit_int64,
+  create_observable_jvm_executor_thread_limit_int64,
+  create_jvm_fileDescriptor_count_int64,
+  create_observable_jvm_fileDescriptor_count_int64,
+  create_jvm_fileDescriptor_limit_int64,
+  create_observable_jvm_fileDescriptor_limit_int64,
+  create_jvm_gc_duration,
+  create_jvm_memory_committed_int64,
+  create_observable_jvm_memory_committed_int64,
+  create_jvm_memory_init_int64,
+  create_observable_jvm_memory_init_int64,
+  create_jvm_memory_limit_int64,
+  create_observable_jvm_memory_limit_int64,
+  create_jvm_memory_used_int64,
+  create_observable_jvm_memory_used_int64,
+  create_jvm_memory_usedAfterLastGc_int64,
+  create_observable_jvm_memory_usedAfterLastGc_int64,
+  create_jvm_system_cpu_load1m_double,
+  create_observable_jvm_system_cpu_load1m_double,
+  create_jvm_system_cpu_utilization_double,
+  create_observable_jvm_system_cpu_utilization_double,
+  create_jvm_thread_count_int64,
+  create_observable_jvm_thread_count_int64,
+  create_k8s_container_cpu_limit_double,
+  create_observable_k8s_container_cpu_limit_double,
+  create_k8s_container_cpu_limit_current_double,
+  create_observable_k8s_container_cpu_limit_current_double,
+  create_k8s_container_cpu_limit_desired_double,
+  create_observable_k8s_container_cpu_limit_desired_double,
+  create_k8s_container_cpu_limit_utilization_double,
+  create_observable_k8s_container_cpu_limit_utilization_double,
+  create_k8s_container_cpu_limitUtilization_double,
+  create_observable_k8s_container_cpu_limitUtilization_double,
+  create_k8s_container_cpu_request_double,
+  create_observable_k8s_container_cpu_request_double,
+  create_k8s_container_cpu_request_current_double,
+  create_observable_k8s_container_cpu_request_current_double,
+  create_k8s_container_cpu_request_desired_double,
+  create_observable_k8s_container_cpu_request_desired_double,
+  create_k8s_container_cpu_request_utilization_double,
+  create_observable_k8s_container_cpu_request_utilization_double,
+  create_k8s_container_cpu_requestUtilization_double,
+  create_observable_k8s_container_cpu_requestUtilization_double,
+  create_k8s_container_ephemeralStorage_limit_int64,
+  create_observable_k8s_container_ephemeralStorage_limit_int64,
+  create_k8s_container_ephemeralStorage_request_int64,
+  create_observable_k8s_container_ephemeralStorage_request_int64,
+  create_k8s_container_ephemeralStorage_usage_int64,
+  create_observable_k8s_container_ephemeralStorage_usage_int64,
+  create_k8s_container_memory_limit_int64,
+  create_observable_k8s_container_memory_limit_int64,
+  create_k8s_container_memory_limit_current_int64,
+  create_observable_k8s_container_memory_limit_current_int64,
+  create_k8s_container_memory_limit_desired_int64,
+  create_observable_k8s_container_memory_limit_desired_int64,
+  create_k8s_container_memory_limit_utilization_double,
+  create_observable_k8s_container_memory_limit_utilization_double,
+  create_k8s_container_memory_request_int64,
+  create_observable_k8s_container_memory_request_int64,
+  create_k8s_container_memory_request_current_int64,
+  create_observable_k8s_container_memory_request_current_int64,
+  create_k8s_container_memory_request_desired_int64,
+  create_observable_k8s_container_memory_request_desired_int64,
+  create_k8s_container_memory_request_utilization_double,
+  create_observable_k8s_container_memory_request_utilization_double,
+  create_k8s_container_ready_int64,
+  create_observable_k8s_container_ready_int64,
+  create_k8s_container_restart_count_int64,
+  create_observable_k8s_container_restart_count_int64,
+  create_k8s_container_status_reason_int64,
+  create_observable_k8s_container_status_reason_int64,
+  create_k8s_container_status_state_int64,
+  create_observable_k8s_container_status_state_int64,
+  create_k8s_container_storage_limit_int64,
+  create_observable_k8s_container_storage_limit_int64,
+  create_k8s_container_storage_request_int64,
+  create_observable_k8s_container_storage_request_int64,
+  create_k8s_cronjob_activeJobs_int64,
+  create_observable_k8s_cronjob_activeJobs_int64,
+  create_k8s_cronjob_job_active_int64,
+  create_observable_k8s_cronjob_job_active_int64,
+  create_k8s_daemonset_currentScheduledNodes_int64,
+  create_observable_k8s_daemonset_currentScheduledNodes_int64,
+  create_k8s_daemonset_desiredScheduledNodes_int64,
+  create_observable_k8s_daemonset_desiredScheduledNodes_int64,
+  create_k8s_daemonset_misscheduledNodes_int64,
+  create_observable_k8s_daemonset_misscheduledNodes_int64,
+  create_k8s_daemonset_node_currentScheduled_int64,
+  create_observable_k8s_daemonset_node_currentScheduled_int64,
+  create_k8s_daemonset_node_desiredScheduled_int64,
+  create_observable_k8s_daemonset_node_desiredScheduled_int64,
+  create_k8s_daemonset_node_misscheduled_int64,
+  create_observable_k8s_daemonset_node_misscheduled_int64,
+  create_k8s_daemonset_node_ready_int64,
+  create_observable_k8s_daemonset_node_ready_int64,
+  create_k8s_daemonset_readyNodes_int64,
+  create_observable_k8s_daemonset_readyNodes_int64,
+  create_k8s_deployment_availablePods_int64,
+  create_observable_k8s_deployment_availablePods_int64,
+  create_k8s_deployment_desiredPods_int64,
+  create_observable_k8s_deployment_desiredPods_int64,
+  create_k8s_deployment_pod_available_int64,
+  create_observable_k8s_deployment_pod_available_int64,
+  create_k8s_deployment_pod_desired_int64,
+  create_observable_k8s_deployment_pod_desired_int64,
+  create_k8s_hpa_currentPods_int64,
+  create_observable_k8s_hpa_currentPods_int64,
+  create_k8s_hpa_desiredPods_int64,
+  create_observable_k8s_hpa_desiredPods_int64,
+  create_k8s_hpa_maxPods_int64,
+  create_observable_k8s_hpa_maxPods_int64,
+  create_k8s_hpa_metric_target_cpu_averageUtilization_int64,
+  create_observable_k8s_hpa_metric_target_cpu_averageUtilization_int64,
+  create_k8s_hpa_metric_target_cpu_averageUtilization_double,
+  create_observable_k8s_hpa_metric_target_cpu_averageUtilization_double,
+  create_k8s_hpa_metric_target_cpu_averageValue_int64,
+  create_observable_k8s_hpa_metric_target_cpu_averageValue_int64,
+  create_k8s_hpa_metric_target_cpu_averageValue_double,
+  create_observable_k8s_hpa_metric_target_cpu_averageValue_double,
+  create_k8s_hpa_metric_target_cpu_value_int64,
+  create_observable_k8s_hpa_metric_target_cpu_value_int64,
+  create_k8s_hpa_metric_target_cpu_value_double,
+  create_observable_k8s_hpa_metric_target_cpu_value_double,
+  create_k8s_hpa_minPods_int64,
+  create_observable_k8s_hpa_minPods_int64,
+  create_k8s_hpa_pod_current_int64,
+  create_observable_k8s_hpa_pod_current_int64,
+  create_k8s_hpa_pod_desired_int64,
+  create_observable_k8s_hpa_pod_desired_int64,
+  create_k8s_hpa_pod_max_int64,
+  create_observable_k8s_hpa_pod_max_int64,
+  create_k8s_hpa_pod_min_int64,
+  create_observable_k8s_hpa_pod_min_int64,
+  create_k8s_job_activePods_int64,
+  create_observable_k8s_job_activePods_int64,
+  create_k8s_job_desiredSuccessfulPods_int64,
+  create_observable_k8s_job_desiredSuccessfulPods_int64,
+  create_k8s_job_failedPods_int64,
+  create_observable_k8s_job_failedPods_int64,
+  create_k8s_job_maxParallelPods_int64,
+  create_observable_k8s_job_maxParallelPods_int64,
+  create_k8s_job_pod_active_int64,
+  create_observable_k8s_job_pod_active_int64,
+  create_k8s_job_pod_desiredSuccessful_int64,
+  create_observable_k8s_job_pod_desiredSuccessful_int64,
+  create_k8s_job_pod_failed_int64,
+  create_observable_k8s_job_pod_failed_int64,
+  create_k8s_job_pod_maxParallel_int64,
+  create_observable_k8s_job_pod_maxParallel_int64,
+  create_k8s_job_pod_successful_int64,
+  create_observable_k8s_job_pod_successful_int64,
+  create_k8s_job_successfulPods_int64,
+  create_observable_k8s_job_successfulPods_int64,
+  create_k8s_namespace_phase_int64,
+  create_observable_k8s_namespace_phase_int64,
+  create_k8s_node_allocatable_cpu_double,
+  create_observable_k8s_node_allocatable_cpu_double,
+  create_k8s_node_allocatable_ephemeralStorage_int64,
+  create_observable_k8s_node_allocatable_ephemeralStorage_int64,
+  create_k8s_node_allocatable_memory_int64,
+  create_observable_k8s_node_allocatable_memory_int64,
+  create_k8s_node_allocatable_pods_int64,
+  create_observable_k8s_node_allocatable_pods_int64,
+  create_k8s_node_condition_status_int64,
+  create_observable_k8s_node_condition_status_int64,
+  create_k8s_node_cpu_allocatable_double,
+  create_observable_k8s_node_cpu_allocatable_double,
+  create_k8s_node_cpu_time_double,
+  create_observable_k8s_node_cpu_time_double,
+  create_k8s_node_cpu_usage_double,
+  create_observable_k8s_node_cpu_usage_double,
+  create_k8s_node_ephemeralStorage_allocatable_int64,
+  create_observable_k8s_node_ephemeralStorage_allocatable_int64,
+  create_k8s_node_filesystem_available_int64,
+  create_observable_k8s_node_filesystem_available_int64,
+  create_k8s_node_filesystem_capacity_int64,
+  create_observable_k8s_node_filesystem_capacity_int64,
+  create_k8s_node_filesystem_inode_count_int64,
+  create_observable_k8s_node_filesystem_inode_count_int64,
+  create_k8s_node_filesystem_inode_free_int64,
+  create_observable_k8s_node_filesystem_inode_free_int64,
+  create_k8s_node_filesystem_usage_int64,
+  create_observable_k8s_node_filesystem_usage_int64,
+  create_k8s_node_memory_allocatable_int64,
+  create_observable_k8s_node_memory_allocatable_int64,
+  create_k8s_node_memory_available_int64,
+  create_observable_k8s_node_memory_available_int64,
+  create_k8s_node_memory_paging_faults_int64,
+  create_observable_k8s_node_memory_paging_faults_int64,
+  create_k8s_node_memory_rss_int64,
+  create_observable_k8s_node_memory_rss_int64,
+  create_k8s_node_memory_usage_int64,
+  create_observable_k8s_node_memory_usage_int64,
+  create_k8s_node_memory_workingSet_int64,
+  create_observable_k8s_node_memory_workingSet_int64,
+  create_k8s_node_network_errors_int64,
+  create_observable_k8s_node_network_errors_int64,
+  create_k8s_node_network_io_int64,
+  create_observable_k8s_node_network_io_int64,
+  create_k8s_node_paging_faults_int64,
+  create_observable_k8s_node_paging_faults_int64,
+  create_k8s_node_pid_limit_int64,
+  create_observable_k8s_node_pid_limit_int64,
+  create_k8s_node_pid_usage_int64,
+  create_observable_k8s_node_pid_usage_int64,
+  create_k8s_node_pod_allocatable_int64,
+  create_observable_k8s_node_pod_allocatable_int64,
+  create_k8s_node_systemContainer_cpu_time_double,
+  create_observable_k8s_node_systemContainer_cpu_time_double,
+  create_k8s_node_systemContainer_cpu_usage_double,
+  create_observable_k8s_node_systemContainer_cpu_usage_double,
+  create_k8s_node_systemContainer_memory_usage_int64,
+  create_observable_k8s_node_systemContainer_memory_usage_int64,
+  create_k8s_node_systemContainer_memory_workingSet_int64,
+  create_observable_k8s_node_systemContainer_memory_workingSet_int64,
+  create_k8s_node_uptime_double,
+  create_observable_k8s_node_uptime_double,
+  create_k8s_persistentvolume_status_phase_int64,
+  create_observable_k8s_persistentvolume_status_phase_int64,
+  create_k8s_persistentvolume_storage_capacity_int64,
+  create_observable_k8s_persistentvolume_storage_capacity_int64,
+  create_k8s_persistentvolumeclaim_status_phase_int64,
+  create_observable_k8s_persistentvolumeclaim_status_phase_int64,
+  create_k8s_persistentvolumeclaim_storage_capacity_int64,
+  create_observable_k8s_persistentvolumeclaim_storage_capacity_int64,
+  create_k8s_persistentvolumeclaim_storage_request_int64,
+  create_observable_k8s_persistentvolumeclaim_storage_request_int64,
+  create_k8s_pod_cpu_limit_current_double,
+  create_observable_k8s_pod_cpu_limit_current_double,
+  create_k8s_pod_cpu_limit_desired_double,
+  create_observable_k8s_pod_cpu_limit_desired_double,
+  create_k8s_pod_cpu_limit_utilization_double,
+  create_observable_k8s_pod_cpu_limit_utilization_double,
+  create_k8s_pod_cpu_request_current_double,
+  create_observable_k8s_pod_cpu_request_current_double,
+  create_k8s_pod_cpu_request_desired_double,
+  create_observable_k8s_pod_cpu_request_desired_double,
+  create_k8s_pod_cpu_request_utilization_double,
+  create_observable_k8s_pod_cpu_request_utilization_double,
+  create_k8s_pod_cpu_time_double,
+  create_observable_k8s_pod_cpu_time_double,
+  create_k8s_pod_cpu_usage_double,
+  create_observable_k8s_pod_cpu_usage_double,
+  create_k8s_pod_filesystem_available_int64,
+  create_observable_k8s_pod_filesystem_available_int64,
+  create_k8s_pod_filesystem_capacity_int64,
+  create_observable_k8s_pod_filesystem_capacity_int64,
+  create_k8s_pod_filesystem_usage_int64,
+  create_observable_k8s_pod_filesystem_usage_int64,
+  create_k8s_pod_memory_available_int64,
+  create_observable_k8s_pod_memory_available_int64,
+  create_k8s_pod_memory_limit_current_int64,
+  create_observable_k8s_pod_memory_limit_current_int64,
+  create_k8s_pod_memory_limit_desired_int64,
+  create_observable_k8s_pod_memory_limit_desired_int64,
+  create_k8s_pod_memory_limit_utilization_double,
+  create_observable_k8s_pod_memory_limit_utilization_double,
+  create_k8s_pod_memory_paging_faults_int64,
+  create_observable_k8s_pod_memory_paging_faults_int64,
+  create_k8s_pod_memory_request_current_int64,
+  create_observable_k8s_pod_memory_request_current_int64,
+  create_k8s_pod_memory_request_desired_int64,
+  create_observable_k8s_pod_memory_request_desired_int64,
+  create_k8s_pod_memory_request_utilization_double,
+  create_observable_k8s_pod_memory_request_utilization_double,
+  create_k8s_pod_memory_rss_int64,
+  create_observable_k8s_pod_memory_rss_int64,
+  create_k8s_pod_memory_usage_int64,
+  create_observable_k8s_pod_memory_usage_int64,
+  create_k8s_pod_memory_workingSet_int64,
+  create_observable_k8s_pod_memory_workingSet_int64,
+  create_k8s_pod_network_errors_int64,
+  create_observable_k8s_pod_network_errors_int64,
+  create_k8s_pod_network_io_int64,
+  create_observable_k8s_pod_network_io_int64,
+  create_k8s_pod_paging_faults_int64,
+  create_observable_k8s_pod_paging_faults_int64,
+  create_k8s_pod_status_phase_int64,
+  create_observable_k8s_pod_status_phase_int64,
+  create_k8s_pod_status_reason_int64,
+  create_observable_k8s_pod_status_reason_int64,
+  create_k8s_pod_uptime_double,
+  create_observable_k8s_pod_uptime_double,
+  create_k8s_pod_volume_available_int64,
+  create_observable_k8s_pod_volume_available_int64,
+  create_k8s_pod_volume_capacity_int64,
+  create_observable_k8s_pod_volume_capacity_int64,
+  create_k8s_pod_volume_inode_count_int64,
+  create_observable_k8s_pod_volume_inode_count_int64,
+  create_k8s_pod_volume_inode_free_int64,
+  create_observable_k8s_pod_volume_inode_free_int64,
+  create_k8s_pod_volume_inode_used_int64,
+  create_observable_k8s_pod_volume_inode_used_int64,
+  create_k8s_pod_volume_usage_int64,
+  create_observable_k8s_pod_volume_usage_int64,
+  create_k8s_replicaset_availablePods_int64,
+  create_observable_k8s_replicaset_availablePods_int64,
+  create_k8s_replicaset_desiredPods_int64,
+  create_observable_k8s_replicaset_desiredPods_int64,
+  create_k8s_replicaset_pod_available_int64,
+  create_observable_k8s_replicaset_pod_available_int64,
+  create_k8s_replicaset_pod_desired_int64,
+  create_observable_k8s_replicaset_pod_desired_int64,
+  create_k8s_replicationController_availablePods_int64,
+  create_observable_k8s_replicationController_availablePods_int64,
+  create_k8s_replicationController_desiredPods_int64,
+  create_observable_k8s_replicationController_desiredPods_int64,
+  create_k8s_replicationcontroller_availablePods_int64,
+  create_observable_k8s_replicationcontroller_availablePods_int64,
+  create_k8s_replicationcontroller_desiredPods_int64,
+  create_observable_k8s_replicationcontroller_desiredPods_int64,
+  create_k8s_replicationcontroller_pod_available_int64,
+  create_observable_k8s_replicationcontroller_pod_available_int64,
+  create_k8s_replicationcontroller_pod_desired_int64,
+  create_observable_k8s_replicationcontroller_pod_desired_int64,
+  create_k8s_resourcequota_cpu_limit_hard_double,
+  create_observable_k8s_resourcequota_cpu_limit_hard_double,
+  create_k8s_resourcequota_cpu_limit_used_double,
+  create_observable_k8s_resourcequota_cpu_limit_used_double,
+  create_k8s_resourcequota_cpu_request_hard_double,
+  create_observable_k8s_resourcequota_cpu_request_hard_double,
+  create_k8s_resourcequota_cpu_request_used_double,
+  create_observable_k8s_resourcequota_cpu_request_used_double,
+  create_k8s_resourcequota_ephemeralStorage_limit_hard_int64,
+  create_observable_k8s_resourcequota_ephemeralStorage_limit_hard_int64,
+  create_k8s_resourcequota_ephemeralStorage_limit_used_int64,
+  create_observable_k8s_resourcequota_ephemeralStorage_limit_used_int64,
+  create_k8s_resourcequota_ephemeralStorage_request_hard_int64,
+  create_observable_k8s_resourcequota_ephemeralStorage_request_hard_int64,
+  create_k8s_resourcequota_ephemeralStorage_request_used_int64,
+  create_observable_k8s_resourcequota_ephemeralStorage_request_used_int64,
+  create_k8s_resourcequota_hugepageCount_request_hard_int64,
+  create_observable_k8s_resourcequota_hugepageCount_request_hard_int64,
+  create_k8s_resourcequota_hugepageCount_request_used_int64,
+  create_observable_k8s_resourcequota_hugepageCount_request_used_int64,
+  create_k8s_resourcequota_memory_limit_hard_int64,
+  create_observable_k8s_resourcequota_memory_limit_hard_int64,
+  create_k8s_resourcequota_memory_limit_used_int64,
+  create_observable_k8s_resourcequota_memory_limit_used_int64,
+  create_k8s_resourcequota_memory_request_hard_int64,
+  create_observable_k8s_resourcequota_memory_request_hard_int64,
+  create_k8s_resourcequota_memory_request_used_int64,
+  create_observable_k8s_resourcequota_memory_request_used_int64,
+  create_k8s_resourcequota_objectCount_hard_int64,
+  create_observable_k8s_resourcequota_objectCount_hard_int64,
+  create_k8s_resourcequota_objectCount_used_int64,
+  create_observable_k8s_resourcequota_objectCount_used_int64,
+  create_k8s_resourcequota_persistentvolumeclaimCount_hard_int64,
+  create_observable_k8s_resourcequota_persistentvolumeclaimCount_hard_int64,
+  create_k8s_resourcequota_persistentvolumeclaimCount_used_int64,
+  create_observable_k8s_resourcequota_persistentvolumeclaimCount_used_int64,
+  create_k8s_resourcequota_storage_request_hard_int64,
+  create_observable_k8s_resourcequota_storage_request_hard_int64,
+  create_k8s_resourcequota_storage_request_used_int64,
+  create_observable_k8s_resourcequota_storage_request_used_int64,
+  create_k8s_service_endpoint_count_int64,
+  create_observable_k8s_service_endpoint_count_int64,
+  create_k8s_service_loadBalancer_ingress_count_int64,
+  create_observable_k8s_service_loadBalancer_ingress_count_int64,
+  create_k8s_statefulset_currentPods_int64,
+  create_observable_k8s_statefulset_currentPods_int64,
+  create_k8s_statefulset_desiredPods_int64,
+  create_observable_k8s_statefulset_desiredPods_int64,
+  create_k8s_statefulset_pod_available_int64,
+  create_observable_k8s_statefulset_pod_available_int64,
+  create_k8s_statefulset_pod_current_int64,
+  create_observable_k8s_statefulset_pod_current_int64,
+  create_k8s_statefulset_pod_desired_int64,
+  create_observable_k8s_statefulset_pod_desired_int64,
+  create_k8s_statefulset_pod_ready_int64,
+  create_observable_k8s_statefulset_pod_ready_int64,
+  create_k8s_statefulset_pod_updated_int64,
+  create_observable_k8s_statefulset_pod_updated_int64,
+  create_k8s_statefulset_readyPods_int64,
+  create_observable_k8s_statefulset_readyPods_int64,
+  create_k8s_statefulset_updatedPods_int64,
+  create_observable_k8s_statefulset_updatedPods_int64,
+  create_kestrel_activeConnections_int64,
+  create_observable_kestrel_activeConnections_int64,
+  create_kestrel_activeTlsHandshakes_int64,
+  create_observable_kestrel_activeTlsHandshakes_int64,
+  create_kestrel_connection_duration,
+  create_kestrel_queuedConnections_int64,
+  create_observable_kestrel_queuedConnections_int64,
+  create_kestrel_queuedRequests_int64,
+  create_observable_kestrel_queuedRequests_int64,
+  create_kestrel_rejectedConnections_int64,
+  create_observable_kestrel_rejectedConnections_int64,
+  create_kestrel_tlsHandshake_duration,
+  create_kestrel_upgradedConnections_int64,
+  create_observable_kestrel_upgradedConnections_int64,
+  create_mcp_client_operation_duration,
+  create_mcp_client_session_duration,
+  create_mcp_server_operation_duration,
+  create_mcp_server_session_duration,
+  create_messaging_client_consumed_messages_int64,
+  create_observable_messaging_client_consumed_messages_int64,
+  create_messaging_client_operation_duration,
+  create_messaging_client_published_messages_int64,
+  create_observable_messaging_client_published_messages_int64,
+  create_messaging_client_sent_messages_int64,
+  create_observable_messaging_client_sent_messages_int64,
+  create_messaging_process_duration,
+  create_messaging_process_messages_int64,
+  create_observable_messaging_process_messages_int64,
+  create_messaging_publish_duration,
+  create_messaging_publish_messages_int64,
+  create_observable_messaging_publish_messages_int64,
+  create_messaging_receive_duration,
+  create_messaging_receive_messages_int64,
+  create_observable_messaging_receive_messages_int64,
+  create_nfs_client_net_count_int64,
+  create_observable_nfs_client_net_count_int64,
+  create_nfs_client_net_count_double,
+  create_observable_nfs_client_net_count_double,
+  create_nfs_client_net_tcp_connection_accepted_int64,
+  create_observable_nfs_client_net_tcp_connection_accepted_int64,
+  create_nfs_client_net_tcp_connection_accepted_double,
+  create_observable_nfs_client_net_tcp_connection_accepted_double,
+  create_nfs_client_operation_count_int64,
+  create_observable_nfs_client_operation_count_int64,
+  create_nfs_client_operation_count_double,
+  create_observable_nfs_client_operation_count_double,
+  create_nfs_client_procedure_count_int64,
+  create_observable_nfs_client_procedure_count_int64,
+  create_nfs_client_procedure_count_double,
+  create_observable_nfs_client_procedure_count_double,
+  create_nfs_client_rpc_authrefresh_count_int64,
+  create_observable_nfs_client_rpc_authrefresh_count_int64,
+  create_nfs_client_rpc_authrefresh_count_double,
+  create_observable_nfs_client_rpc_authrefresh_count_double,
+  create_nfs_client_rpc_count_int64,
+  create_observable_nfs_client_rpc_count_int64,
+  create_nfs_client_rpc_count_double,
+  create_observable_nfs_client_rpc_count_double,
+  create_nfs_client_rpc_retransmit_count_int64,
+  create_observable_nfs_client_rpc_retransmit_count_int64,
+  create_nfs_client_rpc_retransmit_count_double,
+  create_observable_nfs_client_rpc_retransmit_count_double,
+  create_nfs_server_fh_stale_count_int64,
+  create_observable_nfs_server_fh_stale_count_int64,
+  create_nfs_server_fh_stale_count_double,
+  create_observable_nfs_server_fh_stale_count_double,
+  create_nfs_server_io_int64,
+  create_observable_nfs_server_io_int64,
+  create_nfs_server_io_double,
+  create_observable_nfs_server_io_double,
+  create_nfs_server_net_count_int64,
+  create_observable_nfs_server_net_count_int64,
+  create_nfs_server_net_count_double,
+  create_observable_nfs_server_net_count_double,
+  create_nfs_server_net_tcp_connection_accepted_int64,
+  create_observable_nfs_server_net_tcp_connection_accepted_int64,
+  create_nfs_server_net_tcp_connection_accepted_double,
+  create_observable_nfs_server_net_tcp_connection_accepted_double,
+  create_nfs_server_operation_count_int64,
+  create_observable_nfs_server_operation_count_int64,
+  create_nfs_server_operation_count_double,
+  create_observable_nfs_server_operation_count_double,
+  create_nfs_server_procedure_count_int64,
+  create_observable_nfs_server_procedure_count_int64,
+  create_nfs_server_procedure_count_double,
+  create_observable_nfs_server_procedure_count_double,
+  create_nfs_server_repcache_requests_int64,
+  create_observable_nfs_server_repcache_requests_int64,
+  create_nfs_server_repcache_requests_double,
+  create_observable_nfs_server_repcache_requests_double,
+  create_nfs_server_rpc_count_int64,
+  create_observable_nfs_server_rpc_count_int64,
+  create_nfs_server_rpc_count_double,
+  create_observable_nfs_server_rpc_count_double,
+  create_nfs_server_thread_count_int64,
+  create_observable_nfs_server_thread_count_int64,
+  create_nfs_server_thread_count_double,
+  create_observable_nfs_server_thread_count_double,
+  create_nodejs_eventloop_delay_max_double,
+  create_observable_nodejs_eventloop_delay_max_double,
+  create_nodejs_eventloop_delay_mean_double,
+  create_observable_nodejs_eventloop_delay_mean_double,
+  create_nodejs_eventloop_delay_min_double,
+  create_observable_nodejs_eventloop_delay_min_double,
+  create_nodejs_eventloop_delay_p50_double,
+  create_observable_nodejs_eventloop_delay_p50_double,
+  create_nodejs_eventloop_delay_p90_double,
+  create_observable_nodejs_eventloop_delay_p90_double,
+  create_nodejs_eventloop_delay_p99_double,
+  create_observable_nodejs_eventloop_delay_p99_double,
+  create_nodejs_eventloop_delay_stddev_double,
+  create_observable_nodejs_eventloop_delay_stddev_double,
+  create_nodejs_eventloop_time_double,
+  create_observable_nodejs_eventloop_time_double,
+  create_nodejs_eventloop_utilization_double,
+  create_observable_nodejs_eventloop_utilization_double,
+  create_openshift_clusterquota_cpu_limit_hard_double,
+  create_observable_openshift_clusterquota_cpu_limit_hard_double,
+  create_openshift_clusterquota_cpu_limit_used_double,
+  create_observable_openshift_clusterquota_cpu_limit_used_double,
+  create_openshift_clusterquota_cpu_request_hard_double,
+  create_observable_openshift_clusterquota_cpu_request_hard_double,
+  create_openshift_clusterquota_cpu_request_used_double,
+  create_observable_openshift_clusterquota_cpu_request_used_double,
+  create_openshift_clusterquota_ephemeralStorage_limit_hard_int64,
+  create_observable_openshift_clusterquota_ephemeralStorage_limit_hard_int64,
+  create_openshift_clusterquota_ephemeralStorage_limit_used_int64,
+  create_observable_openshift_clusterquota_ephemeralStorage_limit_used_int64,
+  create_openshift_clusterquota_ephemeralStorage_request_hard_int64,
+  create_observable_openshift_clusterquota_ephemeralStorage_request_hard_int64,
+  create_openshift_clusterquota_ephemeralStorage_request_used_int64,
+  create_observable_openshift_clusterquota_ephemeralStorage_request_used_int64,
+  create_openshift_clusterquota_hugepageCount_request_hard_int64,
+  create_observable_openshift_clusterquota_hugepageCount_request_hard_int64,
+  create_openshift_clusterquota_hugepageCount_request_used_int64,
+  create_observable_openshift_clusterquota_hugepageCount_request_used_int64,
+  create_openshift_clusterquota_memory_limit_hard_int64,
+  create_observable_openshift_clusterquota_memory_limit_hard_int64,
+  create_openshift_clusterquota_memory_limit_used_int64,
+  create_observable_openshift_clusterquota_memory_limit_used_int64,
+  create_openshift_clusterquota_memory_request_hard_int64,
+  create_observable_openshift_clusterquota_memory_request_hard_int64,
+  create_openshift_clusterquota_memory_request_used_int64,
+  create_observable_openshift_clusterquota_memory_request_used_int64,
+  create_openshift_clusterquota_objectCount_hard_int64,
+  create_observable_openshift_clusterquota_objectCount_hard_int64,
+  create_openshift_clusterquota_objectCount_used_int64,
+  create_observable_openshift_clusterquota_objectCount_used_int64,
+  create_openshift_clusterquota_persistentvolumeclaimCount_hard_int64,
+  create_observable_openshift_clusterquota_persistentvolumeclaimCount_hard_int64,
+  create_openshift_clusterquota_persistentvolumeclaimCount_used_int64,
+  create_observable_openshift_clusterquota_persistentvolumeclaimCount_used_int64,
+  create_openshift_clusterquota_storage_request_hard_int64,
+  create_observable_openshift_clusterquota_storage_request_hard_int64,
+  create_openshift_clusterquota_storage_request_used_int64,
+  create_observable_openshift_clusterquota_storage_request_used_int64,
+  create_otel_sdk_exporter_log_exported_int64,
+  create_observable_otel_sdk_exporter_log_exported_int64,
+  create_otel_sdk_exporter_log_inflight_int64,
+  create_observable_otel_sdk_exporter_log_inflight_int64,
+  create_otel_sdk_exporter_metricDataPoint_exported_int64,
+  create_observable_otel_sdk_exporter_metricDataPoint_exported_int64,
+  create_otel_sdk_exporter_metricDataPoint_inflight_int64,
+  create_observable_otel_sdk_exporter_metricDataPoint_inflight_int64,
+  create_otel_sdk_exporter_operation_duration,
+  create_otel_sdk_exporter_span_exported_int64,
+  create_observable_otel_sdk_exporter_span_exported_int64,
+  create_otel_sdk_exporter_span_exported_count_int64,
+  create_observable_otel_sdk_exporter_span_exported_count_int64,
+  create_otel_sdk_exporter_span_inflight_int64,
+  create_observable_otel_sdk_exporter_span_inflight_int64,
+  create_otel_sdk_exporter_span_inflight_count_int64,
+  create_observable_otel_sdk_exporter_span_inflight_count_int64,
+  create_otel_sdk_log_created_int64,
+  create_observable_otel_sdk_log_created_int64,
+  create_otel_sdk_metricReader_collection_duration,
+  create_otel_sdk_processor_log_processed_int64,
+  create_observable_otel_sdk_processor_log_processed_int64,
+  create_otel_sdk_processor_log_queue_capacity_int64,
+  create_observable_otel_sdk_processor_log_queue_capacity_int64,
+  create_otel_sdk_processor_log_queue_size_int64,
+  create_observable_otel_sdk_processor_log_queue_size_int64,
+  create_otel_sdk_processor_span_processed_int64,
+  create_observable_otel_sdk_processor_span_processed_int64,
+  create_otel_sdk_processor_span_processed_count_int64,
+  create_observable_otel_sdk_processor_span_processed_count_int64,
+  create_otel_sdk_processor_span_queue_capacity_int64,
+  create_observable_otel_sdk_processor_span_queue_capacity_int64,
+  create_otel_sdk_processor_span_queue_size_int64,
+  create_observable_otel_sdk_processor_span_queue_size_int64,
+  create_otel_sdk_span_ended_int64,
+  create_observable_otel_sdk_span_ended_int64,
+  create_otel_sdk_span_ended_double,
+  create_observable_otel_sdk_span_ended_double,
+  create_otel_sdk_span_ended_count_int64,
+  create_observable_otel_sdk_span_ended_count_int64,
+  create_otel_sdk_span_live_int64,
+  create_observable_otel_sdk_span_live_int64,
+  create_otel_sdk_span_live_count_int64,
+  create_observable_otel_sdk_span_live_count_int64,
+  create_otel_sdk_span_started_int64,
+  create_observable_otel_sdk_span_started_int64,
+  create_process_contextSwitches_int64,
+  create_observable_process_contextSwitches_int64,
+  create_process_cpu_time_double,
+  create_observable_process_cpu_time_double,
+  create_process_cpu_utilization_double,
+  create_observable_process_cpu_utilization_double,
+  create_process_disk_io_int64,
+  create_observable_process_disk_io_int64,
+  create_process_disk_operations_int64,
+  create_observable_process_disk_operations_int64,
+  create_process_memory_usage_int64,
+  create_observable_process_memory_usage_int64,
+  create_process_memory_utilization_double,
+  create_observable_process_memory_utilization_double,
+  create_process_memory_virtual_int64,
+  create_observable_process_memory_virtual_int64,
+  create_process_network_io_int64,
+  create_observable_process_network_io_int64,
+  create_process_openFileDescriptor_count_int64,
+  create_observable_process_openFileDescriptor_count_int64,
+  create_process_openFileDescriptor_count_double,
+  create_observable_process_openFileDescriptor_count_double,
+  create_process_paging_faults_int64,
+  create_observable_process_paging_faults_int64,
+  create_process_signalsPending_int64,
+  create_observable_process_signalsPending_int64,
+  create_process_thread_count_int64,
+  create_observable_process_thread_count_int64,
+  create_process_unix_fileDescriptor_count_int64,
+  create_observable_process_unix_fileDescriptor_count_int64,
+  create_process_uptime_double,
+  create_observable_process_uptime_double,
+  create_process_windows_handle_count_int64,
+  create_observable_process_windows_handle_count_int64,
+  create_rpc_client_call_duration,
+  create_rpc_client_duration,
+  create_rpc_client_request_size,
+  create_rpc_client_requestsPerRpc,
+  create_rpc_client_response_size,
+  create_rpc_client_responsesPerRpc,
+  create_rpc_server_call_duration,
+  create_rpc_server_duration,
+  create_rpc_server_request_size,
+  create_rpc_server_requestsPerRpc,
+  create_rpc_server_response_size,
+  create_rpc_server_responsesPerRpc,
+  create_signalr_server_activeConnections_int64,
+  create_observable_signalr_server_activeConnections_int64,
+  create_signalr_server_connection_duration,
+  create_system_cpu_frequency_int64,
+  create_observable_system_cpu_frequency_int64,
+  create_system_cpu_logical_count_int64,
+  create_observable_system_cpu_logical_count_int64,
+  create_system_cpu_physical_count_int64,
+  create_observable_system_cpu_physical_count_int64,
+  create_system_cpu_time_double,
+  create_observable_system_cpu_time_double,
+  create_system_cpu_utilization_double,
+  create_observable_system_cpu_utilization_double,
+  create_system_disk_io_int64,
+  create_observable_system_disk_io_int64,
+  create_system_disk_ioTime_double,
+  create_observable_system_disk_ioTime_double,
+  create_system_disk_limit_int64,
+  create_observable_system_disk_limit_int64,
+  create_system_disk_merged_int64,
+  create_observable_system_disk_merged_int64,
+  create_system_disk_operationTime_double,
+  create_observable_system_disk_operationTime_double,
+  create_system_disk_operations_int64,
+  create_observable_system_disk_operations_int64,
+  create_system_filesystem_limit_int64,
+  create_observable_system_filesystem_limit_int64,
+  create_system_filesystem_lock_count_int64,
+  create_observable_system_filesystem_lock_count_int64,
+  create_system_filesystem_usage_int64,
+  create_observable_system_filesystem_usage_int64,
+  create_system_filesystem_utilization_double,
+  create_observable_system_filesystem_utilization_double,
+  create_system_linux_memory_available_int64,
+  create_observable_system_linux_memory_available_int64,
+  create_system_linux_memory_slab_usage_int64,
+  create_observable_system_linux_memory_slab_usage_int64,
+  create_system_memory_limit_int64,
+  create_observable_system_memory_limit_int64,
+  create_system_memory_linux_available_int64,
+  create_observable_system_memory_linux_available_int64,
+  create_system_memory_linux_hugepages_limit_int64,
+  create_observable_system_memory_linux_hugepages_limit_int64,
+  create_system_memory_linux_hugepages_pageSize_int64,
+  create_observable_system_memory_linux_hugepages_pageSize_int64,
+  create_system_memory_linux_hugepages_reserved_int64,
+  create_observable_system_memory_linux_hugepages_reserved_int64,
+  create_system_memory_linux_hugepages_surplus_int64,
+  create_observable_system_memory_linux_hugepages_surplus_int64,
+  create_system_memory_linux_hugepages_usage_int64,
+  create_observable_system_memory_linux_hugepages_usage_int64,
+  create_system_memory_linux_hugepages_utilization_double,
+  create_observable_system_memory_linux_hugepages_utilization_double,
+  create_system_memory_linux_shared_int64,
+  create_observable_system_memory_linux_shared_int64,
+  create_system_memory_linux_slab_usage_int64,
+  create_observable_system_memory_linux_slab_usage_int64,
+  create_system_memory_shared_int64,
+  create_observable_system_memory_shared_int64,
+  create_system_memory_usage_int64,
+  create_observable_system_memory_usage_int64,
+  create_system_memory_utilization_double,
+  create_observable_system_memory_utilization_double,
+  create_system_network_connection_count_int64,
+  create_observable_system_network_connection_count_int64,
+  create_system_network_connections_int64,
+  create_observable_system_network_connections_int64,
+  create_system_network_connections_double,
+  create_observable_system_network_connections_double,
+  create_system_network_dropped_int64,
+  create_observable_system_network_dropped_int64,
+  create_system_network_errors_int64,
+  create_observable_system_network_errors_int64,
+  create_system_network_io_int64,
+  create_observable_system_network_io_int64,
+  create_system_network_packet_count_int64,
+  create_observable_system_network_packet_count_int64,
+  create_system_network_packet_dropped_int64,
+  create_observable_system_network_packet_dropped_int64,
+  create_system_network_packets_int64,
+  create_observable_system_network_packets_int64,
+  create_system_paging_faults_int64,
+  create_observable_system_paging_faults_int64,
+  create_system_paging_operations_int64,
+  create_observable_system_paging_operations_int64,
+  create_system_paging_usage_int64,
+  create_observable_system_paging_usage_int64,
+  create_system_paging_utilization_double,
+  create_observable_system_paging_utilization_double,
+  create_system_process_count_int64,
+  create_observable_system_process_count_int64,
+  create_system_process_created_int64,
+  create_observable_system_process_created_int64,
+  create_system_process_limit_int64,
+  create_observable_system_process_limit_int64,
+  create_system_uptime_double,
+  create_observable_system_uptime_double,
+  create_v8js_gc_duration,
+  create_v8js_heap_space_availableSize_int64,
+  create_observable_v8js_heap_space_availableSize_int64,
+  create_v8js_heap_space_physicalSize_int64,
+  create_observable_v8js_heap_space_physicalSize_int64,
+  create_v8js_memory_heap_limit_int64,
+  create_observable_v8js_memory_heap_limit_int64,
+  create_v8js_memory_heap_space_availableSize_int64,
+  create_observable_v8js_memory_heap_space_availableSize_int64,
+  create_v8js_memory_heap_space_physicalSize_int64,
+  create_observable_v8js_memory_heap_space_physicalSize_int64,
+  create_v8js_memory_heap_space_size_int64,
+  create_observable_v8js_memory_heap_space_size_int64,
+  create_v8js_memory_heap_used_int64,
+  create_observable_v8js_memory_heap_used_int64,
+  create_v8js_resource_active_int64,
+  create_observable_v8js_resource_active_int64,
+  create_vcs_change_count_int64,
+  create_observable_vcs_change_count_int64,
+  create_vcs_change_duration_double,
+  create_observable_vcs_change_duration_double,
+  create_vcs_change_timeToApproval_double,
+  create_observable_vcs_change_timeToApproval_double,
+  create_vcs_change_timeToMerge_double,
+  create_observable_vcs_change_timeToMerge_double,
+  create_vcs_contributor_count_int64,
+  create_observable_vcs_contributor_count_int64,
+  create_vcs_ref_count_int64,
+  create_observable_vcs_ref_count_int64,
+  create_vcs_ref_linesDelta_int64,
+  create_observable_vcs_ref_linesDelta_int64,
+  create_vcs_ref_revisionsDelta_int64,
+  create_observable_vcs_ref_revisionsDelta_int64,
+  create_vcs_ref_time_double,
+  create_observable_vcs_ref_time_double,
+  create_vcs_repository_count_int64,
+  create_observable_vcs_repository_count_int64,
+) where
+
+import Data.Int (Int64)
+import OpenTelemetry.Metric.Core (
+  AdvisoryParameters,
+  Counter,
+  Gauge,
+  Histogram,
+  Meter (..),
+  ObservableCounter,
+  ObservableGauge,
+  ObservableResult,
+  ObservableUpDownCounter,
+  UpDownCounter,
+ )
+
+
+{- | Creates @aspnetcore.authentication.authenticate.duration@ in @s@.
+Stability: development.
+-}
+create_aspnetcore_authentication_authenticate_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_authentication_authenticate_duration meter advisory =
+  meterCreateHistogram meter "aspnetcore.authentication.authenticate.duration" (Just "s") (Just "The authentication duration for a request.") advisory
+
+
+{- | Creates @aspnetcore.authentication.challenges@ in @{challenge}@.
+Stability: development.
+-}
+create_aspnetcore_authentication_challenges_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_authentication_challenges_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.authentication.challenges" (Just "{challenge}") (Just "The total number of times a scheme is challenged.") advisory
+
+
+{- | Creates @aspnetcore.authentication.challenges@ in @{challenge}@.
+Stability: development.
+-}
+create_observable_aspnetcore_authentication_challenges_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_authentication_challenges_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.authentication.challenges" (Just "{challenge}") (Just "The total number of times a scheme is challenged.") advisory callbacks
+
+
+{- | Creates @aspnetcore.authentication.forbids@ in @{forbid}@.
+Stability: development.
+-}
+create_aspnetcore_authentication_forbids_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_authentication_forbids_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.authentication.forbids" (Just "{forbid}") (Just "The total number of times an authenticated user attempts to access a resource they are not permitted to access.") advisory
+
+
+{- | Creates @aspnetcore.authentication.forbids@ in @{forbid}@.
+Stability: development.
+-}
+create_observable_aspnetcore_authentication_forbids_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_authentication_forbids_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.authentication.forbids" (Just "{forbid}") (Just "The total number of times an authenticated user attempts to access a resource they are not permitted to access.") advisory callbacks
+
+
+{- | Creates @aspnetcore.authentication.sign_ins@ in @{sign_in}@.
+Stability: development.
+-}
+create_aspnetcore_authentication_signIns_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_authentication_signIns_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.authentication.sign_ins" (Just "{sign_in}") (Just "The total number of times a principal is signed in with a scheme.") advisory
+
+
+{- | Creates @aspnetcore.authentication.sign_ins@ in @{sign_in}@.
+Stability: development.
+-}
+create_observable_aspnetcore_authentication_signIns_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_authentication_signIns_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.authentication.sign_ins" (Just "{sign_in}") (Just "The total number of times a principal is signed in with a scheme.") advisory callbacks
+
+
+{- | Creates @aspnetcore.authentication.sign_outs@ in @{sign_out}@.
+Stability: development.
+-}
+create_aspnetcore_authentication_signOuts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_authentication_signOuts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.authentication.sign_outs" (Just "{sign_out}") (Just "The total number of times a principal is signed out with a scheme.") advisory
+
+
+{- | Creates @aspnetcore.authentication.sign_outs@ in @{sign_out}@.
+Stability: development.
+-}
+create_observable_aspnetcore_authentication_signOuts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_authentication_signOuts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.authentication.sign_outs" (Just "{sign_out}") (Just "The total number of times a principal is signed out with a scheme.") advisory callbacks
+
+
+{- | Creates @aspnetcore.authorization.attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_aspnetcore_authorization_attempts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_authorization_attempts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.authorization.attempts" (Just "{attempt}") (Just "The total number of authorization attempts.") advisory
+
+
+{- | Creates @aspnetcore.authorization.attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_observable_aspnetcore_authorization_attempts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_authorization_attempts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.authorization.attempts" (Just "{attempt}") (Just "The total number of authorization attempts.") advisory callbacks
+
+
+{- | Creates @aspnetcore.diagnostics.exceptions@ in @{exception}@.
+Stability: stable.
+-}
+create_aspnetcore_diagnostics_exceptions_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_diagnostics_exceptions_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.diagnostics.exceptions" (Just "{exception}") (Just "Number of exceptions caught by exception handling middleware.") advisory
+
+
+{- | Creates @aspnetcore.diagnostics.exceptions@ in @{exception}@.
+Stability: stable.
+-}
+create_observable_aspnetcore_diagnostics_exceptions_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_diagnostics_exceptions_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.diagnostics.exceptions" (Just "{exception}") (Just "Number of exceptions caught by exception handling middleware.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.sign_in.authenticate.duration@ in @s@.
+Stability: development.
+-}
+create_aspnetcore_identity_signIn_authenticate_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_identity_signIn_authenticate_duration meter advisory =
+  meterCreateHistogram meter "aspnetcore.identity.sign_in.authenticate.duration" (Just "s") (Just "The duration of authenticate attempts. The authenticate metrics is recorded by sign in methods such as PasswordSignInAsync and TwoFactorSignInAsync.") advisory
+
+
+{- | Creates @aspnetcore.identity.sign_in.check_password_attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_aspnetcore_identity_signIn_checkPasswordAttempts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_signIn_checkPasswordAttempts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.sign_in.check_password_attempts" (Just "{attempt}") (Just "The total number of check password attempts. Checks that the account is in a state that can log in and that the password is valid using the UserManager.CheckPasswordAsync method.") advisory
+
+
+{- | Creates @aspnetcore.identity.sign_in.check_password_attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_signIn_checkPasswordAttempts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_signIn_checkPasswordAttempts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.sign_in.check_password_attempts" (Just "{attempt}") (Just "The total number of check password attempts. Checks that the account is in a state that can log in and that the password is valid using the UserManager.CheckPasswordAsync method.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.sign_in.sign_ins@ in @{sign_in}@.
+Stability: development.
+-}
+create_aspnetcore_identity_signIn_signIns_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_signIn_signIns_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.sign_in.sign_ins" (Just "{sign_in}") (Just "The total number of calls to sign in user principals.") advisory
+
+
+{- | Creates @aspnetcore.identity.sign_in.sign_ins@ in @{sign_in}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_signIn_signIns_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_signIn_signIns_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.sign_in.sign_ins" (Just "{sign_in}") (Just "The total number of calls to sign in user principals.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.sign_in.sign_outs@ in @{sign_out}@.
+Stability: development.
+-}
+create_aspnetcore_identity_signIn_signOuts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_signIn_signOuts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.sign_in.sign_outs" (Just "{sign_out}") (Just "The total number of calls to sign out user principals.") advisory
+
+
+{- | Creates @aspnetcore.identity.sign_in.sign_outs@ in @{sign_out}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_signIn_signOuts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_signIn_signOuts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.sign_in.sign_outs" (Just "{sign_out}") (Just "The total number of calls to sign out user principals.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.sign_in.two_factor_clients_forgotten@ in @{client}@.
+Stability: development.
+-}
+create_aspnetcore_identity_signIn_twoFactorClientsForgotten_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_signIn_twoFactorClientsForgotten_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.sign_in.two_factor_clients_forgotten" (Just "{client}") (Just "The total number of two factor clients forgotten.") advisory
+
+
+{- | Creates @aspnetcore.identity.sign_in.two_factor_clients_forgotten@ in @{client}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_signIn_twoFactorClientsForgotten_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_signIn_twoFactorClientsForgotten_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.sign_in.two_factor_clients_forgotten" (Just "{client}") (Just "The total number of two factor clients forgotten.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.sign_in.two_factor_clients_remembered@ in @{client}@.
+Stability: development.
+-}
+create_aspnetcore_identity_signIn_twoFactorClientsRemembered_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_signIn_twoFactorClientsRemembered_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.sign_in.two_factor_clients_remembered" (Just "{client}") (Just "The total number of two factor clients remembered.") advisory
+
+
+{- | Creates @aspnetcore.identity.sign_in.two_factor_clients_remembered@ in @{client}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_signIn_twoFactorClientsRemembered_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_signIn_twoFactorClientsRemembered_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.sign_in.two_factor_clients_remembered" (Just "{client}") (Just "The total number of two factor clients remembered.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.user.check_password_attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_aspnetcore_identity_user_checkPasswordAttempts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_user_checkPasswordAttempts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.user.check_password_attempts" (Just "{attempt}") (Just "The number of check password attempts. Only checks whether the password is valid and not whether the user account is in a state that can log in.") advisory
+
+
+{- | Creates @aspnetcore.identity.user.check_password_attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_user_checkPasswordAttempts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_user_checkPasswordAttempts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.user.check_password_attempts" (Just "{attempt}") (Just "The number of check password attempts. Only checks whether the password is valid and not whether the user account is in a state that can log in.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.user.create.duration@ in @s@.
+Stability: development.
+-}
+create_aspnetcore_identity_user_create_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_identity_user_create_duration meter advisory =
+  meterCreateHistogram meter "aspnetcore.identity.user.create.duration" (Just "s") (Just "The duration of user creation operations.") advisory
+
+
+{- | Creates @aspnetcore.identity.user.delete.duration@ in @s@.
+Stability: development.
+-}
+create_aspnetcore_identity_user_delete_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_identity_user_delete_duration meter advisory =
+  meterCreateHistogram meter "aspnetcore.identity.user.delete.duration" (Just "s") (Just "The duration of user deletion operations.") advisory
+
+
+{- | Creates @aspnetcore.identity.user.generated_tokens@ in @{count}@.
+Stability: development.
+-}
+create_aspnetcore_identity_user_generatedTokens_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_user_generatedTokens_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.user.generated_tokens" (Just "{count}") (Just "The total number of token generations.") advisory
+
+
+{- | Creates @aspnetcore.identity.user.generated_tokens@ in @{count}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_user_generatedTokens_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_user_generatedTokens_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.user.generated_tokens" (Just "{count}") (Just "The total number of token generations.") advisory callbacks
+
+
+{- | Creates @aspnetcore.identity.user.update.duration@ in @s@.
+Stability: development.
+-}
+create_aspnetcore_identity_user_update_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_identity_user_update_duration meter advisory =
+  meterCreateHistogram meter "aspnetcore.identity.user.update.duration" (Just "s") (Just "The duration of user update operations.") advisory
+
+
+{- | Creates @aspnetcore.identity.user.verify_token_attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_aspnetcore_identity_user_verifyTokenAttempts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_identity_user_verifyTokenAttempts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.identity.user.verify_token_attempts" (Just "{attempt}") (Just "The total number of token verification attempts.") advisory
+
+
+{- | Creates @aspnetcore.identity.user.verify_token_attempts@ in @{attempt}@.
+Stability: development.
+-}
+create_observable_aspnetcore_identity_user_verifyTokenAttempts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_identity_user_verifyTokenAttempts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.identity.user.verify_token_attempts" (Just "{attempt}") (Just "The total number of token verification attempts.") advisory callbacks
+
+
+{- | Creates @aspnetcore.memory_pool.allocated@ in @By@.
+Stability: development.
+-}
+create_aspnetcore_memoryPool_allocated_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_memoryPool_allocated_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.memory_pool.allocated" (Just "By") (Just "Total number of bytes allocated by the memory pool. Allocation occurs when a memory rental request exceeds the available pooled memory.") advisory
+
+
+{- | Creates @aspnetcore.memory_pool.allocated@ in @By@.
+Stability: development.
+-}
+create_observable_aspnetcore_memoryPool_allocated_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_memoryPool_allocated_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.memory_pool.allocated" (Just "By") (Just "Total number of bytes allocated by the memory pool. Allocation occurs when a memory rental request exceeds the available pooled memory.") advisory callbacks
+
+
+{- | Creates @aspnetcore.memory_pool.evicted@ in @By@.
+Stability: development.
+-}
+create_aspnetcore_memoryPool_evicted_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_memoryPool_evicted_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.memory_pool.evicted" (Just "By") (Just "Total number of bytes evicted from the memory pool. Eviction occurs when idle pooled memory is reclaimed.") advisory
+
+
+{- | Creates @aspnetcore.memory_pool.evicted@ in @By@.
+Stability: development.
+-}
+create_observable_aspnetcore_memoryPool_evicted_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_memoryPool_evicted_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.memory_pool.evicted" (Just "By") (Just "Total number of bytes evicted from the memory pool. Eviction occurs when idle pooled memory is reclaimed.") advisory callbacks
+
+
+{- | Creates @aspnetcore.memory_pool.pooled@ in @By@.
+Stability: development.
+-}
+create_aspnetcore_memoryPool_pooled_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_aspnetcore_memoryPool_pooled_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "aspnetcore.memory_pool.pooled" (Just "By") (Just "Number of bytes currently pooled and available for reuse.") advisory
+
+
+{- | Creates @aspnetcore.memory_pool.pooled@ in @By@.
+Stability: development.
+-}
+create_observable_aspnetcore_memoryPool_pooled_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_aspnetcore_memoryPool_pooled_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "aspnetcore.memory_pool.pooled" (Just "By") (Just "Number of bytes currently pooled and available for reuse.") advisory callbacks
+
+
+{- | Creates @aspnetcore.memory_pool.rented@ in @By@.
+Stability: development.
+-}
+create_aspnetcore_memoryPool_rented_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_memoryPool_rented_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.memory_pool.rented" (Just "By") (Just "Total number of bytes rented from the memory pool.") advisory
+
+
+{- | Creates @aspnetcore.memory_pool.rented@ in @By@.
+Stability: development.
+-}
+create_observable_aspnetcore_memoryPool_rented_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_memoryPool_rented_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.memory_pool.rented" (Just "By") (Just "Total number of bytes rented from the memory pool.") advisory callbacks
+
+
+{- | Creates @aspnetcore.rate_limiting.active_request_leases@ in @{request}@.
+Stability: stable.
+-}
+create_aspnetcore_rateLimiting_activeRequestLeases_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_aspnetcore_rateLimiting_activeRequestLeases_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "aspnetcore.rate_limiting.active_request_leases" (Just "{request}") (Just "Number of requests that are currently active on the server that hold a rate limiting lease.") advisory
+
+
+{- | Creates @aspnetcore.rate_limiting.active_request_leases@ in @{request}@.
+Stability: stable.
+-}
+create_observable_aspnetcore_rateLimiting_activeRequestLeases_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_aspnetcore_rateLimiting_activeRequestLeases_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "aspnetcore.rate_limiting.active_request_leases" (Just "{request}") (Just "Number of requests that are currently active on the server that hold a rate limiting lease.") advisory callbacks
+
+
+{- | Creates @aspnetcore.rate_limiting.queued_requests@ in @{request}@.
+Stability: stable.
+-}
+create_aspnetcore_rateLimiting_queuedRequests_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_aspnetcore_rateLimiting_queuedRequests_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "aspnetcore.rate_limiting.queued_requests" (Just "{request}") (Just "Number of requests that are currently queued, waiting to acquire a rate limiting lease.") advisory
+
+
+{- | Creates @aspnetcore.rate_limiting.queued_requests@ in @{request}@.
+Stability: stable.
+-}
+create_observable_aspnetcore_rateLimiting_queuedRequests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_aspnetcore_rateLimiting_queuedRequests_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "aspnetcore.rate_limiting.queued_requests" (Just "{request}") (Just "Number of requests that are currently queued, waiting to acquire a rate limiting lease.") advisory callbacks
+
+
+{- | Creates @aspnetcore.rate_limiting.request.time_in_queue@ in @s@.
+Stability: stable.
+-}
+create_aspnetcore_rateLimiting_request_timeInQueue :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_rateLimiting_request_timeInQueue meter advisory =
+  meterCreateHistogram meter "aspnetcore.rate_limiting.request.time_in_queue" (Just "s") (Just "The time the request spent in a queue waiting to acquire a rate limiting lease.") advisory
+
+
+{- | Creates @aspnetcore.rate_limiting.request_lease.duration@ in @s@.
+Stability: stable.
+-}
+create_aspnetcore_rateLimiting_requestLease_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_aspnetcore_rateLimiting_requestLease_duration meter advisory =
+  meterCreateHistogram meter "aspnetcore.rate_limiting.request_lease.duration" (Just "s") (Just "The duration of rate limiting lease held by requests on the server.") advisory
+
+
+{- | Creates @aspnetcore.rate_limiting.requests@ in @{request}@.
+Stability: stable.
+-}
+create_aspnetcore_rateLimiting_requests_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_rateLimiting_requests_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.rate_limiting.requests" (Just "{request}") (Just "Number of requests that tried to acquire a rate limiting lease.") advisory
+
+
+{- | Creates @aspnetcore.rate_limiting.requests@ in @{request}@.
+Stability: stable.
+-}
+create_observable_aspnetcore_rateLimiting_requests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_rateLimiting_requests_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.rate_limiting.requests" (Just "{request}") (Just "Number of requests that tried to acquire a rate limiting lease.") advisory callbacks
+
+
+{- | Creates @aspnetcore.routing.match_attempts@ in @{match_attempt}@.
+Stability: stable.
+-}
+create_aspnetcore_routing_matchAttempts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_aspnetcore_routing_matchAttempts_int64 meter advisory =
+  meterCreateCounterInt64 meter "aspnetcore.routing.match_attempts" (Just "{match_attempt}") (Just "Number of requests that were attempted to be matched to an endpoint.") advisory
+
+
+{- | Creates @aspnetcore.routing.match_attempts@ in @{match_attempt}@.
+Stability: stable.
+-}
+create_observable_aspnetcore_routing_matchAttempts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_aspnetcore_routing_matchAttempts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "aspnetcore.routing.match_attempts" (Just "{match_attempt}") (Just "Number of requests that were attempted to be matched to an endpoint.") advisory callbacks
+
+
+{- | Creates @azure.cosmosdb.client.active_instance.count@ in @{instance}@.
+Stability: development.
+-}
+create_azure_cosmosdb_client_activeInstance_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_azure_cosmosdb_client_activeInstance_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "azure.cosmosdb.client.active_instance.count" (Just "{instance}") (Just "Number of active client instances.") advisory
+
+
+{- | Creates @azure.cosmosdb.client.active_instance.count@ in @{instance}@.
+Stability: development.
+-}
+create_observable_azure_cosmosdb_client_activeInstance_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_azure_cosmosdb_client_activeInstance_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "azure.cosmosdb.client.active_instance.count" (Just "{instance}") (Just "Number of active client instances.") advisory callbacks
+
+
+{- | Creates @azure.cosmosdb.client.operation.request_charge@ in @{request_unit}@.
+Stability: development.
+-}
+create_azure_cosmosdb_client_operation_requestCharge :: Meter -> AdvisoryParameters -> IO Histogram
+create_azure_cosmosdb_client_operation_requestCharge meter advisory =
+  meterCreateHistogram meter "azure.cosmosdb.client.operation.request_charge" (Just "{request_unit}") (Just "[Request units](https://learn.microsoft.com/azure/cosmos-db/request-units) consumed by the operation.") advisory
+
+
+{- | Creates @cicd.pipeline.run.active@ in @{run}@.
+Stability: release candidate.
+-}
+create_cicd_pipeline_run_active_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_cicd_pipeline_run_active_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "cicd.pipeline.run.active" (Just "{run}") (Just "The number of pipeline runs currently active in the system by state.") advisory
+
+
+{- | Creates @cicd.pipeline.run.active@ in @{run}@.
+Stability: release candidate.
+-}
+create_observable_cicd_pipeline_run_active_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_cicd_pipeline_run_active_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "cicd.pipeline.run.active" (Just "{run}") (Just "The number of pipeline runs currently active in the system by state.") advisory callbacks
+
+
+{- | Creates @cicd.pipeline.run.duration@ in @s@.
+Stability: release candidate.
+-}
+create_cicd_pipeline_run_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_cicd_pipeline_run_duration meter advisory =
+  meterCreateHistogram meter "cicd.pipeline.run.duration" (Just "s") (Just "Duration of a pipeline run grouped by pipeline, state and result.") advisory
+
+
+{- | Creates @cicd.pipeline.run.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_cicd_pipeline_run_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_cicd_pipeline_run_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "cicd.pipeline.run.errors" (Just "{error}") (Just "The number of errors encountered in pipeline runs (eg. compile, test failures).") advisory
+
+
+{- | Creates @cicd.pipeline.run.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_observable_cicd_pipeline_run_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_cicd_pipeline_run_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "cicd.pipeline.run.errors" (Just "{error}") (Just "The number of errors encountered in pipeline runs (eg. compile, test failures).") advisory callbacks
+
+
+{- | Creates @cicd.system.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_cicd_system_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_cicd_system_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "cicd.system.errors" (Just "{error}") (Just "The number of errors in a component of the CI/CD system (eg. controller, scheduler, agent).") advisory
+
+
+{- | Creates @cicd.system.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_observable_cicd_system_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_cicd_system_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "cicd.system.errors" (Just "{error}") (Just "The number of errors in a component of the CI/CD system (eg. controller, scheduler, agent).") advisory callbacks
+
+
+{- | Creates @cicd.worker.count@ in @{worker}@.
+Stability: release candidate.
+-}
+create_cicd_worker_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_cicd_worker_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "cicd.worker.count" (Just "{worker}") (Just "The number of workers on the CI/CD system by state.") advisory
+
+
+{- | Creates @cicd.worker.count@ in @{worker}@.
+Stability: release candidate.
+-}
+create_observable_cicd_worker_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_cicd_worker_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "cicd.worker.count" (Just "{worker}") (Just "The number of workers on the CI/CD system by state.") advisory callbacks
+
+
+{- | Creates @container.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_container_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_container_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "container.cpu.time" (Just "s") (Just "Total CPU time consumed.") advisory
+
+
+{- | Creates @container.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_observable_container_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_container_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "container.cpu.time" (Just "s") (Just "Total CPU time consumed.") advisory callbacks
+
+
+{- | Creates @container.cpu.usage@ in @{cpu}@.
+Stability: release candidate.
+-}
+create_container_cpu_usage_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_container_cpu_usage_double meter advisory =
+  meterCreateGaugeDouble meter "container.cpu.usage" (Just "{cpu}") (Just "Container's CPU usage, measured in CPUs. Range from 0 to the number of allocatable CPUs.") advisory
+
+
+{- | Creates @container.cpu.usage@ in @{cpu}@.
+Stability: release candidate.
+-}
+create_observable_container_cpu_usage_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_container_cpu_usage_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "container.cpu.usage" (Just "{cpu}") (Just "Container's CPU usage, measured in CPUs. Range from 0 to the number of allocatable CPUs.") advisory callbacks
+
+
+{- | Creates @container.disk.io@ in @By@.
+Stability: development.
+-}
+create_container_disk_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_container_disk_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "container.disk.io" (Just "By") (Just "Disk bytes for the container.") advisory
+
+
+{- | Creates @container.disk.io@ in @By@.
+Stability: development.
+-}
+create_observable_container_disk_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_container_disk_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "container.disk.io" (Just "By") (Just "Disk bytes for the container.") advisory callbacks
+
+
+{- | Creates @container.filesystem.available@ in @By@.
+Stability: release candidate.
+-}
+create_container_filesystem_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_filesystem_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.filesystem.available" (Just "By") (Just "Container filesystem available bytes.") advisory
+
+
+{- | Creates @container.filesystem.available@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_filesystem_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_filesystem_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.filesystem.available" (Just "By") (Just "Container filesystem available bytes.") advisory callbacks
+
+
+{- | Creates @container.filesystem.capacity@ in @By@.
+Stability: release candidate.
+-}
+create_container_filesystem_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_filesystem_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.filesystem.capacity" (Just "By") (Just "Container filesystem capacity.") advisory
+
+
+{- | Creates @container.filesystem.capacity@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_filesystem_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_filesystem_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.filesystem.capacity" (Just "By") (Just "Container filesystem capacity.") advisory callbacks
+
+
+{- | Creates @container.filesystem.usage@ in @By@.
+Stability: release candidate.
+-}
+create_container_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_filesystem_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.filesystem.usage" (Just "By") (Just "Container filesystem usage.") advisory
+
+
+{- | Creates @container.filesystem.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_filesystem_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.filesystem.usage" (Just "By") (Just "Container filesystem usage.") advisory callbacks
+
+
+{- | Creates @container.memory.available@ in @By@.
+Stability: release candidate.
+-}
+create_container_memory_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_memory_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.memory.available" (Just "By") (Just "Container memory available.") advisory
+
+
+{- | Creates @container.memory.available@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_memory_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_memory_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.memory.available" (Just "By") (Just "Container memory available.") advisory callbacks
+
+
+{- | Creates @container.memory.paging.faults@ in @{fault}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_container_memory_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_container_memory_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "container.memory.paging.faults" (Just "{fault}") (Just "Deprecated, use `container.paging.faults` instead.") advisory
+
+
+{- | Creates @container.memory.paging.faults@ in @{fault}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_container_memory_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_container_memory_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "container.memory.paging.faults" (Just "{fault}") (Just "Deprecated, use `container.paging.faults` instead.") advisory callbacks
+
+
+{- | Creates @container.memory.rss@ in @By@.
+Stability: release candidate.
+-}
+create_container_memory_rss_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_memory_rss_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.memory.rss" (Just "By") (Just "Container memory RSS.") advisory
+
+
+{- | Creates @container.memory.rss@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_memory_rss_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_memory_rss_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.memory.rss" (Just "By") (Just "Container memory RSS.") advisory callbacks
+
+
+{- | Creates @container.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_container_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.memory.usage" (Just "By") (Just "Memory usage of the container.") advisory
+
+
+{- | Creates @container.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.memory.usage" (Just "By") (Just "Memory usage of the container.") advisory callbacks
+
+
+{- | Creates @container.memory.working_set@ in @By@.
+Stability: release candidate.
+-}
+create_container_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_container_memory_workingSet_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "container.memory.working_set" (Just "By") (Just "Container memory working set.") advisory
+
+
+{- | Creates @container.memory.working_set@ in @By@.
+Stability: release candidate.
+-}
+create_observable_container_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_container_memory_workingSet_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "container.memory.working_set" (Just "By") (Just "Container memory working set.") advisory callbacks
+
+
+{- | Creates @container.network.io@ in @By@.
+Stability: development.
+-}
+create_container_network_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_container_network_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "container.network.io" (Just "By") (Just "Network bytes for the container.") advisory
+
+
+{- | Creates @container.network.io@ in @By@.
+Stability: development.
+-}
+create_observable_container_network_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_container_network_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "container.network.io" (Just "By") (Just "Network bytes for the container.") advisory callbacks
+
+
+{- | Creates @container.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_container_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_container_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "container.paging.faults" (Just "{fault}") (Just "Container memory paging faults.") advisory
+
+
+{- | Creates @container.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_observable_container_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_container_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "container.paging.faults" (Just "{fault}") (Just "Container memory paging faults.") advisory callbacks
+
+
+{- | Creates @container.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_container_uptime_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_container_uptime_double meter advisory =
+  meterCreateGaugeDouble meter "container.uptime" (Just "s") (Just "The time the container has been running.") advisory
+
+
+{- | Creates @container.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_observable_container_uptime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_container_uptime_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "container.uptime" (Just "s") (Just "The time the container has been running.") advisory callbacks
+
+
+{- | Creates @cpu.frequency@ in @{Hz}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_cpu_frequency_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_cpu_frequency_int64 meter advisory =
+  meterCreateGaugeInt64 meter "cpu.frequency" (Just "{Hz}") (Just "Deprecated. Use `system.cpu.frequency` instead.") advisory
+
+
+{- | Creates @cpu.frequency@ in @{Hz}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_cpu_frequency_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_cpu_frequency_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "cpu.frequency" (Just "{Hz}") (Just "Deprecated. Use `system.cpu.frequency` instead.") advisory callbacks
+
+
+{- | Creates @cpu.time@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "cpu.time" (Just "s") (Just "Deprecated. Use `system.cpu.time` instead.") advisory
+
+
+{- | Creates @cpu.time@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "cpu.time" (Just "s") (Just "Deprecated. Use `system.cpu.time` instead.") advisory callbacks
+
+
+{- | Creates @cpu.utilization@ in @1@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_cpu_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_cpu_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "cpu.utilization" (Just "1") (Just "Deprecated. Use `system.cpu.utilization` instead.") advisory
+
+
+{- | Creates @cpu.utilization@ in @1@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_cpu_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_cpu_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "cpu.utilization" (Just "1") (Just "Deprecated. Use `system.cpu.utilization` instead.") advisory callbacks
+
+
+{- | Creates @cpython.gc.collected_objects@ in @{object}@.
+Stability: development.
+-}
+create_cpython_gc_collectedObjects_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_cpython_gc_collectedObjects_int64 meter advisory =
+  meterCreateCounterInt64 meter "cpython.gc.collected_objects" (Just "{object}") (Just "The total number of objects collected inside a generation since interpreter start.") advisory
+
+
+{- | Creates @cpython.gc.collected_objects@ in @{object}@.
+Stability: development.
+-}
+create_observable_cpython_gc_collectedObjects_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_cpython_gc_collectedObjects_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "cpython.gc.collected_objects" (Just "{object}") (Just "The total number of objects collected inside a generation since interpreter start.") advisory callbacks
+
+
+{- | Creates @cpython.gc.collections@ in @{collection}@.
+Stability: development.
+-}
+create_cpython_gc_collections_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_cpython_gc_collections_int64 meter advisory =
+  meterCreateCounterInt64 meter "cpython.gc.collections" (Just "{collection}") (Just "The number of times a generation was collected since interpreter start.") advisory
+
+
+{- | Creates @cpython.gc.collections@ in @{collection}@.
+Stability: development.
+-}
+create_observable_cpython_gc_collections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_cpython_gc_collections_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "cpython.gc.collections" (Just "{collection}") (Just "The number of times a generation was collected since interpreter start.") advisory callbacks
+
+
+{- | Creates @cpython.gc.uncollectable_objects@ in @{object}@.
+Stability: development.
+-}
+create_cpython_gc_uncollectableObjects_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_cpython_gc_uncollectableObjects_int64 meter advisory =
+  meterCreateCounterInt64 meter "cpython.gc.uncollectable_objects" (Just "{object}") (Just "The total number of objects which were found to be uncollectable inside a generation since interpreter start.") advisory
+
+
+{- | Creates @cpython.gc.uncollectable_objects@ in @{object}@.
+Stability: development.
+-}
+create_observable_cpython_gc_uncollectableObjects_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_cpython_gc_uncollectableObjects_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "cpython.gc.uncollectable_objects" (Just "{object}") (Just "The total number of objects which were found to be uncollectable inside a generation since interpreter start.") advisory callbacks
+
+
+{- | Creates @db.client.connection.count@ in @{connection}@.
+Stability: development.
+-}
+create_db_client_connection_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connection_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connection.count" (Just "{connection}") (Just "The number of connections that are currently in state described by the `state` attribute.") advisory
+
+
+{- | Creates @db.client.connection.count@ in @{connection}@.
+Stability: development.
+-}
+create_observable_db_client_connection_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connection_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connection.count" (Just "{connection}") (Just "The number of connections that are currently in state described by the `state` attribute.") advisory callbacks
+
+
+{- | Creates @db.client.connection.create_time@ in @s@.
+Stability: development.
+-}
+create_db_client_connection_createTime :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_connection_createTime meter advisory =
+  meterCreateHistogram meter "db.client.connection.create_time" (Just "s") (Just "The time it took to create a new connection.") advisory
+
+
+{- | Creates @db.client.connection.idle.max@ in @{connection}@.
+Stability: development.
+-}
+create_db_client_connection_idle_max_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connection_idle_max_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connection.idle.max" (Just "{connection}") (Just "The maximum number of idle open connections allowed.") advisory
+
+
+{- | Creates @db.client.connection.idle.max@ in @{connection}@.
+Stability: development.
+-}
+create_observable_db_client_connection_idle_max_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connection_idle_max_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connection.idle.max" (Just "{connection}") (Just "The maximum number of idle open connections allowed.") advisory callbacks
+
+
+{- | Creates @db.client.connection.idle.min@ in @{connection}@.
+Stability: development.
+-}
+create_db_client_connection_idle_min_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connection_idle_min_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connection.idle.min" (Just "{connection}") (Just "The minimum number of idle open connections allowed.") advisory
+
+
+{- | Creates @db.client.connection.idle.min@ in @{connection}@.
+Stability: development.
+-}
+create_observable_db_client_connection_idle_min_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connection_idle_min_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connection.idle.min" (Just "{connection}") (Just "The minimum number of idle open connections allowed.") advisory callbacks
+
+
+{- | Creates @db.client.connection.limit@ in @{connection}@.
+Stability: development.
+-}
+create_db_client_connection_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connection_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connection.limit" (Just "{connection}") (Just "The maximum number of open connections allowed.") advisory
+
+
+{- | Creates @db.client.connection.limit@ in @{connection}@.
+Stability: development.
+-}
+create_observable_db_client_connection_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connection_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connection.limit" (Just "{connection}") (Just "The maximum number of open connections allowed.") advisory callbacks
+
+
+{- | Creates @db.client.connection.max@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connection_max_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connection_max_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connection.max" (Just "{connection}") (Just "Deprecated, use `db.client.connection.limit` instead.") advisory
+
+
+{- | Creates @db.client.connection.max@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connection_max_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connection_max_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connection.max" (Just "{connection}") (Just "Deprecated, use `db.client.connection.limit` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connection.pending_requests@ in @{request}@.
+Stability: development.
+-}
+create_db_client_connection_pendingRequests_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connection_pendingRequests_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connection.pending_requests" (Just "{request}") (Just "The number of current pending requests for an open connection.") advisory
+
+
+{- | Creates @db.client.connection.pending_requests@ in @{request}@.
+Stability: development.
+-}
+create_observable_db_client_connection_pendingRequests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connection_pendingRequests_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connection.pending_requests" (Just "{request}") (Just "The number of current pending requests for an open connection.") advisory callbacks
+
+
+{- | Creates @db.client.connection.timeouts@ in @{timeout}@.
+Stability: development.
+-}
+create_db_client_connection_timeouts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_db_client_connection_timeouts_int64 meter advisory =
+  meterCreateCounterInt64 meter "db.client.connection.timeouts" (Just "{timeout}") (Just "The number of connection timeouts that have occurred trying to obtain a connection from the pool.") advisory
+
+
+{- | Creates @db.client.connection.timeouts@ in @{timeout}@.
+Stability: development.
+-}
+create_observable_db_client_connection_timeouts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_db_client_connection_timeouts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "db.client.connection.timeouts" (Just "{timeout}") (Just "The number of connection timeouts that have occurred trying to obtain a connection from the pool.") advisory callbacks
+
+
+{- | Creates @db.client.connection.use_time@ in @s@.
+Stability: development.
+-}
+create_db_client_connection_useTime :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_connection_useTime meter advisory =
+  meterCreateHistogram meter "db.client.connection.use_time" (Just "s") (Just "The time between borrowing a connection and returning it to the pool.") advisory
+
+
+{- | Creates @db.client.connection.wait_time@ in @s@.
+Stability: development.
+-}
+create_db_client_connection_waitTime :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_connection_waitTime meter advisory =
+  meterCreateHistogram meter "db.client.connection.wait_time" (Just "s") (Just "The time it took to obtain an open connection from the pool.") advisory
+
+
+{- | Creates @db.client.connections.create_time@ in @ms@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_createTime :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_connections_createTime meter advisory =
+  meterCreateHistogram meter "db.client.connections.create_time" (Just "ms") (Just "Deprecated, use `db.client.connection.create_time` instead. Note: the unit also changed from `ms` to `s`.") advisory
+
+
+{- | Creates @db.client.connections.idle.max@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_idle_max_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connections_idle_max_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connections.idle.max" (Just "{connection}") (Just "Deprecated, use `db.client.connection.idle.max` instead.") advisory
+
+
+{- | Creates @db.client.connections.idle.max@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connections_idle_max_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connections_idle_max_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connections.idle.max" (Just "{connection}") (Just "Deprecated, use `db.client.connection.idle.max` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connections.idle.min@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_idle_min_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connections_idle_min_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connections.idle.min" (Just "{connection}") (Just "Deprecated, use `db.client.connection.idle.min` instead.") advisory
+
+
+{- | Creates @db.client.connections.idle.min@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connections_idle_min_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connections_idle_min_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connections.idle.min" (Just "{connection}") (Just "Deprecated, use `db.client.connection.idle.min` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connections.max@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_max_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connections_max_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connections.max" (Just "{connection}") (Just "Deprecated, use `db.client.connection.limit` instead.") advisory
+
+
+{- | Creates @db.client.connections.max@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connections_max_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connections_max_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connections.max" (Just "{connection}") (Just "Deprecated, use `db.client.connection.limit` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connections.pending_requests@ in @{request}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_pendingRequests_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connections_pendingRequests_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connections.pending_requests" (Just "{request}") (Just "Deprecated, use `db.client.connection.pending_requests` instead.") advisory
+
+
+{- | Creates @db.client.connections.pending_requests@ in @{request}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connections_pendingRequests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connections_pendingRequests_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connections.pending_requests" (Just "{request}") (Just "Deprecated, use `db.client.connection.pending_requests` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connections.timeouts@ in @{timeout}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_timeouts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_db_client_connections_timeouts_int64 meter advisory =
+  meterCreateCounterInt64 meter "db.client.connections.timeouts" (Just "{timeout}") (Just "Deprecated, use `db.client.connection.timeouts` instead.") advisory
+
+
+{- | Creates @db.client.connections.timeouts@ in @{timeout}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connections_timeouts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_db_client_connections_timeouts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "db.client.connections.timeouts" (Just "{timeout}") (Just "Deprecated, use `db.client.connection.timeouts` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connections.usage@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_connections_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.connections.usage" (Just "{connection}") (Just "Deprecated, use `db.client.connection.count` instead.") advisory
+
+
+{- | Creates @db.client.connections.usage@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_connections_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_connections_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.connections.usage" (Just "{connection}") (Just "Deprecated, use `db.client.connection.count` instead.") advisory callbacks
+
+
+{- | Creates @db.client.connections.use_time@ in @ms@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_useTime :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_connections_useTime meter advisory =
+  meterCreateHistogram meter "db.client.connections.use_time" (Just "ms") (Just "Deprecated, use `db.client.connection.use_time` instead. Note: the unit also changed from `ms` to `s`.") advisory
+
+
+{- | Creates @db.client.connections.wait_time@ in @ms@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_connections_waitTime :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_connections_waitTime meter advisory =
+  meterCreateHistogram meter "db.client.connections.wait_time" (Just "ms") (Just "Deprecated, use `db.client.connection.wait_time` instead. Note: the unit also changed from `ms` to `s`.") advisory
+
+
+{- | Creates @db.client.cosmosdb.active_instance.count@ in @{instance}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_cosmosdb_activeInstance_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_db_client_cosmosdb_activeInstance_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "db.client.cosmosdb.active_instance.count" (Just "{instance}") (Just "Deprecated, use `azure.cosmosdb.client.active_instance.count` instead.") advisory
+
+
+{- | Creates @db.client.cosmosdb.active_instance.count@ in @{instance}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_db_client_cosmosdb_activeInstance_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_db_client_cosmosdb_activeInstance_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "db.client.cosmosdb.active_instance.count" (Just "{instance}") (Just "Deprecated, use `azure.cosmosdb.client.active_instance.count` instead.") advisory callbacks
+
+
+{- | Creates @db.client.cosmosdb.operation.request_charge@ in @{request_unit}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_db_client_cosmosdb_operation_requestCharge :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_cosmosdb_operation_requestCharge meter advisory =
+  meterCreateHistogram meter "db.client.cosmosdb.operation.request_charge" (Just "{request_unit}") (Just "Deprecated, use `azure.cosmosdb.client.operation.request_charge` instead.") advisory
+
+
+{- | Creates @db.client.operation.duration@ in @s@.
+Stability: stable.
+-}
+create_db_client_operation_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_operation_duration meter advisory =
+  meterCreateHistogram meter "db.client.operation.duration" (Just "s") (Just "Duration of database client operations.") advisory
+
+
+{- | Creates @db.client.response.returned_rows@ in @{row}@.
+Stability: development.
+-}
+create_db_client_response_returnedRows :: Meter -> AdvisoryParameters -> IO Histogram
+create_db_client_response_returnedRows meter advisory =
+  meterCreateHistogram meter "db.client.response.returned_rows" (Just "{row}") (Just "The actual number of records returned by the database operation.") advisory
+
+
+{- | Creates @dns.lookup.duration@ in @s@.
+Stability: development.
+-}
+create_dns_lookup_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_dns_lookup_duration meter advisory =
+  meterCreateHistogram meter "dns.lookup.duration" (Just "s") (Just "Measures the time taken to perform a DNS lookup.") advisory
+
+
+{- | Creates @dotnet.assembly.count@ in @{assembly}@.
+Stability: stable.
+-}
+create_dotnet_assembly_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_assembly_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.assembly.count" (Just "{assembly}") (Just "The number of .NET assemblies that are currently loaded.") advisory
+
+
+{- | Creates @dotnet.assembly.count@ in @{assembly}@.
+Stability: stable.
+-}
+create_observable_dotnet_assembly_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_assembly_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.assembly.count" (Just "{assembly}") (Just "The number of .NET assemblies that are currently loaded.") advisory callbacks
+
+
+{- | Creates @dotnet.exceptions@ in @{exception}@.
+Stability: stable.
+-}
+create_dotnet_exceptions_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_exceptions_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.exceptions" (Just "{exception}") (Just "The number of exceptions that have been thrown in managed code.") advisory
+
+
+{- | Creates @dotnet.exceptions@ in @{exception}@.
+Stability: stable.
+-}
+create_observable_dotnet_exceptions_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_exceptions_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.exceptions" (Just "{exception}") (Just "The number of exceptions that have been thrown in managed code.") advisory callbacks
+
+
+{- | Creates @dotnet.gc.collections@ in @{collection}@.
+Stability: stable.
+-}
+create_dotnet_gc_collections_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_gc_collections_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.gc.collections" (Just "{collection}") (Just "The number of garbage collections that have occurred since the process has started.") advisory
+
+
+{- | Creates @dotnet.gc.collections@ in @{collection}@.
+Stability: stable.
+-}
+create_observable_dotnet_gc_collections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_gc_collections_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.gc.collections" (Just "{collection}") (Just "The number of garbage collections that have occurred since the process has started.") advisory callbacks
+
+
+{- | Creates @dotnet.gc.heap.total_allocated@ in @By@.
+Stability: stable.
+-}
+create_dotnet_gc_heap_totalAllocated_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_gc_heap_totalAllocated_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.gc.heap.total_allocated" (Just "By") (Just "The _approximate_ number of bytes allocated on the managed GC heap since the process has started. The returned value does not include any native allocations.\n") advisory
+
+
+{- | Creates @dotnet.gc.heap.total_allocated@ in @By@.
+Stability: stable.
+-}
+create_observable_dotnet_gc_heap_totalAllocated_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_gc_heap_totalAllocated_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.gc.heap.total_allocated" (Just "By") (Just "The _approximate_ number of bytes allocated on the managed GC heap since the process has started. The returned value does not include any native allocations.\n") advisory callbacks
+
+
+{- | Creates @dotnet.gc.last_collection.heap.fragmentation.size@ in @By@.
+Stability: stable.
+-}
+create_dotnet_gc_lastCollection_heap_fragmentation_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_gc_lastCollection_heap_fragmentation_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.gc.last_collection.heap.fragmentation.size" (Just "By") (Just "The heap fragmentation, as observed during the latest garbage collection.\n") advisory
+
+
+{- | Creates @dotnet.gc.last_collection.heap.fragmentation.size@ in @By@.
+Stability: stable.
+-}
+create_observable_dotnet_gc_lastCollection_heap_fragmentation_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_gc_lastCollection_heap_fragmentation_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.gc.last_collection.heap.fragmentation.size" (Just "By") (Just "The heap fragmentation, as observed during the latest garbage collection.\n") advisory callbacks
+
+
+{- | Creates @dotnet.gc.last_collection.heap.size@ in @By@.
+Stability: stable.
+-}
+create_dotnet_gc_lastCollection_heap_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_gc_lastCollection_heap_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.gc.last_collection.heap.size" (Just "By") (Just "The managed GC heap size (including fragmentation), as observed during the latest garbage collection.\n") advisory
+
+
+{- | Creates @dotnet.gc.last_collection.heap.size@ in @By@.
+Stability: stable.
+-}
+create_observable_dotnet_gc_lastCollection_heap_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_gc_lastCollection_heap_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.gc.last_collection.heap.size" (Just "By") (Just "The managed GC heap size (including fragmentation), as observed during the latest garbage collection.\n") advisory callbacks
+
+
+{- | Creates @dotnet.gc.last_collection.memory.committed_size@ in @By@.
+Stability: stable.
+-}
+create_dotnet_gc_lastCollection_memory_committedSize_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_gc_lastCollection_memory_committedSize_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.gc.last_collection.memory.committed_size" (Just "By") (Just "The amount of committed virtual memory in use by the .NET GC, as observed during the latest garbage collection.\n") advisory
+
+
+{- | Creates @dotnet.gc.last_collection.memory.committed_size@ in @By@.
+Stability: stable.
+-}
+create_observable_dotnet_gc_lastCollection_memory_committedSize_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_gc_lastCollection_memory_committedSize_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.gc.last_collection.memory.committed_size" (Just "By") (Just "The amount of committed virtual memory in use by the .NET GC, as observed during the latest garbage collection.\n") advisory callbacks
+
+
+{- | Creates @dotnet.gc.pause.time@ in @s@.
+Stability: stable.
+-}
+create_dotnet_gc_pause_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_dotnet_gc_pause_time_double meter advisory =
+  meterCreateCounterDouble meter "dotnet.gc.pause.time" (Just "s") (Just "The total amount of time paused in GC since the process has started.") advisory
+
+
+{- | Creates @dotnet.gc.pause.time@ in @s@.
+Stability: stable.
+-}
+create_observable_dotnet_gc_pause_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_dotnet_gc_pause_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "dotnet.gc.pause.time" (Just "s") (Just "The total amount of time paused in GC since the process has started.") advisory callbacks
+
+
+{- | Creates @dotnet.jit.compilation.time@ in @s@.
+Stability: stable.
+-}
+create_dotnet_jit_compilation_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_dotnet_jit_compilation_time_double meter advisory =
+  meterCreateCounterDouble meter "dotnet.jit.compilation.time" (Just "s") (Just "The amount of time the JIT compiler has spent compiling methods since the process has started.\n") advisory
+
+
+{- | Creates @dotnet.jit.compilation.time@ in @s@.
+Stability: stable.
+-}
+create_observable_dotnet_jit_compilation_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_dotnet_jit_compilation_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "dotnet.jit.compilation.time" (Just "s") (Just "The amount of time the JIT compiler has spent compiling methods since the process has started.\n") advisory callbacks
+
+
+{- | Creates @dotnet.jit.compiled_il.size@ in @By@.
+Stability: stable.
+-}
+create_dotnet_jit_compiledIl_size_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_jit_compiledIl_size_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.jit.compiled_il.size" (Just "By") (Just "Count of bytes of intermediate language that have been compiled since the process has started.") advisory
+
+
+{- | Creates @dotnet.jit.compiled_il.size@ in @By@.
+Stability: stable.
+-}
+create_observable_dotnet_jit_compiledIl_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_jit_compiledIl_size_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.jit.compiled_il.size" (Just "By") (Just "Count of bytes of intermediate language that have been compiled since the process has started.") advisory callbacks
+
+
+{- | Creates @dotnet.jit.compiled_methods@ in @{method}@.
+Stability: stable.
+-}
+create_dotnet_jit_compiledMethods_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_jit_compiledMethods_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.jit.compiled_methods" (Just "{method}") (Just "The number of times the JIT compiler (re)compiled methods since the process has started.\n") advisory
+
+
+{- | Creates @dotnet.jit.compiled_methods@ in @{method}@.
+Stability: stable.
+-}
+create_observable_dotnet_jit_compiledMethods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_jit_compiledMethods_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.jit.compiled_methods" (Just "{method}") (Just "The number of times the JIT compiler (re)compiled methods since the process has started.\n") advisory callbacks
+
+
+{- | Creates @dotnet.monitor.lock_contentions@ in @{contention}@.
+Stability: stable.
+-}
+create_dotnet_monitor_lockContentions_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_monitor_lockContentions_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.monitor.lock_contentions" (Just "{contention}") (Just "The number of times there was contention when trying to acquire a monitor lock since the process has started.\n") advisory
+
+
+{- | Creates @dotnet.monitor.lock_contentions@ in @{contention}@.
+Stability: stable.
+-}
+create_observable_dotnet_monitor_lockContentions_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_monitor_lockContentions_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.monitor.lock_contentions" (Just "{contention}") (Just "The number of times there was contention when trying to acquire a monitor lock since the process has started.\n") advisory callbacks
+
+
+{- | Creates @dotnet.process.cpu.count@ in @{cpu}@.
+Stability: stable.
+-}
+create_dotnet_process_cpu_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_process_cpu_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.process.cpu.count" (Just "{cpu}") (Just "The number of processors available to the process.") advisory
+
+
+{- | Creates @dotnet.process.cpu.count@ in @{cpu}@.
+Stability: stable.
+-}
+create_observable_dotnet_process_cpu_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_process_cpu_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.process.cpu.count" (Just "{cpu}") (Just "The number of processors available to the process.") advisory callbacks
+
+
+{- | Creates @dotnet.process.cpu.time@ in @s@.
+Stability: stable.
+-}
+create_dotnet_process_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_dotnet_process_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "dotnet.process.cpu.time" (Just "s") (Just "CPU time used by the process.") advisory
+
+
+{- | Creates @dotnet.process.cpu.time@ in @s@.
+Stability: stable.
+-}
+create_observable_dotnet_process_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_dotnet_process_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "dotnet.process.cpu.time" (Just "s") (Just "CPU time used by the process.") advisory callbacks
+
+
+{- | Creates @dotnet.process.memory.working_set@ in @By@.
+Stability: stable.
+-}
+create_dotnet_process_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_process_memory_workingSet_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.process.memory.working_set" (Just "By") (Just "The number of bytes of physical memory mapped to the process context.") advisory
+
+
+{- | Creates @dotnet.process.memory.working_set@ in @By@.
+Stability: stable.
+-}
+create_observable_dotnet_process_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_process_memory_workingSet_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.process.memory.working_set" (Just "By") (Just "The number of bytes of physical memory mapped to the process context.") advisory callbacks
+
+
+{- | Creates @dotnet.thread_pool.queue.length@ in @{work_item}@.
+Stability: stable.
+-}
+create_dotnet_threadPool_queue_length_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_threadPool_queue_length_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.thread_pool.queue.length" (Just "{work_item}") (Just "The number of work items that are currently queued to be processed by the thread pool.\n") advisory
+
+
+{- | Creates @dotnet.thread_pool.queue.length@ in @{work_item}@.
+Stability: stable.
+-}
+create_observable_dotnet_threadPool_queue_length_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_threadPool_queue_length_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.thread_pool.queue.length" (Just "{work_item}") (Just "The number of work items that are currently queued to be processed by the thread pool.\n") advisory callbacks
+
+
+{- | Creates @dotnet.thread_pool.thread.count@ in @{thread}@.
+Stability: stable.
+-}
+create_dotnet_threadPool_thread_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_threadPool_thread_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.thread_pool.thread.count" (Just "{thread}") (Just "The number of thread pool threads that currently exist.") advisory
+
+
+{- | Creates @dotnet.thread_pool.thread.count@ in @{thread}@.
+Stability: stable.
+-}
+create_observable_dotnet_threadPool_thread_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_threadPool_thread_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.thread_pool.thread.count" (Just "{thread}") (Just "The number of thread pool threads that currently exist.") advisory callbacks
+
+
+{- | Creates @dotnet.thread_pool.work_item.count@ in @{work_item}@.
+Stability: stable.
+-}
+create_dotnet_threadPool_workItem_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_dotnet_threadPool_workItem_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "dotnet.thread_pool.work_item.count" (Just "{work_item}") (Just "The number of work items that the thread pool has completed since the process has started.\n") advisory
+
+
+{- | Creates @dotnet.thread_pool.work_item.count@ in @{work_item}@.
+Stability: stable.
+-}
+create_observable_dotnet_threadPool_workItem_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_dotnet_threadPool_workItem_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "dotnet.thread_pool.work_item.count" (Just "{work_item}") (Just "The number of work items that the thread pool has completed since the process has started.\n") advisory callbacks
+
+
+{- | Creates @dotnet.timer.count@ in @{timer}@.
+Stability: stable.
+-}
+create_dotnet_timer_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_dotnet_timer_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "dotnet.timer.count" (Just "{timer}") (Just "The number of timer instances that are currently active.") advisory
+
+
+{- | Creates @dotnet.timer.count@ in @{timer}@.
+Stability: stable.
+-}
+create_observable_dotnet_timer_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_dotnet_timer_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "dotnet.timer.count" (Just "{timer}") (Just "The number of timer instances that are currently active.") advisory callbacks
+
+
+{- | Creates @faas.coldstarts@ in @{coldstart}@.
+Stability: development.
+-}
+create_faas_coldstarts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_faas_coldstarts_int64 meter advisory =
+  meterCreateCounterInt64 meter "faas.coldstarts" (Just "{coldstart}") (Just "Number of invocation cold starts.") advisory
+
+
+{- | Creates @faas.coldstarts@ in @{coldstart}@.
+Stability: development.
+-}
+create_observable_faas_coldstarts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_faas_coldstarts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "faas.coldstarts" (Just "{coldstart}") (Just "Number of invocation cold starts.") advisory callbacks
+
+
+{- | Creates @faas.cpu_usage@ in @s@.
+Stability: development.
+-}
+create_faas_cpuUsage :: Meter -> AdvisoryParameters -> IO Histogram
+create_faas_cpuUsage meter advisory =
+  meterCreateHistogram meter "faas.cpu_usage" (Just "s") (Just "Distribution of CPU usage per invocation.") advisory
+
+
+{- | Creates @faas.errors@ in @{error}@.
+Stability: development.
+-}
+create_faas_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_faas_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "faas.errors" (Just "{error}") (Just "Number of invocation errors.") advisory
+
+
+{- | Creates @faas.errors@ in @{error}@.
+Stability: development.
+-}
+create_observable_faas_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_faas_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "faas.errors" (Just "{error}") (Just "Number of invocation errors.") advisory callbacks
+
+
+{- | Creates @faas.init_duration@ in @s@.
+Stability: development.
+-}
+create_faas_initDuration :: Meter -> AdvisoryParameters -> IO Histogram
+create_faas_initDuration meter advisory =
+  meterCreateHistogram meter "faas.init_duration" (Just "s") (Just "Measures the duration of the function's initialization, such as a cold start.") advisory
+
+
+{- | Creates @faas.invocations@ in @{invocation}@.
+Stability: development.
+-}
+create_faas_invocations_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_faas_invocations_int64 meter advisory =
+  meterCreateCounterInt64 meter "faas.invocations" (Just "{invocation}") (Just "Number of successful invocations.") advisory
+
+
+{- | Creates @faas.invocations@ in @{invocation}@.
+Stability: development.
+-}
+create_observable_faas_invocations_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_faas_invocations_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "faas.invocations" (Just "{invocation}") (Just "Number of successful invocations.") advisory callbacks
+
+
+{- | Creates @faas.invoke_duration@ in @s@.
+Stability: development.
+-}
+create_faas_invokeDuration :: Meter -> AdvisoryParameters -> IO Histogram
+create_faas_invokeDuration meter advisory =
+  meterCreateHistogram meter "faas.invoke_duration" (Just "s") (Just "Measures the duration of the function's logic execution.") advisory
+
+
+{- | Creates @faas.mem_usage@ in @By@.
+Stability: development.
+-}
+create_faas_memUsage :: Meter -> AdvisoryParameters -> IO Histogram
+create_faas_memUsage meter advisory =
+  meterCreateHistogram meter "faas.mem_usage" (Just "By") (Just "Distribution of max memory usage per invocation.") advisory
+
+
+{- | Creates @faas.net_io@ in @By@.
+Stability: development.
+-}
+create_faas_netIo :: Meter -> AdvisoryParameters -> IO Histogram
+create_faas_netIo meter advisory =
+  meterCreateHistogram meter "faas.net_io" (Just "By") (Just "Distribution of net I/O usage per invocation.") advisory
+
+
+{- | Creates @faas.timeouts@ in @{timeout}@.
+Stability: development.
+-}
+create_faas_timeouts_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_faas_timeouts_int64 meter advisory =
+  meterCreateCounterInt64 meter "faas.timeouts" (Just "{timeout}") (Just "Number of invocation timeouts.") advisory
+
+
+{- | Creates @faas.timeouts@ in @{timeout}@.
+Stability: development.
+-}
+create_observable_faas_timeouts_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_faas_timeouts_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "faas.timeouts" (Just "{timeout}") (Just "Number of invocation timeouts.") advisory callbacks
+
+
+{- | Creates @gen_ai.client.operation.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_client_operation_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_client_operation_duration meter advisory =
+  meterCreateHistogram meter "gen_ai.client.operation.duration" (Just "s") (Just "GenAI operation duration.") advisory
+
+
+{- | Creates @gen_ai.client.operation.time_per_output_chunk@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_client_operation_timePerOutputChunk :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_client_operation_timePerOutputChunk meter advisory =
+  meterCreateHistogram meter "gen_ai.client.operation.time_per_output_chunk" (Just "s") (Just "Time per output chunk, recorded for each chunk received after the first one, measured as the time elapsed from the end of the previous chunk to the end of the current chunk.\n") advisory
+
+
+{- | Creates @gen_ai.client.operation.time_to_first_chunk@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_client_operation_timeToFirstChunk :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_client_operation_timeToFirstChunk meter advisory =
+  meterCreateHistogram meter "gen_ai.client.operation.time_to_first_chunk" (Just "s") (Just "Time to receive the first chunk, measured from when the client issues the generation request to when the first chunk is received in the response stream.") advisory
+
+
+{- | Creates @gen_ai.client.token.usage@ in @{token}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_client_token_usage :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_client_token_usage meter advisory =
+  meterCreateHistogram meter "gen_ai.client.token.usage" (Just "{token}") (Just "Number of input and output tokens used.") advisory
+
+
+{- | Creates @gen_ai.server.request.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_server_request_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_server_request_duration meter advisory =
+  meterCreateHistogram meter "gen_ai.server.request.duration" (Just "s") (Just "Generative AI server request duration such as time-to-last byte or last output token.") advisory
+
+
+{- | Creates @gen_ai.server.time_per_output_token@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_server_timePerOutputToken :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_server_timePerOutputToken meter advisory =
+  meterCreateHistogram meter "gen_ai.server.time_per_output_token" (Just "s") (Just "Time per output token generated after the first token for successful responses.") advisory
+
+
+{- | Creates @gen_ai.server.time_to_first_token@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_genAi_server_timeToFirstToken :: Meter -> AdvisoryParameters -> IO Histogram
+create_genAi_server_timeToFirstToken meter advisory =
+  meterCreateHistogram meter "gen_ai.server.time_to_first_token" (Just "s") (Just "Time to generate first token for successful responses.") advisory
+
+
+{- | Creates @go.config.gogc@ in @%@.
+Stability: development.
+-}
+create_go_config_gogc_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_go_config_gogc_double meter advisory =
+  meterCreateUpDownCounterDouble meter "go.config.gogc" (Just "%") (Just "Heap size target percentage configured by the user, otherwise 100.") advisory
+
+
+{- | Creates @go.config.gogc@ in @%@.
+Stability: development.
+-}
+create_observable_go_config_gogc_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_go_config_gogc_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "go.config.gogc" (Just "%") (Just "Heap size target percentage configured by the user, otherwise 100.") advisory callbacks
+
+
+{- | Creates @go.cpu.time@ in @s@.
+Stability: development.
+-}
+create_go_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_go_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "go.cpu.time" (Just "s") (Just "Estimated CPU time spent by the Go runtime.") advisory
+
+
+{- | Creates @go.cpu.time@ in @s@.
+Stability: development.
+-}
+create_observable_go_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_go_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "go.cpu.time" (Just "s") (Just "Estimated CPU time spent by the Go runtime.") advisory callbacks
+
+
+{- | Creates @go.goroutine.count@ in @{goroutine}@.
+Stability: development.
+-}
+create_go_goroutine_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_go_goroutine_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "go.goroutine.count" (Just "{goroutine}") (Just "Count of live goroutines.") advisory
+
+
+{- | Creates @go.goroutine.count@ in @{goroutine}@.
+Stability: development.
+-}
+create_observable_go_goroutine_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_go_goroutine_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "go.goroutine.count" (Just "{goroutine}") (Just "Count of live goroutines.") advisory callbacks
+
+
+{- | Creates @go.memory.allocated@ in @By@.
+Stability: development.
+-}
+create_go_memory_allocated_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_go_memory_allocated_int64 meter advisory =
+  meterCreateCounterInt64 meter "go.memory.allocated" (Just "By") (Just "Memory allocated to the heap by the application.") advisory
+
+
+{- | Creates @go.memory.allocated@ in @By@.
+Stability: development.
+-}
+create_observable_go_memory_allocated_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_go_memory_allocated_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "go.memory.allocated" (Just "By") (Just "Memory allocated to the heap by the application.") advisory callbacks
+
+
+{- | Creates @go.memory.allocations@ in @{allocation}@.
+Stability: development.
+-}
+create_go_memory_allocations_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_go_memory_allocations_int64 meter advisory =
+  meterCreateCounterInt64 meter "go.memory.allocations" (Just "{allocation}") (Just "Count of allocations to the heap by the application.") advisory
+
+
+{- | Creates @go.memory.allocations@ in @{allocation}@.
+Stability: development.
+-}
+create_observable_go_memory_allocations_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_go_memory_allocations_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "go.memory.allocations" (Just "{allocation}") (Just "Count of allocations to the heap by the application.") advisory callbacks
+
+
+{- | Creates @go.memory.gc.cycles@ in @{gc_cycle}@.
+Stability: development.
+-}
+create_go_memory_gc_cycles_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_go_memory_gc_cycles_int64 meter advisory =
+  meterCreateCounterInt64 meter "go.memory.gc.cycles" (Just "{gc_cycle}") (Just "Number of completed GC cycles.") advisory
+
+
+{- | Creates @go.memory.gc.cycles@ in @{gc_cycle}@.
+Stability: development.
+-}
+create_observable_go_memory_gc_cycles_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_go_memory_gc_cycles_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "go.memory.gc.cycles" (Just "{gc_cycle}") (Just "Number of completed GC cycles.") advisory callbacks
+
+
+{- | Creates @go.memory.gc.goal@ in @By@.
+Stability: development.
+-}
+create_go_memory_gc_goal_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_go_memory_gc_goal_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "go.memory.gc.goal" (Just "By") (Just "Heap size target for the end of the GC cycle.") advisory
+
+
+{- | Creates @go.memory.gc.goal@ in @By@.
+Stability: development.
+-}
+create_observable_go_memory_gc_goal_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_go_memory_gc_goal_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "go.memory.gc.goal" (Just "By") (Just "Heap size target for the end of the GC cycle.") advisory callbacks
+
+
+{- | Creates @go.memory.gc.pause.duration@ in @s@.
+Stability: development.
+-}
+create_go_memory_gc_pause_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_go_memory_gc_pause_duration meter advisory =
+  meterCreateHistogram meter "go.memory.gc.pause.duration" (Just "s") (Just "Distribution of individual GC-related stop-the-world pause latencies. This is the time from deciding to stop the world until the world is started again.") advisory
+
+
+{- | Creates @go.memory.limit@ in @By@.
+Stability: development.
+-}
+create_go_memory_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_go_memory_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "go.memory.limit" (Just "By") (Just "Go runtime memory limit configured by the user, if a limit exists.") advisory
+
+
+{- | Creates @go.memory.limit@ in @By@.
+Stability: development.
+-}
+create_observable_go_memory_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_go_memory_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "go.memory.limit" (Just "By") (Just "Go runtime memory limit configured by the user, if a limit exists.") advisory callbacks
+
+
+{- | Creates @go.memory.used@ in @By@.
+Stability: development.
+-}
+create_go_memory_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_go_memory_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "go.memory.used" (Just "By") (Just "Memory used by the Go runtime.") advisory
+
+
+{- | Creates @go.memory.used@ in @By@.
+Stability: development.
+-}
+create_observable_go_memory_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_go_memory_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "go.memory.used" (Just "By") (Just "Memory used by the Go runtime.") advisory callbacks
+
+
+{- | Creates @go.processor.limit@ in @{thread}@.
+Stability: development.
+-}
+create_go_processor_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_go_processor_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "go.processor.limit" (Just "{thread}") (Just "The number of OS threads that can execute user-level Go code simultaneously.") advisory
+
+
+{- | Creates @go.processor.limit@ in @{thread}@.
+Stability: development.
+-}
+create_observable_go_processor_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_go_processor_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "go.processor.limit" (Just "{thread}") (Just "The number of OS threads that can execute user-level Go code simultaneously.") advisory callbacks
+
+
+{- | Creates @go.schedule.duration@ in @s@.
+Stability: development.
+-}
+create_go_schedule_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_go_schedule_duration meter advisory =
+  meterCreateHistogram meter "go.schedule.duration" (Just "s") (Just "The time goroutines have spent in the scheduler in a runnable state before actually running.") advisory
+
+
+{- | Creates @http.client.active_requests@ in @{request}@.
+Stability: development.
+-}
+create_http_client_activeRequests_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_http_client_activeRequests_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "http.client.active_requests" (Just "{request}") (Just "Number of active HTTP requests.") advisory
+
+
+{- | Creates @http.client.active_requests@ in @{request}@.
+Stability: development.
+-}
+create_observable_http_client_activeRequests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_http_client_activeRequests_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "http.client.active_requests" (Just "{request}") (Just "Number of active HTTP requests.") advisory callbacks
+
+
+{- | Creates @http.client.connection.duration@ in @s@.
+Stability: development.
+-}
+create_http_client_connection_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_client_connection_duration meter advisory =
+  meterCreateHistogram meter "http.client.connection.duration" (Just "s") (Just "The duration of the successfully established outbound HTTP connections.") advisory
+
+
+{- | Creates @http.client.open_connections@ in @{connection}@.
+Stability: development.
+-}
+create_http_client_openConnections_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_http_client_openConnections_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "http.client.open_connections" (Just "{connection}") (Just "Number of outbound HTTP connections that are currently active or idle on the client.") advisory
+
+
+{- | Creates @http.client.open_connections@ in @{connection}@.
+Stability: development.
+-}
+create_observable_http_client_openConnections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_http_client_openConnections_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "http.client.open_connections" (Just "{connection}") (Just "Number of outbound HTTP connections that are currently active or idle on the client.") advisory callbacks
+
+
+{- | Creates @http.client.request.body.size@ in @By@.
+Stability: development.
+-}
+create_http_client_request_body_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_client_request_body_size meter advisory =
+  meterCreateHistogram meter "http.client.request.body.size" (Just "By") (Just "Size of HTTP client request bodies.") advisory
+
+
+{- | Creates @http.client.request.duration@ in @s@.
+Stability: stable.
+-}
+create_http_client_request_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_client_request_duration meter advisory =
+  meterCreateHistogram meter "http.client.request.duration" (Just "s") (Just "Duration of HTTP client requests.") advisory
+
+
+{- | Creates @http.client.response.body.size@ in @By@.
+Stability: development.
+-}
+create_http_client_response_body_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_client_response_body_size meter advisory =
+  meterCreateHistogram meter "http.client.response.body.size" (Just "By") (Just "Size of HTTP client response bodies.") advisory
+
+
+{- | Creates @http.server.active_requests@ in @{request}@.
+Stability: development.
+-}
+create_http_server_activeRequests_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_http_server_activeRequests_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "http.server.active_requests" (Just "{request}") (Just "Number of active HTTP server requests.") advisory
+
+
+{- | Creates @http.server.active_requests@ in @{request}@.
+Stability: development.
+-}
+create_observable_http_server_activeRequests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_http_server_activeRequests_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "http.server.active_requests" (Just "{request}") (Just "Number of active HTTP server requests.") advisory callbacks
+
+
+{- | Creates @http.server.request.body.size@ in @By@.
+Stability: development.
+-}
+create_http_server_request_body_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_server_request_body_size meter advisory =
+  meterCreateHistogram meter "http.server.request.body.size" (Just "By") (Just "Size of HTTP server request bodies.") advisory
+
+
+{- | Creates @http.server.request.duration@ in @s@.
+Stability: stable.
+-}
+create_http_server_request_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_server_request_duration meter advisory =
+  meterCreateHistogram meter "http.server.request.duration" (Just "s") (Just "Duration of HTTP server requests.") advisory
+
+
+{- | Creates @http.server.response.body.size@ in @By@.
+Stability: development.
+-}
+create_http_server_response_body_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_http_server_response_body_size meter advisory =
+  meterCreateHistogram meter "http.server.response.body.size" (Just "By") (Just "Size of HTTP server response bodies.") advisory
+
+
+{- | Creates @hw.battery.charge@ in @1@.
+Stability: development.
+-}
+create_hw_battery_charge_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_battery_charge_double meter advisory =
+  meterCreateGaugeDouble meter "hw.battery.charge" (Just "1") (Just "Remaining fraction of battery charge.") advisory
+
+
+{- | Creates @hw.battery.charge@ in @1@.
+Stability: development.
+-}
+create_observable_hw_battery_charge_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_battery_charge_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.battery.charge" (Just "1") (Just "Remaining fraction of battery charge.") advisory callbacks
+
+
+{- | Creates @hw.battery.charge.limit@ in @1@.
+Stability: development.
+-}
+create_hw_battery_charge_limit_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_battery_charge_limit_double meter advisory =
+  meterCreateGaugeDouble meter "hw.battery.charge.limit" (Just "1") (Just "Lower limit of battery charge fraction to ensure proper operation.") advisory
+
+
+{- | Creates @hw.battery.charge.limit@ in @1@.
+Stability: development.
+-}
+create_observable_hw_battery_charge_limit_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_battery_charge_limit_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.battery.charge.limit" (Just "1") (Just "Lower limit of battery charge fraction to ensure proper operation.") advisory callbacks
+
+
+{- | Creates @hw.battery.time_left@ in @s@.
+Stability: development.
+-}
+create_hw_battery_timeLeft_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_battery_timeLeft_double meter advisory =
+  meterCreateGaugeDouble meter "hw.battery.time_left" (Just "s") (Just "Time left before battery is completely charged or discharged.") advisory
+
+
+{- | Creates @hw.battery.time_left@ in @s@.
+Stability: development.
+-}
+create_observable_hw_battery_timeLeft_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_battery_timeLeft_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.battery.time_left" (Just "s") (Just "Time left before battery is completely charged or discharged.") advisory callbacks
+
+
+{- | Creates @hw.cpu.speed@ in @Hz@.
+Stability: development.
+-}
+create_hw_cpu_speed_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_hw_cpu_speed_int64 meter advisory =
+  meterCreateGaugeInt64 meter "hw.cpu.speed" (Just "Hz") (Just "CPU current frequency.") advisory
+
+
+{- | Creates @hw.cpu.speed@ in @Hz@.
+Stability: development.
+-}
+create_observable_hw_cpu_speed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_hw_cpu_speed_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "hw.cpu.speed" (Just "Hz") (Just "CPU current frequency.") advisory callbacks
+
+
+{- | Creates @hw.cpu.speed.limit@ in @Hz@.
+Stability: development.
+-}
+create_hw_cpu_speed_limit_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_hw_cpu_speed_limit_int64 meter advisory =
+  meterCreateGaugeInt64 meter "hw.cpu.speed.limit" (Just "Hz") (Just "CPU maximum frequency.") advisory
+
+
+{- | Creates @hw.cpu.speed.limit@ in @Hz@.
+Stability: development.
+-}
+create_observable_hw_cpu_speed_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_hw_cpu_speed_limit_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "hw.cpu.speed.limit" (Just "Hz") (Just "CPU maximum frequency.") advisory callbacks
+
+
+{- | Creates @hw.energy@ in @J@.
+Stability: development.
+-}
+create_hw_energy_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_hw_energy_double meter advisory =
+  meterCreateCounterDouble meter "hw.energy" (Just "J") (Just "Energy consumed by the component.") advisory
+
+
+{- | Creates @hw.energy@ in @J@.
+Stability: development.
+-}
+create_observable_hw_energy_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_hw_energy_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "hw.energy" (Just "J") (Just "Energy consumed by the component.") advisory callbacks
+
+
+{- | Creates @hw.errors@ in @{error}@.
+Stability: development.
+-}
+create_hw_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_hw_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "hw.errors" (Just "{error}") (Just "Number of errors encountered by the component.") advisory
+
+
+{- | Creates @hw.errors@ in @{error}@.
+Stability: development.
+-}
+create_observable_hw_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_hw_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "hw.errors" (Just "{error}") (Just "Number of errors encountered by the component.") advisory callbacks
+
+
+{- | Creates @hw.fan.speed@ in @rpm@.
+Stability: development.
+-}
+create_hw_fan_speed_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_hw_fan_speed_int64 meter advisory =
+  meterCreateGaugeInt64 meter "hw.fan.speed" (Just "rpm") (Just "Fan speed in revolutions per minute.") advisory
+
+
+{- | Creates @hw.fan.speed@ in @rpm@.
+Stability: development.
+-}
+create_observable_hw_fan_speed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_hw_fan_speed_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "hw.fan.speed" (Just "rpm") (Just "Fan speed in revolutions per minute.") advisory callbacks
+
+
+{- | Creates @hw.fan.speed.limit@ in @rpm@.
+Stability: development.
+-}
+create_hw_fan_speed_limit_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_hw_fan_speed_limit_int64 meter advisory =
+  meterCreateGaugeInt64 meter "hw.fan.speed.limit" (Just "rpm") (Just "Speed limit in rpm.") advisory
+
+
+{- | Creates @hw.fan.speed.limit@ in @rpm@.
+Stability: development.
+-}
+create_observable_hw_fan_speed_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_hw_fan_speed_limit_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "hw.fan.speed.limit" (Just "rpm") (Just "Speed limit in rpm.") advisory callbacks
+
+
+{- | Creates @hw.fan.speed_ratio@ in @1@.
+Stability: development.
+-}
+create_hw_fan_speedRatio_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_fan_speedRatio_double meter advisory =
+  meterCreateGaugeDouble meter "hw.fan.speed_ratio" (Just "1") (Just "Fan speed expressed as a fraction of its maximum speed.") advisory
+
+
+{- | Creates @hw.fan.speed_ratio@ in @1@.
+Stability: development.
+-}
+create_observable_hw_fan_speedRatio_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_fan_speedRatio_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.fan.speed_ratio" (Just "1") (Just "Fan speed expressed as a fraction of its maximum speed.") advisory callbacks
+
+
+{- | Creates @hw.gpu.io@ in @By@.
+Stability: development.
+-}
+create_hw_gpu_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_hw_gpu_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "hw.gpu.io" (Just "By") (Just "Received and transmitted bytes by the GPU.") advisory
+
+
+{- | Creates @hw.gpu.io@ in @By@.
+Stability: development.
+-}
+create_observable_hw_gpu_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_hw_gpu_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "hw.gpu.io" (Just "By") (Just "Received and transmitted bytes by the GPU.") advisory callbacks
+
+
+{- | Creates @hw.gpu.memory.limit@ in @By@.
+Stability: development.
+-}
+create_hw_gpu_memory_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_gpu_memory_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.gpu.memory.limit" (Just "By") (Just "Size of the GPU memory.") advisory
+
+
+{- | Creates @hw.gpu.memory.limit@ in @By@.
+Stability: development.
+-}
+create_observable_hw_gpu_memory_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_gpu_memory_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.gpu.memory.limit" (Just "By") (Just "Size of the GPU memory.") advisory callbacks
+
+
+{- | Creates @hw.gpu.memory.usage@ in @By@.
+Stability: development.
+-}
+create_hw_gpu_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_gpu_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.gpu.memory.usage" (Just "By") (Just "GPU memory used.") advisory
+
+
+{- | Creates @hw.gpu.memory.usage@ in @By@.
+Stability: development.
+-}
+create_observable_hw_gpu_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_gpu_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.gpu.memory.usage" (Just "By") (Just "GPU memory used.") advisory callbacks
+
+
+{- | Creates @hw.gpu.memory.utilization@ in @1@.
+Stability: development.
+-}
+create_hw_gpu_memory_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_gpu_memory_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "hw.gpu.memory.utilization" (Just "1") (Just "Fraction of GPU memory used.") advisory
+
+
+{- | Creates @hw.gpu.memory.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_hw_gpu_memory_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_gpu_memory_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.gpu.memory.utilization" (Just "1") (Just "Fraction of GPU memory used.") advisory callbacks
+
+
+{- | Creates @hw.gpu.utilization@ in @1@.
+Stability: development.
+-}
+create_hw_gpu_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_gpu_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "hw.gpu.utilization" (Just "1") (Just "Fraction of time spent in a specific task.") advisory
+
+
+{- | Creates @hw.gpu.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_hw_gpu_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_gpu_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.gpu.utilization" (Just "1") (Just "Fraction of time spent in a specific task.") advisory callbacks
+
+
+{- | Creates @hw.host.ambient_temperature@ in @Cel@.
+Stability: development.
+-}
+create_hw_host_ambientTemperature_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_host_ambientTemperature_double meter advisory =
+  meterCreateGaugeDouble meter "hw.host.ambient_temperature" (Just "Cel") (Just "Ambient (external) temperature of the physical host.") advisory
+
+
+{- | Creates @hw.host.ambient_temperature@ in @Cel@.
+Stability: development.
+-}
+create_observable_hw_host_ambientTemperature_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_host_ambientTemperature_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.host.ambient_temperature" (Just "Cel") (Just "Ambient (external) temperature of the physical host.") advisory callbacks
+
+
+{- | Creates @hw.host.energy@ in @J@.
+Stability: development.
+-}
+create_hw_host_energy_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_hw_host_energy_int64 meter advisory =
+  meterCreateCounterInt64 meter "hw.host.energy" (Just "J") (Just "Total energy consumed by the entire physical host, in joules.") advisory
+
+
+{- | Creates @hw.host.energy@ in @J@.
+Stability: development.
+-}
+create_observable_hw_host_energy_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_hw_host_energy_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "hw.host.energy" (Just "J") (Just "Total energy consumed by the entire physical host, in joules.") advisory callbacks
+
+
+{- | Creates @hw.host.heating_margin@ in @Cel@.
+Stability: development.
+-}
+create_hw_host_heatingMargin_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_host_heatingMargin_double meter advisory =
+  meterCreateGaugeDouble meter "hw.host.heating_margin" (Just "Cel") (Just "By how many degrees Celsius the temperature of the physical host can be increased, before reaching a warning threshold on one of the internal sensors.\n") advisory
+
+
+{- | Creates @hw.host.heating_margin@ in @Cel@.
+Stability: development.
+-}
+create_observable_hw_host_heatingMargin_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_host_heatingMargin_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.host.heating_margin" (Just "Cel") (Just "By how many degrees Celsius the temperature of the physical host can be increased, before reaching a warning threshold on one of the internal sensors.\n") advisory callbacks
+
+
+{- | Creates @hw.host.power@ in @W@.
+Stability: development.
+-}
+create_hw_host_power_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_host_power_double meter advisory =
+  meterCreateGaugeDouble meter "hw.host.power" (Just "W") (Just "Instantaneous power consumed by the entire physical host in Watts (`hw.host.energy` is preferred).\n") advisory
+
+
+{- | Creates @hw.host.power@ in @W@.
+Stability: development.
+-}
+create_observable_hw_host_power_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_host_power_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.host.power" (Just "W") (Just "Instantaneous power consumed by the entire physical host in Watts (`hw.host.energy` is preferred).\n") advisory callbacks
+
+
+{- | Creates @hw.logical_disk.limit@ in @By@.
+Stability: development.
+-}
+create_hw_logicalDisk_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_logicalDisk_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.logical_disk.limit" (Just "By") (Just "Size of the logical disk.") advisory
+
+
+{- | Creates @hw.logical_disk.limit@ in @By@.
+Stability: development.
+-}
+create_observable_hw_logicalDisk_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_logicalDisk_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.logical_disk.limit" (Just "By") (Just "Size of the logical disk.") advisory callbacks
+
+
+{- | Creates @hw.logical_disk.usage@ in @By@.
+Stability: development.
+-}
+create_hw_logicalDisk_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_logicalDisk_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.logical_disk.usage" (Just "By") (Just "Logical disk space usage.") advisory
+
+
+{- | Creates @hw.logical_disk.usage@ in @By@.
+Stability: development.
+-}
+create_observable_hw_logicalDisk_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_logicalDisk_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.logical_disk.usage" (Just "By") (Just "Logical disk space usage.") advisory callbacks
+
+
+{- | Creates @hw.logical_disk.utilization@ in @1@.
+Stability: development.
+-}
+create_hw_logicalDisk_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_logicalDisk_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "hw.logical_disk.utilization" (Just "1") (Just "Logical disk space utilization as a fraction.") advisory
+
+
+{- | Creates @hw.logical_disk.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_hw_logicalDisk_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_logicalDisk_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.logical_disk.utilization" (Just "1") (Just "Logical disk space utilization as a fraction.") advisory callbacks
+
+
+{- | Creates @hw.memory.size@ in @By@.
+Stability: development.
+-}
+create_hw_memory_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_memory_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.memory.size" (Just "By") (Just "Size of the memory module.") advisory
+
+
+{- | Creates @hw.memory.size@ in @By@.
+Stability: development.
+-}
+create_observable_hw_memory_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_memory_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.memory.size" (Just "By") (Just "Size of the memory module.") advisory callbacks
+
+
+{- | Creates @hw.network.bandwidth.limit@ in @By/s@.
+Stability: development.
+-}
+create_hw_network_bandwidth_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_network_bandwidth_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.network.bandwidth.limit" (Just "By/s") (Just "Link speed.") advisory
+
+
+{- | Creates @hw.network.bandwidth.limit@ in @By/s@.
+Stability: development.
+-}
+create_observable_hw_network_bandwidth_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_network_bandwidth_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.network.bandwidth.limit" (Just "By/s") (Just "Link speed.") advisory callbacks
+
+
+{- | Creates @hw.network.bandwidth.utilization@ in @1@.
+Stability: development.
+-}
+create_hw_network_bandwidth_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_network_bandwidth_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "hw.network.bandwidth.utilization" (Just "1") (Just "Utilization of the network bandwidth as a fraction.") advisory
+
+
+{- | Creates @hw.network.bandwidth.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_hw_network_bandwidth_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_network_bandwidth_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.network.bandwidth.utilization" (Just "1") (Just "Utilization of the network bandwidth as a fraction.") advisory callbacks
+
+
+{- | Creates @hw.network.io@ in @By@.
+Stability: development.
+-}
+create_hw_network_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_hw_network_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "hw.network.io" (Just "By") (Just "Received and transmitted network traffic in bytes.") advisory
+
+
+{- | Creates @hw.network.io@ in @By@.
+Stability: development.
+-}
+create_observable_hw_network_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_hw_network_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "hw.network.io" (Just "By") (Just "Received and transmitted network traffic in bytes.") advisory callbacks
+
+
+{- | Creates @hw.network.packets@ in @{packet}@.
+Stability: development.
+-}
+create_hw_network_packets_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_hw_network_packets_int64 meter advisory =
+  meterCreateCounterInt64 meter "hw.network.packets" (Just "{packet}") (Just "Received and transmitted network traffic in packets (or frames).") advisory
+
+
+{- | Creates @hw.network.packets@ in @{packet}@.
+Stability: development.
+-}
+create_observable_hw_network_packets_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_hw_network_packets_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "hw.network.packets" (Just "{packet}") (Just "Received and transmitted network traffic in packets (or frames).") advisory callbacks
+
+
+{- | Creates @hw.network.up@ in @1@.
+Stability: development.
+-}
+create_hw_network_up_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_network_up_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.network.up" (Just "1") (Just "Link status: `1` (up) or `0` (down).") advisory
+
+
+{- | Creates @hw.network.up@ in @1@.
+Stability: development.
+-}
+create_observable_hw_network_up_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_network_up_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.network.up" (Just "1") (Just "Link status: `1` (up) or `0` (down).") advisory callbacks
+
+
+{- | Creates @hw.physical_disk.endurance_utilization@ in @1@.
+Stability: development.
+-}
+create_hw_physicalDisk_enduranceUtilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_physicalDisk_enduranceUtilization_double meter advisory =
+  meterCreateGaugeDouble meter "hw.physical_disk.endurance_utilization" (Just "1") (Just "Endurance remaining for this SSD disk.") advisory
+
+
+{- | Creates @hw.physical_disk.endurance_utilization@ in @1@.
+Stability: development.
+-}
+create_observable_hw_physicalDisk_enduranceUtilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_physicalDisk_enduranceUtilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.physical_disk.endurance_utilization" (Just "1") (Just "Endurance remaining for this SSD disk.") advisory callbacks
+
+
+{- | Creates @hw.physical_disk.size@ in @By@.
+Stability: development.
+-}
+create_hw_physicalDisk_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_physicalDisk_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.physical_disk.size" (Just "By") (Just "Size of the disk.") advisory
+
+
+{- | Creates @hw.physical_disk.size@ in @By@.
+Stability: development.
+-}
+create_observable_hw_physicalDisk_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_physicalDisk_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.physical_disk.size" (Just "By") (Just "Size of the disk.") advisory callbacks
+
+
+{- | Creates @hw.physical_disk.smart@ in @1@.
+Stability: development.
+-}
+create_hw_physicalDisk_smart_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_hw_physicalDisk_smart_int64 meter advisory =
+  meterCreateGaugeInt64 meter "hw.physical_disk.smart" (Just "1") (Just "Value of the corresponding [S.M.A.R.T.](https://wikipedia.org/wiki/S.M.A.R.T.) (Self-Monitoring, Analysis, and Reporting Technology) attribute.") advisory
+
+
+{- | Creates @hw.physical_disk.smart@ in @1@.
+Stability: development.
+-}
+create_observable_hw_physicalDisk_smart_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_hw_physicalDisk_smart_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "hw.physical_disk.smart" (Just "1") (Just "Value of the corresponding [S.M.A.R.T.](https://wikipedia.org/wiki/S.M.A.R.T.) (Self-Monitoring, Analysis, and Reporting Technology) attribute.") advisory callbacks
+
+
+{- | Creates @hw.power@ in @W@.
+Stability: development.
+-}
+create_hw_power_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_power_double meter advisory =
+  meterCreateGaugeDouble meter "hw.power" (Just "W") (Just "Instantaneous power consumed by the component.") advisory
+
+
+{- | Creates @hw.power@ in @W@.
+Stability: development.
+-}
+create_observable_hw_power_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_power_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.power" (Just "W") (Just "Instantaneous power consumed by the component.") advisory callbacks
+
+
+{- | Creates @hw.power_supply.limit@ in @W@.
+Stability: development.
+-}
+create_hw_powerSupply_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_powerSupply_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.power_supply.limit" (Just "W") (Just "Maximum power output of the power supply.") advisory
+
+
+{- | Creates @hw.power_supply.limit@ in @W@.
+Stability: development.
+-}
+create_observable_hw_powerSupply_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_powerSupply_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.power_supply.limit" (Just "W") (Just "Maximum power output of the power supply.") advisory callbacks
+
+
+{- | Creates @hw.power_supply.usage@ in @W@.
+Stability: development.
+-}
+create_hw_powerSupply_usage_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_hw_powerSupply_usage_double meter advisory =
+  meterCreateUpDownCounterDouble meter "hw.power_supply.usage" (Just "W") (Just "Current power output of the power supply.") advisory
+
+
+{- | Creates @hw.power_supply.usage@ in @W@.
+Stability: development.
+-}
+create_observable_hw_powerSupply_usage_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_hw_powerSupply_usage_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "hw.power_supply.usage" (Just "W") (Just "Current power output of the power supply.") advisory callbacks
+
+
+{- | Creates @hw.power_supply.utilization@ in @1@.
+Stability: development.
+-}
+create_hw_powerSupply_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_powerSupply_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "hw.power_supply.utilization" (Just "1") (Just "Utilization of the power supply as a fraction of its maximum output.") advisory
+
+
+{- | Creates @hw.power_supply.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_hw_powerSupply_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_powerSupply_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.power_supply.utilization" (Just "1") (Just "Utilization of the power supply as a fraction of its maximum output.") advisory callbacks
+
+
+{- | Creates @hw.status@ in @1@.
+Stability: development.
+-}
+create_hw_status_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_hw_status_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "hw.status" (Just "1") (Just "Operational status: `1` (true) or `0` (false) for each of the possible states.") advisory
+
+
+{- | Creates @hw.status@ in @1@.
+Stability: development.
+-}
+create_observable_hw_status_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_hw_status_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "hw.status" (Just "1") (Just "Operational status: `1` (true) or `0` (false) for each of the possible states.") advisory callbacks
+
+
+{- | Creates @hw.tape_drive.operations@ in @{operation}@.
+Stability: development.
+-}
+create_hw_tapeDrive_operations_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_hw_tapeDrive_operations_int64 meter advisory =
+  meterCreateCounterInt64 meter "hw.tape_drive.operations" (Just "{operation}") (Just "Operations performed by the tape drive.") advisory
+
+
+{- | Creates @hw.tape_drive.operations@ in @{operation}@.
+Stability: development.
+-}
+create_observable_hw_tapeDrive_operations_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_hw_tapeDrive_operations_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "hw.tape_drive.operations" (Just "{operation}") (Just "Operations performed by the tape drive.") advisory callbacks
+
+
+{- | Creates @hw.temperature@ in @Cel@.
+Stability: development.
+-}
+create_hw_temperature_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_temperature_double meter advisory =
+  meterCreateGaugeDouble meter "hw.temperature" (Just "Cel") (Just "Temperature in degrees Celsius.") advisory
+
+
+{- | Creates @hw.temperature@ in @Cel@.
+Stability: development.
+-}
+create_observable_hw_temperature_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_temperature_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.temperature" (Just "Cel") (Just "Temperature in degrees Celsius.") advisory callbacks
+
+
+{- | Creates @hw.temperature.limit@ in @Cel@.
+Stability: development.
+-}
+create_hw_temperature_limit_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_temperature_limit_double meter advisory =
+  meterCreateGaugeDouble meter "hw.temperature.limit" (Just "Cel") (Just "Temperature limit in degrees Celsius.") advisory
+
+
+{- | Creates @hw.temperature.limit@ in @Cel@.
+Stability: development.
+-}
+create_observable_hw_temperature_limit_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_temperature_limit_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.temperature.limit" (Just "Cel") (Just "Temperature limit in degrees Celsius.") advisory callbacks
+
+
+{- | Creates @hw.voltage@ in @V@.
+Stability: development.
+-}
+create_hw_voltage_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_voltage_double meter advisory =
+  meterCreateGaugeDouble meter "hw.voltage" (Just "V") (Just "Voltage measured by the sensor.") advisory
+
+
+{- | Creates @hw.voltage@ in @V@.
+Stability: development.
+-}
+create_observable_hw_voltage_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_voltage_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.voltage" (Just "V") (Just "Voltage measured by the sensor.") advisory callbacks
+
+
+{- | Creates @hw.voltage.limit@ in @V@.
+Stability: development.
+-}
+create_hw_voltage_limit_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_voltage_limit_double meter advisory =
+  meterCreateGaugeDouble meter "hw.voltage.limit" (Just "V") (Just "Voltage limit in Volts.") advisory
+
+
+{- | Creates @hw.voltage.limit@ in @V@.
+Stability: development.
+-}
+create_observable_hw_voltage_limit_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_voltage_limit_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.voltage.limit" (Just "V") (Just "Voltage limit in Volts.") advisory callbacks
+
+
+{- | Creates @hw.voltage.nominal@ in @V@.
+Stability: development.
+-}
+create_hw_voltage_nominal_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_hw_voltage_nominal_double meter advisory =
+  meterCreateGaugeDouble meter "hw.voltage.nominal" (Just "V") (Just "Nominal (expected) voltage.") advisory
+
+
+{- | Creates @hw.voltage.nominal@ in @V@.
+Stability: development.
+-}
+create_observable_hw_voltage_nominal_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_hw_voltage_nominal_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "hw.voltage.nominal" (Just "V") (Just "Nominal (expected) voltage.") advisory callbacks
+
+
+{- | Creates @jvm.buffer.count@ in @{buffer}@.
+Stability: development.
+-}
+create_jvm_buffer_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_buffer_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.buffer.count" (Just "{buffer}") (Just "Number of buffers in the pool.") advisory
+
+
+{- | Creates @jvm.buffer.count@ in @{buffer}@.
+Stability: development.
+-}
+create_observable_jvm_buffer_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_buffer_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.buffer.count" (Just "{buffer}") (Just "Number of buffers in the pool.") advisory callbacks
+
+
+{- | Creates @jvm.buffer.memory.limit@ in @By@.
+Stability: development.
+-}
+create_jvm_buffer_memory_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_buffer_memory_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.buffer.memory.limit" (Just "By") (Just "Measure of total memory capacity of buffers.") advisory
+
+
+{- | Creates @jvm.buffer.memory.limit@ in @By@.
+Stability: development.
+-}
+create_observable_jvm_buffer_memory_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_buffer_memory_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.buffer.memory.limit" (Just "By") (Just "Measure of total memory capacity of buffers.") advisory callbacks
+
+
+{- | Creates @jvm.buffer.memory.usage@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_jvm_buffer_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_buffer_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.buffer.memory.usage" (Just "By") (Just "Deprecated, use `jvm.buffer.memory.used` instead.") advisory
+
+
+{- | Creates @jvm.buffer.memory.usage@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_jvm_buffer_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_buffer_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.buffer.memory.usage" (Just "By") (Just "Deprecated, use `jvm.buffer.memory.used` instead.") advisory callbacks
+
+
+{- | Creates @jvm.buffer.memory.used@ in @By@.
+Stability: development.
+-}
+create_jvm_buffer_memory_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_buffer_memory_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.buffer.memory.used" (Just "By") (Just "Measure of memory used by buffers.") advisory
+
+
+{- | Creates @jvm.buffer.memory.used@ in @By@.
+Stability: development.
+-}
+create_observable_jvm_buffer_memory_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_buffer_memory_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.buffer.memory.used" (Just "By") (Just "Measure of memory used by buffers.") advisory callbacks
+
+
+{- | Creates @jvm.class.count@ in @{class}@.
+Stability: stable.
+-}
+create_jvm_class_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_class_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.class.count" (Just "{class}") (Just "Number of classes currently loaded.") advisory
+
+
+{- | Creates @jvm.class.count@ in @{class}@.
+Stability: stable.
+-}
+create_observable_jvm_class_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_class_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.class.count" (Just "{class}") (Just "Number of classes currently loaded.") advisory callbacks
+
+
+{- | Creates @jvm.class.loaded@ in @{class}@.
+Stability: stable.
+-}
+create_jvm_class_loaded_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_jvm_class_loaded_int64 meter advisory =
+  meterCreateCounterInt64 meter "jvm.class.loaded" (Just "{class}") (Just "Number of classes loaded since JVM start.") advisory
+
+
+{- | Creates @jvm.class.loaded@ in @{class}@.
+Stability: stable.
+-}
+create_observable_jvm_class_loaded_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_jvm_class_loaded_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "jvm.class.loaded" (Just "{class}") (Just "Number of classes loaded since JVM start.") advisory callbacks
+
+
+{- | Creates @jvm.class.unloaded@ in @{class}@.
+Stability: stable.
+-}
+create_jvm_class_unloaded_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_jvm_class_unloaded_int64 meter advisory =
+  meterCreateCounterInt64 meter "jvm.class.unloaded" (Just "{class}") (Just "Number of classes unloaded since JVM start.") advisory
+
+
+{- | Creates @jvm.class.unloaded@ in @{class}@.
+Stability: stable.
+-}
+create_observable_jvm_class_unloaded_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_jvm_class_unloaded_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "jvm.class.unloaded" (Just "{class}") (Just "Number of classes unloaded since JVM start.") advisory callbacks
+
+
+{- | Creates @jvm.cpu.count@ in @{cpu}@.
+Stability: stable.
+-}
+create_jvm_cpu_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_cpu_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.cpu.count" (Just "{cpu}") (Just "Number of processors available to the Java virtual machine.") advisory
+
+
+{- | Creates @jvm.cpu.count@ in @{cpu}@.
+Stability: stable.
+-}
+create_observable_jvm_cpu_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_cpu_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.cpu.count" (Just "{cpu}") (Just "Number of processors available to the Java virtual machine.") advisory callbacks
+
+
+{- | Creates @jvm.cpu.recent_utilization@ in @1@.
+Stability: stable.
+-}
+create_jvm_cpu_recentUtilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_jvm_cpu_recentUtilization_double meter advisory =
+  meterCreateGaugeDouble meter "jvm.cpu.recent_utilization" (Just "1") (Just "Recent CPU utilization for the process as reported by the JVM.") advisory
+
+
+{- | Creates @jvm.cpu.recent_utilization@ in @1@.
+Stability: stable.
+-}
+create_observable_jvm_cpu_recentUtilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_jvm_cpu_recentUtilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "jvm.cpu.recent_utilization" (Just "1") (Just "Recent CPU utilization for the process as reported by the JVM.") advisory callbacks
+
+
+{- | Creates @jvm.cpu.time@ in @s@.
+Stability: stable.
+-}
+create_jvm_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_jvm_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "jvm.cpu.time" (Just "s") (Just "CPU time used by the process as reported by the JVM.") advisory
+
+
+{- | Creates @jvm.cpu.time@ in @s@.
+Stability: stable.
+-}
+create_observable_jvm_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_jvm_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "jvm.cpu.time" (Just "s") (Just "CPU time used by the process as reported by the JVM.") advisory callbacks
+
+
+{- | Creates @jvm.executor.queue.capacity@ in @{task}@.
+Stability: development.
+-}
+create_jvm_executor_queue_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_executor_queue_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.executor.queue.capacity" (Just "{task}") (Just "The maximum number of tasks the executor queue can hold.") advisory
+
+
+{- | Creates @jvm.executor.queue.capacity@ in @{task}@.
+Stability: development.
+-}
+create_observable_jvm_executor_queue_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_executor_queue_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.executor.queue.capacity" (Just "{task}") (Just "The maximum number of tasks the executor queue can hold.") advisory callbacks
+
+
+{- | Creates @jvm.executor.queue.size@ in @{task}@.
+Stability: development.
+-}
+create_jvm_executor_queue_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_executor_queue_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.executor.queue.size" (Just "{task}") (Just "The number of tasks currently queued for execution.") advisory
+
+
+{- | Creates @jvm.executor.queue.size@ in @{task}@.
+Stability: development.
+-}
+create_observable_jvm_executor_queue_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_executor_queue_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.executor.queue.size" (Just "{task}") (Just "The number of tasks currently queued for execution.") advisory callbacks
+
+
+{- | Creates @jvm.executor.task.completed@ in @{task}@.
+Stability: development.
+-}
+create_jvm_executor_task_completed_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_jvm_executor_task_completed_int64 meter advisory =
+  meterCreateCounterInt64 meter "jvm.executor.task.completed" (Just "{task}") (Just "The number of tasks completed by the executor.") advisory
+
+
+{- | Creates @jvm.executor.task.completed@ in @{task}@.
+Stability: development.
+-}
+create_observable_jvm_executor_task_completed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_jvm_executor_task_completed_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "jvm.executor.task.completed" (Just "{task}") (Just "The number of tasks completed by the executor.") advisory callbacks
+
+
+{- | Creates @jvm.executor.task.rejected@ in @{task}@.
+Stability: development.
+-}
+create_jvm_executor_task_rejected_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_jvm_executor_task_rejected_int64 meter advisory =
+  meterCreateCounterInt64 meter "jvm.executor.task.rejected" (Just "{task}") (Just "The number of task submissions rejected by the executor.") advisory
+
+
+{- | Creates @jvm.executor.task.rejected@ in @{task}@.
+Stability: development.
+-}
+create_observable_jvm_executor_task_rejected_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_jvm_executor_task_rejected_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "jvm.executor.task.rejected" (Just "{task}") (Just "The number of task submissions rejected by the executor.") advisory callbacks
+
+
+{- | Creates @jvm.executor.thread.core@ in @{thread}@.
+Stability: development.
+-}
+create_jvm_executor_thread_core_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_executor_thread_core_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.executor.thread.core" (Just "{thread}") (Just "The number of core threads configured for the executor.") advisory
+
+
+{- | Creates @jvm.executor.thread.core@ in @{thread}@.
+Stability: development.
+-}
+create_observable_jvm_executor_thread_core_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_executor_thread_core_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.executor.thread.core" (Just "{thread}") (Just "The number of core threads configured for the executor.") advisory callbacks
+
+
+{- | Creates @jvm.executor.thread.count@ in @{thread}@.
+Stability: development.
+-}
+create_jvm_executor_thread_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_executor_thread_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.executor.thread.count" (Just "{thread}") (Just "The number of executor threads that are currently in the state described by the `jvm.executor.thread.state` attribute.\n") advisory
+
+
+{- | Creates @jvm.executor.thread.count@ in @{thread}@.
+Stability: development.
+-}
+create_observable_jvm_executor_thread_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_executor_thread_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.executor.thread.count" (Just "{thread}") (Just "The number of executor threads that are currently in the state described by the `jvm.executor.thread.state` attribute.\n") advisory callbacks
+
+
+{- | Creates @jvm.executor.thread.limit@ in @{thread}@.
+Stability: development.
+-}
+create_jvm_executor_thread_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_executor_thread_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.executor.thread.limit" (Just "{thread}") (Just "The maximum number of threads allowed for the executor.") advisory
+
+
+{- | Creates @jvm.executor.thread.limit@ in @{thread}@.
+Stability: development.
+-}
+create_observable_jvm_executor_thread_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_executor_thread_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.executor.thread.limit" (Just "{thread}") (Just "The maximum number of threads allowed for the executor.") advisory callbacks
+
+
+{- | Creates @jvm.file_descriptor.count@ in @{file_descriptor}@.
+Stability: release candidate.
+-}
+create_jvm_fileDescriptor_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_fileDescriptor_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.file_descriptor.count" (Just "{file_descriptor}") (Just "Number of open file descriptors as reported by the JVM.") advisory
+
+
+{- | Creates @jvm.file_descriptor.count@ in @{file_descriptor}@.
+Stability: release candidate.
+-}
+create_observable_jvm_fileDescriptor_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_fileDescriptor_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.file_descriptor.count" (Just "{file_descriptor}") (Just "Number of open file descriptors as reported by the JVM.") advisory callbacks
+
+
+{- | Creates @jvm.file_descriptor.limit@ in @{file_descriptor}@.
+Stability: release candidate.
+-}
+create_jvm_fileDescriptor_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_fileDescriptor_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.file_descriptor.limit" (Just "{file_descriptor}") (Just "Measure of max open file descriptors as reported by the JVM.") advisory
+
+
+{- | Creates @jvm.file_descriptor.limit@ in @{file_descriptor}@.
+Stability: release candidate.
+-}
+create_observable_jvm_fileDescriptor_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_fileDescriptor_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.file_descriptor.limit" (Just "{file_descriptor}") (Just "Measure of max open file descriptors as reported by the JVM.") advisory callbacks
+
+
+{- | Creates @jvm.gc.duration@ in @s@.
+Stability: stable.
+-}
+create_jvm_gc_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_jvm_gc_duration meter advisory =
+  meterCreateHistogram meter "jvm.gc.duration" (Just "s") (Just "Duration of JVM garbage collection actions.") advisory
+
+
+{- | Creates @jvm.memory.committed@ in @By@.
+Stability: stable.
+-}
+create_jvm_memory_committed_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_memory_committed_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.memory.committed" (Just "By") (Just "Measure of memory committed.") advisory
+
+
+{- | Creates @jvm.memory.committed@ in @By@.
+Stability: stable.
+-}
+create_observable_jvm_memory_committed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_memory_committed_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.memory.committed" (Just "By") (Just "Measure of memory committed.") advisory callbacks
+
+
+{- | Creates @jvm.memory.init@ in @By@.
+Stability: development.
+-}
+create_jvm_memory_init_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_memory_init_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.memory.init" (Just "By") (Just "Measure of initial memory requested.") advisory
+
+
+{- | Creates @jvm.memory.init@ in @By@.
+Stability: development.
+-}
+create_observable_jvm_memory_init_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_memory_init_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.memory.init" (Just "By") (Just "Measure of initial memory requested.") advisory callbacks
+
+
+{- | Creates @jvm.memory.limit@ in @By@.
+Stability: stable.
+-}
+create_jvm_memory_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_memory_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.memory.limit" (Just "By") (Just "Measure of max obtainable memory.") advisory
+
+
+{- | Creates @jvm.memory.limit@ in @By@.
+Stability: stable.
+-}
+create_observable_jvm_memory_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_memory_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.memory.limit" (Just "By") (Just "Measure of max obtainable memory.") advisory callbacks
+
+
+{- | Creates @jvm.memory.used@ in @By@.
+Stability: stable.
+-}
+create_jvm_memory_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_memory_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.memory.used" (Just "By") (Just "Measure of memory used.") advisory
+
+
+{- | Creates @jvm.memory.used@ in @By@.
+Stability: stable.
+-}
+create_observable_jvm_memory_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_memory_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.memory.used" (Just "By") (Just "Measure of memory used.") advisory callbacks
+
+
+{- | Creates @jvm.memory.used_after_last_gc@ in @By@.
+Stability: stable.
+-}
+create_jvm_memory_usedAfterLastGc_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_memory_usedAfterLastGc_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.memory.used_after_last_gc" (Just "By") (Just "Measure of memory used, as measured after the most recent garbage collection event on this pool.") advisory
+
+
+{- | Creates @jvm.memory.used_after_last_gc@ in @By@.
+Stability: stable.
+-}
+create_observable_jvm_memory_usedAfterLastGc_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_memory_usedAfterLastGc_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.memory.used_after_last_gc" (Just "By") (Just "Measure of memory used, as measured after the most recent garbage collection event on this pool.") advisory callbacks
+
+
+{- | Creates @jvm.system.cpu.load_1m@ in @{run_queue_item}@.
+Stability: development.
+-}
+create_jvm_system_cpu_load1m_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_jvm_system_cpu_load1m_double meter advisory =
+  meterCreateGaugeDouble meter "jvm.system.cpu.load_1m" (Just "{run_queue_item}") (Just "Average CPU load of the whole system for the last minute as reported by the JVM.") advisory
+
+
+{- | Creates @jvm.system.cpu.load_1m@ in @{run_queue_item}@.
+Stability: development.
+-}
+create_observable_jvm_system_cpu_load1m_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_jvm_system_cpu_load1m_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "jvm.system.cpu.load_1m" (Just "{run_queue_item}") (Just "Average CPU load of the whole system for the last minute as reported by the JVM.") advisory callbacks
+
+
+{- | Creates @jvm.system.cpu.utilization@ in @1@.
+Stability: development.
+-}
+create_jvm_system_cpu_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_jvm_system_cpu_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "jvm.system.cpu.utilization" (Just "1") (Just "Recent CPU utilization for the whole system as reported by the JVM.") advisory
+
+
+{- | Creates @jvm.system.cpu.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_jvm_system_cpu_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_jvm_system_cpu_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "jvm.system.cpu.utilization" (Just "1") (Just "Recent CPU utilization for the whole system as reported by the JVM.") advisory callbacks
+
+
+{- | Creates @jvm.thread.count@ in @{thread}@.
+Stability: stable.
+-}
+create_jvm_thread_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_jvm_thread_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "jvm.thread.count" (Just "{thread}") (Just "Number of executing platform threads.") advisory
+
+
+{- | Creates @jvm.thread.count@ in @{thread}@.
+Stability: stable.
+-}
+create_observable_jvm_thread_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_jvm_thread_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "jvm.thread.count" (Just "{thread}") (Just "Number of executing platform threads.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.limit@ in @{cpu}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_container_cpu_limit_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_container_cpu_limit_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.container.cpu.limit" (Just "{cpu}") (Just "Deprecated, use `k8s.container.cpu.limit.desired` and `k8s.container.cpu.limit.current` instead.") advisory
+
+
+{- | Creates @k8s.container.cpu.limit@ in @{cpu}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_container_cpu_limit_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_container_cpu_limit_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.container.cpu.limit" (Just "{cpu}") (Just "Deprecated, use `k8s.container.cpu.limit.desired` and `k8s.container.cpu.limit.current` instead.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.limit.current@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_container_cpu_limit_current_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_container_cpu_limit_current_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.container.cpu.limit.current" (Just "{cpu}") (Just "Maximum CPU resource limit currently configured for a running container.") advisory
+
+
+{- | Creates @k8s.container.cpu.limit.current@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_container_cpu_limit_current_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_container_cpu_limit_current_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.container.cpu.limit.current" (Just "{cpu}") (Just "Maximum CPU resource limit currently configured for a running container.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.limit.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_container_cpu_limit_desired_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_container_cpu_limit_desired_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.container.cpu.limit.desired" (Just "{cpu}") (Just "Maximum CPU resource limit as defined by the container spec.") advisory
+
+
+{- | Creates @k8s.container.cpu.limit.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_container_cpu_limit_desired_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_container_cpu_limit_desired_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.container.cpu.limit.desired" (Just "{cpu}") (Just "Maximum CPU resource limit as defined by the container spec.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_container_cpu_limit_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_container_cpu_limit_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.container.cpu.limit.utilization" (Just "1") (Just "The ratio of container CPU usage to its current CPU limit.") advisory
+
+
+{- | Creates @k8s.container.cpu.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_container_cpu_limit_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_container_cpu_limit_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.container.cpu.limit.utilization" (Just "1") (Just "The ratio of container CPU usage to its current CPU limit.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.limit_utilization@ in @1@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_container_cpu_limitUtilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_container_cpu_limitUtilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.container.cpu.limit_utilization" (Just "1") (Just "Deprecated, use `k8s.container.cpu.limit.utilization` instead.") advisory
+
+
+{- | Creates @k8s.container.cpu.limit_utilization@ in @1@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_container_cpu_limitUtilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_container_cpu_limitUtilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.container.cpu.limit_utilization" (Just "1") (Just "Deprecated, use `k8s.container.cpu.limit.utilization` instead.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.request@ in @{cpu}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_container_cpu_request_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_container_cpu_request_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.container.cpu.request" (Just "{cpu}") (Just "Deprecated, use `k8s.container.cpu.request.desired` and `k8s.container.cpu.request.current` instead.") advisory
+
+
+{- | Creates @k8s.container.cpu.request@ in @{cpu}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_container_cpu_request_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_container_cpu_request_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.container.cpu.request" (Just "{cpu}") (Just "Deprecated, use `k8s.container.cpu.request.desired` and `k8s.container.cpu.request.current` instead.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.request.current@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_container_cpu_request_current_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_container_cpu_request_current_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.container.cpu.request.current" (Just "{cpu}") (Just "CPU resource requested currently configured for a running container.") advisory
+
+
+{- | Creates @k8s.container.cpu.request.current@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_container_cpu_request_current_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_container_cpu_request_current_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.container.cpu.request.current" (Just "{cpu}") (Just "CPU resource requested currently configured for a running container.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.request.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_container_cpu_request_desired_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_container_cpu_request_desired_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.container.cpu.request.desired" (Just "{cpu}") (Just "CPU resource requested as defined by the container spec.") advisory
+
+
+{- | Creates @k8s.container.cpu.request.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_container_cpu_request_desired_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_container_cpu_request_desired_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.container.cpu.request.desired" (Just "{cpu}") (Just "CPU resource requested as defined by the container spec.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.request.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_container_cpu_request_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_container_cpu_request_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.container.cpu.request.utilization" (Just "1") (Just "The ratio of container CPU usage to its current CPU request.") advisory
+
+
+{- | Creates @k8s.container.cpu.request.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_container_cpu_request_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_container_cpu_request_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.container.cpu.request.utilization" (Just "1") (Just "The ratio of container CPU usage to its current CPU request.") advisory callbacks
+
+
+{- | Creates @k8s.container.cpu.request_utilization@ in @1@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_container_cpu_requestUtilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_container_cpu_requestUtilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.container.cpu.request_utilization" (Just "1") (Just "Deprecated, use `k8s.container.cpu.request.utilization` instead.") advisory
+
+
+{- | Creates @k8s.container.cpu.request_utilization@ in @1@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_container_cpu_requestUtilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_container_cpu_requestUtilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.container.cpu.request_utilization" (Just "1") (Just "Deprecated, use `k8s.container.cpu.request.utilization` instead.") advisory callbacks
+
+
+{- | Creates @k8s.container.ephemeral_storage.limit@ in @By@.
+Stability: development.
+-}
+create_k8s_container_ephemeralStorage_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_ephemeralStorage_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.ephemeral_storage.limit" (Just "By") (Just "Maximum ephemeral storage resource limit set for the container.") advisory
+
+
+{- | Creates @k8s.container.ephemeral_storage.limit@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_ephemeralStorage_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_ephemeralStorage_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.ephemeral_storage.limit" (Just "By") (Just "Maximum ephemeral storage resource limit set for the container.") advisory callbacks
+
+
+{- | Creates @k8s.container.ephemeral_storage.request@ in @By@.
+Stability: development.
+-}
+create_k8s_container_ephemeralStorage_request_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_ephemeralStorage_request_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.ephemeral_storage.request" (Just "By") (Just "Ephemeral storage resource requested for the container.") advisory
+
+
+{- | Creates @k8s.container.ephemeral_storage.request@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_ephemeralStorage_request_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_ephemeralStorage_request_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.ephemeral_storage.request" (Just "By") (Just "Ephemeral storage resource requested for the container.") advisory callbacks
+
+
+{- | Creates @k8s.container.ephemeral_storage.usage@ in @By@.
+Stability: development.
+-}
+create_k8s_container_ephemeralStorage_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_ephemeralStorage_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.ephemeral_storage.usage" (Just "By") (Just "The ephemeral storage used by a container.") advisory
+
+
+{- | Creates @k8s.container.ephemeral_storage.usage@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_ephemeralStorage_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_ephemeralStorage_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.ephemeral_storage.usage" (Just "By") (Just "The ephemeral storage used by a container.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.limit@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_container_memory_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_memory_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.memory.limit" (Just "By") (Just "Deprecated, use `k8s.container.memory.limit.desired` and `k8s.container.memory.limit.current` instead.") advisory
+
+
+{- | Creates @k8s.container.memory.limit@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_container_memory_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_memory_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.memory.limit" (Just "By") (Just "Deprecated, use `k8s.container.memory.limit.desired` and `k8s.container.memory.limit.current` instead.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.limit.current@ in @By@.
+Stability: development.
+-}
+create_k8s_container_memory_limit_current_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_memory_limit_current_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.memory.limit.current" (Just "By") (Just "Maximum memory resource limit currently configured for a running container.") advisory
+
+
+{- | Creates @k8s.container.memory.limit.current@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_memory_limit_current_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_memory_limit_current_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.memory.limit.current" (Just "By") (Just "Maximum memory resource limit currently configured for a running container.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.limit.desired@ in @By@.
+Stability: development.
+-}
+create_k8s_container_memory_limit_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_memory_limit_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.memory.limit.desired" (Just "By") (Just "Maximum memory resource limit as defined by the container spec.") advisory
+
+
+{- | Creates @k8s.container.memory.limit.desired@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_memory_limit_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_memory_limit_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.memory.limit.desired" (Just "By") (Just "Maximum memory resource limit as defined by the container spec.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_container_memory_limit_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_container_memory_limit_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.container.memory.limit.utilization" (Just "1") (Just "The ratio of container memory working set to its current memory limit.") advisory
+
+
+{- | Creates @k8s.container.memory.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_container_memory_limit_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_container_memory_limit_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.container.memory.limit.utilization" (Just "1") (Just "The ratio of container memory working set to its current memory limit.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.request@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_container_memory_request_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_memory_request_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.memory.request" (Just "By") (Just "Deprecated, use `k8s.container.memory.request.desired` and `k8s.container.memory.request.current` instead.") advisory
+
+
+{- | Creates @k8s.container.memory.request@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_container_memory_request_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_memory_request_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.memory.request" (Just "By") (Just "Deprecated, use `k8s.container.memory.request.desired` and `k8s.container.memory.request.current` instead.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.request.current@ in @By@.
+Stability: development.
+-}
+create_k8s_container_memory_request_current_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_memory_request_current_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.memory.request.current" (Just "By") (Just "Memory resource request currently configured for a running container.") advisory
+
+
+{- | Creates @k8s.container.memory.request.current@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_memory_request_current_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_memory_request_current_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.memory.request.current" (Just "By") (Just "Memory resource request currently configured for a running container.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.request.desired@ in @By@.
+Stability: development.
+-}
+create_k8s_container_memory_request_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_memory_request_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.memory.request.desired" (Just "By") (Just "Memory resource requested as defined by the container spec.") advisory
+
+
+{- | Creates @k8s.container.memory.request.desired@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_memory_request_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_memory_request_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.memory.request.desired" (Just "By") (Just "Memory resource requested as defined by the container spec.") advisory callbacks
+
+
+{- | Creates @k8s.container.memory.request.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_container_memory_request_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_container_memory_request_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.container.memory.request.utilization" (Just "1") (Just "The ratio of container memory working set to its current memory request.") advisory
+
+
+{- | Creates @k8s.container.memory.request.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_container_memory_request_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_container_memory_request_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.container.memory.request.utilization" (Just "1") (Just "The ratio of container memory working set to its current memory request.") advisory callbacks
+
+
+{- | Creates @k8s.container.ready@ in @{container}@.
+Stability: development.
+-}
+create_k8s_container_ready_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_ready_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.ready" (Just "{container}") (Just "Indicates whether the container is currently marked as ready to accept traffic, based on its readiness probe (1 = ready, 0 = not ready).\n") advisory
+
+
+{- | Creates @k8s.container.ready@ in @{container}@.
+Stability: development.
+-}
+create_observable_k8s_container_ready_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_ready_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.ready" (Just "{container}") (Just "Indicates whether the container is currently marked as ready to accept traffic, based on its readiness probe (1 = ready, 0 = not ready).\n") advisory callbacks
+
+
+{- | Creates @k8s.container.restart.count@ in @{restart}@.
+Stability: development.
+-}
+create_k8s_container_restart_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_restart_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.restart.count" (Just "{restart}") (Just "Describes how many times the container has restarted (since the last counter reset).") advisory
+
+
+{- | Creates @k8s.container.restart.count@ in @{restart}@.
+Stability: development.
+-}
+create_observable_k8s_container_restart_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_restart_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.restart.count" (Just "{restart}") (Just "Describes how many times the container has restarted (since the last counter reset).") advisory callbacks
+
+
+{- | Creates @k8s.container.status.reason@ in @{container}@.
+Stability: development.
+-}
+create_k8s_container_status_reason_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_status_reason_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.status.reason" (Just "{container}") (Just "Describes the number of K8s containers that are currently in a state for a given reason.") advisory
+
+
+{- | Creates @k8s.container.status.reason@ in @{container}@.
+Stability: development.
+-}
+create_observable_k8s_container_status_reason_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_status_reason_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.status.reason" (Just "{container}") (Just "Describes the number of K8s containers that are currently in a state for a given reason.") advisory callbacks
+
+
+{- | Creates @k8s.container.status.state@ in @{container}@.
+Stability: development.
+-}
+create_k8s_container_status_state_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_status_state_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.status.state" (Just "{container}") (Just "Describes the number of K8s containers that are currently in a given state.") advisory
+
+
+{- | Creates @k8s.container.status.state@ in @{container}@.
+Stability: development.
+-}
+create_observable_k8s_container_status_state_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_status_state_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.status.state" (Just "{container}") (Just "Describes the number of K8s containers that are currently in a given state.") advisory callbacks
+
+
+{- | Creates @k8s.container.storage.limit@ in @By@.
+Stability: development.
+-}
+create_k8s_container_storage_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_storage_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.storage.limit" (Just "By") (Just "Maximum storage resource limit set for the container.") advisory
+
+
+{- | Creates @k8s.container.storage.limit@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_storage_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_storage_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.storage.limit" (Just "By") (Just "Maximum storage resource limit set for the container.") advisory callbacks
+
+
+{- | Creates @k8s.container.storage.request@ in @By@.
+Stability: development.
+-}
+create_k8s_container_storage_request_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_container_storage_request_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.container.storage.request" (Just "By") (Just "Storage resource requested for the container.") advisory
+
+
+{- | Creates @k8s.container.storage.request@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_container_storage_request_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_container_storage_request_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.container.storage.request" (Just "By") (Just "Storage resource requested for the container.") advisory callbacks
+
+
+{- | Creates @k8s.cronjob.active_jobs@ in @{job}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_cronjob_activeJobs_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_cronjob_activeJobs_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.cronjob.active_jobs" (Just "{job}") (Just "Deprecated, use `k8s.cronjob.job.active` instead.") advisory
+
+
+{- | Creates @k8s.cronjob.active_jobs@ in @{job}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_cronjob_activeJobs_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_cronjob_activeJobs_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.cronjob.active_jobs" (Just "{job}") (Just "Deprecated, use `k8s.cronjob.job.active` instead.") advisory callbacks
+
+
+{- | Creates @k8s.cronjob.job.active@ in @{job}@.
+Stability: development.
+-}
+create_k8s_cronjob_job_active_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_cronjob_job_active_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.cronjob.job.active" (Just "{job}") (Just "The number of actively running jobs for a cronjob.") advisory
+
+
+{- | Creates @k8s.cronjob.job.active@ in @{job}@.
+Stability: development.
+-}
+create_observable_k8s_cronjob_job_active_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_cronjob_job_active_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.cronjob.job.active" (Just "{job}") (Just "The number of actively running jobs for a cronjob.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.current_scheduled_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_daemonset_currentScheduledNodes_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_currentScheduledNodes_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.current_scheduled_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.current_scheduled` instead.") advisory
+
+
+{- | Creates @k8s.daemonset.current_scheduled_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_daemonset_currentScheduledNodes_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_currentScheduledNodes_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.current_scheduled_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.current_scheduled` instead.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.desired_scheduled_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_daemonset_desiredScheduledNodes_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_desiredScheduledNodes_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.desired_scheduled_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.desired_scheduled` instead.") advisory
+
+
+{- | Creates @k8s.daemonset.desired_scheduled_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_daemonset_desiredScheduledNodes_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_desiredScheduledNodes_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.desired_scheduled_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.desired_scheduled` instead.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.misscheduled_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_daemonset_misscheduledNodes_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_misscheduledNodes_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.misscheduled_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.misscheduled` instead.") advisory
+
+
+{- | Creates @k8s.daemonset.misscheduled_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_daemonset_misscheduledNodes_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_misscheduledNodes_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.misscheduled_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.misscheduled` instead.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.node.current_scheduled@ in @{node}@.
+Stability: development.
+-}
+create_k8s_daemonset_node_currentScheduled_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_node_currentScheduled_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.node.current_scheduled" (Just "{node}") (Just "Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod.") advisory
+
+
+{- | Creates @k8s.daemonset.node.current_scheduled@ in @{node}@.
+Stability: development.
+-}
+create_observable_k8s_daemonset_node_currentScheduled_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_node_currentScheduled_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.node.current_scheduled" (Just "{node}") (Just "Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.node.desired_scheduled@ in @{node}@.
+Stability: development.
+-}
+create_k8s_daemonset_node_desiredScheduled_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_node_desiredScheduled_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.node.desired_scheduled" (Just "{node}") (Just "Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod).") advisory
+
+
+{- | Creates @k8s.daemonset.node.desired_scheduled@ in @{node}@.
+Stability: development.
+-}
+create_observable_k8s_daemonset_node_desiredScheduled_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_node_desiredScheduled_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.node.desired_scheduled" (Just "{node}") (Just "Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod).") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.node.misscheduled@ in @{node}@.
+Stability: development.
+-}
+create_k8s_daemonset_node_misscheduled_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_node_misscheduled_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.node.misscheduled" (Just "{node}") (Just "Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod.") advisory
+
+
+{- | Creates @k8s.daemonset.node.misscheduled@ in @{node}@.
+Stability: development.
+-}
+create_observable_k8s_daemonset_node_misscheduled_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_node_misscheduled_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.node.misscheduled" (Just "{node}") (Just "Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.node.ready@ in @{node}@.
+Stability: development.
+-}
+create_k8s_daemonset_node_ready_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_node_ready_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.node.ready" (Just "{node}") (Just "Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.") advisory
+
+
+{- | Creates @k8s.daemonset.node.ready@ in @{node}@.
+Stability: development.
+-}
+create_observable_k8s_daemonset_node_ready_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_node_ready_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.node.ready" (Just "{node}") (Just "Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.") advisory callbacks
+
+
+{- | Creates @k8s.daemonset.ready_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_daemonset_readyNodes_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_daemonset_readyNodes_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.daemonset.ready_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.ready` instead.") advisory
+
+
+{- | Creates @k8s.daemonset.ready_nodes@ in @{node}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_daemonset_readyNodes_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_daemonset_readyNodes_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.daemonset.ready_nodes" (Just "{node}") (Just "Deprecated, use `k8s.daemonset.node.ready` instead.") advisory callbacks
+
+
+{- | Creates @k8s.deployment.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_deployment_availablePods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_deployment_availablePods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.deployment.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.deployment.pod.available` instead.") advisory
+
+
+{- | Creates @k8s.deployment.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_deployment_availablePods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_deployment_availablePods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.deployment.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.deployment.pod.available` instead.") advisory callbacks
+
+
+{- | Creates @k8s.deployment.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_deployment_desiredPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_deployment_desiredPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.deployment.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.deployment.pod.desired` instead.") advisory
+
+
+{- | Creates @k8s.deployment.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_deployment_desiredPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_deployment_desiredPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.deployment.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.deployment.pod.desired` instead.") advisory callbacks
+
+
+{- | Creates @k8s.deployment.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_deployment_pod_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_deployment_pod_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.deployment.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this deployment.") advisory
+
+
+{- | Creates @k8s.deployment.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_deployment_pod_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_deployment_pod_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.deployment.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this deployment.") advisory callbacks
+
+
+{- | Creates @k8s.deployment.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_deployment_pod_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_deployment_pod_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.deployment.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this deployment.") advisory
+
+
+{- | Creates @k8s.deployment.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_deployment_pod_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_deployment_pod_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.deployment.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this deployment.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.current_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_hpa_currentPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_currentPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.current_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.current` instead.") advisory
+
+
+{- | Creates @k8s.hpa.current_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_hpa_currentPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_currentPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.current_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.current` instead.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_hpa_desiredPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_desiredPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.desired` instead.") advisory
+
+
+{- | Creates @k8s.hpa.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_hpa_desiredPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_desiredPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.desired` instead.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.max_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_hpa_maxPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_maxPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.max_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.max` instead.") advisory
+
+
+{- | Creates @k8s.hpa.max_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_hpa_maxPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_maxPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.max_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.max` instead.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_hpa_metric_target_cpu_averageUtilization_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_k8s_hpa_metric_target_cpu_averageUtilization_int64 meter advisory =
+  meterCreateGaugeInt64 meter "k8s.hpa.metric.target.cpu.average_utilization" (Just "1") (Just "Target average utilization, in percentage, for CPU resource in HPA config.") advisory
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_hpa_metric_target_cpu_averageUtilization_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_k8s_hpa_metric_target_cpu_averageUtilization_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "k8s.hpa.metric.target.cpu.average_utilization" (Just "1") (Just "Target average utilization, in percentage, for CPU resource in HPA config.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_hpa_metric_target_cpu_averageUtilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_hpa_metric_target_cpu_averageUtilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.hpa.metric.target.cpu.average_utilization" (Just "1") (Just "Target average utilization, in percentage, for CPU resource in HPA config.") advisory
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_hpa_metric_target_cpu_averageUtilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_hpa_metric_target_cpu_averageUtilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.hpa.metric.target.cpu.average_utilization" (Just "1") (Just "Target average utilization, in percentage, for CPU resource in HPA config.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_value@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_hpa_metric_target_cpu_averageValue_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_k8s_hpa_metric_target_cpu_averageValue_int64 meter advisory =
+  meterCreateGaugeInt64 meter "k8s.hpa.metric.target.cpu.average_value" (Just "{cpu}") (Just "Target average value for CPU resource in HPA config.") advisory
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_value@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_metric_target_cpu_averageValue_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_k8s_hpa_metric_target_cpu_averageValue_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "k8s.hpa.metric.target.cpu.average_value" (Just "{cpu}") (Just "Target average value for CPU resource in HPA config.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_value@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_hpa_metric_target_cpu_averageValue_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_hpa_metric_target_cpu_averageValue_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.hpa.metric.target.cpu.average_value" (Just "{cpu}") (Just "Target average value for CPU resource in HPA config.") advisory
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.average_value@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_metric_target_cpu_averageValue_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_hpa_metric_target_cpu_averageValue_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.hpa.metric.target.cpu.average_value" (Just "{cpu}") (Just "Target average value for CPU resource in HPA config.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.value@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_hpa_metric_target_cpu_value_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_k8s_hpa_metric_target_cpu_value_int64 meter advisory =
+  meterCreateGaugeInt64 meter "k8s.hpa.metric.target.cpu.value" (Just "{cpu}") (Just "Target value for CPU resource in HPA config.") advisory
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.value@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_metric_target_cpu_value_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_k8s_hpa_metric_target_cpu_value_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "k8s.hpa.metric.target.cpu.value" (Just "{cpu}") (Just "Target value for CPU resource in HPA config.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.value@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_hpa_metric_target_cpu_value_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_hpa_metric_target_cpu_value_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.hpa.metric.target.cpu.value" (Just "{cpu}") (Just "Target value for CPU resource in HPA config.") advisory
+
+
+{- | Creates @k8s.hpa.metric.target.cpu.value@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_metric_target_cpu_value_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_hpa_metric_target_cpu_value_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.hpa.metric.target.cpu.value" (Just "{cpu}") (Just "Target value for CPU resource in HPA config.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.min_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_hpa_minPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_minPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.min_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.min` instead.") advisory
+
+
+{- | Creates @k8s.hpa.min_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_hpa_minPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_minPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.min_pods" (Just "{pod}") (Just "Deprecated, use `k8s.hpa.pod.min` instead.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.pod.current@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_hpa_pod_current_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_pod_current_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.pod.current" (Just "{pod}") (Just "Current number of replica pods managed by this horizontal pod autoscaler, as last seen by the autoscaler.") advisory
+
+
+{- | Creates @k8s.hpa.pod.current@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_pod_current_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_pod_current_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.pod.current" (Just "{pod}") (Just "Current number of replica pods managed by this horizontal pod autoscaler, as last seen by the autoscaler.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_hpa_pod_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_pod_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.pod.desired" (Just "{pod}") (Just "Desired number of replica pods managed by this horizontal pod autoscaler, as last calculated by the autoscaler.") advisory
+
+
+{- | Creates @k8s.hpa.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_pod_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_pod_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.pod.desired" (Just "{pod}") (Just "Desired number of replica pods managed by this horizontal pod autoscaler, as last calculated by the autoscaler.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.pod.max@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_hpa_pod_max_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_pod_max_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.pod.max" (Just "{pod}") (Just "The upper limit for the number of replica pods to which the autoscaler can scale up.") advisory
+
+
+{- | Creates @k8s.hpa.pod.max@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_pod_max_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_pod_max_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.pod.max" (Just "{pod}") (Just "The upper limit for the number of replica pods to which the autoscaler can scale up.") advisory callbacks
+
+
+{- | Creates @k8s.hpa.pod.min@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_hpa_pod_min_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_hpa_pod_min_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.hpa.pod.min" (Just "{pod}") (Just "The lower limit for the number of replica pods to which the autoscaler can scale down.") advisory
+
+
+{- | Creates @k8s.hpa.pod.min@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_hpa_pod_min_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_hpa_pod_min_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.hpa.pod.min" (Just "{pod}") (Just "The lower limit for the number of replica pods to which the autoscaler can scale down.") advisory callbacks
+
+
+{- | Creates @k8s.job.active_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_job_activePods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_activePods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.active_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.active` instead.") advisory
+
+
+{- | Creates @k8s.job.active_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_job_activePods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_activePods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.active_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.active` instead.") advisory callbacks
+
+
+{- | Creates @k8s.job.desired_successful_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_job_desiredSuccessfulPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_desiredSuccessfulPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.desired_successful_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.desired_successful` instead.") advisory
+
+
+{- | Creates @k8s.job.desired_successful_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_job_desiredSuccessfulPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_desiredSuccessfulPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.desired_successful_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.desired_successful` instead.") advisory callbacks
+
+
+{- | Creates @k8s.job.failed_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_job_failedPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_failedPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.failed_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.failed` instead.") advisory
+
+
+{- | Creates @k8s.job.failed_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_job_failedPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_failedPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.failed_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.failed` instead.") advisory callbacks
+
+
+{- | Creates @k8s.job.max_parallel_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_job_maxParallelPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_maxParallelPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.max_parallel_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.max_parallel` instead.") advisory
+
+
+{- | Creates @k8s.job.max_parallel_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_job_maxParallelPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_maxParallelPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.max_parallel_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.max_parallel` instead.") advisory callbacks
+
+
+{- | Creates @k8s.job.pod.active@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_job_pod_active_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_pod_active_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.pod.active" (Just "{pod}") (Just "The number of pending and actively running pods for a job.") advisory
+
+
+{- | Creates @k8s.job.pod.active@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_job_pod_active_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_pod_active_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.pod.active" (Just "{pod}") (Just "The number of pending and actively running pods for a job.") advisory callbacks
+
+
+{- | Creates @k8s.job.pod.desired_successful@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_job_pod_desiredSuccessful_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_pod_desiredSuccessful_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.pod.desired_successful" (Just "{pod}") (Just "The desired number of successfully finished pods the job should be run with.") advisory
+
+
+{- | Creates @k8s.job.pod.desired_successful@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_job_pod_desiredSuccessful_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_pod_desiredSuccessful_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.pod.desired_successful" (Just "{pod}") (Just "The desired number of successfully finished pods the job should be run with.") advisory callbacks
+
+
+{- | Creates @k8s.job.pod.failed@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_job_pod_failed_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_pod_failed_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.pod.failed" (Just "{pod}") (Just "The number of pods which reached phase Failed for a job.") advisory
+
+
+{- | Creates @k8s.job.pod.failed@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_job_pod_failed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_pod_failed_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.pod.failed" (Just "{pod}") (Just "The number of pods which reached phase Failed for a job.") advisory callbacks
+
+
+{- | Creates @k8s.job.pod.max_parallel@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_job_pod_maxParallel_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_pod_maxParallel_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.pod.max_parallel" (Just "{pod}") (Just "The max desired number of pods the job should run at any given time.") advisory
+
+
+{- | Creates @k8s.job.pod.max_parallel@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_job_pod_maxParallel_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_pod_maxParallel_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.pod.max_parallel" (Just "{pod}") (Just "The max desired number of pods the job should run at any given time.") advisory callbacks
+
+
+{- | Creates @k8s.job.pod.successful@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_job_pod_successful_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_pod_successful_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.pod.successful" (Just "{pod}") (Just "The number of pods which reached phase Succeeded for a job.") advisory
+
+
+{- | Creates @k8s.job.pod.successful@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_job_pod_successful_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_pod_successful_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.pod.successful" (Just "{pod}") (Just "The number of pods which reached phase Succeeded for a job.") advisory callbacks
+
+
+{- | Creates @k8s.job.successful_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_job_successfulPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_job_successfulPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.job.successful_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.successful` instead.") advisory
+
+
+{- | Creates @k8s.job.successful_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_job_successfulPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_job_successfulPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.job.successful_pods" (Just "{pod}") (Just "Deprecated, use `k8s.job.pod.successful` instead.") advisory callbacks
+
+
+{- | Creates @k8s.namespace.phase@ in @{namespace}@.
+Stability: development.
+-}
+create_k8s_namespace_phase_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_namespace_phase_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.namespace.phase" (Just "{namespace}") (Just "Describes number of K8s namespaces that are currently in a given phase.") advisory
+
+
+{- | Creates @k8s.namespace.phase@ in @{namespace}@.
+Stability: development.
+-}
+create_observable_k8s_namespace_phase_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_namespace_phase_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.namespace.phase" (Just "{namespace}") (Just "Describes number of K8s namespaces that are currently in a given phase.") advisory callbacks
+
+
+{- | Creates @k8s.node.allocatable.cpu@ in @{cpu}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_node_allocatable_cpu_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_node_allocatable_cpu_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.node.allocatable.cpu" (Just "{cpu}") (Just "Deprecated, use `k8s.node.cpu.allocatable` instead.") advisory
+
+
+{- | Creates @k8s.node.allocatable.cpu@ in @{cpu}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_node_allocatable_cpu_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_node_allocatable_cpu_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.node.allocatable.cpu" (Just "{cpu}") (Just "Deprecated, use `k8s.node.cpu.allocatable` instead.") advisory callbacks
+
+
+{- | Creates @k8s.node.allocatable.ephemeral_storage@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_node_allocatable_ephemeralStorage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_allocatable_ephemeralStorage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.allocatable.ephemeral_storage" (Just "By") (Just "Deprecated, use `k8s.node.ephemeral_storage.allocatable` instead.") advisory
+
+
+{- | Creates @k8s.node.allocatable.ephemeral_storage@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_node_allocatable_ephemeralStorage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_allocatable_ephemeralStorage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.allocatable.ephemeral_storage" (Just "By") (Just "Deprecated, use `k8s.node.ephemeral_storage.allocatable` instead.") advisory callbacks
+
+
+{- | Creates @k8s.node.allocatable.memory@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_node_allocatable_memory_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_allocatable_memory_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.allocatable.memory" (Just "By") (Just "Deprecated, use `k8s.node.memory.allocatable` instead.") advisory
+
+
+{- | Creates @k8s.node.allocatable.memory@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_node_allocatable_memory_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_allocatable_memory_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.allocatable.memory" (Just "By") (Just "Deprecated, use `k8s.node.memory.allocatable` instead.") advisory callbacks
+
+
+{- | Creates @k8s.node.allocatable.pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_node_allocatable_pods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_allocatable_pods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.allocatable.pods" (Just "{pod}") (Just "Deprecated, use `k8s.node.pod.allocatable` instead.") advisory
+
+
+{- | Creates @k8s.node.allocatable.pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_node_allocatable_pods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_allocatable_pods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.allocatable.pods" (Just "{pod}") (Just "Deprecated, use `k8s.node.pod.allocatable` instead.") advisory callbacks
+
+
+{- | Creates @k8s.node.condition.status@ in @{node}@.
+Stability: development.
+-}
+create_k8s_node_condition_status_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_condition_status_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.condition.status" (Just "{node}") (Just "Describes the condition of a particular Node.") advisory
+
+
+{- | Creates @k8s.node.condition.status@ in @{node}@.
+Stability: development.
+-}
+create_observable_k8s_node_condition_status_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_condition_status_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.condition.status" (Just "{node}") (Just "Describes the condition of a particular Node.") advisory callbacks
+
+
+{- | Creates @k8s.node.cpu.allocatable@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_node_cpu_allocatable_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_node_cpu_allocatable_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.node.cpu.allocatable" (Just "{cpu}") (Just "Amount of CPU allocatable on the node.") advisory
+
+
+{- | Creates @k8s.node.cpu.allocatable@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_node_cpu_allocatable_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_node_cpu_allocatable_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.node.cpu.allocatable" (Just "{cpu}") (Just "Amount of CPU allocatable on the node.") advisory callbacks
+
+
+{- | Creates @k8s.node.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_k8s_node_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_k8s_node_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "k8s.node.cpu.time" (Just "s") (Just "Total CPU time consumed.") advisory
+
+
+{- | Creates @k8s.node.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_k8s_node_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "k8s.node.cpu.time" (Just "s") (Just "Total CPU time consumed.") advisory callbacks
+
+
+{- | Creates @k8s.node.cpu.usage@ in @{cpu}@.
+Stability: release candidate.
+-}
+create_k8s_node_cpu_usage_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_node_cpu_usage_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.node.cpu.usage" (Just "{cpu}") (Just "Node's CPU usage, measured in CPUs. Range from 0 to the number of allocatable CPUs.") advisory
+
+
+{- | Creates @k8s.node.cpu.usage@ in @{cpu}@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_cpu_usage_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_node_cpu_usage_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.node.cpu.usage" (Just "{cpu}") (Just "Node's CPU usage, measured in CPUs. Range from 0 to the number of allocatable CPUs.") advisory callbacks
+
+
+{- | Creates @k8s.node.ephemeral_storage.allocatable@ in @By@.
+Stability: development.
+-}
+create_k8s_node_ephemeralStorage_allocatable_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_ephemeralStorage_allocatable_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.ephemeral_storage.allocatable" (Just "By") (Just "Amount of ephemeral-storage allocatable on the node.") advisory
+
+
+{- | Creates @k8s.node.ephemeral_storage.allocatable@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_node_ephemeralStorage_allocatable_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_ephemeralStorage_allocatable_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.ephemeral_storage.allocatable" (Just "By") (Just "Amount of ephemeral-storage allocatable on the node.") advisory callbacks
+
+
+{- | Creates @k8s.node.filesystem.available@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_filesystem_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_filesystem_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.filesystem.available" (Just "By") (Just "Node filesystem available bytes.") advisory
+
+
+{- | Creates @k8s.node.filesystem.available@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_filesystem_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_filesystem_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.filesystem.available" (Just "By") (Just "Node filesystem available bytes.") advisory callbacks
+
+
+{- | Creates @k8s.node.filesystem.capacity@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_filesystem_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_filesystem_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.filesystem.capacity" (Just "By") (Just "Node filesystem capacity.") advisory
+
+
+{- | Creates @k8s.node.filesystem.capacity@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_filesystem_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_filesystem_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.filesystem.capacity" (Just "By") (Just "Node filesystem capacity.") advisory callbacks
+
+
+{- | Creates @k8s.node.filesystem.inode.count@ in @{inode}@.
+Stability: release candidate.
+-}
+create_k8s_node_filesystem_inode_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_filesystem_inode_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.filesystem.inode.count" (Just "{inode}") (Just "The total inodes in the node's root filesystem.") advisory
+
+
+{- | Creates @k8s.node.filesystem.inode.count@ in @{inode}@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_filesystem_inode_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_filesystem_inode_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.filesystem.inode.count" (Just "{inode}") (Just "The total inodes in the node's root filesystem.") advisory callbacks
+
+
+{- | Creates @k8s.node.filesystem.inode.free@ in @{inode}@.
+Stability: release candidate.
+-}
+create_k8s_node_filesystem_inode_free_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_filesystem_inode_free_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.filesystem.inode.free" (Just "{inode}") (Just "The free inodes in the node's root filesystem.") advisory
+
+
+{- | Creates @k8s.node.filesystem.inode.free@ in @{inode}@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_filesystem_inode_free_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_filesystem_inode_free_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.filesystem.inode.free" (Just "{inode}") (Just "The free inodes in the node's root filesystem.") advisory callbacks
+
+
+{- | Creates @k8s.node.filesystem.usage@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_filesystem_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.filesystem.usage" (Just "By") (Just "Node filesystem usage.") advisory
+
+
+{- | Creates @k8s.node.filesystem.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_filesystem_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.filesystem.usage" (Just "By") (Just "Node filesystem usage.") advisory callbacks
+
+
+{- | Creates @k8s.node.memory.allocatable@ in @By@.
+Stability: development.
+-}
+create_k8s_node_memory_allocatable_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_memory_allocatable_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.memory.allocatable" (Just "By") (Just "Amount of memory allocatable on the node.") advisory
+
+
+{- | Creates @k8s.node.memory.allocatable@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_node_memory_allocatable_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_memory_allocatable_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.memory.allocatable" (Just "By") (Just "Amount of memory allocatable on the node.") advisory callbacks
+
+
+{- | Creates @k8s.node.memory.available@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_memory_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_memory_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.memory.available" (Just "By") (Just "Node memory available.") advisory
+
+
+{- | Creates @k8s.node.memory.available@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_memory_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_memory_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.memory.available" (Just "By") (Just "Node memory available.") advisory callbacks
+
+
+{- | Creates @k8s.node.memory.paging.faults@ in @{fault}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_node_memory_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_node_memory_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.node.memory.paging.faults" (Just "{fault}") (Just "Deprecated, use `k8s.node.paging.faults` instead.") advisory
+
+
+{- | Creates @k8s.node.memory.paging.faults@ in @{fault}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_node_memory_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_node_memory_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.node.memory.paging.faults" (Just "{fault}") (Just "Deprecated, use `k8s.node.paging.faults` instead.") advisory callbacks
+
+
+{- | Creates @k8s.node.memory.rss@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_memory_rss_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_memory_rss_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.memory.rss" (Just "By") (Just "Node memory RSS.") advisory
+
+
+{- | Creates @k8s.node.memory.rss@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_memory_rss_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_memory_rss_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.memory.rss" (Just "By") (Just "Node memory RSS.") advisory callbacks
+
+
+{- | Creates @k8s.node.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.memory.usage" (Just "By") (Just "Memory usage of the Node.") advisory
+
+
+{- | Creates @k8s.node.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.memory.usage" (Just "By") (Just "Memory usage of the Node.") advisory callbacks
+
+
+{- | Creates @k8s.node.memory.working_set@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_memory_workingSet_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.memory.working_set" (Just "By") (Just "Node memory working set.") advisory
+
+
+{- | Creates @k8s.node.memory.working_set@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_memory_workingSet_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.memory.working_set" (Just "By") (Just "Node memory working set.") advisory callbacks
+
+
+{- | Creates @k8s.node.network.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_k8s_node_network_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_node_network_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.node.network.errors" (Just "{error}") (Just "Node network errors.") advisory
+
+
+{- | Creates @k8s.node.network.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_network_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_node_network_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.node.network.errors" (Just "{error}") (Just "Node network errors.") advisory callbacks
+
+
+{- | Creates @k8s.node.network.io@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_node_network_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_node_network_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.node.network.io" (Just "By") (Just "Network bytes for the Node.") advisory
+
+
+{- | Creates @k8s.node.network.io@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_network_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_node_network_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.node.network.io" (Just "By") (Just "Network bytes for the Node.") advisory callbacks
+
+
+{- | Creates @k8s.node.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_k8s_node_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_node_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.node.paging.faults" (Just "{fault}") (Just "Node memory paging faults.") advisory
+
+
+{- | Creates @k8s.node.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_node_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.node.paging.faults" (Just "{fault}") (Just "Node memory paging faults.") advisory callbacks
+
+
+{- | Creates @k8s.node.pid.limit@ in @{thread}@.
+Stability: development.
+-}
+create_k8s_node_pid_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_pid_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.pid.limit" (Just "{thread}") (Just "Total number of processes/threads allowed by the operating system on the node.") advisory
+
+
+{- | Creates @k8s.node.pid.limit@ in @{thread}@.
+Stability: development.
+-}
+create_observable_k8s_node_pid_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_pid_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.pid.limit" (Just "{thread}") (Just "Total number of processes/threads allowed by the operating system on the node.") advisory callbacks
+
+
+{- | Creates @k8s.node.pid.usage@ in @{thread}@.
+Stability: development.
+-}
+create_k8s_node_pid_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_pid_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.pid.usage" (Just "{thread}") (Just "Total number of existing processes and threads on the node.") advisory
+
+
+{- | Creates @k8s.node.pid.usage@ in @{thread}@.
+Stability: development.
+-}
+create_observable_k8s_node_pid_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_pid_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.pid.usage" (Just "{thread}") (Just "Total number of existing processes and threads on the node.") advisory callbacks
+
+
+{- | Creates @k8s.node.pod.allocatable@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_node_pod_allocatable_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_pod_allocatable_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.pod.allocatable" (Just "{pod}") (Just "Amount of pods allocatable on the node.") advisory
+
+
+{- | Creates @k8s.node.pod.allocatable@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_node_pod_allocatable_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_pod_allocatable_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.pod.allocatable" (Just "{pod}") (Just "Amount of pods allocatable on the node.") advisory callbacks
+
+
+{- | Creates @k8s.node.system_container.cpu.time@ in @s@.
+Stability: development.
+-}
+create_k8s_node_systemContainer_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_k8s_node_systemContainer_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "k8s.node.system_container.cpu.time" (Just "s") (Just "Node's system container CPU time.") advisory
+
+
+{- | Creates @k8s.node.system_container.cpu.time@ in @s@.
+Stability: development.
+-}
+create_observable_k8s_node_systemContainer_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_k8s_node_systemContainer_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "k8s.node.system_container.cpu.time" (Just "s") (Just "Node's system container CPU time.") advisory callbacks
+
+
+{- | Creates @k8s.node.system_container.cpu.usage@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_node_systemContainer_cpu_usage_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_node_systemContainer_cpu_usage_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.node.system_container.cpu.usage" (Just "{cpu}") (Just "Node's system container CPU usage, measured in CPUs.") advisory
+
+
+{- | Creates @k8s.node.system_container.cpu.usage@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_node_systemContainer_cpu_usage_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_node_systemContainer_cpu_usage_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.node.system_container.cpu.usage" (Just "{cpu}") (Just "Node's system container CPU usage, measured in CPUs.") advisory callbacks
+
+
+{- | Creates @k8s.node.system_container.memory.usage@ in @By@.
+Stability: development.
+-}
+create_k8s_node_systemContainer_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_systemContainer_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.system_container.memory.usage" (Just "By") (Just "Node's system container memory usage.") advisory
+
+
+{- | Creates @k8s.node.system_container.memory.usage@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_node_systemContainer_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_systemContainer_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.system_container.memory.usage" (Just "By") (Just "Node's system container memory usage.") advisory callbacks
+
+
+{- | Creates @k8s.node.system_container.memory.working_set@ in @By@.
+Stability: development.
+-}
+create_k8s_node_systemContainer_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_node_systemContainer_memory_workingSet_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.node.system_container.memory.working_set" (Just "By") (Just "The amount of working set memory.") advisory
+
+
+{- | Creates @k8s.node.system_container.memory.working_set@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_node_systemContainer_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_node_systemContainer_memory_workingSet_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.node.system_container.memory.working_set" (Just "By") (Just "The amount of working set memory.") advisory callbacks
+
+
+{- | Creates @k8s.node.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_k8s_node_uptime_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_node_uptime_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.node.uptime" (Just "s") (Just "The time the Node has been running.") advisory
+
+
+{- | Creates @k8s.node.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_observable_k8s_node_uptime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_node_uptime_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.node.uptime" (Just "s") (Just "The time the Node has been running.") advisory callbacks
+
+
+{- | Creates @k8s.persistentvolume.status.phase@ in @{persistentvolume}@.
+Stability: development.
+-}
+create_k8s_persistentvolume_status_phase_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_persistentvolume_status_phase_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.persistentvolume.status.phase" (Just "{persistentvolume}") (Just "Number of PersistentVolumes in a given phase.") advisory
+
+
+{- | Creates @k8s.persistentvolume.status.phase@ in @{persistentvolume}@.
+Stability: development.
+-}
+create_observable_k8s_persistentvolume_status_phase_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_persistentvolume_status_phase_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.persistentvolume.status.phase" (Just "{persistentvolume}") (Just "Number of PersistentVolumes in a given phase.") advisory callbacks
+
+
+{- | Creates @k8s.persistentvolume.storage.capacity@ in @By@.
+Stability: development.
+-}
+create_k8s_persistentvolume_storage_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_persistentvolume_storage_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.persistentvolume.storage.capacity" (Just "By") (Just "The storage capacity of the PersistentVolume.") advisory
+
+
+{- | Creates @k8s.persistentvolume.storage.capacity@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_persistentvolume_storage_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_persistentvolume_storage_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.persistentvolume.storage.capacity" (Just "By") (Just "The storage capacity of the PersistentVolume.") advisory callbacks
+
+
+{- | Creates @k8s.persistentvolumeclaim.status.phase@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_k8s_persistentvolumeclaim_status_phase_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_persistentvolumeclaim_status_phase_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.persistentvolumeclaim.status.phase" (Just "{persistentvolumeclaim}") (Just "Number of PersistentVolumeClaims in a given phase.") advisory
+
+
+{- | Creates @k8s.persistentvolumeclaim.status.phase@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_observable_k8s_persistentvolumeclaim_status_phase_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_persistentvolumeclaim_status_phase_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.persistentvolumeclaim.status.phase" (Just "{persistentvolumeclaim}") (Just "Number of PersistentVolumeClaims in a given phase.") advisory callbacks
+
+
+{- | Creates @k8s.persistentvolumeclaim.storage.capacity@ in @By@.
+Stability: development.
+-}
+create_k8s_persistentvolumeclaim_storage_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_persistentvolumeclaim_storage_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.persistentvolumeclaim.storage.capacity" (Just "By") (Just "The actual storage capacity provisioned for the PersistentVolumeClaim.") advisory
+
+
+{- | Creates @k8s.persistentvolumeclaim.storage.capacity@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_persistentvolumeclaim_storage_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_persistentvolumeclaim_storage_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.persistentvolumeclaim.storage.capacity" (Just "By") (Just "The actual storage capacity provisioned for the PersistentVolumeClaim.") advisory callbacks
+
+
+{- | Creates @k8s.persistentvolumeclaim.storage.request@ in @By@.
+Stability: development.
+-}
+create_k8s_persistentvolumeclaim_storage_request_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_persistentvolumeclaim_storage_request_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.persistentvolumeclaim.storage.request" (Just "By") (Just "The storage requested by the PersistentVolumeClaim.") advisory
+
+
+{- | Creates @k8s.persistentvolumeclaim.storage.request@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_persistentvolumeclaim_storage_request_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_persistentvolumeclaim_storage_request_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.persistentvolumeclaim.storage.request" (Just "By") (Just "The storage requested by the PersistentVolumeClaim.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.limit.current@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_pod_cpu_limit_current_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_pod_cpu_limit_current_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.pod.cpu.limit.current" (Just "{cpu}") (Just "Maximum CPU resource limit currently configured for a running Pod.") advisory
+
+
+{- | Creates @k8s.pod.cpu.limit.current@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_pod_cpu_limit_current_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_pod_cpu_limit_current_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.pod.cpu.limit.current" (Just "{cpu}") (Just "Maximum CPU resource limit currently configured for a running Pod.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.limit.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_pod_cpu_limit_desired_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_pod_cpu_limit_desired_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.pod.cpu.limit.desired" (Just "{cpu}") (Just "Maximum CPU resource limit as defined by the Pod spec.") advisory
+
+
+{- | Creates @k8s.pod.cpu.limit.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_pod_cpu_limit_desired_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_pod_cpu_limit_desired_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.pod.cpu.limit.desired" (Just "{cpu}") (Just "Maximum CPU resource limit as defined by the Pod spec.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_pod_cpu_limit_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_pod_cpu_limit_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.pod.cpu.limit.utilization" (Just "1") (Just "The ratio of Pod CPU usage to its current CPU limit.") advisory
+
+
+{- | Creates @k8s.pod.cpu.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_pod_cpu_limit_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_pod_cpu_limit_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.pod.cpu.limit.utilization" (Just "1") (Just "The ratio of Pod CPU usage to its current CPU limit.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.request.current@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_pod_cpu_request_current_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_pod_cpu_request_current_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.pod.cpu.request.current" (Just "{cpu}") (Just "CPU resource requested currently configured for a running Pod.") advisory
+
+
+{- | Creates @k8s.pod.cpu.request.current@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_pod_cpu_request_current_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_pod_cpu_request_current_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.pod.cpu.request.current" (Just "{cpu}") (Just "CPU resource requested currently configured for a running Pod.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.request.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_pod_cpu_request_desired_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_pod_cpu_request_desired_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.pod.cpu.request.desired" (Just "{cpu}") (Just "CPU resource requested as defined by the Pod spec.") advisory
+
+
+{- | Creates @k8s.pod.cpu.request.desired@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_pod_cpu_request_desired_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_pod_cpu_request_desired_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.pod.cpu.request.desired" (Just "{cpu}") (Just "CPU resource requested as defined by the Pod spec.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.request.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_pod_cpu_request_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_pod_cpu_request_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.pod.cpu.request.utilization" (Just "1") (Just "The ratio of Pod CPU usage to its current CPU request.") advisory
+
+
+{- | Creates @k8s.pod.cpu.request.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_pod_cpu_request_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_pod_cpu_request_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.pod.cpu.request.utilization" (Just "1") (Just "The ratio of Pod CPU usage to its current CPU request.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_k8s_pod_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_k8s_pod_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "k8s.pod.cpu.time" (Just "s") (Just "Total CPU time consumed.") advisory
+
+
+{- | Creates @k8s.pod.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_k8s_pod_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "k8s.pod.cpu.time" (Just "s") (Just "Total CPU time consumed.") advisory callbacks
+
+
+{- | Creates @k8s.pod.cpu.usage@ in @{cpu}@.
+Stability: release candidate.
+-}
+create_k8s_pod_cpu_usage_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_pod_cpu_usage_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.pod.cpu.usage" (Just "{cpu}") (Just "Pod's CPU usage, measured in CPUs. Range from 0 to the number of allocatable CPUs.") advisory
+
+
+{- | Creates @k8s.pod.cpu.usage@ in @{cpu}@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_cpu_usage_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_pod_cpu_usage_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.pod.cpu.usage" (Just "{cpu}") (Just "Pod's CPU usage, measured in CPUs. Range from 0 to the number of allocatable CPUs.") advisory callbacks
+
+
+{- | Creates @k8s.pod.filesystem.available@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_filesystem_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_filesystem_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.filesystem.available" (Just "By") (Just "Pod filesystem available bytes.") advisory
+
+
+{- | Creates @k8s.pod.filesystem.available@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_filesystem_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_filesystem_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.filesystem.available" (Just "By") (Just "Pod filesystem available bytes.") advisory callbacks
+
+
+{- | Creates @k8s.pod.filesystem.capacity@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_filesystem_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_filesystem_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.filesystem.capacity" (Just "By") (Just "Pod filesystem capacity.") advisory
+
+
+{- | Creates @k8s.pod.filesystem.capacity@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_filesystem_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_filesystem_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.filesystem.capacity" (Just "By") (Just "Pod filesystem capacity.") advisory callbacks
+
+
+{- | Creates @k8s.pod.filesystem.usage@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_filesystem_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.filesystem.usage" (Just "By") (Just "Pod filesystem usage.") advisory
+
+
+{- | Creates @k8s.pod.filesystem.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_filesystem_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.filesystem.usage" (Just "By") (Just "Pod filesystem usage.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.available@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_memory_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.available" (Just "By") (Just "Pod memory available.") advisory
+
+
+{- | Creates @k8s.pod.memory.available@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_memory_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.available" (Just "By") (Just "Pod memory available.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.limit.current@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_memory_limit_current_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_limit_current_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.limit.current" (Just "By") (Just "Maximum memory resource limit currently configured for a running Pod.") advisory
+
+
+{- | Creates @k8s.pod.memory.limit.current@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_memory_limit_current_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_limit_current_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.limit.current" (Just "By") (Just "Maximum memory resource limit currently configured for a running Pod.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.limit.desired@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_memory_limit_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_limit_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.limit.desired" (Just "By") (Just "Maximum memory resource limit as defined by the Pod spec.") advisory
+
+
+{- | Creates @k8s.pod.memory.limit.desired@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_memory_limit_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_limit_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.limit.desired" (Just "By") (Just "Maximum memory resource limit as defined by the Pod spec.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_pod_memory_limit_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_pod_memory_limit_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.pod.memory.limit.utilization" (Just "1") (Just "The ratio of Pod memory working set to its current memory limit.") advisory
+
+
+{- | Creates @k8s.pod.memory.limit.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_pod_memory_limit_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_pod_memory_limit_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.pod.memory.limit.utilization" (Just "1") (Just "The ratio of Pod memory working set to its current memory limit.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.paging.faults@ in @{fault}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_pod_memory_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_pod_memory_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.pod.memory.paging.faults" (Just "{fault}") (Just "Deprecated, use `k8s.pod.paging.faults` instead.") advisory
+
+
+{- | Creates @k8s.pod.memory.paging.faults@ in @{fault}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_pod_memory_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_pod_memory_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.pod.memory.paging.faults" (Just "{fault}") (Just "Deprecated, use `k8s.pod.paging.faults` instead.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.request.current@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_memory_request_current_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_request_current_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.request.current" (Just "By") (Just "Memory resource request currently configured for a running Pod.") advisory
+
+
+{- | Creates @k8s.pod.memory.request.current@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_memory_request_current_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_request_current_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.request.current" (Just "By") (Just "Memory resource request currently configured for a running Pod.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.request.desired@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_memory_request_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_request_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.request.desired" (Just "By") (Just "Memory resource requested as defined by the Pod spec.") advisory
+
+
+{- | Creates @k8s.pod.memory.request.desired@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_memory_request_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_request_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.request.desired" (Just "By") (Just "Memory resource requested as defined by the Pod spec.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.request.utilization@ in @1@.
+Stability: development.
+-}
+create_k8s_pod_memory_request_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_pod_memory_request_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.pod.memory.request.utilization" (Just "1") (Just "The ratio of Pod memory working set to its current memory request.") advisory
+
+
+{- | Creates @k8s.pod.memory.request.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_k8s_pod_memory_request_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_pod_memory_request_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.pod.memory.request.utilization" (Just "1") (Just "The ratio of Pod memory working set to its current memory request.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.rss@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_memory_rss_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_rss_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.rss" (Just "By") (Just "Pod memory RSS.") advisory
+
+
+{- | Creates @k8s.pod.memory.rss@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_memory_rss_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_rss_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.rss" (Just "By") (Just "Pod memory RSS.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.usage" (Just "By") (Just "Memory usage of the Pod.") advisory
+
+
+{- | Creates @k8s.pod.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.usage" (Just "By") (Just "Memory usage of the Pod.") advisory callbacks
+
+
+{- | Creates @k8s.pod.memory.working_set@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_memory_workingSet_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.memory.working_set" (Just "By") (Just "Pod memory working set.") advisory
+
+
+{- | Creates @k8s.pod.memory.working_set@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_memory_workingSet_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_memory_workingSet_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.memory.working_set" (Just "By") (Just "Pod memory working set.") advisory callbacks
+
+
+{- | Creates @k8s.pod.network.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_k8s_pod_network_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_pod_network_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.pod.network.errors" (Just "{error}") (Just "Pod network errors.") advisory
+
+
+{- | Creates @k8s.pod.network.errors@ in @{error}@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_network_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_pod_network_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.pod.network.errors" (Just "{error}") (Just "Pod network errors.") advisory callbacks
+
+
+{- | Creates @k8s.pod.network.io@ in @By@.
+Stability: release candidate.
+-}
+create_k8s_pod_network_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_pod_network_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.pod.network.io" (Just "By") (Just "Network bytes for the Pod.") advisory
+
+
+{- | Creates @k8s.pod.network.io@ in @By@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_network_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_pod_network_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.pod.network.io" (Just "By") (Just "Network bytes for the Pod.") advisory callbacks
+
+
+{- | Creates @k8s.pod.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_k8s_pod_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_k8s_pod_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "k8s.pod.paging.faults" (Just "{fault}") (Just "Pod memory paging faults.") advisory
+
+
+{- | Creates @k8s.pod.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_k8s_pod_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "k8s.pod.paging.faults" (Just "{fault}") (Just "Pod memory paging faults.") advisory callbacks
+
+
+{- | Creates @k8s.pod.status.phase@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_pod_status_phase_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_status_phase_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.status.phase" (Just "{pod}") (Just "Describes number of K8s Pods that are currently in a given phase.") advisory
+
+
+{- | Creates @k8s.pod.status.phase@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_pod_status_phase_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_status_phase_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.status.phase" (Just "{pod}") (Just "Describes number of K8s Pods that are currently in a given phase.") advisory callbacks
+
+
+{- | Creates @k8s.pod.status.reason@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_pod_status_reason_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_status_reason_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.status.reason" (Just "{pod}") (Just "Describes the number of K8s Pods that are currently in a state for a given reason.") advisory
+
+
+{- | Creates @k8s.pod.status.reason@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_pod_status_reason_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_status_reason_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.status.reason" (Just "{pod}") (Just "Describes the number of K8s Pods that are currently in a state for a given reason.") advisory callbacks
+
+
+{- | Creates @k8s.pod.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_k8s_pod_uptime_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_k8s_pod_uptime_double meter advisory =
+  meterCreateGaugeDouble meter "k8s.pod.uptime" (Just "s") (Just "The time the Pod has been running.") advisory
+
+
+{- | Creates @k8s.pod.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_observable_k8s_pod_uptime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_k8s_pod_uptime_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "k8s.pod.uptime" (Just "s") (Just "The time the Pod has been running.") advisory callbacks
+
+
+{- | Creates @k8s.pod.volume.available@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_volume_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_volume_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.volume.available" (Just "By") (Just "Pod volume storage space available.") advisory
+
+
+{- | Creates @k8s.pod.volume.available@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_volume_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_volume_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.volume.available" (Just "By") (Just "Pod volume storage space available.") advisory callbacks
+
+
+{- | Creates @k8s.pod.volume.capacity@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_volume_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_volume_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.volume.capacity" (Just "By") (Just "Pod volume total capacity.") advisory
+
+
+{- | Creates @k8s.pod.volume.capacity@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_volume_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_volume_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.volume.capacity" (Just "By") (Just "Pod volume total capacity.") advisory callbacks
+
+
+{- | Creates @k8s.pod.volume.inode.count@ in @{inode}@.
+Stability: development.
+-}
+create_k8s_pod_volume_inode_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_volume_inode_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.volume.inode.count" (Just "{inode}") (Just "The total inodes in the filesystem of the Pod's volume.") advisory
+
+
+{- | Creates @k8s.pod.volume.inode.count@ in @{inode}@.
+Stability: development.
+-}
+create_observable_k8s_pod_volume_inode_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_volume_inode_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.volume.inode.count" (Just "{inode}") (Just "The total inodes in the filesystem of the Pod's volume.") advisory callbacks
+
+
+{- | Creates @k8s.pod.volume.inode.free@ in @{inode}@.
+Stability: development.
+-}
+create_k8s_pod_volume_inode_free_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_volume_inode_free_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.volume.inode.free" (Just "{inode}") (Just "The free inodes in the filesystem of the Pod's volume.") advisory
+
+
+{- | Creates @k8s.pod.volume.inode.free@ in @{inode}@.
+Stability: development.
+-}
+create_observable_k8s_pod_volume_inode_free_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_volume_inode_free_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.volume.inode.free" (Just "{inode}") (Just "The free inodes in the filesystem of the Pod's volume.") advisory callbacks
+
+
+{- | Creates @k8s.pod.volume.inode.used@ in @{inode}@.
+Stability: development.
+-}
+create_k8s_pod_volume_inode_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_volume_inode_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.volume.inode.used" (Just "{inode}") (Just "The inodes used by the filesystem of the Pod's volume.") advisory
+
+
+{- | Creates @k8s.pod.volume.inode.used@ in @{inode}@.
+Stability: development.
+-}
+create_observable_k8s_pod_volume_inode_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_volume_inode_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.volume.inode.used" (Just "{inode}") (Just "The inodes used by the filesystem of the Pod's volume.") advisory callbacks
+
+
+{- | Creates @k8s.pod.volume.usage@ in @By@.
+Stability: development.
+-}
+create_k8s_pod_volume_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_pod_volume_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.pod.volume.usage" (Just "By") (Just "Pod volume usage.") advisory
+
+
+{- | Creates @k8s.pod.volume.usage@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_pod_volume_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_pod_volume_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.pod.volume.usage" (Just "By") (Just "Pod volume usage.") advisory callbacks
+
+
+{- | Creates @k8s.replicaset.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_replicaset_availablePods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicaset_availablePods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicaset.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicaset.pod.available` instead.") advisory
+
+
+{- | Creates @k8s.replicaset.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_replicaset_availablePods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicaset_availablePods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicaset.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicaset.pod.available` instead.") advisory callbacks
+
+
+{- | Creates @k8s.replicaset.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_replicaset_desiredPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicaset_desiredPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicaset.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicaset.pod.desired` instead.") advisory
+
+
+{- | Creates @k8s.replicaset.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_replicaset_desiredPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicaset_desiredPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicaset.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicaset.pod.desired` instead.") advisory callbacks
+
+
+{- | Creates @k8s.replicaset.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_replicaset_pod_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicaset_pod_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicaset.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this replicaset.") advisory
+
+
+{- | Creates @k8s.replicaset.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_replicaset_pod_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicaset_pod_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicaset.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this replicaset.") advisory callbacks
+
+
+{- | Creates @k8s.replicaset.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_replicaset_pod_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicaset_pod_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicaset.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this replicaset.") advisory
+
+
+{- | Creates @k8s.replicaset.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_replicaset_pod_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicaset_pod_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicaset.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this replicaset.") advisory callbacks
+
+
+{- | Creates @k8s.replication_controller.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_replicationController_availablePods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicationController_availablePods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replication_controller.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.available` instead.") advisory
+
+
+{- | Creates @k8s.replication_controller.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_replicationController_availablePods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicationController_availablePods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replication_controller.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.available` instead.") advisory callbacks
+
+
+{- | Creates @k8s.replication_controller.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_replicationController_desiredPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicationController_desiredPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replication_controller.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.desired` instead.") advisory
+
+
+{- | Creates @k8s.replication_controller.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_replicationController_desiredPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicationController_desiredPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replication_controller.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.desired` instead.") advisory callbacks
+
+
+{- | Creates @k8s.replicationcontroller.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_replicationcontroller_availablePods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicationcontroller_availablePods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicationcontroller.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.available` instead.") advisory
+
+
+{- | Creates @k8s.replicationcontroller.available_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_replicationcontroller_availablePods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicationcontroller_availablePods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicationcontroller.available_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.available` instead.") advisory callbacks
+
+
+{- | Creates @k8s.replicationcontroller.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_replicationcontroller_desiredPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicationcontroller_desiredPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicationcontroller.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.desired` instead.") advisory
+
+
+{- | Creates @k8s.replicationcontroller.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_replicationcontroller_desiredPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicationcontroller_desiredPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicationcontroller.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.replicationcontroller.pod.desired` instead.") advisory callbacks
+
+
+{- | Creates @k8s.replicationcontroller.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_replicationcontroller_pod_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicationcontroller_pod_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicationcontroller.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this replication controller.") advisory
+
+
+{- | Creates @k8s.replicationcontroller.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_replicationcontroller_pod_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicationcontroller_pod_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicationcontroller.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this replication controller.") advisory callbacks
+
+
+{- | Creates @k8s.replicationcontroller.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_replicationcontroller_pod_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_replicationcontroller_pod_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.replicationcontroller.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this replication controller.") advisory
+
+
+{- | Creates @k8s.replicationcontroller.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_replicationcontroller_pod_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_replicationcontroller_pod_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.replicationcontroller.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this replication controller.") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.cpu.limit.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_resourcequota_cpu_limit_hard_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_resourcequota_cpu_limit_hard_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.resourcequota.cpu.limit.hard" (Just "{cpu}") (Just "The CPU limits in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.cpu.limit.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_cpu_limit_hard_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_resourcequota_cpu_limit_hard_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.resourcequota.cpu.limit.hard" (Just "{cpu}") (Just "The CPU limits in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.cpu.limit.used@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_resourcequota_cpu_limit_used_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_resourcequota_cpu_limit_used_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.resourcequota.cpu.limit.used" (Just "{cpu}") (Just "The CPU limits in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.cpu.limit.used@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_cpu_limit_used_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_resourcequota_cpu_limit_used_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.resourcequota.cpu.limit.used" (Just "{cpu}") (Just "The CPU limits in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.cpu.request.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_resourcequota_cpu_request_hard_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_resourcequota_cpu_request_hard_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.resourcequota.cpu.request.hard" (Just "{cpu}") (Just "The CPU requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.cpu.request.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_cpu_request_hard_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_resourcequota_cpu_request_hard_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.resourcequota.cpu.request.hard" (Just "{cpu}") (Just "The CPU requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.cpu.request.used@ in @{cpu}@.
+Stability: development.
+-}
+create_k8s_resourcequota_cpu_request_used_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_k8s_resourcequota_cpu_request_used_double meter advisory =
+  meterCreateUpDownCounterDouble meter "k8s.resourcequota.cpu.request.used" (Just "{cpu}") (Just "The CPU requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.cpu.request.used@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_cpu_request_used_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_k8s_resourcequota_cpu_request_used_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "k8s.resourcequota.cpu.request.used" (Just "{cpu}") (Just "The CPU requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.limit.hard@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_ephemeralStorage_limit_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_ephemeralStorage_limit_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.limit.hard" (Just "By") (Just "The sum of local ephemeral storage limits in the namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.limit.hard@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_ephemeralStorage_limit_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_ephemeralStorage_limit_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.limit.hard" (Just "By") (Just "The sum of local ephemeral storage limits in the namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.limit.used@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_ephemeralStorage_limit_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_ephemeralStorage_limit_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.limit.used" (Just "By") (Just "The sum of local ephemeral storage limits in the namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.limit.used@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_ephemeralStorage_limit_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_ephemeralStorage_limit_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.limit.used" (Just "By") (Just "The sum of local ephemeral storage limits in the namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_ephemeralStorage_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_ephemeralStorage_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.request.hard" (Just "By") (Just "The sum of local ephemeral storage requests in the namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_ephemeralStorage_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_ephemeralStorage_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.request.hard" (Just "By") (Just "The sum of local ephemeral storage requests in the namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.request.used@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_ephemeralStorage_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_ephemeralStorage_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.request.used" (Just "By") (Just "The sum of local ephemeral storage requests in the namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.ephemeral_storage.request.used@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_ephemeralStorage_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_ephemeralStorage_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.ephemeral_storage.request.used" (Just "By") (Just "The sum of local ephemeral storage requests in the namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.hugepage_count.request.hard@ in @{hugepage}@.
+Stability: development.
+-}
+create_k8s_resourcequota_hugepageCount_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_hugepageCount_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.hugepage_count.request.hard" (Just "{hugepage}") (Just "The huge page requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.hugepage_count.request.hard@ in @{hugepage}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_hugepageCount_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_hugepageCount_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.hugepage_count.request.hard" (Just "{hugepage}") (Just "The huge page requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.hugepage_count.request.used@ in @{hugepage}@.
+Stability: development.
+-}
+create_k8s_resourcequota_hugepageCount_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_hugepageCount_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.hugepage_count.request.used" (Just "{hugepage}") (Just "The huge page requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.hugepage_count.request.used@ in @{hugepage}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_hugepageCount_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_hugepageCount_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.hugepage_count.request.used" (Just "{hugepage}") (Just "The huge page requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.memory.limit.hard@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_memory_limit_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_memory_limit_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.memory.limit.hard" (Just "By") (Just "The memory limits in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.memory.limit.hard@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_memory_limit_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_memory_limit_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.memory.limit.hard" (Just "By") (Just "The memory limits in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.memory.limit.used@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_memory_limit_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_memory_limit_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.memory.limit.used" (Just "By") (Just "The memory limits in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.memory.limit.used@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_memory_limit_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_memory_limit_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.memory.limit.used" (Just "By") (Just "The memory limits in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.memory.request.hard@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_memory_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_memory_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.memory.request.hard" (Just "By") (Just "The memory requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.memory.request.hard@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_memory_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_memory_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.memory.request.hard" (Just "By") (Just "The memory requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.memory.request.used@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_memory_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_memory_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.memory.request.used" (Just "By") (Just "The memory requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.memory.request.used@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_memory_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_memory_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.memory.request.used" (Just "By") (Just "The memory requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.object_count.hard@ in @{object}@.
+Stability: development.
+-}
+create_k8s_resourcequota_objectCount_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_objectCount_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.object_count.hard" (Just "{object}") (Just "The object count limits in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.object_count.hard@ in @{object}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_objectCount_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_objectCount_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.object_count.hard" (Just "{object}") (Just "The object count limits in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.object_count.used@ in @{object}@.
+Stability: development.
+-}
+create_k8s_resourcequota_objectCount_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_objectCount_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.object_count.used" (Just "{object}") (Just "The object count limits in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.object_count.used@ in @{object}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_objectCount_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_objectCount_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.object_count.used" (Just "{object}") (Just "The object count limits in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.persistentvolumeclaim_count.hard@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_k8s_resourcequota_persistentvolumeclaimCount_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_persistentvolumeclaimCount_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.persistentvolumeclaim_count.hard" (Just "{persistentvolumeclaim}") (Just "The total number of PersistentVolumeClaims that can exist in the namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.persistentvolumeclaim_count.hard@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_persistentvolumeclaimCount_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_persistentvolumeclaimCount_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.persistentvolumeclaim_count.hard" (Just "{persistentvolumeclaim}") (Just "The total number of PersistentVolumeClaims that can exist in the namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.persistentvolumeclaim_count.used@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_k8s_resourcequota_persistentvolumeclaimCount_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_persistentvolumeclaimCount_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.persistentvolumeclaim_count.used" (Just "{persistentvolumeclaim}") (Just "The total number of PersistentVolumeClaims that can exist in the namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.persistentvolumeclaim_count.used@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_persistentvolumeclaimCount_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_persistentvolumeclaimCount_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.persistentvolumeclaim_count.used" (Just "{persistentvolumeclaim}") (Just "The total number of PersistentVolumeClaims that can exist in the namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_storage_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_storage_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.storage.request.hard" (Just "By") (Just "The storage requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_storage_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_storage_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.storage.request.hard" (Just "By") (Just "The storage requests in a specific namespace.\nThe value represents the configured quota limit of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.resourcequota.storage.request.used@ in @By@.
+Stability: development.
+-}
+create_k8s_resourcequota_storage_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_resourcequota_storage_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.resourcequota.storage.request.used" (Just "By") (Just "The storage requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory
+
+
+{- | Creates @k8s.resourcequota.storage.request.used@ in @By@.
+Stability: development.
+-}
+create_observable_k8s_resourcequota_storage_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_resourcequota_storage_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.resourcequota.storage.request.used" (Just "By") (Just "The storage requests in a specific namespace.\nThe value represents the current observed total usage of the resource in the namespace.\n") advisory callbacks
+
+
+{- | Creates @k8s.service.endpoint.count@ in @{endpoint}@.
+Stability: development.
+-}
+create_k8s_service_endpoint_count_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_k8s_service_endpoint_count_int64 meter advisory =
+  meterCreateGaugeInt64 meter "k8s.service.endpoint.count" (Just "{endpoint}") (Just "Number of endpoints for a service by condition and address type.") advisory
+
+
+{- | Creates @k8s.service.endpoint.count@ in @{endpoint}@.
+Stability: development.
+-}
+create_observable_k8s_service_endpoint_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_k8s_service_endpoint_count_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "k8s.service.endpoint.count" (Just "{endpoint}") (Just "Number of endpoints for a service by condition and address type.") advisory callbacks
+
+
+{- | Creates @k8s.service.load_balancer.ingress.count@ in @{ingress}@.
+Stability: development.
+-}
+create_k8s_service_loadBalancer_ingress_count_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_k8s_service_loadBalancer_ingress_count_int64 meter advisory =
+  meterCreateGaugeInt64 meter "k8s.service.load_balancer.ingress.count" (Just "{ingress}") (Just "Number of load balancer ingress points (external IPs/hostnames) assigned to the service.") advisory
+
+
+{- | Creates @k8s.service.load_balancer.ingress.count@ in @{ingress}@.
+Stability: development.
+-}
+create_observable_k8s_service_loadBalancer_ingress_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_k8s_service_loadBalancer_ingress_count_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "k8s.service.load_balancer.ingress.count" (Just "{ingress}") (Just "Number of load balancer ingress points (external IPs/hostnames) assigned to the service.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.current_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_statefulset_currentPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_currentPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.current_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.current` instead.") advisory
+
+
+{- | Creates @k8s.statefulset.current_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_statefulset_currentPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_currentPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.current_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.current` instead.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_statefulset_desiredPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_desiredPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.desired` instead.") advisory
+
+
+{- | Creates @k8s.statefulset.desired_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_statefulset_desiredPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_desiredPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.desired_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.desired` instead.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_statefulset_pod_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_pod_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this statefulset.") advisory
+
+
+{- | Creates @k8s.statefulset.pod.available@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_statefulset_pod_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_pod_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.pod.available" (Just "{pod}") (Just "Total number of available replica pods (ready for at least minReadySeconds) targeted by this statefulset.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.pod.current@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_statefulset_pod_current_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_pod_current_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.pod.current" (Just "{pod}") (Just "The number of replica pods created by the statefulset controller from the statefulset version indicated by currentRevision.") advisory
+
+
+{- | Creates @k8s.statefulset.pod.current@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_statefulset_pod_current_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_pod_current_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.pod.current" (Just "{pod}") (Just "The number of replica pods created by the statefulset controller from the statefulset version indicated by currentRevision.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_statefulset_pod_desired_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_pod_desired_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this statefulset.") advisory
+
+
+{- | Creates @k8s.statefulset.pod.desired@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_statefulset_pod_desired_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_pod_desired_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.pod.desired" (Just "{pod}") (Just "Number of desired replica pods in this statefulset.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.pod.ready@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_statefulset_pod_ready_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_pod_ready_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.pod.ready" (Just "{pod}") (Just "The number of replica pods created for this statefulset with a Ready Condition.") advisory
+
+
+{- | Creates @k8s.statefulset.pod.ready@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_statefulset_pod_ready_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_pod_ready_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.pod.ready" (Just "{pod}") (Just "The number of replica pods created for this statefulset with a Ready Condition.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.pod.updated@ in @{pod}@.
+Stability: development.
+-}
+create_k8s_statefulset_pod_updated_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_pod_updated_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.pod.updated" (Just "{pod}") (Just "Number of replica pods created by the statefulset controller from the statefulset version indicated by updateRevision.") advisory
+
+
+{- | Creates @k8s.statefulset.pod.updated@ in @{pod}@.
+Stability: development.
+-}
+create_observable_k8s_statefulset_pod_updated_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_pod_updated_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.pod.updated" (Just "{pod}") (Just "Number of replica pods created by the statefulset controller from the statefulset version indicated by updateRevision.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.ready_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_statefulset_readyPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_readyPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.ready_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.ready` instead.") advisory
+
+
+{- | Creates @k8s.statefulset.ready_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_statefulset_readyPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_readyPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.ready_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.ready` instead.") advisory callbacks
+
+
+{- | Creates @k8s.statefulset.updated_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_k8s_statefulset_updatedPods_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_k8s_statefulset_updatedPods_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "k8s.statefulset.updated_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.updated` instead.") advisory
+
+
+{- | Creates @k8s.statefulset.updated_pods@ in @{pod}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_k8s_statefulset_updatedPods_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_k8s_statefulset_updatedPods_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "k8s.statefulset.updated_pods" (Just "{pod}") (Just "Deprecated, use `k8s.statefulset.pod.updated` instead.") advisory callbacks
+
+
+{- | Creates @kestrel.active_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_kestrel_activeConnections_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_kestrel_activeConnections_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "kestrel.active_connections" (Just "{connection}") (Just "Number of connections that are currently active on the server.") advisory
+
+
+{- | Creates @kestrel.active_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_observable_kestrel_activeConnections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_kestrel_activeConnections_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "kestrel.active_connections" (Just "{connection}") (Just "Number of connections that are currently active on the server.") advisory callbacks
+
+
+{- | Creates @kestrel.active_tls_handshakes@ in @{handshake}@.
+Stability: stable.
+-}
+create_kestrel_activeTlsHandshakes_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_kestrel_activeTlsHandshakes_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "kestrel.active_tls_handshakes" (Just "{handshake}") (Just "Number of TLS handshakes that are currently in progress on the server.") advisory
+
+
+{- | Creates @kestrel.active_tls_handshakes@ in @{handshake}@.
+Stability: stable.
+-}
+create_observable_kestrel_activeTlsHandshakes_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_kestrel_activeTlsHandshakes_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "kestrel.active_tls_handshakes" (Just "{handshake}") (Just "Number of TLS handshakes that are currently in progress on the server.") advisory callbacks
+
+
+{- | Creates @kestrel.connection.duration@ in @s@.
+Stability: stable.
+-}
+create_kestrel_connection_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_kestrel_connection_duration meter advisory =
+  meterCreateHistogram meter "kestrel.connection.duration" (Just "s") (Just "The duration of connections on the server.") advisory
+
+
+{- | Creates @kestrel.queued_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_kestrel_queuedConnections_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_kestrel_queuedConnections_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "kestrel.queued_connections" (Just "{connection}") (Just "Number of connections that are currently queued and are waiting to start.") advisory
+
+
+{- | Creates @kestrel.queued_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_observable_kestrel_queuedConnections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_kestrel_queuedConnections_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "kestrel.queued_connections" (Just "{connection}") (Just "Number of connections that are currently queued and are waiting to start.") advisory callbacks
+
+
+{- | Creates @kestrel.queued_requests@ in @{request}@.
+Stability: stable.
+-}
+create_kestrel_queuedRequests_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_kestrel_queuedRequests_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "kestrel.queued_requests" (Just "{request}") (Just "Number of HTTP requests on multiplexed connections (HTTP/2 and HTTP/3) that are currently queued and are waiting to start.") advisory
+
+
+{- | Creates @kestrel.queued_requests@ in @{request}@.
+Stability: stable.
+-}
+create_observable_kestrel_queuedRequests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_kestrel_queuedRequests_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "kestrel.queued_requests" (Just "{request}") (Just "Number of HTTP requests on multiplexed connections (HTTP/2 and HTTP/3) that are currently queued and are waiting to start.") advisory callbacks
+
+
+{- | Creates @kestrel.rejected_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_kestrel_rejectedConnections_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_kestrel_rejectedConnections_int64 meter advisory =
+  meterCreateCounterInt64 meter "kestrel.rejected_connections" (Just "{connection}") (Just "Number of connections rejected by the server.") advisory
+
+
+{- | Creates @kestrel.rejected_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_observable_kestrel_rejectedConnections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_kestrel_rejectedConnections_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "kestrel.rejected_connections" (Just "{connection}") (Just "Number of connections rejected by the server.") advisory callbacks
+
+
+{- | Creates @kestrel.tls_handshake.duration@ in @s@.
+Stability: stable.
+-}
+create_kestrel_tlsHandshake_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_kestrel_tlsHandshake_duration meter advisory =
+  meterCreateHistogram meter "kestrel.tls_handshake.duration" (Just "s") (Just "The duration of TLS handshakes on the server.") advisory
+
+
+{- | Creates @kestrel.upgraded_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_kestrel_upgradedConnections_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_kestrel_upgradedConnections_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "kestrel.upgraded_connections" (Just "{connection}") (Just "Number of connections that are currently upgraded (WebSockets). .") advisory
+
+
+{- | Creates @kestrel.upgraded_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_observable_kestrel_upgradedConnections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_kestrel_upgradedConnections_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "kestrel.upgraded_connections" (Just "{connection}") (Just "Number of connections that are currently upgraded (WebSockets). .") advisory callbacks
+
+
+{- | Creates @mcp.client.operation.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_mcp_client_operation_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_mcp_client_operation_duration meter advisory =
+  meterCreateHistogram meter "mcp.client.operation.duration" (Just "s") (Just "The duration of the MCP request or notification as observed on the sender from the time it was sent until the response or ack is received.\n") advisory
+
+
+{- | Creates @mcp.client.session.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_mcp_client_session_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_mcp_client_session_duration meter advisory =
+  meterCreateHistogram meter "mcp.client.session.duration" (Just "s") (Just "The duration of the MCP session as observed on the MCP client.") advisory
+
+
+{- | Creates @mcp.server.operation.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_mcp_server_operation_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_mcp_server_operation_duration meter advisory =
+  meterCreateHistogram meter "mcp.server.operation.duration" (Just "s") (Just "MCP request or notification duration as observed on the receiver from the time it was received until the result or ack is sent.\n") advisory
+
+
+{- | Creates @mcp.server.session.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_mcp_server_session_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_mcp_server_session_duration meter advisory =
+  meterCreateHistogram meter "mcp.server.session.duration" (Just "s") (Just "The duration of the MCP session as observed on the MCP server.") advisory
+
+
+{- | Creates @messaging.client.consumed.messages@ in @{message}@.
+Stability: development.
+-}
+create_messaging_client_consumed_messages_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_messaging_client_consumed_messages_int64 meter advisory =
+  meterCreateCounterInt64 meter "messaging.client.consumed.messages" (Just "{message}") (Just "Number of messages that were delivered to the application.") advisory
+
+
+{- | Creates @messaging.client.consumed.messages@ in @{message}@.
+Stability: development.
+-}
+create_observable_messaging_client_consumed_messages_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_messaging_client_consumed_messages_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "messaging.client.consumed.messages" (Just "{message}") (Just "Number of messages that were delivered to the application.") advisory callbacks
+
+
+{- | Creates @messaging.client.operation.duration@ in @s@.
+Stability: development.
+-}
+create_messaging_client_operation_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_messaging_client_operation_duration meter advisory =
+  meterCreateHistogram meter "messaging.client.operation.duration" (Just "s") (Just "Duration of messaging operation initiated by a producer or consumer client.") advisory
+
+
+{- | Creates @messaging.client.published.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_messaging_client_published_messages_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_messaging_client_published_messages_int64 meter advisory =
+  meterCreateCounterInt64 meter "messaging.client.published.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.sent.messages` instead.") advisory
+
+
+{- | Creates @messaging.client.published.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_messaging_client_published_messages_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_messaging_client_published_messages_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "messaging.client.published.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.sent.messages` instead.") advisory callbacks
+
+
+{- | Creates @messaging.client.sent.messages@ in @{message}@.
+Stability: development.
+-}
+create_messaging_client_sent_messages_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_messaging_client_sent_messages_int64 meter advisory =
+  meterCreateCounterInt64 meter "messaging.client.sent.messages" (Just "{message}") (Just "Number of messages producer attempted to send to the broker.") advisory
+
+
+{- | Creates @messaging.client.sent.messages@ in @{message}@.
+Stability: development.
+-}
+create_observable_messaging_client_sent_messages_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_messaging_client_sent_messages_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "messaging.client.sent.messages" (Just "{message}") (Just "Number of messages producer attempted to send to the broker.") advisory callbacks
+
+
+{- | Creates @messaging.process.duration@ in @s@.
+Stability: development.
+-}
+create_messaging_process_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_messaging_process_duration meter advisory =
+  meterCreateHistogram meter "messaging.process.duration" (Just "s") (Just "Duration of processing operation.") advisory
+
+
+{- | Creates @messaging.process.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_messaging_process_messages_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_messaging_process_messages_int64 meter advisory =
+  meterCreateCounterInt64 meter "messaging.process.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.consumed.messages` instead.") advisory
+
+
+{- | Creates @messaging.process.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_messaging_process_messages_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_messaging_process_messages_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "messaging.process.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.consumed.messages` instead.") advisory callbacks
+
+
+{- | Creates @messaging.publish.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_messaging_publish_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_messaging_publish_duration meter advisory =
+  meterCreateHistogram meter "messaging.publish.duration" (Just "s") (Just "Deprecated. Use `messaging.client.operation.duration` instead.") advisory
+
+
+{- | Creates @messaging.publish.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_messaging_publish_messages_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_messaging_publish_messages_int64 meter advisory =
+  meterCreateCounterInt64 meter "messaging.publish.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.sent.messages` instead.") advisory
+
+
+{- | Creates @messaging.publish.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_messaging_publish_messages_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_messaging_publish_messages_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "messaging.publish.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.sent.messages` instead.") advisory callbacks
+
+
+{- | Creates @messaging.receive.duration@ in @s@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_messaging_receive_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_messaging_receive_duration meter advisory =
+  meterCreateHistogram meter "messaging.receive.duration" (Just "s") (Just "Deprecated. Use `messaging.client.operation.duration` instead.") advisory
+
+
+{- | Creates @messaging.receive.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_messaging_receive_messages_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_messaging_receive_messages_int64 meter advisory =
+  meterCreateCounterInt64 meter "messaging.receive.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.consumed.messages` instead.") advisory
+
+
+{- | Creates @messaging.receive.messages@ in @{message}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_messaging_receive_messages_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_messaging_receive_messages_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "messaging.receive.messages" (Just "{message}") (Just "Deprecated. Use `messaging.client.consumed.messages` instead.") advisory callbacks
+
+
+{- | Creates @nfs.client.net.count@ in @{record}@.
+Stability: development.
+-}
+create_nfs_client_net_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_net_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.net.count" (Just "{record}") (Just "Reports the count of kernel NFS client TCP segments and UDP datagrams handled.") advisory
+
+
+{- | Creates @nfs.client.net.count@ in @{record}@.
+Stability: development.
+-}
+create_observable_nfs_client_net_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_net_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.net.count" (Just "{record}") (Just "Reports the count of kernel NFS client TCP segments and UDP datagrams handled.") advisory callbacks
+
+
+{- | Creates @nfs.client.net.count@ in @{record}@.
+Stability: development.
+-}
+create_nfs_client_net_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_net_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.net.count" (Just "{record}") (Just "Reports the count of kernel NFS client TCP segments and UDP datagrams handled.") advisory
+
+
+{- | Creates @nfs.client.net.count@ in @{record}@.
+Stability: development.
+-}
+create_observable_nfs_client_net_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_net_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.net.count" (Just "{record}") (Just "Reports the count of kernel NFS client TCP segments and UDP datagrams handled.") advisory callbacks
+
+
+{- | Creates @nfs.client.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_nfs_client_net_tcp_connection_accepted_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_net_tcp_connection_accepted_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS client TCP connections accepted.") advisory
+
+
+{- | Creates @nfs.client.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_observable_nfs_client_net_tcp_connection_accepted_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_net_tcp_connection_accepted_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS client TCP connections accepted.") advisory callbacks
+
+
+{- | Creates @nfs.client.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_nfs_client_net_tcp_connection_accepted_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_net_tcp_connection_accepted_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS client TCP connections accepted.") advisory
+
+
+{- | Creates @nfs.client.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_observable_nfs_client_net_tcp_connection_accepted_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_net_tcp_connection_accepted_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS client TCP connections accepted.") advisory callbacks
+
+
+{- | Creates @nfs.client.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_nfs_client_operation_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_operation_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ client operations.") advisory
+
+
+{- | Creates @nfs.client.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_observable_nfs_client_operation_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_operation_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ client operations.") advisory callbacks
+
+
+{- | Creates @nfs.client.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_nfs_client_operation_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_operation_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ client operations.") advisory
+
+
+{- | Creates @nfs.client.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_observable_nfs_client_operation_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_operation_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ client operations.") advisory callbacks
+
+
+{- | Creates @nfs.client.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_nfs_client_procedure_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_procedure_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS client procedures.") advisory
+
+
+{- | Creates @nfs.client.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_observable_nfs_client_procedure_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_procedure_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS client procedures.") advisory callbacks
+
+
+{- | Creates @nfs.client.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_nfs_client_procedure_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_procedure_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS client procedures.") advisory
+
+
+{- | Creates @nfs.client.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_observable_nfs_client_procedure_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_procedure_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS client procedures.") advisory callbacks
+
+
+{- | Creates @nfs.client.rpc.authrefresh.count@ in @{authrefresh}@.
+Stability: development.
+-}
+create_nfs_client_rpc_authrefresh_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_rpc_authrefresh_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.rpc.authrefresh.count" (Just "{authrefresh}") (Just "Reports the count of kernel NFS client RPC authentication refreshes.") advisory
+
+
+{- | Creates @nfs.client.rpc.authrefresh.count@ in @{authrefresh}@.
+Stability: development.
+-}
+create_observable_nfs_client_rpc_authrefresh_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_rpc_authrefresh_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.rpc.authrefresh.count" (Just "{authrefresh}") (Just "Reports the count of kernel NFS client RPC authentication refreshes.") advisory callbacks
+
+
+{- | Creates @nfs.client.rpc.authrefresh.count@ in @{authrefresh}@.
+Stability: development.
+-}
+create_nfs_client_rpc_authrefresh_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_rpc_authrefresh_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.rpc.authrefresh.count" (Just "{authrefresh}") (Just "Reports the count of kernel NFS client RPC authentication refreshes.") advisory
+
+
+{- | Creates @nfs.client.rpc.authrefresh.count@ in @{authrefresh}@.
+Stability: development.
+-}
+create_observable_nfs_client_rpc_authrefresh_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_rpc_authrefresh_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.rpc.authrefresh.count" (Just "{authrefresh}") (Just "Reports the count of kernel NFS client RPC authentication refreshes.") advisory callbacks
+
+
+{- | Creates @nfs.client.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_nfs_client_rpc_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_rpc_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.") advisory
+
+
+{- | Creates @nfs.client.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_observable_nfs_client_rpc_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_rpc_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.") advisory callbacks
+
+
+{- | Creates @nfs.client.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_nfs_client_rpc_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_rpc_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.") advisory
+
+
+{- | Creates @nfs.client.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_observable_nfs_client_rpc_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_rpc_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS client RPCs sent, regardless of whether they're accepted/rejected by the server.") advisory callbacks
+
+
+{- | Creates @nfs.client.rpc.retransmit.count@ in @{retransmit}@.
+Stability: development.
+-}
+create_nfs_client_rpc_retransmit_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_client_rpc_retransmit_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.client.rpc.retransmit.count" (Just "{retransmit}") (Just "Reports the count of kernel NFS client RPC retransmits.") advisory
+
+
+{- | Creates @nfs.client.rpc.retransmit.count@ in @{retransmit}@.
+Stability: development.
+-}
+create_observable_nfs_client_rpc_retransmit_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_client_rpc_retransmit_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.client.rpc.retransmit.count" (Just "{retransmit}") (Just "Reports the count of kernel NFS client RPC retransmits.") advisory callbacks
+
+
+{- | Creates @nfs.client.rpc.retransmit.count@ in @{retransmit}@.
+Stability: development.
+-}
+create_nfs_client_rpc_retransmit_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_client_rpc_retransmit_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.client.rpc.retransmit.count" (Just "{retransmit}") (Just "Reports the count of kernel NFS client RPC retransmits.") advisory
+
+
+{- | Creates @nfs.client.rpc.retransmit.count@ in @{retransmit}@.
+Stability: development.
+-}
+create_observable_nfs_client_rpc_retransmit_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_client_rpc_retransmit_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.client.rpc.retransmit.count" (Just "{retransmit}") (Just "Reports the count of kernel NFS client RPC retransmits.") advisory callbacks
+
+
+{- | Creates @nfs.server.fh.stale.count@ in @{fh}@.
+Stability: development.
+-}
+create_nfs_server_fh_stale_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_fh_stale_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.fh.stale.count" (Just "{fh}") (Just "Reports the count of kernel NFS server stale file handles.") advisory
+
+
+{- | Creates @nfs.server.fh.stale.count@ in @{fh}@.
+Stability: development.
+-}
+create_observable_nfs_server_fh_stale_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_fh_stale_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.fh.stale.count" (Just "{fh}") (Just "Reports the count of kernel NFS server stale file handles.") advisory callbacks
+
+
+{- | Creates @nfs.server.fh.stale.count@ in @{fh}@.
+Stability: development.
+-}
+create_nfs_server_fh_stale_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_fh_stale_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.fh.stale.count" (Just "{fh}") (Just "Reports the count of kernel NFS server stale file handles.") advisory
+
+
+{- | Creates @nfs.server.fh.stale.count@ in @{fh}@.
+Stability: development.
+-}
+create_observable_nfs_server_fh_stale_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_fh_stale_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.fh.stale.count" (Just "{fh}") (Just "Reports the count of kernel NFS server stale file handles.") advisory callbacks
+
+
+{- | Creates @nfs.server.io@ in @By@.
+Stability: development.
+-}
+create_nfs_server_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.io" (Just "By") (Just "Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.") advisory
+
+
+{- | Creates @nfs.server.io@ in @By@.
+Stability: development.
+-}
+create_observable_nfs_server_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.io" (Just "By") (Just "Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.") advisory callbacks
+
+
+{- | Creates @nfs.server.io@ in @By@.
+Stability: development.
+-}
+create_nfs_server_io_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_io_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.io" (Just "By") (Just "Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.") advisory
+
+
+{- | Creates @nfs.server.io@ in @By@.
+Stability: development.
+-}
+create_observable_nfs_server_io_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_io_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.io" (Just "By") (Just "Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.") advisory callbacks
+
+
+{- | Creates @nfs.server.net.count@ in @{record}@.
+Stability: development.
+-}
+create_nfs_server_net_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_net_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.net.count" (Just "{record}") (Just "Reports the count of kernel NFS server TCP segments and UDP datagrams handled.") advisory
+
+
+{- | Creates @nfs.server.net.count@ in @{record}@.
+Stability: development.
+-}
+create_observable_nfs_server_net_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_net_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.net.count" (Just "{record}") (Just "Reports the count of kernel NFS server TCP segments and UDP datagrams handled.") advisory callbacks
+
+
+{- | Creates @nfs.server.net.count@ in @{record}@.
+Stability: development.
+-}
+create_nfs_server_net_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_net_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.net.count" (Just "{record}") (Just "Reports the count of kernel NFS server TCP segments and UDP datagrams handled.") advisory
+
+
+{- | Creates @nfs.server.net.count@ in @{record}@.
+Stability: development.
+-}
+create_observable_nfs_server_net_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_net_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.net.count" (Just "{record}") (Just "Reports the count of kernel NFS server TCP segments and UDP datagrams handled.") advisory callbacks
+
+
+{- | Creates @nfs.server.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_nfs_server_net_tcp_connection_accepted_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_net_tcp_connection_accepted_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS server TCP connections accepted.") advisory
+
+
+{- | Creates @nfs.server.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_observable_nfs_server_net_tcp_connection_accepted_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_net_tcp_connection_accepted_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS server TCP connections accepted.") advisory callbacks
+
+
+{- | Creates @nfs.server.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_nfs_server_net_tcp_connection_accepted_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_net_tcp_connection_accepted_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS server TCP connections accepted.") advisory
+
+
+{- | Creates @nfs.server.net.tcp.connection.accepted@ in @{connection}@.
+Stability: development.
+-}
+create_observable_nfs_server_net_tcp_connection_accepted_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_net_tcp_connection_accepted_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.net.tcp.connection.accepted" (Just "{connection}") (Just "Reports the count of kernel NFS server TCP connections accepted.") advisory callbacks
+
+
+{- | Creates @nfs.server.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_nfs_server_operation_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_operation_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ server operations.") advisory
+
+
+{- | Creates @nfs.server.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_observable_nfs_server_operation_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_operation_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ server operations.") advisory callbacks
+
+
+{- | Creates @nfs.server.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_nfs_server_operation_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_operation_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ server operations.") advisory
+
+
+{- | Creates @nfs.server.operation.count@ in @{operation}@.
+Stability: development.
+-}
+create_observable_nfs_server_operation_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_operation_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.operation.count" (Just "{operation}") (Just "Reports the count of kernel NFSv4+ server operations.") advisory callbacks
+
+
+{- | Creates @nfs.server.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_nfs_server_procedure_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_procedure_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS server procedures.") advisory
+
+
+{- | Creates @nfs.server.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_observable_nfs_server_procedure_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_procedure_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS server procedures.") advisory callbacks
+
+
+{- | Creates @nfs.server.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_nfs_server_procedure_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_procedure_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS server procedures.") advisory
+
+
+{- | Creates @nfs.server.procedure.count@ in @{procedure}@.
+Stability: development.
+-}
+create_observable_nfs_server_procedure_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_procedure_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.procedure.count" (Just "{procedure}") (Just "Reports the count of kernel NFS server procedures.") advisory callbacks
+
+
+{- | Creates @nfs.server.repcache.requests@ in @{request}@.
+Stability: development.
+-}
+create_nfs_server_repcache_requests_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_repcache_requests_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.repcache.requests" (Just "{request}") (Just "Reports the kernel NFS server reply cache request count by cache hit status.") advisory
+
+
+{- | Creates @nfs.server.repcache.requests@ in @{request}@.
+Stability: development.
+-}
+create_observable_nfs_server_repcache_requests_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_repcache_requests_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.repcache.requests" (Just "{request}") (Just "Reports the kernel NFS server reply cache request count by cache hit status.") advisory callbacks
+
+
+{- | Creates @nfs.server.repcache.requests@ in @{request}@.
+Stability: development.
+-}
+create_nfs_server_repcache_requests_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_repcache_requests_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.repcache.requests" (Just "{request}") (Just "Reports the kernel NFS server reply cache request count by cache hit status.") advisory
+
+
+{- | Creates @nfs.server.repcache.requests@ in @{request}@.
+Stability: development.
+-}
+create_observable_nfs_server_repcache_requests_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_repcache_requests_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.repcache.requests" (Just "{request}") (Just "Reports the kernel NFS server reply cache request count by cache hit status.") advisory callbacks
+
+
+{- | Creates @nfs.server.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_nfs_server_rpc_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_nfs_server_rpc_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "nfs.server.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS server RPCs handled.") advisory
+
+
+{- | Creates @nfs.server.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_observable_nfs_server_rpc_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_nfs_server_rpc_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "nfs.server.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS server RPCs handled.") advisory callbacks
+
+
+{- | Creates @nfs.server.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_nfs_server_rpc_count_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nfs_server_rpc_count_double meter advisory =
+  meterCreateCounterDouble meter "nfs.server.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS server RPCs handled.") advisory
+
+
+{- | Creates @nfs.server.rpc.count@ in @{request}@.
+Stability: development.
+-}
+create_observable_nfs_server_rpc_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nfs_server_rpc_count_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nfs.server.rpc.count" (Just "{request}") (Just "Reports the count of kernel NFS server RPCs handled.") advisory callbacks
+
+
+{- | Creates @nfs.server.thread.count@ in @{thread}@.
+Stability: development.
+-}
+create_nfs_server_thread_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_nfs_server_thread_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "nfs.server.thread.count" (Just "{thread}") (Just "Reports the count of kernel NFS server available threads.") advisory
+
+
+{- | Creates @nfs.server.thread.count@ in @{thread}@.
+Stability: development.
+-}
+create_observable_nfs_server_thread_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_nfs_server_thread_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "nfs.server.thread.count" (Just "{thread}") (Just "Reports the count of kernel NFS server available threads.") advisory callbacks
+
+
+{- | Creates @nfs.server.thread.count@ in @{thread}@.
+Stability: development.
+-}
+create_nfs_server_thread_count_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_nfs_server_thread_count_double meter advisory =
+  meterCreateUpDownCounterDouble meter "nfs.server.thread.count" (Just "{thread}") (Just "Reports the count of kernel NFS server available threads.") advisory
+
+
+{- | Creates @nfs.server.thread.count@ in @{thread}@.
+Stability: development.
+-}
+create_observable_nfs_server_thread_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_nfs_server_thread_count_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "nfs.server.thread.count" (Just "{thread}") (Just "Reports the count of kernel NFS server available threads.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.max@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_max_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_max_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.max" (Just "s") (Just "Event loop maximum delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.max@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_max_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_max_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.max" (Just "s") (Just "Event loop maximum delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.mean@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_mean_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_mean_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.mean" (Just "s") (Just "Event loop mean delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.mean@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_mean_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_mean_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.mean" (Just "s") (Just "Event loop mean delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.min@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_min_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_min_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.min" (Just "s") (Just "Event loop minimum delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.min@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_min_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_min_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.min" (Just "s") (Just "Event loop minimum delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.p50@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_p50_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_p50_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.p50" (Just "s") (Just "Event loop 50 percentile delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.p50@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_p50_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_p50_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.p50" (Just "s") (Just "Event loop 50 percentile delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.p90@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_p90_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_p90_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.p90" (Just "s") (Just "Event loop 90 percentile delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.p90@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_p90_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_p90_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.p90" (Just "s") (Just "Event loop 90 percentile delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.p99@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_p99_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_p99_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.p99" (Just "s") (Just "Event loop 99 percentile delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.p99@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_p99_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_p99_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.p99" (Just "s") (Just "Event loop 99 percentile delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.delay.stddev@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_delay_stddev_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_delay_stddev_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.delay.stddev" (Just "s") (Just "Event loop standard deviation delay.") advisory
+
+
+{- | Creates @nodejs.eventloop.delay.stddev@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_delay_stddev_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_delay_stddev_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.delay.stddev" (Just "s") (Just "Event loop standard deviation delay.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.time@ in @s@.
+Stability: development.
+-}
+create_nodejs_eventloop_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_nodejs_eventloop_time_double meter advisory =
+  meterCreateCounterDouble meter "nodejs.eventloop.time" (Just "s") (Just "Cumulative duration of time the event loop has been in each state.") advisory
+
+
+{- | Creates @nodejs.eventloop.time@ in @s@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_nodejs_eventloop_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "nodejs.eventloop.time" (Just "s") (Just "Cumulative duration of time the event loop has been in each state.") advisory callbacks
+
+
+{- | Creates @nodejs.eventloop.utilization@ in @1@.
+Stability: development.
+-}
+create_nodejs_eventloop_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_nodejs_eventloop_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "nodejs.eventloop.utilization" (Just "1") (Just "Event loop utilization.") advisory
+
+
+{- | Creates @nodejs.eventloop.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_nodejs_eventloop_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_nodejs_eventloop_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "nodejs.eventloop.utilization" (Just "1") (Just "Event loop utilization.") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.cpu.limit.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_openshift_clusterquota_cpu_limit_hard_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_openshift_clusterquota_cpu_limit_hard_double meter advisory =
+  meterCreateUpDownCounterDouble meter "openshift.clusterquota.cpu.limit.hard" (Just "{cpu}") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.cpu.limit.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_cpu_limit_hard_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_openshift_clusterquota_cpu_limit_hard_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "openshift.clusterquota.cpu.limit.hard" (Just "{cpu}") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.cpu.limit.used@ in @{cpu}@.
+Stability: development.
+-}
+create_openshift_clusterquota_cpu_limit_used_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_openshift_clusterquota_cpu_limit_used_double meter advisory =
+  meterCreateUpDownCounterDouble meter "openshift.clusterquota.cpu.limit.used" (Just "{cpu}") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.cpu.limit.used@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_cpu_limit_used_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_openshift_clusterquota_cpu_limit_used_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "openshift.clusterquota.cpu.limit.used" (Just "{cpu}") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.cpu.request.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_openshift_clusterquota_cpu_request_hard_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_openshift_clusterquota_cpu_request_hard_double meter advisory =
+  meterCreateUpDownCounterDouble meter "openshift.clusterquota.cpu.request.hard" (Just "{cpu}") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.cpu.request.hard@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_cpu_request_hard_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_openshift_clusterquota_cpu_request_hard_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "openshift.clusterquota.cpu.request.hard" (Just "{cpu}") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.cpu.request.used@ in @{cpu}@.
+Stability: development.
+-}
+create_openshift_clusterquota_cpu_request_used_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_openshift_clusterquota_cpu_request_used_double meter advisory =
+  meterCreateUpDownCounterDouble meter "openshift.clusterquota.cpu.request.used" (Just "{cpu}") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.cpu.request.used@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_cpu_request_used_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_openshift_clusterquota_cpu_request_used_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "openshift.clusterquota.cpu.request.used" (Just "{cpu}") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.limit.hard@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_ephemeralStorage_limit_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_ephemeralStorage_limit_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.limit.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.limit.hard@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_ephemeralStorage_limit_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_ephemeralStorage_limit_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.limit.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.limit.used@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_ephemeralStorage_limit_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_ephemeralStorage_limit_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.limit.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.limit.used@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_ephemeralStorage_limit_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_ephemeralStorage_limit_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.limit.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_ephemeralStorage_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_ephemeralStorage_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.request.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_ephemeralStorage_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_ephemeralStorage_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.request.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.request.used@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_ephemeralStorage_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_ephemeralStorage_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.request.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.ephemeral_storage.request.used@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_ephemeralStorage_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_ephemeralStorage_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.ephemeral_storage.request.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.hugepage_count.request.hard@ in @{hugepage}@.
+Stability: development.
+-}
+create_openshift_clusterquota_hugepageCount_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_hugepageCount_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.hugepage_count.request.hard" (Just "{hugepage}") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.hugepage_count.request.hard@ in @{hugepage}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_hugepageCount_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_hugepageCount_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.hugepage_count.request.hard" (Just "{hugepage}") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.hugepage_count.request.used@ in @{hugepage}@.
+Stability: development.
+-}
+create_openshift_clusterquota_hugepageCount_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_hugepageCount_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.hugepage_count.request.used" (Just "{hugepage}") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.hugepage_count.request.used@ in @{hugepage}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_hugepageCount_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_hugepageCount_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.hugepage_count.request.used" (Just "{hugepage}") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.memory.limit.hard@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_memory_limit_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_memory_limit_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.memory.limit.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.memory.limit.hard@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_memory_limit_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_memory_limit_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.memory.limit.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.memory.limit.used@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_memory_limit_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_memory_limit_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.memory.limit.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.memory.limit.used@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_memory_limit_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_memory_limit_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.memory.limit.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.memory.request.hard@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_memory_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_memory_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.memory.request.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.memory.request.hard@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_memory_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_memory_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.memory.request.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.memory.request.used@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_memory_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_memory_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.memory.request.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.memory.request.used@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_memory_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_memory_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.memory.request.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.object_count.hard@ in @{object}@.
+Stability: development.
+-}
+create_openshift_clusterquota_objectCount_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_objectCount_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.object_count.hard" (Just "{object}") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.object_count.hard@ in @{object}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_objectCount_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_objectCount_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.object_count.hard" (Just "{object}") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.object_count.used@ in @{object}@.
+Stability: development.
+-}
+create_openshift_clusterquota_objectCount_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_objectCount_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.object_count.used" (Just "{object}") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.object_count.used@ in @{object}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_objectCount_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_objectCount_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.object_count.used" (Just "{object}") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.persistentvolumeclaim_count.hard@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_openshift_clusterquota_persistentvolumeclaimCount_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_persistentvolumeclaimCount_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.persistentvolumeclaim_count.hard" (Just "{persistentvolumeclaim}") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.persistentvolumeclaim_count.hard@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_persistentvolumeclaimCount_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_persistentvolumeclaimCount_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.persistentvolumeclaim_count.hard" (Just "{persistentvolumeclaim}") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.persistentvolumeclaim_count.used@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_openshift_clusterquota_persistentvolumeclaimCount_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_persistentvolumeclaimCount_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.persistentvolumeclaim_count.used" (Just "{persistentvolumeclaim}") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.persistentvolumeclaim_count.used@ in @{persistentvolumeclaim}@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_persistentvolumeclaimCount_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_persistentvolumeclaimCount_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.persistentvolumeclaim_count.used" (Just "{persistentvolumeclaim}") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_storage_request_hard_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_storage_request_hard_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.storage.request.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.storage.request.hard@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_storage_request_hard_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_storage_request_hard_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.storage.request.hard" (Just "By") (Just "The enforced hard limit of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @openshift.clusterquota.storage.request.used@ in @By@.
+Stability: development.
+-}
+create_openshift_clusterquota_storage_request_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_openshift_clusterquota_storage_request_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "openshift.clusterquota.storage.request.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory
+
+
+{- | Creates @openshift.clusterquota.storage.request.used@ in @By@.
+Stability: development.
+-}
+create_observable_openshift_clusterquota_storage_request_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_openshift_clusterquota_storage_request_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "openshift.clusterquota.storage.request.used" (Just "By") (Just "The current observed total usage of the resource across all projects.\n") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.log.exported@ in @{log_record}@.
+Stability: development.
+-}
+create_otel_sdk_exporter_log_exported_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_exporter_log_exported_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.exporter.log.exported" (Just "{log_record}") (Just "The number of log records for which the export has finished, either successful or failed.") advisory
+
+
+{- | Creates @otel.sdk.exporter.log.exported@ in @{log_record}@.
+Stability: development.
+-}
+create_observable_otel_sdk_exporter_log_exported_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_exporter_log_exported_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.exporter.log.exported" (Just "{log_record}") (Just "The number of log records for which the export has finished, either successful or failed.") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.log.inflight@ in @{log_record}@.
+Stability: development.
+-}
+create_otel_sdk_exporter_log_inflight_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_exporter_log_inflight_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.exporter.log.inflight" (Just "{log_record}") (Just "The number of log records which were passed to the exporter, but that have not been exported yet (neither successful, nor failed).") advisory
+
+
+{- | Creates @otel.sdk.exporter.log.inflight@ in @{log_record}@.
+Stability: development.
+-}
+create_observable_otel_sdk_exporter_log_inflight_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_exporter_log_inflight_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.exporter.log.inflight" (Just "{log_record}") (Just "The number of log records which were passed to the exporter, but that have not been exported yet (neither successful, nor failed).") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.metric_data_point.exported@ in @{data_point}@.
+Stability: development.
+-}
+create_otel_sdk_exporter_metricDataPoint_exported_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_exporter_metricDataPoint_exported_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.exporter.metric_data_point.exported" (Just "{data_point}") (Just "The number of metric data points for which the export has finished, either successful or failed.") advisory
+
+
+{- | Creates @otel.sdk.exporter.metric_data_point.exported@ in @{data_point}@.
+Stability: development.
+-}
+create_observable_otel_sdk_exporter_metricDataPoint_exported_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_exporter_metricDataPoint_exported_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.exporter.metric_data_point.exported" (Just "{data_point}") (Just "The number of metric data points for which the export has finished, either successful or failed.") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.metric_data_point.inflight@ in @{data_point}@.
+Stability: development.
+-}
+create_otel_sdk_exporter_metricDataPoint_inflight_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_exporter_metricDataPoint_inflight_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.exporter.metric_data_point.inflight" (Just "{data_point}") (Just "The number of metric data points which were passed to the exporter, but that have not been exported yet (neither successful, nor failed).") advisory
+
+
+{- | Creates @otel.sdk.exporter.metric_data_point.inflight@ in @{data_point}@.
+Stability: development.
+-}
+create_observable_otel_sdk_exporter_metricDataPoint_inflight_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_exporter_metricDataPoint_inflight_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.exporter.metric_data_point.inflight" (Just "{data_point}") (Just "The number of metric data points which were passed to the exporter, but that have not been exported yet (neither successful, nor failed).") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.operation.duration@ in @s@.
+Stability: development.
+-}
+create_otel_sdk_exporter_operation_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_otel_sdk_exporter_operation_duration meter advisory =
+  meterCreateHistogram meter "otel.sdk.exporter.operation.duration" (Just "s") (Just "The duration of exporting a batch of telemetry records.") advisory
+
+
+{- | Creates @otel.sdk.exporter.span.exported@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_exporter_span_exported_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_exporter_span_exported_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.exporter.span.exported" (Just "{span}") (Just "The number of spans for which the export has finished, either successful or failed.") advisory
+
+
+{- | Creates @otel.sdk.exporter.span.exported@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_exporter_span_exported_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_exporter_span_exported_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.exporter.span.exported" (Just "{span}") (Just "The number of spans for which the export has finished, either successful or failed.") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.span.exported.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_exporter_span_exported_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_exporter_span_exported_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.exporter.span.exported.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.exporter.span.exported` instead.") advisory
+
+
+{- | Creates @otel.sdk.exporter.span.exported.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_exporter_span_exported_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_exporter_span_exported_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.exporter.span.exported.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.exporter.span.exported` instead.") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.span.inflight@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_exporter_span_inflight_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_exporter_span_inflight_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.exporter.span.inflight" (Just "{span}") (Just "The number of spans which were passed to the exporter, but that have not been exported yet (neither successful, nor failed).") advisory
+
+
+{- | Creates @otel.sdk.exporter.span.inflight@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_exporter_span_inflight_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_exporter_span_inflight_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.exporter.span.inflight" (Just "{span}") (Just "The number of spans which were passed to the exporter, but that have not been exported yet (neither successful, nor failed).") advisory callbacks
+
+
+{- | Creates @otel.sdk.exporter.span.inflight.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_exporter_span_inflight_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_exporter_span_inflight_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.exporter.span.inflight.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.exporter.span.inflight` instead.") advisory
+
+
+{- | Creates @otel.sdk.exporter.span.inflight.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_exporter_span_inflight_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_exporter_span_inflight_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.exporter.span.inflight.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.exporter.span.inflight` instead.") advisory callbacks
+
+
+{- | Creates @otel.sdk.log.created@ in @{log_record}@.
+Stability: development.
+-}
+create_otel_sdk_log_created_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_log_created_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.log.created" (Just "{log_record}") (Just "The number of log records submitted to an enabled `Logger`.") advisory
+
+
+{- | Creates @otel.sdk.log.created@ in @{log_record}@.
+Stability: development.
+-}
+create_observable_otel_sdk_log_created_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_log_created_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.log.created" (Just "{log_record}") (Just "The number of log records submitted to an enabled `Logger`.") advisory callbacks
+
+
+{- | Creates @otel.sdk.metric_reader.collection.duration@ in @s@.
+Stability: development.
+-}
+create_otel_sdk_metricReader_collection_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_otel_sdk_metricReader_collection_duration meter advisory =
+  meterCreateHistogram meter "otel.sdk.metric_reader.collection.duration" (Just "s") (Just "The duration of the collect operation of the metric reader.") advisory
+
+
+{- | Creates @otel.sdk.processor.log.processed@ in @{log_record}@.
+Stability: development.
+-}
+create_otel_sdk_processor_log_processed_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_processor_log_processed_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.processor.log.processed" (Just "{log_record}") (Just "The number of log records for which the processing has finished, either successful or failed.") advisory
+
+
+{- | Creates @otel.sdk.processor.log.processed@ in @{log_record}@.
+Stability: development.
+-}
+create_observable_otel_sdk_processor_log_processed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_processor_log_processed_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.processor.log.processed" (Just "{log_record}") (Just "The number of log records for which the processing has finished, either successful or failed.") advisory callbacks
+
+
+{- | Creates @otel.sdk.processor.log.queue.capacity@ in @{log_record}@.
+Stability: development.
+-}
+create_otel_sdk_processor_log_queue_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_processor_log_queue_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.processor.log.queue.capacity" (Just "{log_record}") (Just "The maximum number of log records the queue of a given instance of an SDK Log Record processor can hold.") advisory
+
+
+{- | Creates @otel.sdk.processor.log.queue.capacity@ in @{log_record}@.
+Stability: development.
+-}
+create_observable_otel_sdk_processor_log_queue_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_processor_log_queue_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.processor.log.queue.capacity" (Just "{log_record}") (Just "The maximum number of log records the queue of a given instance of an SDK Log Record processor can hold.") advisory callbacks
+
+
+{- | Creates @otel.sdk.processor.log.queue.size@ in @{log_record}@.
+Stability: development.
+-}
+create_otel_sdk_processor_log_queue_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_processor_log_queue_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.processor.log.queue.size" (Just "{log_record}") (Just "The number of log records in the queue of a given instance of an SDK log processor.") advisory
+
+
+{- | Creates @otel.sdk.processor.log.queue.size@ in @{log_record}@.
+Stability: development.
+-}
+create_observable_otel_sdk_processor_log_queue_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_processor_log_queue_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.processor.log.queue.size" (Just "{log_record}") (Just "The number of log records in the queue of a given instance of an SDK log processor.") advisory callbacks
+
+
+{- | Creates @otel.sdk.processor.span.processed@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_processor_span_processed_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_processor_span_processed_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.processor.span.processed" (Just "{span}") (Just "The number of spans for which the processing has finished, either successful or failed.") advisory
+
+
+{- | Creates @otel.sdk.processor.span.processed@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_processor_span_processed_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_processor_span_processed_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.processor.span.processed" (Just "{span}") (Just "The number of spans for which the processing has finished, either successful or failed.") advisory callbacks
+
+
+{- | Creates @otel.sdk.processor.span.processed.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_processor_span_processed_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_processor_span_processed_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.processor.span.processed.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.processor.span.processed` instead.") advisory
+
+
+{- | Creates @otel.sdk.processor.span.processed.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_processor_span_processed_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_processor_span_processed_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.processor.span.processed.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.processor.span.processed` instead.") advisory callbacks
+
+
+{- | Creates @otel.sdk.processor.span.queue.capacity@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_processor_span_queue_capacity_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_processor_span_queue_capacity_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.processor.span.queue.capacity" (Just "{span}") (Just "The maximum number of spans the queue of a given instance of an SDK span processor can hold.") advisory
+
+
+{- | Creates @otel.sdk.processor.span.queue.capacity@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_processor_span_queue_capacity_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_processor_span_queue_capacity_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.processor.span.queue.capacity" (Just "{span}") (Just "The maximum number of spans the queue of a given instance of an SDK span processor can hold.") advisory callbacks
+
+
+{- | Creates @otel.sdk.processor.span.queue.size@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_processor_span_queue_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_processor_span_queue_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.processor.span.queue.size" (Just "{span}") (Just "The number of spans in the queue of a given instance of an SDK span processor.") advisory
+
+
+{- | Creates @otel.sdk.processor.span.queue.size@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_processor_span_queue_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_processor_span_queue_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.processor.span.queue.size" (Just "{span}") (Just "The number of spans in the queue of a given instance of an SDK span processor.") advisory callbacks
+
+
+{- | Creates @otel.sdk.span.ended@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_span_ended_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_span_ended_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.span.ended" (Just "{span}") (Just "Use `otel.sdk.span.started` minus `otel.sdk.span.live` to derive this value.") advisory
+
+
+{- | Creates @otel.sdk.span.ended@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_span_ended_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_span_ended_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.span.ended" (Just "{span}") (Just "Use `otel.sdk.span.started` minus `otel.sdk.span.live` to derive this value.") advisory callbacks
+
+
+{- | Creates @otel.sdk.span.ended@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_span_ended_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_otel_sdk_span_ended_double meter advisory =
+  meterCreateCounterDouble meter "otel.sdk.span.ended" (Just "{span}") (Just "Use `otel.sdk.span.started` minus `otel.sdk.span.live` to derive this value.") advisory
+
+
+{- | Creates @otel.sdk.span.ended@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_span_ended_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_otel_sdk_span_ended_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "otel.sdk.span.ended" (Just "{span}") (Just "Use `otel.sdk.span.started` minus `otel.sdk.span.live` to derive this value.") advisory callbacks
+
+
+{- | Creates @otel.sdk.span.ended.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_span_ended_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_span_ended_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.span.ended.count" (Just "{span}") (Just "Use `otel.sdk.span.started` minus `otel.sdk.span.live` to derive this value.") advisory
+
+
+{- | Creates @otel.sdk.span.ended.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_span_ended_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_span_ended_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.span.ended.count" (Just "{span}") (Just "Use `otel.sdk.span.started` minus `otel.sdk.span.live` to derive this value.") advisory callbacks
+
+
+{- | Creates @otel.sdk.span.live@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_span_live_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_span_live_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.span.live" (Just "{span}") (Just "The number of created spans with `recording=true` for which the end operation has not been called yet.") advisory
+
+
+{- | Creates @otel.sdk.span.live@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_span_live_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_span_live_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.span.live" (Just "{span}") (Just "The number of created spans with `recording=true` for which the end operation has not been called yet.") advisory callbacks
+
+
+{- | Creates @otel.sdk.span.live.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_otel_sdk_span_live_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_otel_sdk_span_live_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "otel.sdk.span.live.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.span.live` instead.") advisory
+
+
+{- | Creates @otel.sdk.span.live.count@ in @{span}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_otel_sdk_span_live_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_otel_sdk_span_live_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "otel.sdk.span.live.count" (Just "{span}") (Just "Deprecated, use `otel.sdk.span.live` instead.") advisory callbacks
+
+
+{- | Creates @otel.sdk.span.started@ in @{span}@.
+Stability: development.
+-}
+create_otel_sdk_span_started_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_otel_sdk_span_started_int64 meter advisory =
+  meterCreateCounterInt64 meter "otel.sdk.span.started" (Just "{span}") (Just "The number of created spans.") advisory
+
+
+{- | Creates @otel.sdk.span.started@ in @{span}@.
+Stability: development.
+-}
+create_observable_otel_sdk_span_started_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_otel_sdk_span_started_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "otel.sdk.span.started" (Just "{span}") (Just "The number of created spans.") advisory callbacks
+
+
+{- | Creates @process.context_switches@ in @{context_switch}@.
+Stability: release candidate.
+-}
+create_process_contextSwitches_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_process_contextSwitches_int64 meter advisory =
+  meterCreateCounterInt64 meter "process.context_switches" (Just "{context_switch}") (Just "Number of times the process has been context switched.") advisory
+
+
+{- | Creates @process.context_switches@ in @{context_switch}@.
+Stability: release candidate.
+-}
+create_observable_process_contextSwitches_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_process_contextSwitches_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "process.context_switches" (Just "{context_switch}") (Just "Number of times the process has been context switched.") advisory callbacks
+
+
+{- | Creates @process.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_process_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_process_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "process.cpu.time" (Just "s") (Just "Total CPU seconds broken down by different CPU modes.") advisory
+
+
+{- | Creates @process.cpu.time@ in @s@.
+Stability: release candidate.
+-}
+create_observable_process_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_process_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "process.cpu.time" (Just "s") (Just "Total CPU seconds broken down by different CPU modes.") advisory callbacks
+
+
+{- | Creates @process.cpu.utilization@ in @1@.
+Stability: release candidate.
+-}
+create_process_cpu_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_process_cpu_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "process.cpu.utilization" (Just "1") (Just "Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process.") advisory
+
+
+{- | Creates @process.cpu.utilization@ in @1@.
+Stability: release candidate.
+-}
+create_observable_process_cpu_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_process_cpu_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "process.cpu.utilization" (Just "1") (Just "Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process.") advisory callbacks
+
+
+{- | Creates @process.disk.io@ in @By@.
+Stability: release candidate.
+-}
+create_process_disk_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_process_disk_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "process.disk.io" (Just "By") (Just "Disk bytes transferred.") advisory
+
+
+{- | Creates @process.disk.io@ in @By@.
+Stability: release candidate.
+-}
+create_observable_process_disk_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_process_disk_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "process.disk.io" (Just "By") (Just "Disk bytes transferred.") advisory callbacks
+
+
+{- | Creates @process.disk.operations@ in @{operation}@.
+Stability: development.
+-}
+create_process_disk_operations_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_process_disk_operations_int64 meter advisory =
+  meterCreateCounterInt64 meter "process.disk.operations" (Just "{operation}") (Just "Number of disk operations performed by the process.") advisory
+
+
+{- | Creates @process.disk.operations@ in @{operation}@.
+Stability: development.
+-}
+create_observable_process_disk_operations_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_process_disk_operations_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "process.disk.operations" (Just "{operation}") (Just "Number of disk operations performed by the process.") advisory callbacks
+
+
+{- | Creates @process.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_process_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.memory.usage" (Just "By") (Just "The amount of physical memory in use.") advisory
+
+
+{- | Creates @process.memory.usage@ in @By@.
+Stability: release candidate.
+-}
+create_observable_process_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.memory.usage" (Just "By") (Just "The amount of physical memory in use.") advisory callbacks
+
+
+{- | Creates @process.memory.utilization@ in @1@.
+Stability: development.
+-}
+create_process_memory_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_process_memory_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "process.memory.utilization" (Just "1") (Just "Percentage of total physical memory that is used by the process.") advisory
+
+
+{- | Creates @process.memory.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_process_memory_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_process_memory_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "process.memory.utilization" (Just "1") (Just "Percentage of total physical memory that is used by the process.") advisory callbacks
+
+
+{- | Creates @process.memory.virtual@ in @By@.
+Stability: release candidate.
+-}
+create_process_memory_virtual_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_memory_virtual_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.memory.virtual" (Just "By") (Just "The amount of committed virtual memory.") advisory
+
+
+{- | Creates @process.memory.virtual@ in @By@.
+Stability: release candidate.
+-}
+create_observable_process_memory_virtual_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_memory_virtual_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.memory.virtual" (Just "By") (Just "The amount of committed virtual memory.") advisory callbacks
+
+
+{- | Creates @process.network.io@ in @By@.
+Stability: release candidate.
+-}
+create_process_network_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_process_network_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "process.network.io" (Just "By") (Just "Network bytes transferred.") advisory
+
+
+{- | Creates @process.network.io@ in @By@.
+Stability: release candidate.
+-}
+create_observable_process_network_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_process_network_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "process.network.io" (Just "By") (Just "Network bytes transferred.") advisory callbacks
+
+
+{- | Creates @process.open_file_descriptor.count@ in @{file_descriptor}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_process_openFileDescriptor_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_openFileDescriptor_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.open_file_descriptor.count" (Just "{file_descriptor}") (Just "Deprecated, use `process.unix.file_descriptor.count` instead.") advisory
+
+
+{- | Creates @process.open_file_descriptor.count@ in @{file_descriptor}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_process_openFileDescriptor_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_openFileDescriptor_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.open_file_descriptor.count" (Just "{file_descriptor}") (Just "Deprecated, use `process.unix.file_descriptor.count` instead.") advisory callbacks
+
+
+{- | Creates @process.open_file_descriptor.count@ in @{file_descriptor}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_process_openFileDescriptor_count_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_process_openFileDescriptor_count_double meter advisory =
+  meterCreateUpDownCounterDouble meter "process.open_file_descriptor.count" (Just "{file_descriptor}") (Just "Deprecated, use `process.unix.file_descriptor.count` instead.") advisory
+
+
+{- | Creates @process.open_file_descriptor.count@ in @{file_descriptor}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_process_openFileDescriptor_count_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_process_openFileDescriptor_count_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "process.open_file_descriptor.count" (Just "{file_descriptor}") (Just "Deprecated, use `process.unix.file_descriptor.count` instead.") advisory callbacks
+
+
+{- | Creates @process.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_process_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_process_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "process.paging.faults" (Just "{fault}") (Just "Number of page faults the process has made.") advisory
+
+
+{- | Creates @process.paging.faults@ in @{fault}@.
+Stability: release candidate.
+-}
+create_observable_process_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_process_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "process.paging.faults" (Just "{fault}") (Just "Number of page faults the process has made.") advisory callbacks
+
+
+{- | Creates @process.signals_pending@ in @{signal}@.
+Stability: development.
+-}
+create_process_signalsPending_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_signalsPending_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.signals_pending" (Just "{signal}") (Just "Number of pending signals for the process.") advisory
+
+
+{- | Creates @process.signals_pending@ in @{signal}@.
+Stability: development.
+-}
+create_observable_process_signalsPending_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_signalsPending_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.signals_pending" (Just "{signal}") (Just "Number of pending signals for the process.") advisory callbacks
+
+
+{- | Creates @process.thread.count@ in @{thread}@.
+Stability: release candidate.
+-}
+create_process_thread_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_thread_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.thread.count" (Just "{thread}") (Just "Process threads count.") advisory
+
+
+{- | Creates @process.thread.count@ in @{thread}@.
+Stability: release candidate.
+-}
+create_observable_process_thread_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_thread_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.thread.count" (Just "{thread}") (Just "Process threads count.") advisory callbacks
+
+
+{- | Creates @process.unix.file_descriptor.count@ in @{file_descriptor}@.
+Stability: release candidate.
+-}
+create_process_unix_fileDescriptor_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_unix_fileDescriptor_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.unix.file_descriptor.count" (Just "{file_descriptor}") (Just "Number of UNIX file descriptors in use by the process.") advisory
+
+
+{- | Creates @process.unix.file_descriptor.count@ in @{file_descriptor}@.
+Stability: release candidate.
+-}
+create_observable_process_unix_fileDescriptor_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_unix_fileDescriptor_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.unix.file_descriptor.count" (Just "{file_descriptor}") (Just "Number of UNIX file descriptors in use by the process.") advisory callbacks
+
+
+{- | Creates @process.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_process_uptime_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_process_uptime_double meter advisory =
+  meterCreateGaugeDouble meter "process.uptime" (Just "s") (Just "The time the process has been running.") advisory
+
+
+{- | Creates @process.uptime@ in @s@.
+Stability: release candidate.
+-}
+create_observable_process_uptime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_process_uptime_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "process.uptime" (Just "s") (Just "The time the process has been running.") advisory callbacks
+
+
+{- | Creates @process.windows.handle.count@ in @{handle}@.
+Stability: release candidate.
+-}
+create_process_windows_handle_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_process_windows_handle_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "process.windows.handle.count" (Just "{handle}") (Just "Number of handles held by the process.") advisory
+
+
+{- | Creates @process.windows.handle.count@ in @{handle}@.
+Stability: release candidate.
+-}
+create_observable_process_windows_handle_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_process_windows_handle_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "process.windows.handle.count" (Just "{handle}") (Just "Number of handles held by the process.") advisory callbacks
+
+
+{- | Creates @rpc.client.call.duration@ in @s@.
+Stability: stable.
+-}
+create_rpc_client_call_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_client_call_duration meter advisory =
+  meterCreateHistogram meter "rpc.client.call.duration" (Just "s") (Just "Measures the duration of an outgoing Remote Procedure Call (RPC).") advisory
+
+
+{- | Creates @rpc.client.duration@ in @ms@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_client_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_client_duration meter advisory =
+  meterCreateHistogram meter "rpc.client.duration" (Just "ms") (Just "Deprecated, use `rpc.client.call.duration` instead. Note: the unit also changed from `ms` to `s`.") advisory
+
+
+{- | Creates @rpc.client.request.size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_client_request_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_client_request_size meter advisory =
+  meterCreateHistogram meter "rpc.client.request.size" (Just "By") (Just "Measures the size of RPC request messages (uncompressed).") advisory
+
+
+{- | Creates @rpc.client.requests_per_rpc@ in @{count}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_client_requestsPerRpc :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_client_requestsPerRpc meter advisory =
+  meterCreateHistogram meter "rpc.client.requests_per_rpc" (Just "{count}") (Just "Measures the number of messages received per RPC.") advisory
+
+
+{- | Creates @rpc.client.response.size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_client_response_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_client_response_size meter advisory =
+  meterCreateHistogram meter "rpc.client.response.size" (Just "By") (Just "Measures the size of RPC response messages (uncompressed).") advisory
+
+
+{- | Creates @rpc.client.responses_per_rpc@ in @{count}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_client_responsesPerRpc :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_client_responsesPerRpc meter advisory =
+  meterCreateHistogram meter "rpc.client.responses_per_rpc" (Just "{count}") (Just "Measures the number of messages sent per RPC.") advisory
+
+
+{- | Creates @rpc.server.call.duration@ in @s@.
+Stability: stable.
+-}
+create_rpc_server_call_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_server_call_duration meter advisory =
+  meterCreateHistogram meter "rpc.server.call.duration" (Just "s") (Just "Measures the duration of an incoming Remote Procedure Call (RPC).") advisory
+
+
+{- | Creates @rpc.server.duration@ in @ms@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_server_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_server_duration meter advisory =
+  meterCreateHistogram meter "rpc.server.duration" (Just "ms") (Just "Deprecated, use `rpc.server.call.duration` instead. Note: the unit also changed from `ms` to `s`.") advisory
+
+
+{- | Creates @rpc.server.request.size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_server_request_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_server_request_size meter advisory =
+  meterCreateHistogram meter "rpc.server.request.size" (Just "By") (Just "Measures the size of RPC request messages (uncompressed).") advisory
+
+
+{- | Creates @rpc.server.requests_per_rpc@ in @{count}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_server_requestsPerRpc :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_server_requestsPerRpc meter advisory =
+  meterCreateHistogram meter "rpc.server.requests_per_rpc" (Just "{count}") (Just "Measures the number of messages received per RPC.") advisory
+
+
+{- | Creates @rpc.server.response.size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_server_response_size :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_server_response_size meter advisory =
+  meterCreateHistogram meter "rpc.server.response.size" (Just "By") (Just "Measures the size of RPC response messages (uncompressed).") advisory
+
+
+{- | Creates @rpc.server.responses_per_rpc@ in @{count}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_rpc_server_responsesPerRpc :: Meter -> AdvisoryParameters -> IO Histogram
+create_rpc_server_responsesPerRpc meter advisory =
+  meterCreateHistogram meter "rpc.server.responses_per_rpc" (Just "{count}") (Just "Measures the number of messages sent per RPC.") advisory
+
+
+{- | Creates @signalr.server.active_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_signalr_server_activeConnections_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_signalr_server_activeConnections_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "signalr.server.active_connections" (Just "{connection}") (Just "Number of connections that are currently active on the server.") advisory
+
+
+{- | Creates @signalr.server.active_connections@ in @{connection}@.
+Stability: stable.
+-}
+create_observable_signalr_server_activeConnections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_signalr_server_activeConnections_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "signalr.server.active_connections" (Just "{connection}") (Just "Number of connections that are currently active on the server.") advisory callbacks
+
+
+{- | Creates @signalr.server.connection.duration@ in @s@.
+Stability: stable.
+-}
+create_signalr_server_connection_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_signalr_server_connection_duration meter advisory =
+  meterCreateHistogram meter "signalr.server.connection.duration" (Just "s") (Just "The duration of connections on the server.") advisory
+
+
+{- | Creates @system.cpu.frequency@ in @Hz@.
+Stability: development.
+-}
+create_system_cpu_frequency_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_system_cpu_frequency_int64 meter advisory =
+  meterCreateGaugeInt64 meter "system.cpu.frequency" (Just "Hz") (Just "Operating frequency of the logical CPU in Hertz.") advisory
+
+
+{- | Creates @system.cpu.frequency@ in @Hz@.
+Stability: development.
+-}
+create_observable_system_cpu_frequency_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_system_cpu_frequency_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "system.cpu.frequency" (Just "Hz") (Just "Operating frequency of the logical CPU in Hertz.") advisory callbacks
+
+
+{- | Creates @system.cpu.logical.count@ in @{cpu}@.
+Stability: development.
+-}
+create_system_cpu_logical_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_cpu_logical_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.cpu.logical.count" (Just "{cpu}") (Just "Reports the number of logical (virtual) processor cores created by the operating system to manage multitasking.") advisory
+
+
+{- | Creates @system.cpu.logical.count@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_system_cpu_logical_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_cpu_logical_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.cpu.logical.count" (Just "{cpu}") (Just "Reports the number of logical (virtual) processor cores created by the operating system to manage multitasking.") advisory callbacks
+
+
+{- | Creates @system.cpu.physical.count@ in @{cpu}@.
+Stability: development.
+-}
+create_system_cpu_physical_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_cpu_physical_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.cpu.physical.count" (Just "{cpu}") (Just "Reports the number of actual physical processor cores on the hardware.") advisory
+
+
+{- | Creates @system.cpu.physical.count@ in @{cpu}@.
+Stability: development.
+-}
+create_observable_system_cpu_physical_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_cpu_physical_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.cpu.physical.count" (Just "{cpu}") (Just "Reports the number of actual physical processor cores on the hardware.") advisory callbacks
+
+
+{- | Creates @system.cpu.time@ in @s@.
+Stability: development.
+-}
+create_system_cpu_time_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_system_cpu_time_double meter advisory =
+  meterCreateCounterDouble meter "system.cpu.time" (Just "s") (Just "Seconds each logical CPU spent on each mode.") advisory
+
+
+{- | Creates @system.cpu.time@ in @s@.
+Stability: development.
+-}
+create_observable_system_cpu_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_system_cpu_time_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "system.cpu.time" (Just "s") (Just "Seconds each logical CPU spent on each mode.") advisory callbacks
+
+
+{- | Creates @system.cpu.utilization@ in @1@.
+Stability: development.
+-}
+create_system_cpu_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_system_cpu_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "system.cpu.utilization" (Just "1") (Just "For each logical CPU, the utilization is calculated as the change in cumulative CPU time (cpu.time) over a measurement interval, divided by the elapsed time.") advisory
+
+
+{- | Creates @system.cpu.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_system_cpu_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_system_cpu_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "system.cpu.utilization" (Just "1") (Just "For each logical CPU, the utilization is calculated as the change in cumulative CPU time (cpu.time) over a measurement interval, divided by the elapsed time.") advisory callbacks
+
+
+{- | Creates @system.disk.io@ in @By@.
+Stability: development.
+-}
+create_system_disk_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_disk_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.disk.io" (Just "By") (Just "Disk bytes transferred.") advisory
+
+
+{- | Creates @system.disk.io@ in @By@.
+Stability: development.
+-}
+create_observable_system_disk_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_disk_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.disk.io" (Just "By") (Just "Disk bytes transferred.") advisory callbacks
+
+
+{- | Creates @system.disk.io_time@ in @s@.
+Stability: development.
+-}
+create_system_disk_ioTime_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_system_disk_ioTime_double meter advisory =
+  meterCreateCounterDouble meter "system.disk.io_time" (Just "s") (Just "Time disk spent activated.") advisory
+
+
+{- | Creates @system.disk.io_time@ in @s@.
+Stability: development.
+-}
+create_observable_system_disk_ioTime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_system_disk_ioTime_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "system.disk.io_time" (Just "s") (Just "Time disk spent activated.") advisory callbacks
+
+
+{- | Creates @system.disk.limit@ in @By@.
+Stability: development.
+-}
+create_system_disk_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_disk_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.disk.limit" (Just "By") (Just "The total storage capacity of the disk.") advisory
+
+
+{- | Creates @system.disk.limit@ in @By@.
+Stability: development.
+-}
+create_observable_system_disk_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_disk_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.disk.limit" (Just "By") (Just "The total storage capacity of the disk.") advisory callbacks
+
+
+{- | Creates @system.disk.merged@ in @{operation}@.
+Stability: development.
+-}
+create_system_disk_merged_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_disk_merged_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.disk.merged" (Just "{operation}") (Just "The number of disk reads/writes merged into single physical disk access operations.") advisory
+
+
+{- | Creates @system.disk.merged@ in @{operation}@.
+Stability: development.
+-}
+create_observable_system_disk_merged_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_disk_merged_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.disk.merged" (Just "{operation}") (Just "The number of disk reads/writes merged into single physical disk access operations.") advisory callbacks
+
+
+{- | Creates @system.disk.operation_time@ in @s@.
+Stability: development.
+-}
+create_system_disk_operationTime_double :: Meter -> AdvisoryParameters -> IO (Counter Double)
+create_system_disk_operationTime_double meter advisory =
+  meterCreateCounterDouble meter "system.disk.operation_time" (Just "s") (Just "Sum of the time each operation took to complete.") advisory
+
+
+{- | Creates @system.disk.operation_time@ in @s@.
+Stability: development.
+-}
+create_observable_system_disk_operationTime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableCounter Double)
+create_observable_system_disk_operationTime_double meter advisory callbacks =
+  meterCreateObservableCounterDouble meter "system.disk.operation_time" (Just "s") (Just "Sum of the time each operation took to complete.") advisory callbacks
+
+
+{- | Creates @system.disk.operations@ in @{operation}@.
+Stability: development.
+-}
+create_system_disk_operations_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_disk_operations_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.disk.operations" (Just "{operation}") (Just "Disk operations count.") advisory
+
+
+{- | Creates @system.disk.operations@ in @{operation}@.
+Stability: development.
+-}
+create_observable_system_disk_operations_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_disk_operations_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.disk.operations" (Just "{operation}") (Just "Disk operations count.") advisory callbacks
+
+
+{- | Creates @system.filesystem.limit@ in @By@.
+Stability: development.
+-}
+create_system_filesystem_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_filesystem_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.filesystem.limit" (Just "By") (Just "The total storage capacity of the filesystem.") advisory
+
+
+{- | Creates @system.filesystem.limit@ in @By@.
+Stability: development.
+-}
+create_observable_system_filesystem_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_filesystem_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.filesystem.limit" (Just "By") (Just "The total storage capacity of the filesystem.") advisory callbacks
+
+
+{- | Creates @system.filesystem.lock.count@ in @{lock}@.
+Stability: development.
+-}
+create_system_filesystem_lock_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_filesystem_lock_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.filesystem.lock.count" (Just "{lock}") (Just "Filesystem lock counts.") advisory
+
+
+{- | Creates @system.filesystem.lock.count@ in @{lock}@.
+Stability: development.
+-}
+create_observable_system_filesystem_lock_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_filesystem_lock_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.filesystem.lock.count" (Just "{lock}") (Just "Filesystem lock counts.") advisory callbacks
+
+
+{- | Creates @system.filesystem.usage@ in @By@.
+Stability: development.
+-}
+create_system_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_filesystem_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.filesystem.usage" (Just "By") (Just "Reports a filesystem's space usage across different states.") advisory
+
+
+{- | Creates @system.filesystem.usage@ in @By@.
+Stability: development.
+-}
+create_observable_system_filesystem_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_filesystem_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.filesystem.usage" (Just "By") (Just "Reports a filesystem's space usage across different states.") advisory callbacks
+
+
+{- | Creates @system.filesystem.utilization@ in @1@.
+Stability: development.
+-}
+create_system_filesystem_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_system_filesystem_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "system.filesystem.utilization" (Just "1") (Just "Fraction of filesystem bytes used.") advisory
+
+
+{- | Creates @system.filesystem.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_system_filesystem_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_system_filesystem_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "system.filesystem.utilization" (Just "1") (Just "Fraction of filesystem bytes used.") advisory callbacks
+
+
+{- | Creates @system.linux.memory.available@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_linux_memory_available_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_linux_memory_available_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.linux.memory.available" (Just "{packet}") (Just "The number of packets transferred.") advisory
+
+
+{- | Creates @system.linux.memory.available@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_linux_memory_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_linux_memory_available_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.linux.memory.available" (Just "{packet}") (Just "The number of packets transferred.") advisory callbacks
+
+
+{- | Creates @system.linux.memory.slab.usage@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_linux_memory_slab_usage_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_linux_memory_slab_usage_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.linux.memory.slab.usage" (Just "{packet}") (Just "The number of packets transferred.") advisory
+
+
+{- | Creates @system.linux.memory.slab.usage@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_linux_memory_slab_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_linux_memory_slab_usage_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.linux.memory.slab.usage" (Just "{packet}") (Just "The number of packets transferred.") advisory callbacks
+
+
+{- | Creates @system.memory.limit@ in @By@.
+Stability: development.
+-}
+create_system_memory_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.limit" (Just "By") (Just "Total virtual memory available in the system.") advisory
+
+
+{- | Creates @system.memory.limit@ in @By@.
+Stability: development.
+-}
+create_observable_system_memory_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.limit" (Just "By") (Just "Total virtual memory available in the system.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.available@ in @By@.
+Stability: development.
+-}
+create_system_memory_linux_available_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_available_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.available" (Just "By") (Just "An estimate of how much memory is available for starting new applications, without causing swapping.") advisory
+
+
+{- | Creates @system.memory.linux.available@ in @By@.
+Stability: development.
+-}
+create_observable_system_memory_linux_available_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_available_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.available" (Just "By") (Just "An estimate of how much memory is available for starting new applications, without causing swapping.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.hugepages.limit@ in @{page}@.
+Stability: development.
+-}
+create_system_memory_linux_hugepages_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_hugepages_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.hugepages.limit" (Just "{page}") (Just "Total number of hugepages available.") advisory
+
+
+{- | Creates @system.memory.linux.hugepages.limit@ in @{page}@.
+Stability: development.
+-}
+create_observable_system_memory_linux_hugepages_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_hugepages_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.hugepages.limit" (Just "{page}") (Just "Total number of hugepages available.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.hugepages.page_size@ in @By@.
+Stability: development.
+-}
+create_system_memory_linux_hugepages_pageSize_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_hugepages_pageSize_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.hugepages.page_size" (Just "By") (Just "System hugepage size in bytes.") advisory
+
+
+{- | Creates @system.memory.linux.hugepages.page_size@ in @By@.
+Stability: development.
+-}
+create_observable_system_memory_linux_hugepages_pageSize_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_hugepages_pageSize_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.hugepages.page_size" (Just "By") (Just "System hugepage size in bytes.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.hugepages.reserved@ in @{page}@.
+Stability: development.
+-}
+create_system_memory_linux_hugepages_reserved_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_hugepages_reserved_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.hugepages.reserved" (Just "{page}") (Just "Number of reserved hugepages.") advisory
+
+
+{- | Creates @system.memory.linux.hugepages.reserved@ in @{page}@.
+Stability: development.
+-}
+create_observable_system_memory_linux_hugepages_reserved_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_hugepages_reserved_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.hugepages.reserved" (Just "{page}") (Just "Number of reserved hugepages.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.hugepages.surplus@ in @{page}@.
+Stability: development.
+-}
+create_system_memory_linux_hugepages_surplus_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_hugepages_surplus_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.hugepages.surplus" (Just "{page}") (Just "Number of surplus hugepages.") advisory
+
+
+{- | Creates @system.memory.linux.hugepages.surplus@ in @{page}@.
+Stability: development.
+-}
+create_observable_system_memory_linux_hugepages_surplus_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_hugepages_surplus_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.hugepages.surplus" (Just "{page}") (Just "Number of surplus hugepages.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.hugepages.usage@ in @{page}@.
+Stability: development.
+-}
+create_system_memory_linux_hugepages_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_hugepages_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.hugepages.usage" (Just "{page}") (Just "Number of hugepages in use by state.") advisory
+
+
+{- | Creates @system.memory.linux.hugepages.usage@ in @{page}@.
+Stability: development.
+-}
+create_observable_system_memory_linux_hugepages_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_hugepages_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.hugepages.usage" (Just "{page}") (Just "Number of hugepages in use by state.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.hugepages.utilization@ in @1@.
+Stability: development.
+-}
+create_system_memory_linux_hugepages_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_system_memory_linux_hugepages_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "system.memory.linux.hugepages.utilization" (Just "1") (Just "Percentage of hugepages in use by state.") advisory
+
+
+{- | Creates @system.memory.linux.hugepages.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_system_memory_linux_hugepages_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_system_memory_linux_hugepages_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "system.memory.linux.hugepages.utilization" (Just "1") (Just "Percentage of hugepages in use by state.") advisory callbacks
+
+
+{- | Creates @system.memory.linux.shared@ in @By@.
+Stability: development.
+-}
+create_system_memory_linux_shared_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_shared_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.shared" (Just "By") (Just "Shared memory used (mostly by tmpfs).") advisory
+
+
+{- | Creates @system.memory.linux.shared@ in @By@.
+Stability: development.
+-}
+create_observable_system_memory_linux_shared_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_shared_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.shared" (Just "By") (Just "Shared memory used (mostly by tmpfs).") advisory callbacks
+
+
+{- | Creates @system.memory.linux.slab.usage@ in @By@.
+Stability: development.
+-}
+create_system_memory_linux_slab_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_linux_slab_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.linux.slab.usage" (Just "By") (Just "Reports the memory used by the Linux kernel for managing caches of frequently used objects.") advisory
+
+
+{- | Creates @system.memory.linux.slab.usage@ in @By@.
+Stability: development.
+-}
+create_observable_system_memory_linux_slab_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_linux_slab_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.linux.slab.usage" (Just "By") (Just "Reports the memory used by the Linux kernel for managing caches of frequently used objects.") advisory callbacks
+
+
+{- | Creates @system.memory.shared@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_memory_shared_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_shared_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.shared" (Just "By") (Just "Deprecated, use `system.memory.linux.shared` instead.") advisory
+
+
+{- | Creates @system.memory.shared@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_memory_shared_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_shared_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.shared" (Just "By") (Just "Deprecated, use `system.memory.linux.shared` instead.") advisory callbacks
+
+
+{- | Creates @system.memory.usage@ in @By@.
+Stability: development.
+-}
+create_system_memory_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_memory_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.memory.usage" (Just "By") (Just "Reports memory by state.") advisory
+
+
+{- | Creates @system.memory.usage@ in @By@.
+Stability: development.
+-}
+create_observable_system_memory_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_memory_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.memory.usage" (Just "By") (Just "Reports memory by state.") advisory callbacks
+
+
+{- | Creates @system.memory.utilization@ in @1@.
+Stability: development.
+-}
+create_system_memory_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_system_memory_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "system.memory.utilization" (Just "1") (Just "Fraction of memory bytes by state.") advisory
+
+
+{- | Creates @system.memory.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_system_memory_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_system_memory_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "system.memory.utilization" (Just "1") (Just "Fraction of memory bytes by state.") advisory callbacks
+
+
+{- | Creates @system.network.connection.count@ in @{connection}@.
+Stability: development.
+-}
+create_system_network_connection_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_network_connection_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.network.connection.count" (Just "{connection}") (Just "The number of connections.") advisory
+
+
+{- | Creates @system.network.connection.count@ in @{connection}@.
+Stability: development.
+-}
+create_observable_system_network_connection_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_network_connection_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.network.connection.count" (Just "{connection}") (Just "The number of connections.") advisory callbacks
+
+
+{- | Creates @system.network.connections@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_network_connections_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_network_connections_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.network.connections" (Just "{connection}") (Just "Deprecated, use `system.network.connection.count` instead.") advisory
+
+
+{- | Creates @system.network.connections@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_network_connections_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_network_connections_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.network.connections" (Just "{connection}") (Just "Deprecated, use `system.network.connection.count` instead.") advisory callbacks
+
+
+{- | Creates @system.network.connections@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_network_connections_double :: Meter -> AdvisoryParameters -> IO (UpDownCounter Double)
+create_system_network_connections_double meter advisory =
+  meterCreateUpDownCounterDouble meter "system.network.connections" (Just "{connection}") (Just "Deprecated, use `system.network.connection.count` instead.") advisory
+
+
+{- | Creates @system.network.connections@ in @{connection}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_network_connections_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableUpDownCounter Double)
+create_observable_system_network_connections_double meter advisory callbacks =
+  meterCreateObservableUpDownCounterDouble meter "system.network.connections" (Just "{connection}") (Just "Deprecated, use `system.network.connection.count` instead.") advisory callbacks
+
+
+{- | Creates @system.network.dropped@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_network_dropped_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_network_dropped_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.network.dropped" (Just "{packet}") (Just "Count of packets that are dropped or discarded even though there was no error.") advisory
+
+
+{- | Creates @system.network.dropped@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_network_dropped_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_network_dropped_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.network.dropped" (Just "{packet}") (Just "Count of packets that are dropped or discarded even though there was no error.") advisory callbacks
+
+
+{- | Creates @system.network.errors@ in @{error}@.
+Stability: development.
+-}
+create_system_network_errors_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_network_errors_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.network.errors" (Just "{error}") (Just "Count of network errors detected.") advisory
+
+
+{- | Creates @system.network.errors@ in @{error}@.
+Stability: development.
+-}
+create_observable_system_network_errors_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_network_errors_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.network.errors" (Just "{error}") (Just "Count of network errors detected.") advisory callbacks
+
+
+{- | Creates @system.network.io@ in @By@.
+Stability: development.
+-}
+create_system_network_io_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_network_io_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.network.io" (Just "By") (Just "The number of bytes transmitted and received.") advisory
+
+
+{- | Creates @system.network.io@ in @By@.
+Stability: development.
+-}
+create_observable_system_network_io_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_network_io_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.network.io" (Just "By") (Just "The number of bytes transmitted and received.") advisory callbacks
+
+
+{- | Creates @system.network.packet.count@ in @{packet}@.
+Stability: development.
+-}
+create_system_network_packet_count_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_network_packet_count_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.network.packet.count" (Just "{packet}") (Just "The number of packets transferred.") advisory
+
+
+{- | Creates @system.network.packet.count@ in @{packet}@.
+Stability: development.
+-}
+create_observable_system_network_packet_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_network_packet_count_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.network.packet.count" (Just "{packet}") (Just "The number of packets transferred.") advisory callbacks
+
+
+{- | Creates @system.network.packet.dropped@ in @{packet}@.
+Stability: development.
+-}
+create_system_network_packet_dropped_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_network_packet_dropped_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.network.packet.dropped" (Just "{packet}") (Just "Count of packets that are dropped or discarded even though there was no error.") advisory
+
+
+{- | Creates @system.network.packet.dropped@ in @{packet}@.
+Stability: development.
+-}
+create_observable_system_network_packet_dropped_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_network_packet_dropped_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.network.packet.dropped" (Just "{packet}") (Just "Count of packets that are dropped or discarded even though there was no error.") advisory callbacks
+
+
+{- | Creates @system.network.packets@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_system_network_packets_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_network_packets_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.network.packets" (Just "{packet}") (Just "The number of packets transferred.") advisory
+
+
+{- | Creates @system.network.packets@ in @{packet}@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_system_network_packets_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_network_packets_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.network.packets" (Just "{packet}") (Just "The number of packets transferred.") advisory callbacks
+
+
+{- | Creates @system.paging.faults@ in @{fault}@.
+Stability: development.
+-}
+create_system_paging_faults_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_paging_faults_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.paging.faults" (Just "{fault}") (Just "The number of page faults.") advisory
+
+
+{- | Creates @system.paging.faults@ in @{fault}@.
+Stability: development.
+-}
+create_observable_system_paging_faults_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_paging_faults_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.paging.faults" (Just "{fault}") (Just "The number of page faults.") advisory callbacks
+
+
+{- | Creates @system.paging.operations@ in @{operation}@.
+Stability: development.
+-}
+create_system_paging_operations_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_paging_operations_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.paging.operations" (Just "{operation}") (Just "The number of paging operations.") advisory
+
+
+{- | Creates @system.paging.operations@ in @{operation}@.
+Stability: development.
+-}
+create_observable_system_paging_operations_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_paging_operations_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.paging.operations" (Just "{operation}") (Just "The number of paging operations.") advisory callbacks
+
+
+{- | Creates @system.paging.usage@ in @By@.
+Stability: development.
+-}
+create_system_paging_usage_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_paging_usage_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.paging.usage" (Just "By") (Just "UNIX swap or windows pagefile usage.") advisory
+
+
+{- | Creates @system.paging.usage@ in @By@.
+Stability: development.
+-}
+create_observable_system_paging_usage_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_paging_usage_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.paging.usage" (Just "By") (Just "UNIX swap or windows pagefile usage.") advisory callbacks
+
+
+{- | Creates @system.paging.utilization@ in @1@.
+Stability: development.
+-}
+create_system_paging_utilization_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_system_paging_utilization_double meter advisory =
+  meterCreateGaugeDouble meter "system.paging.utilization" (Just "1") (Just "Swap (UNIX) or pagefile (windows) utilization.") advisory
+
+
+{- | Creates @system.paging.utilization@ in @1@.
+Stability: development.
+-}
+create_observable_system_paging_utilization_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_system_paging_utilization_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "system.paging.utilization" (Just "1") (Just "Swap (UNIX) or pagefile (windows) utilization.") advisory callbacks
+
+
+{- | Creates @system.process.count@ in @{process}@.
+Stability: development.
+-}
+create_system_process_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_process_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.process.count" (Just "{process}") (Just "Total number of processes in each state.") advisory
+
+
+{- | Creates @system.process.count@ in @{process}@.
+Stability: development.
+-}
+create_observable_system_process_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_process_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.process.count" (Just "{process}") (Just "Total number of processes in each state.") advisory callbacks
+
+
+{- | Creates @system.process.created@ in @{process}@.
+Stability: development.
+-}
+create_system_process_created_int64 :: Meter -> AdvisoryParameters -> IO (Counter Int64)
+create_system_process_created_int64 meter advisory =
+  meterCreateCounterInt64 meter "system.process.created" (Just "{process}") (Just "Total number of processes created over uptime of the host.") advisory
+
+
+{- | Creates @system.process.created@ in @{process}@.
+Stability: development.
+-}
+create_observable_system_process_created_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableCounter Int64)
+create_observable_system_process_created_int64 meter advisory callbacks =
+  meterCreateObservableCounterInt64 meter "system.process.created" (Just "{process}") (Just "Total number of processes created over uptime of the host.") advisory callbacks
+
+
+{- | Creates @system.process.limit@ in @{thread}@.
+Stability: development.
+-}
+create_system_process_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_system_process_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "system.process.limit" (Just "{thread}") (Just "The maximum number of concurrent processes/tasks allowed by the operating system.") advisory
+
+
+{- | Creates @system.process.limit@ in @{thread}@.
+Stability: development.
+-}
+create_observable_system_process_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_system_process_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "system.process.limit" (Just "{thread}") (Just "The maximum number of concurrent processes/tasks allowed by the operating system.") advisory callbacks
+
+
+{- | Creates @system.uptime@ in @s@.
+Stability: development.
+-}
+create_system_uptime_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_system_uptime_double meter advisory =
+  meterCreateGaugeDouble meter "system.uptime" (Just "s") (Just "The time the system has been running.") advisory
+
+
+{- | Creates @system.uptime@ in @s@.
+Stability: development.
+-}
+create_observable_system_uptime_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_system_uptime_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "system.uptime" (Just "s") (Just "The time the system has been running.") advisory callbacks
+
+
+{- | Creates @v8js.gc.duration@ in @s@.
+Stability: development.
+-}
+create_v8js_gc_duration :: Meter -> AdvisoryParameters -> IO Histogram
+create_v8js_gc_duration meter advisory =
+  meterCreateHistogram meter "v8js.gc.duration" (Just "s") (Just "Garbage collection duration.") advisory
+
+
+{- | Creates @v8js.heap.space.available_size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_v8js_heap_space_availableSize_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_heap_space_availableSize_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.heap.space.available_size" (Just "By") (Just "Deprecated, use `v8js.memory.heap.space.available_size` instead.") advisory
+
+
+{- | Creates @v8js.heap.space.available_size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_v8js_heap_space_availableSize_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_heap_space_availableSize_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.heap.space.available_size" (Just "By") (Just "Deprecated, use `v8js.memory.heap.space.available_size` instead.") advisory callbacks
+
+
+{- | Creates @v8js.heap.space.physical_size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_v8js_heap_space_physicalSize_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_heap_space_physicalSize_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.heap.space.physical_size" (Just "By") (Just "Deprecated, use `v8js.memory.heap.space.physical_size` instead.") advisory
+
+
+{- | Creates @v8js.heap.space.physical_size@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_v8js_heap_space_physicalSize_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_heap_space_physicalSize_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.heap.space.physical_size" (Just "By") (Just "Deprecated, use `v8js.memory.heap.space.physical_size` instead.") advisory callbacks
+
+
+{- | Creates @v8js.memory.heap.limit@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_v8js_memory_heap_limit_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_memory_heap_limit_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.memory.heap.limit" (Just "By") (Just "Deprecated, use `v8js.memory.heap.space.size` instead.") advisory
+
+
+{- | Creates @v8js.memory.heap.limit@ in @By@.
+Stability: development.
+Deprecated upstream; see the generated metric catalogue for migration guidance.
+-}
+create_observable_v8js_memory_heap_limit_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_memory_heap_limit_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.memory.heap.limit" (Just "By") (Just "Deprecated, use `v8js.memory.heap.space.size` instead.") advisory callbacks
+
+
+{- | Creates @v8js.memory.heap.space.available_size@ in @By@.
+Stability: development.
+-}
+create_v8js_memory_heap_space_availableSize_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_memory_heap_space_availableSize_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.memory.heap.space.available_size" (Just "By") (Just "Heap space available size.") advisory
+
+
+{- | Creates @v8js.memory.heap.space.available_size@ in @By@.
+Stability: development.
+-}
+create_observable_v8js_memory_heap_space_availableSize_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_memory_heap_space_availableSize_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.memory.heap.space.available_size" (Just "By") (Just "Heap space available size.") advisory callbacks
+
+
+{- | Creates @v8js.memory.heap.space.physical_size@ in @By@.
+Stability: development.
+-}
+create_v8js_memory_heap_space_physicalSize_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_memory_heap_space_physicalSize_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.memory.heap.space.physical_size" (Just "By") (Just "Committed size of a heap space.") advisory
+
+
+{- | Creates @v8js.memory.heap.space.physical_size@ in @By@.
+Stability: development.
+-}
+create_observable_v8js_memory_heap_space_physicalSize_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_memory_heap_space_physicalSize_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.memory.heap.space.physical_size" (Just "By") (Just "Committed size of a heap space.") advisory callbacks
+
+
+{- | Creates @v8js.memory.heap.space.size@ in @By@.
+Stability: development.
+-}
+create_v8js_memory_heap_space_size_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_memory_heap_space_size_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.memory.heap.space.size" (Just "By") (Just "Total heap memory size pre-allocated for a heap space.") advisory
+
+
+{- | Creates @v8js.memory.heap.space.size@ in @By@.
+Stability: development.
+-}
+create_observable_v8js_memory_heap_space_size_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_memory_heap_space_size_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.memory.heap.space.size" (Just "By") (Just "Total heap memory size pre-allocated for a heap space.") advisory callbacks
+
+
+{- | Creates @v8js.memory.heap.used@ in @By@.
+Stability: development.
+-}
+create_v8js_memory_heap_used_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_v8js_memory_heap_used_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "v8js.memory.heap.used" (Just "By") (Just "Heap Memory size allocated.") advisory
+
+
+{- | Creates @v8js.memory.heap.used@ in @By@.
+Stability: development.
+-}
+create_observable_v8js_memory_heap_used_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_v8js_memory_heap_used_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "v8js.memory.heap.used" (Just "By") (Just "Heap Memory size allocated.") advisory callbacks
+
+
+{- | Creates @v8js.resource.active@ in @{resource}@.
+Stability: development.
+-}
+create_v8js_resource_active_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_v8js_resource_active_int64 meter advisory =
+  meterCreateGaugeInt64 meter "v8js.resource.active" (Just "{resource}") (Just "Gauge of the active resources that are currently keeping the event loop alive.") advisory
+
+
+{- | Creates @v8js.resource.active@ in @{resource}@.
+Stability: development.
+-}
+create_observable_v8js_resource_active_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_v8js_resource_active_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "v8js.resource.active" (Just "{resource}") (Just "Gauge of the active resources that are currently keeping the event loop alive.") advisory callbacks
+
+
+{- | Creates @vcs.change.count@ in @{change}@.
+Stability: release candidate.
+-}
+create_vcs_change_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_vcs_change_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "vcs.change.count" (Just "{change}") (Just "The number of changes (pull requests/merge requests/changelists) in a repository, categorized by their state (e.g. open or merged).") advisory
+
+
+{- | Creates @vcs.change.count@ in @{change}@.
+Stability: release candidate.
+-}
+create_observable_vcs_change_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_vcs_change_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "vcs.change.count" (Just "{change}") (Just "The number of changes (pull requests/merge requests/changelists) in a repository, categorized by their state (e.g. open or merged).") advisory callbacks
+
+
+{- | Creates @vcs.change.duration@ in @s@.
+Stability: release candidate.
+-}
+create_vcs_change_duration_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_vcs_change_duration_double meter advisory =
+  meterCreateGaugeDouble meter "vcs.change.duration" (Just "s") (Just "The time duration a change (pull request/merge request/changelist) has been in a given state.") advisory
+
+
+{- | Creates @vcs.change.duration@ in @s@.
+Stability: release candidate.
+-}
+create_observable_vcs_change_duration_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_vcs_change_duration_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "vcs.change.duration" (Just "s") (Just "The time duration a change (pull request/merge request/changelist) has been in a given state.") advisory callbacks
+
+
+{- | Creates @vcs.change.time_to_approval@ in @s@.
+Stability: development.
+-}
+create_vcs_change_timeToApproval_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_vcs_change_timeToApproval_double meter advisory =
+  meterCreateGaugeDouble meter "vcs.change.time_to_approval" (Just "s") (Just "The amount of time since its creation it took a change (pull request/merge request/changelist) to get the first approval.") advisory
+
+
+{- | Creates @vcs.change.time_to_approval@ in @s@.
+Stability: development.
+-}
+create_observable_vcs_change_timeToApproval_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_vcs_change_timeToApproval_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "vcs.change.time_to_approval" (Just "s") (Just "The amount of time since its creation it took a change (pull request/merge request/changelist) to get the first approval.") advisory callbacks
+
+
+{- | Creates @vcs.change.time_to_merge@ in @s@.
+Stability: development.
+-}
+create_vcs_change_timeToMerge_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_vcs_change_timeToMerge_double meter advisory =
+  meterCreateGaugeDouble meter "vcs.change.time_to_merge" (Just "s") (Just "The amount of time since its creation it took a change (pull request/merge request/changelist) to get merged into the target(base) ref.") advisory
+
+
+{- | Creates @vcs.change.time_to_merge@ in @s@.
+Stability: development.
+-}
+create_observable_vcs_change_timeToMerge_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_vcs_change_timeToMerge_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "vcs.change.time_to_merge" (Just "s") (Just "The amount of time since its creation it took a change (pull request/merge request/changelist) to get merged into the target(base) ref.") advisory callbacks
+
+
+{- | Creates @vcs.contributor.count@ in @{contributor}@.
+Stability: release candidate.
+-}
+create_vcs_contributor_count_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_vcs_contributor_count_int64 meter advisory =
+  meterCreateGaugeInt64 meter "vcs.contributor.count" (Just "{contributor}") (Just "The number of unique contributors to a repository.") advisory
+
+
+{- | Creates @vcs.contributor.count@ in @{contributor}@.
+Stability: release candidate.
+-}
+create_observable_vcs_contributor_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_vcs_contributor_count_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "vcs.contributor.count" (Just "{contributor}") (Just "The number of unique contributors to a repository.") advisory callbacks
+
+
+{- | Creates @vcs.ref.count@ in @{ref}@.
+Stability: release candidate.
+-}
+create_vcs_ref_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_vcs_ref_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "vcs.ref.count" (Just "{ref}") (Just "The number of refs of type branch or tag in a repository.") advisory
+
+
+{- | Creates @vcs.ref.count@ in @{ref}@.
+Stability: release candidate.
+-}
+create_observable_vcs_ref_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_vcs_ref_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "vcs.ref.count" (Just "{ref}") (Just "The number of refs of type branch or tag in a repository.") advisory callbacks
+
+
+{- | Creates @vcs.ref.lines_delta@ in @{line}@.
+Stability: release candidate.
+-}
+create_vcs_ref_linesDelta_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_vcs_ref_linesDelta_int64 meter advisory =
+  meterCreateGaugeInt64 meter "vcs.ref.lines_delta" (Just "{line}") (Just "The number of lines added/removed in a ref (branch) relative to the ref from the `vcs.ref.base.name` attribute.") advisory
+
+
+{- | Creates @vcs.ref.lines_delta@ in @{line}@.
+Stability: release candidate.
+-}
+create_observable_vcs_ref_linesDelta_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_vcs_ref_linesDelta_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "vcs.ref.lines_delta" (Just "{line}") (Just "The number of lines added/removed in a ref (branch) relative to the ref from the `vcs.ref.base.name` attribute.") advisory callbacks
+
+
+{- | Creates @vcs.ref.revisions_delta@ in @{revision}@.
+Stability: release candidate.
+-}
+create_vcs_ref_revisionsDelta_int64 :: Meter -> AdvisoryParameters -> IO (Gauge Int64)
+create_vcs_ref_revisionsDelta_int64 meter advisory =
+  meterCreateGaugeInt64 meter "vcs.ref.revisions_delta" (Just "{revision}") (Just "The number of revisions (commits) a ref (branch) is ahead/behind the branch from the `vcs.ref.base.name` attribute.") advisory
+
+
+{- | Creates @vcs.ref.revisions_delta@ in @{revision}@.
+Stability: release candidate.
+-}
+create_observable_vcs_ref_revisionsDelta_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableGauge Int64)
+create_observable_vcs_ref_revisionsDelta_int64 meter advisory callbacks =
+  meterCreateObservableGaugeInt64 meter "vcs.ref.revisions_delta" (Just "{revision}") (Just "The number of revisions (commits) a ref (branch) is ahead/behind the branch from the `vcs.ref.base.name` attribute.") advisory callbacks
+
+
+{- | Creates @vcs.ref.time@ in @s@.
+Stability: release candidate.
+-}
+create_vcs_ref_time_double :: Meter -> AdvisoryParameters -> IO (Gauge Double)
+create_vcs_ref_time_double meter advisory =
+  meterCreateGaugeDouble meter "vcs.ref.time" (Just "s") (Just "Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.") advisory
+
+
+{- | Creates @vcs.ref.time@ in @s@.
+Stability: release candidate.
+-}
+create_observable_vcs_ref_time_double :: Meter -> AdvisoryParameters -> [ObservableResult Double -> IO ()] -> IO (ObservableGauge Double)
+create_observable_vcs_ref_time_double meter advisory callbacks =
+  meterCreateObservableGaugeDouble meter "vcs.ref.time" (Just "s") (Just "Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.") advisory callbacks
+
+
+{- | Creates @vcs.repository.count@ in @{repository}@.
+Stability: release candidate.
+-}
+create_vcs_repository_count_int64 :: Meter -> AdvisoryParameters -> IO (UpDownCounter Int64)
+create_vcs_repository_count_int64 meter advisory =
+  meterCreateUpDownCounterInt64 meter "vcs.repository.count" (Just "{repository}") (Just "The number of repositories in an organization.") advisory
+
+
+{- | Creates @vcs.repository.count@ in @{repository}@.
+Stability: release candidate.
+-}
+create_observable_vcs_repository_count_int64 :: Meter -> AdvisoryParameters -> [ObservableResult Int64 -> IO ()] -> IO (ObservableUpDownCounter Int64)
+create_observable_vcs_repository_count_int64 meter advisory callbacks =
+  meterCreateObservableUpDownCounterInt64 meter "vcs.repository.count" (Just "{repository}") (Just "The number of repositories in an organization.") advisory callbacks

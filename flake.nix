@@ -78,6 +78,10 @@
           ;
       };
       inherit (haskellPackageUtils) extendedPackageSetByGHCVersions;
+      semconvGeneration = import ./nix/semconv-generation.nix {
+        inherit pkgs;
+        src = ./.;
+      };
 
       mkShellForGHC = ghcVersion: let
         myHaskellPackages = extendedPackageSetByGHCVersions.${ghcVersion};
@@ -139,12 +143,26 @@
         ghc98 = mkShellForGHC "ghc98";
         ghc910 = mkShellForGHC "ghc910";
         ghc912 = mkShellForGHC "ghc912";
+        semconv-generation = pkgs.mkShell {
+          packages = semconvGeneration.tools;
+        };
       };
 
       checks = {
+        semconv-generation = semconvGeneration.check;
         pre-commit-check = devenv.inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
-          hooks = mkPreCommitHooks pkgs.haskellPackages.fourmolu;
+          hooks =
+            mkPreCommitHooks pkgs.haskellPackages.fourmolu
+            // {
+              semconv-generation = {
+                enable = true;
+                name = "semconv-generation";
+                entry = "${pkgs.coreutils}/bin/test -e ${semconvGeneration.check}";
+                always_run = true;
+                pass_filenames = false;
+              };
+            };
         };
       };
     });

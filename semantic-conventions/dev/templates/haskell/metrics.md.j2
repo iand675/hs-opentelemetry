@@ -1,0 +1,67 @@
+{% import "metric_macros.j2" as metrics %}
+{% set catalogue %}
+# Metric catalogue
+
+Generated from OpenTelemetry Semantic Conventions **1.45.0** with Weaver **0.28.0**.
+This catalogue covers **{{ ctx | length }} metrics**, including development and
+deprecated definitions. Regenerate it with the Haskell constructors.
+
+Every constructor takes a Meter and AdvisoryParameters. Observable constructors
+also take a list of callbacks. Supply measurements in the listed unit, the
+attributes required by the metric, and appropriate advisory settings. Histogram
+bucket recommendations in upstream prose remain a caller choice.
+
+Numeric annotations select Int64 or Double constructors. Where upstream leaves
+the numeric type unspecified, both variants are available. The existing Haskell
+Histogram API always records Double, including metrics whose upstream numeric
+annotation is integer. Both synchronous and observable variants are supplied for
+other instruments; choose the style appropriate to the measurement.
+
+{% for metric in ctx %}
+## {{ metric.metric_name }}
+
+{{ metric.brief }}
+
+[Registry definition](https://github.com/open-telemetry/semantic-conventions/blob/v1.45.0/{{ metric.lineage.provenance.path | replace("model/model/", "model/") }})
+
+| Property | Value |
+| --- | --- |
+| Instrument | {{ metric.instrument }} |
+| Unit | {{ metric.unit }} |
+| Numeric annotation | {{ metric.value_type }} |
+| Stability | {{ metric.stability | default("unspecified") | replace("_", " ") }} |
+
+{% if metric.deprecated is defined %}
+**Deprecated:** {{ metric.deprecated.note | default(metric.deprecated.reason) }}
+{% if metric.deprecated.renamed_to is defined %}
+Replacement: {{ metric.deprecated.renamed_to }}.
+{% endif %}
+{% endif %}
+
+Constructors:
+
+{% if metric.instrument == "histogram" %}
+- `{{ metrics.factory_name(metric, "Double", false) }}`
+{% else %}
+{% for value_type in metric.haskell_value_types %}
+- `{{ metrics.factory_name(metric, value_type, false) }}`
+- `{{ metrics.factory_name(metric, value_type, true) }}`
+{% endfor %}
+{% endif %}
+
+{% if metric.attributes | default([]) | length > 0 %}
+| Attribute | Requirement |
+| --- | --- |
+{% for attribute in metric.attributes | default([]) %}
+{% set requirement = attribute.requirement_level | default("unspecified") %}
+| {{ attribute.name }} | {% if requirement is string %}{{ requirement | replace("_", " ") }}{% elif requirement.conditionally_required is defined %}Conditionally required: {{ requirement.conditionally_required | replace("\n", " ") | replace("|", "\\|") }}{% elif requirement.recommended is defined %}Recommended: {{ requirement.recommended | replace("\n", " ") | replace("|", "\\|") }}{% else %}{{ requirement | tojson | replace("|", "\\|") }}{% endif %} |
+{% endfor %}
+{% endif %}
+
+{% if metric.note is defined %}
+{{ metric.note }}
+{% endif %}
+
+{% endfor %}
+{% endset %}
+{{ catalogue | trim }}
