@@ -15,7 +15,7 @@ homepage:        https://github.com/iand675/hs-opentelemetry#readme
 bug-reports:     https://github.com/iand675/hs-opentelemetry/issues
 category:        OpenTelemetry, Telemetry, Kafka
 build-type:      Simple
-extra-doc-files: CHANGELOG.md
+extra-doc-files: CHANGELOG.md README.md
 
 -- extra-source-files:
 
@@ -38,7 +38,7 @@ library
     , text
     , bytestring
     , hs-opentelemetry-api ^>= 1.0
-    , hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+    , hs-opentelemetry-semantic-conventions >= 1.45 && < 2
     , hw-kafka-client
     , unliftio-core
 
@@ -50,12 +50,15 @@ test-suite hs-opentelemetry-instrumentation-hw-kafka-client-test
   type:             exitcode-stdio-1.0
   main-is:          Spec.hs
   hs-source-dirs:   test
+  other-modules:    MigrationSpec
   default-language: Haskell2010
   ghc-options:      -threaded -rtsopts -with-rtsopts=-N
   build-depends:
     , base                  >=4.7 && <5
     , hs-opentelemetry-instrumentation-hw-kafka-client ^>= 1.0
     , hs-opentelemetry-api ^>= 1.0
+    , hs-opentelemetry-exporter-in-memory ^>= 1.0
+    , process
     , hspec
     , text
     , bytestring

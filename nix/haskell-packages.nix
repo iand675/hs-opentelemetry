@@ -109,20 +109,25 @@ in rec {
   localPackageMatrix =
     mapKeyValues (
       key: value: let
-        myLocalPackages = pluckLocalPackages value;
         k = "hs-opentelemetry-suite-${key}";
-        versionSkips = skipPackagesByGHCVersion.${key} or [];
-        allSkips = skipPackages ++ versionSkips;
       in {
         "${k}" = pkgs.buildEnv {
           name = k;
-          paths = lib.attrValues (lib.filterAttrs (n: _: !builtins.elem n allSkips) myLocalPackages);
+          paths = lib.attrValues (supportedLocalPackages key value);
         };
       }
     )
     extendedPackageSetByGHCVersions;
 
-  localDevPackageDeps = hsPackageSet:
+  # Build suites and dev shells must agree about unsupported packages. Merely
+  # excluding a package from the suite still pulled its dependencies into Hoogle
+  # and broke the GHC 9.4/9.6 shells via honeycomb -> chronos -> bytesmith.
+  supportedLocalPackages = ghcVersion: hsPackageSet: let
+    allSkips = skipPackages ++ (skipPackagesByGHCVersion.${ghcVersion} or []);
+  in
+    lib.filterAttrs (name: _: !builtins.elem name allSkips) (pluckLocalPackages hsPackageSet);
+
+  localDevPackageDeps = ghcVersion: hsPackageSet:
     lib.concatMapAttrs (_: v:
       listToAttrs (
         map (p: {
@@ -131,11 +136,11 @@ in rec {
         })
         v.getBuildInputs.haskellBuildInputs
       ))
-    (pluckLocalPackages hsPackageSet);
+    (supportedLocalPackages ghcVersion hsPackageSet);
 
-  localDevPackageDepsAsAttrSet = hsPackageSet:
+  localDevPackageDepsAsAttrSet = ghcVersion: hsPackageSet:
     lib.filterAttrs (k: _: !builtins.hasAttr k (pluckLocalPackages hsPackageSet))
-    (localDevPackageDeps hsPackageSet);
+    (localDevPackageDeps ghcVersion hsPackageSet);
 
   nixpkgsHaskellTweaks = final: prev: {
     # nixpkgs has 0.7.1.5, 0.7.1.6 relaxes bounds for 9.10, but we can also just

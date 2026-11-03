@@ -1,0 +1,11 @@
+templates:
+  - pattern: model.json.j2
+    filter: >-
+      {groups: [.groups[] | . as $group |
+        . + {attributes: [.attributes[]? |
+          if ($group.id | startswith("registry."))
+          then . + {id: .name} | del(.name)
+          else . + {ref: .name} | del(.name, .type)
+          end]}]}
+    application_mode: single
+    file_name: model.json

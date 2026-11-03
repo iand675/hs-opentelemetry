@@ -22,6 +22,8 @@ module OpenTelemetry.Instrumentation.Kafka (
   -- * Attribute builders (exported for testing)
   producerAttributes,
   consumerAttributes,
+  producerAttributesWithSemantics,
+  consumerAttributesWithSemantics,
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -59,16 +61,21 @@ import Kafka.Types (
   headersFromList,
   headersToList,
  )
-import OpenTelemetry.Attributes.Key (unkey)
+import OpenTelemetry.Attributes.Key (AttributeKey, unkey)
 import OpenTelemetry.Attributes.Map (AttributeMap, insertAttributeByKey)
+import qualified OpenTelemetry.Attributes.Map as Attributes
 import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Context.ThreadLocal (attachContext, getContext)
 import OpenTelemetry.Propagator (TextMap, emptyTextMap, extract, getGlobalTextMapPropagator, inject, textMapFromList, textMapToList)
 import OpenTelemetry.SemanticConventions (
   error_type,
+  kafka_message_key,
+  kafka_message_tombstone,
+  kafka_offset,
   messaging_client_id,
   messaging_consumer_group_name,
   messaging_destination_name,
+  messaging_destination_partition_id,
   messaging_kafka_consumer_group,
   messaging_kafka_destination_partition,
   messaging_kafka_message_key,
@@ -78,8 +85,9 @@ import OpenTelemetry.SemanticConventions (
   messaging_operation_name,
   messaging_operation_type,
   messaging_system,
+  messaging_system_name,
  )
-import OpenTelemetry.SemanticsConfig (StabilityOpt (..), getSemanticsOptions, lookupStability)
+import OpenTelemetry.SemanticsConfig (SemanticsOptions, StabilityOpt (..), getSemanticsOptions, lookupStability)
 import OpenTelemetry.Trace.Core (
   SpanArguments (kind),
   SpanKind (Consumer, Producer),
@@ -163,6 +171,81 @@ producerAttributes semOpts record =
   in
     (addSystem . addOperationAttrs . addDestination . addPartition . addKey . addBodySize)
       callerAttributes
+
+
+{- | Build producer attributes using the same options as 'produceMessage'.
+
+The Haskell-specific @messaging\/1.45@ opt-in selects the 1.45 attribute
+names; @messaging\/1.45\/dup@ adds them alongside the attributes selected
+by the existing @messaging@ setting. Without either, behavior is unchanged.
+Messaging conventions remain in development; this is an attribute migration,
+not a claim that the messaging conventions have stabilized.
+-}
+producerAttributesWithSemantics :: HasCallStack => SemanticsOptions -> ProducerRecord -> AttributeMap
+producerAttributesWithSemantics options record =
+  selectKafkaAttributes
+    options
+    (producerAttributes (lookupStability "messaging" options) record)
+    ( addTombstone (prValue record)
+        . addPartition
+        . migrateKafkaAttributes
+        $ producerAttributes Stable record
+    )
+  where
+    addPartition = case prPartition record of
+      SpecifiedPartition p ->
+        insertAttributeByKey messaging_destination_partition_id (toAttribute (T.pack (show p)))
+      UnassignedPartition -> id
+
+
+{- | Build consumer attributes using the same options as 'pollMessage'.
+
+See 'producerAttributesWithSemantics' for the versioned opt-in and dual
+emission behavior. Existing 'consumerAttributes' callers are unaffected.
+-}
+consumerAttributesWithSemantics
+  :: HasCallStack
+  => SemanticsOptions
+  -> ConsumerProperties
+  -> ConsumerRecord (Maybe ByteString) (Maybe ByteString)
+  -> AttributeMap
+consumerAttributesWithSemantics options properties record =
+  selectKafkaAttributes
+    options
+    (consumerAttributes (lookupStability "messaging" options) properties record)
+    ( insertAttributeByKey messaging_destination_partition_id (toAttribute (T.pack (show (unPartitionId (crPartition record)))))
+        . addTombstone (crValue record)
+        . migrateKafkaAttributes
+        $ consumerAttributes Stable properties record
+    )
+
+
+selectKafkaAttributes :: SemanticsOptions -> AttributeMap -> AttributeMap -> AttributeMap
+selectKafkaAttributes options old current =
+  case lookupStability "messaging/1.45" options of
+    Old -> old
+    Stable -> current
+    StableAndOld -> Attributes.union current old
+
+
+migrateKafkaAttributes :: AttributeMap -> AttributeMap
+migrateKafkaAttributes =
+  Attributes.delete (unkey messaging_kafka_destination_partition)
+    . renameAttribute messaging_system messaging_system_name
+    . renameAttribute messaging_kafka_message_key kafka_message_key
+    . renameAttribute messaging_kafka_message_offset kafka_offset
+
+
+renameAttribute :: AttributeKey a -> AttributeKey a -> AttributeMap -> AttributeMap
+renameAttribute old new attributes =
+  case Attributes.lookupAttributeByKey old attributes of
+    Nothing -> attributes
+    Just value -> insertAttributeByKey new value (Attributes.delete (unkey old) attributes)
+
+
+addTombstone :: Maybe ByteString -> AttributeMap -> AttributeMap
+addTombstone Nothing = insertAttributeByKey kafka_message_tombstone (toAttribute True)
+addTombstone (Just _) = id
 
 
 -- | Span arguments for consumer operations
@@ -298,8 +381,8 @@ produceMessage' producer record cb =
     spanName = producerOperationName <> " " <> unTopicName topicName
   in
     do
-      semOpts <- liftIO $ lookupStability "messaging" <$> getSemanticsOptions
-      let attributes = producerAttributes semOpts record
+      semOpts <- liftIO getSemanticsOptions
+      let attributes = producerAttributesWithSemantics semOpts record
           spanArguments = addAttributesToSpanArguments attributes producerSpanArgs
       tracer <- rdkafkaTracer
       ctxt <- getContext
@@ -341,8 +424,8 @@ pollMessage consumerProperties consumer timeout =
           spanName = consumerOperationName <> " " <> unTopicName topicName
         in
           do
-            semOpts <- liftIO $ lookupStability "messaging" <$> getSemanticsOptions
-            let attributes = consumerAttributes semOpts consumerProperties cr
+            semOpts <- liftIO getSemanticsOptions
+            let attributes = consumerAttributesWithSemantics semOpts consumerProperties cr
             tracer <- rdkafkaTracer
             ctxt <- getContext
             propagator <- liftIO getGlobalTextMapPropagator
