@@ -201,6 +201,21 @@ Visit the [GitHub project](https://github.com/iand675/hs-opentelemetry#readme) f
 
 <hr/>
 
+### Metric attribute filtering and exemplars
+
+View `attribute_keys` and the instrument's `advisoryAttributeKeys` allow-list are
+applied before aggregation and cardinality admission. A View's explicit list takes
+precedence over the advisory list; an empty list retains no measurement attributes.
+Measurements that differ only in excluded attributes share one metric series.
+
+Sampled exemplars retain measurement attributes omitted from their associated
+metric point, including attributes displaced by cardinality overflow. Removing an
+attribute from a metric stream therefore does not prevent it from appearing in an
+exemplar. Set `OTEL_METRICS_EXEMPLAR_FILTER=always_off` to disable exemplar sampling
+when those values must not be exported. For explicit SDK configuration, set
+`exemplarFilter` in `SdkMeterExemplarOptions` to `MetricsExemplarFilterAlwaysOff`.
+The environment variable takes precedence when set.
+
 ### Metric storage contention benchmark
 
 The `metric-storage-contention` benchmark measures recording throughput and

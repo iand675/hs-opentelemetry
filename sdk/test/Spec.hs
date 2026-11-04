@@ -10,6 +10,7 @@ import qualified OpenTelemetry.ContextInSpanSpec as ContextInSpanSpec
 import qualified OpenTelemetry.ContextSpec as ContextSpec
 import qualified OpenTelemetry.LogSpec as LogSpec
 import qualified OpenTelemetry.MeterProviderSpec as MeterProviderSpec
+import qualified OpenTelemetry.MetricAttributeFilterSpec as MetricAttributeFilterSpec
 import qualified OpenTelemetry.MetricReaderSpec as MetricReaderSpec
 import qualified OpenTelemetry.Resource.DetectorSpec as DetectorSpec
 import qualified OpenTelemetry.ResourceSpec as ResourceSpec
@@ -53,6 +54,7 @@ runTests = do
     DetectorSpec.spec
     LogSpec.spec
     MeterProviderSpec.spec
+    MetricAttributeFilterSpec.spec
     MetricReaderSpec.spec
     ConfigurationSpec.spec
 
