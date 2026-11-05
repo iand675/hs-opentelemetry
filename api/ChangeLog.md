@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **Added `recordSomeException`.** Records an exception using the
+  `Backtraces` annotation attached to a `SomeException`'s `ExceptionContext`
+  (introduced in base 4.20 / GHC 9.10), so `exception.stacktrace` reflects
+  the richer stacks captured by `HasCallStack`, IPE, and other backtrace
+  mechanisms — not just cost-centre stacks.  (#239)
+- **Added `recordExceptionWithContext`.** Takes an
+  `ExceptionWithContext e` so callers who do have access to an exception's
+  `ExceptionContext` at the catch site can record it without losing the
+  attached annotations to a stray `toException` conversion. The function is
+  exported on all supported GHCs (so no CPP is needed at use sites), but
+  `ExceptionWithContext` can only be obtained on base 4.20+ (GHC 9.10+); on
+  older bases an uninhabited compat stub of the type is provided.
+- **Added `recordSomeError` and `recordErrorWithContext`.** Like
+  `recordError` but taking a `SomeException` or an `ExceptionWithContext`
+  respectively, preserving any attached `ExceptionContext`.
+- **Deprecated `recordException` and `recordError`.** They silently discard
+  any `ExceptionContext` attached to the exception. Prefer
+  `recordSomeException` / `recordSomeError` when you have a `SomeException`,
+  or `recordExceptionWithContext` / `recordErrorWithContext` when you can
+  supply an `ExceptionWithContext`.
+
 ## 1.0.0.0 - 2026-05-29
 
 ### Full Spec conformance against 1.55.0

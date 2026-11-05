@@ -23,7 +23,7 @@ import OpenTelemetry.Context.ThreadLocal (adjustContext)
 import qualified OpenTelemetry.Context.ThreadLocal as TraceCore.SpanContext
 import OpenTelemetry.SemanticsConfig (codeOption, getSemanticsOptions)
 import qualified OpenTelemetry.Trace as Trace
-import OpenTelemetry.Trace.Core (ToAttribute (..), codeAttributes, endSpan, recordException, setStatus, whenSpanIsRecording)
+import OpenTelemetry.Trace.Core (ToAttribute (..), codeAttributes, endSpan, recordSomeException, setStatus, whenSpanIsRecording)
 import qualified OpenTelemetry.Trace.Core as TraceCore
 
 
@@ -103,9 +103,9 @@ inSpanM'' t cs n args f = bracketError' before after (f . snd)
       pure (lookupSpan ctx, s)
 
     after e (parent, s) = do
-      forM_ e $ \(MonadMask.SomeException inner) -> do
+      forM_ e $ \someEx@(MonadMask.SomeException inner) -> do
         setStatus s $ Trace.Error $ T.pack $ MonadMask.displayException inner
-        recordException s [("exception.escaped", toAttribute True)] Nothing inner
+        recordSomeException s [("exception.escaped", toAttribute True)] Nothing someEx
       endSpan s Nothing
       adjustContext $ \ctx ->
         maybe (removeSpan ctx) (`insertSpan` ctx) parent

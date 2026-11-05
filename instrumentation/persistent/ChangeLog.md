@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Use `recordSomeException` so the runtime-attached `Backtraces`
+  annotation (HasCallStack, IPE, ...) is preserved when recording exceptions
+  caught around statement execution and transaction commit/rollback. (#239)
+
 ## 1.0.0.0 - 2026-05-29
 
 - Internal: `db.transaction.*` attribute keys are now typed `AttributeKey` constants

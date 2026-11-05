@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+-- Tests for the deprecated 'recordException' wrapper need to call it
+-- without triggering the warning we just added.
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 module OpenTelemetry.Trace.ExceptionHandlerSpec where
 
@@ -9,11 +12,9 @@ import qualified Data.HashMap.Strict as H
 import Data.IORef (readIORef)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Typeable (Typeable)
 import qualified Data.Vector as V
 import OpenTelemetry.Attributes (fromAttribute, lookupAttribute)
 import OpenTelemetry.Context (empty)
-import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Trace.Core (
   Event (..),
   ImmutableSpan (..),
@@ -27,10 +28,16 @@ import OpenTelemetry.Trace.Core (
   instrumentationLibrary,
   makeTracer,
   recordException,
+  recordSomeException,
   tracerOptions,
   unsafeReadSpan,
  )
 import OpenTelemetry.Trace.ExceptionHandler
+import OpenTelemetry.Trace.ExceptionHandlerSpec.Helpers (
+  DisplayDiffersFromShow (..),
+  dummySpanProcessor,
+  getOnlyExceptionEvent,
+ )
 import OpenTelemetry.Util (appendOnlyBoundedCollectionValues)
 import System.Exit (ExitCode (..))
 import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe, shouldNotBe)
@@ -162,24 +169,15 @@ spec = describe "ExceptionHandler" $ do
       (lookupAttribute (eventAttributes evt) "exception.message" >>= fromAttribute @Text)
         `shouldNotBe` Just (T.pack (show ex))
 
-
-data DisplayDiffersFromShow = DisplayDiffersFromShow
-  deriving (Typeable)
-
-
-instance Show DisplayDiffersFromShow where
-  show _ = "ShowForm"
-
-
-instance Exception DisplayDiffersFromShow where
-  displayException _ = "DisplayForm"
-
-
-dummySpanProcessor :: SpanProcessor
-dummySpanProcessor =
-  SpanProcessor
-    { spanProcessorOnStart = \_ _ -> pure ()
-    , spanProcessorOnEnd = \_ -> pure ()
-    , spanProcessorShutdown = pure ShutdownSuccess
-    , spanProcessorForceFlush = pure FlushSuccess
-    }
+  describe "recordSomeException" $ do
+    it "records exception.type from the inner exception, not SomeException" $ do
+      let ex = toException DisplayDiffersFromShow
+      tp <- createTracerProvider [dummySpanProcessor] emptyTracerProviderOptions
+      let tracer = makeTracer tp (instrumentationLibrary "test" "1") tracerOptions
+      s <- createSpan tracer empty "span" defaultSpanArguments
+      recordSomeException s H.empty Nothing ex
+      evt <- getOnlyExceptionEvent s
+      (lookupAttribute (eventAttributes evt) "exception.type" >>= fromAttribute @Text)
+        `shouldBe` Just "DisplayDiffersFromShow"
+      (lookupAttribute (eventAttributes evt) "exception.message" >>= fromAttribute @Text)
+        `shouldBe` Just (T.pack (displayException DisplayDiffersFromShow))

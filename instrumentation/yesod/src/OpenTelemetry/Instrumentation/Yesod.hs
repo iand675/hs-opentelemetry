@@ -318,7 +318,7 @@ openTelemetryYesodMiddleware rr m = do
       withException m $ \ex -> do
         when (shouldMarkException ex) $ do
           addAttributes waiSpan (H.singleton (unkey SC.error_type) (toAttribute (exceptionTypeName ex)))
-          recordException waiSpan mempty Nothing ex
+          recordSomeException waiSpan mempty Nothing ex
           setStatus waiSpan $ Error $ T.pack $ displayException ex
 
 
