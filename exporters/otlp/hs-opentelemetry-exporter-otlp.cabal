@@ -38,6 +38,7 @@ library
       OpenTelemetry.Exporter.OTLP.Metric
       OpenTelemetry.Exporter.OTLP.Internal.Config
       OpenTelemetry.Exporter.OTLP.Internal.Timeout
+      OpenTelemetry.Exporter.OTLP.Internal.Retry
   other-modules:
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
@@ -73,6 +74,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      RetrySpec
       TransportSpec
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
@@ -90,6 +92,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
     , microlens
     , proto-lens
     , text
+    , time
     , unordered-containers
     , vector
     , wai

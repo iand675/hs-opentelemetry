@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **HTTP: share the OTLP retry policy across traces, metrics, and logs.**
+  Retry only HTTP 429, 502, 503, and 504 and transient connection failures;
+  apply jittered exponential backoff when `Retry-After` is absent or invalid.
+  Wire the shared HTTP-date parser into the active exporters (the 1.0 notes
+  described a helper that the transport loops did not yet call), honor zero
+  and past-date delays, and avoid integer overflow for large header values.
+  Server-directed waits now obey the same five-retry limit as backoff retries.
+
 - **HTTP: enforce the configured timeout across the whole batch export.**
   Serialization, request attempts, exponential backoff, and `Retry-After` waits
   share one timeout instead of restarting it on every attempt. A timeout returns

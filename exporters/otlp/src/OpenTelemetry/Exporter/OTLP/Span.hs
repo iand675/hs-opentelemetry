@@ -50,8 +50,7 @@ module OpenTelemetry.Exporter.OTLP.Span (
 
 import Codec.Compression.GZip
 import Control.Applicative ((<|>))
-import Control.Concurrent (threadDelay)
-import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
+import Control.Exception (SomeAsyncException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class
 import Data.Bits (shiftL, (.|.))
 import qualified Data.ByteString.Char8 as C
@@ -72,13 +71,12 @@ import qualified Data.Vector as Vector
 import qualified Data.Word
 import Lens.Micro
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
-import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Common (optionalTimestampToMaybe)
 import OpenTelemetry.Environment
+import OpenTelemetry.Exporter.OTLP.Internal.Retry (sendHttpRequestWithRetry)
 import OpenTelemetry.Exporter.OTLP.Internal.Timeout (withExportTimeout)
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
@@ -301,56 +299,14 @@ httpOtlpExporter conf = do
       , spanExporterForceFlush = pure FlushSuccess
       }
   where
-    retryDelay = 100_000 -- 100ms
-    maxRetryCount = 5
-    isRetryableStatusCode status_ =
-      status_ == status408 || status_ == status429 || (statusCode status_ >= 500 && statusCode status_ < 600)
-    isRetryableException = \case
-      ResponseTimeout -> True
-      ConnectionTimeout -> True
-      ConnectionFailure _ -> True
-      ConnectionClosed -> True
-      _ -> False
-
     exporterExportCall encoder baseReq spans_ = do
       msg <- encodeMessage <$> immutableSpansToProtobuf spans_
-      -- TODO handle server disconnect
       let req =
             baseReq
               { requestBody =
                   RequestBodyLBS $ encoder $ L.fromStrict msg
               }
-      sendReq req 0
-    sendReq req backoffCount = do
-      eResp <- try $ httpBS req
-
-      let exponentialBackoff =
-            if backoffCount == maxRetryCount
-              then pure $ Failure Nothing
-              else do
-                threadDelay (retryDelay `shiftL` backoffCount)
-                sendReq req (backoffCount + 1)
-
-      case eResp of
-        Left (HttpExceptionRequest _req' e)
-          | isRetryableException e -> exponentialBackoff
-        Left err ->
-          pure $ Failure $ Just $ SomeException err
-        Right resp ->
-          if isRetryableStatusCode (responseStatus resp)
-            then case lookup hRetryAfter $ responseHeaders resp of
-              Nothing -> exponentialBackoff
-              Just retryAfter -> do
-                -- TODO support date in retry-after header
-                case readMaybe $ C.unpack retryAfter of
-                  Nothing -> exponentialBackoff
-                  Just seconds -> do
-                    threadDelay (seconds * 1_000_000)
-                    sendReq req (backoffCount + 1)
-            else
-              if statusCode (responseStatus resp) >= 300
-                then pure $ Failure Nothing
-                else pure Success
+      sendHttpRequestWithRetry req
 
 
 {- |

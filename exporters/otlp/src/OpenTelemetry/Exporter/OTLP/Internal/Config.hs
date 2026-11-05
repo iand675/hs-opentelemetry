@@ -81,6 +81,7 @@ module OpenTelemetry.Exporter.OTLP.Internal.Config (
 
   -- * Retry-After parsing
   parseRetryAfterMicros,
+  parseRetryAfterMicrosAt,
 
   -- * gRPC endpoint resolution (same env vars as HTTP; default port 4317)
   grpcEndpoint,
@@ -90,15 +91,16 @@ module OpenTelemetry.Exporter.OTLP.Internal.Config (
 ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Char (toLower)
+import Data.Char (isSpace, toLower)
 import Data.Function ((&))
-import Data.Maybe (fromMaybe)
+import Data.List (dropWhileEnd)
+import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import Data.Version (showVersion)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text.Encoding as T
-import Data.Time.Clock (getCurrentTime, diffUTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime, diffUTCTime)
 import Data.Time.Format (parseTimeM, defaultTimeLocale, rfc822DateFormat)
 import Network.HTTP.Types.Header (Header)
 import Network.HTTP.Types.Status (Status, status429, status502, status503, status504)
@@ -365,31 +367,34 @@ Supports both formats defined in RFC 7231 Section 7.1.3:
 * @delay-seconds@ — a non-negative integer (e.g. @\"120\"@)
 * @HTTP-date@ — RFC 822 / RFC 1123 format (e.g. @\"Fri, 31 Dec 1999 23:59:59 GMT\"@)
 
-Returns 'Nothing' when the value cannot be parsed in either format or
-the resulting delay is non-positive.
+Zero seconds and dates in the past return 'Just' zero (retry immediately).
+Malformed values return 'Nothing', selecting exponential backoff instead.
+Large delays are clamped to the largest representable microsecond count.
 
 Spec: <https://opentelemetry.io/docs/specs/otlp/#failures>
 
 @since 0.1.2.0
 -}
 parseRetryAfterMicros :: C.ByteString -> IO (Maybe Int)
-parseRetryAfterMicros bs =
-  case readMaybe (C.unpack bs) of
-    Just (seconds :: Int)
-      | seconds > 0 -> pure $ Just (seconds * 1_000_000)
-    _ -> do
-      let dateStr = C.unpack bs
-      case parseTimeM True defaultTimeLocale rfc822DateFormat dateStr of
-        Just targetTime -> do
-          now <- getCurrentTime
-          let diffSecs = diffUTCTime targetTime now
-              micros = ceiling (diffSecs * 1_000_000) :: Int
-          pure $ if micros > 0 then Just micros else Nothing
-        Nothing ->
-          case parseTimeM True defaultTimeLocale "%a, %d %b %Y %H:%M:%S GMT" dateStr of
-            Just targetTime -> do
-              now <- getCurrentTime
-              let diffSecs = diffUTCTime targetTime now
-                  micros = ceiling (diffSecs * 1_000_000) :: Int
-              pure $ if micros > 0 then Just micros else Nothing
-            Nothing -> pure Nothing
+parseRetryAfterMicros bs = do
+  now <- getCurrentTime
+  pure (parseRetryAfterMicrosAt now bs)
+
+
+-- | Deterministic form of 'parseRetryAfterMicros', for a supplied wall-clock time.
+parseRetryAfterMicrosAt :: UTCTime -> C.ByteString -> Maybe Int
+parseRetryAfterMicrosAt now bs
+  | not (null value) && all (\c -> c >= '0' && c <= '9') value =
+      clampMicros . (* 1_000_000) <$> (readMaybe value :: Maybe Integer)
+  | otherwise = do
+      target <- listToMaybe (mapMaybe (\fmt -> parseTimeM True defaultTimeLocale fmt value) dateFormats)
+      pure (clampMicros (ceiling (diffUTCTime target now * 1_000_000)))
+  where
+    value = dropWhileEnd isSpace (dropWhile isSpace (C.unpack bs))
+    clampMicros = fromInteger . max 0 . min (toInteger (maxBound :: Int))
+    dateFormats =
+      [ rfc822DateFormat
+      , "%a, %d %b %Y %H:%M:%S GMT"
+      , "%A, %d-%b-%y %H:%M:%S GMT"
+      , "%a %b %e %H:%M:%S %Y"
+      ]
