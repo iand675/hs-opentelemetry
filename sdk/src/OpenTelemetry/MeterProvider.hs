@@ -46,7 +46,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.Word (Word64)
 import GHC.Generics (Generic)
-import OpenTelemetry.Attributes (Attributes, addAttribute, defaultAttributeLimits, emptyAttributes)
+import OpenTelemetry.Attributes (Attributes, addAttribute, defaultAttributeLimits, emptyAttributes, getAttributeMap, unsafeAttributesFromMapIgnoringLimits)
 import OpenTelemetry.Context (lookupSpan)
 import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Environment (MetricsExemplarFilter (..), lookupMetricsExemplarFilter)
@@ -183,22 +183,46 @@ getMetricStorage ref = do
 {- | Existing series only read the registry and write their own cell. Admission
 and cardinality accounting share one transaction, including the overflow cell.
 -}
-updateMetricCell :: IORef SdkMeterStorageState -> Int -> DimKey -> (Maybe Cell -> Cell) -> IO ()
-updateMetricCell ref lim key update = do
+updateMetricCell
+  :: IORef SdkMeterStorageState
+  -> Int
+  -> DimKey
+  -> Maybe MetricExemplar
+  -> (Maybe MetricExemplar -> Maybe Cell -> Cell)
+  -> IO ()
+updateMetricCell ref lim originalKey@(dims, originalAttrs) sample update = do
   storage <- getMetricStorage ref
+  -- Stream identity and cardinality use the retained attributes. Keep the
+  -- original measurement available only for a sampled exemplar's complement.
+  let keys = dimExportAttributeKeys dims
+      key = case keys of
+        Nothing -> originalKey
+        Just _ -> (dims, filterAttributesByKeys keys originalAttrs)
+      updateFor retained =
+        update $
+          fmap
+            (\e -> e {metricExemplarFilteredAttributes = unsafeAttributesFromMapIgnoringLimits (H.difference (getAttributeMap originalAttrs) (getAttributeMap retained))})
+            sample
+      -- No filtering means captureMetricExemplar already supplied the correct
+      -- empty complement. Reuse the key and sample on this common hot path.
+      updateNormal = case keys of
+        Nothing -> update sample
+        Just _ -> updateFor (snd key)
+      updateOverflow = updateFor overflowAttributes
   atomically $ do
     registry <- readTVar storage
     check (not (storageCollecting registry))
     case H.lookup key (storageCells registry) of
-      Just cell -> modifyTVar' cell (update . Just)
+      Just cell -> modifyTVar' cell (updateNormal . Just)
       Nothing -> do
-        let dims = fst key
-            count = H.lookupDefault 0 dims (seriesCountByDims registry)
-            effectiveKey = if lim <= 0 || count < lim then key else overflowKey dims
+        let count = H.lookupDefault 0 dims (seriesCountByDims registry)
+            admitted = lim <= 0 || count < lim
+            effectiveKey = if admitted then key else overflowKey dims
+            updateEffective = if admitted then updateNormal else updateOverflow
         case H.lookup effectiveKey (storageCells registry) of
-          Just cell -> modifyTVar' cell (update . Just)
+          Just cell -> modifyTVar' cell (updateEffective . Just)
           Nothing -> do
-            let !value = update Nothing
+            let !value = updateEffective Nothing
             cell <- newTVar value
             writeTVar storage $
               registry
@@ -596,9 +620,9 @@ addSumInt
   -> SdkMeterExemplarOptions
   -> IO ()
 addSumInt delta isMonotonic mExVal k ref lim exOpts = do
-  mex <- captureMetricExemplar exOpts mExVal
+  sample <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
-  updateMetricCell ref lim k $ \oldCell ->
+  updateMetricCell ref lim k sample $ \mex oldCell ->
     let newCell = case oldCell of
           Nothing ->
             CsSum $
@@ -631,9 +655,9 @@ addSumDbl
   -> SdkMeterExemplarOptions
   -> IO ()
 addSumDbl delta isMonotonic mExVal k ref lim exOpts = do
-  mex <- captureMetricExemplar exOpts mExVal
+  sample <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
-  updateMetricCell ref lim k $ \oldCell ->
+  updateMetricCell ref lim k sample $ \mex oldCell ->
     let newCell = case oldCell of
           Nothing ->
             CsSum $
@@ -691,9 +715,9 @@ recordHist bounds v mExVal k ref lim exOpts = do
   if isNaN v || isInfinite v
     then pure ()
     else do
-      mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
+      sample <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
       let cap = exemplarReservoirLimit exOpts
-      updateMetricCell ref lim k $ \oldCell ->
+      updateMetricCell ref lim k sample $ \mex oldCell ->
         let mergeE hc = case mex of
               Nothing -> hc
               Just e -> hc {hcExemplars = pushExemplar cap e (hcExemplars hc)}
@@ -717,9 +741,9 @@ recordExpHist sc v mExVal k ref lim exOpts = do
   if isNaN v || isInfinite v
     then pure ()
     else do
-      mex <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
+      sample <- captureMetricExemplar exOpts (fmap DoubleNumber mExVal)
       let cap = exemplarReservoirLimit exOpts
-      updateMetricCell ref lim k $ \oldCell ->
+      updateMetricCell ref lim k sample $ \mex oldCell ->
         let mergeE ehc = case mex of
               Nothing -> ehc
               Just e -> ehc {ehcExemplars = pushExemplar cap e (ehcExemplars ehc)}
@@ -740,9 +764,9 @@ recordGauge
   -> SdkMeterExemplarOptions
   -> IO ()
 recordGauge val t mExVal k ref lim exOpts = do
-  mex <- captureMetricExemplar exOpts mExVal
+  sample <- captureMetricExemplar exOpts mExVal
   let cap = exemplarReservoirLimit exOpts
-  updateMetricCell ref lim k $ \oldCell ->
+  updateMetricCell ref lim k sample $ \mex oldCell ->
     let newGauge gc =
           case mex of
             Nothing -> gc {gcValue = val, gcTimeUnixNano = t}
@@ -1200,10 +1224,6 @@ toScope startT t temp series =
   in ScopeMetricsExport (dimScope dims) (V.fromList exports)
 
 
-applyDimAttrs :: InstrumentDims -> Attributes -> Attributes
-applyDimAttrs dims attrs = filterAttributesByKeys (dimExportAttributeKeys dims) attrs
-
-
 buildMetricExports
   :: Word64
   -> Word64
@@ -1229,7 +1249,7 @@ buildMetricExports startT t temp dims series =
 
     sumExport mon =
       let points =
-            collectCells $ \(attrs, cell, d) -> case cell of
+            collectCells $ \(attrs, cell, _) -> case cell of
               CsSum sc ->
                 Just
                   SumDataPoint
@@ -1238,7 +1258,7 @@ buildMetricExports startT t temp dims series =
                     , sumDataPointValue = case scValue sc of
                         Left i -> IntNumber i
                         Right d -> DoubleNumber d
-                    , sumDataPointAttributes = applyDimAttrs d attrs
+                    , sumDataPointAttributes = attrs
                     , sumDataPointExemplars = scExemplars sc
                     }
               _ -> Nothing
@@ -1257,7 +1277,7 @@ buildMetricExports startT t temp dims series =
 
     histExport =
       let points =
-            collectCells $ \(attrs, cell, d) -> case cell of
+            collectCells $ \(attrs, cell, _) -> case cell of
               CsHist hc ->
                 Just
                   HistogramDataPoint
@@ -1267,7 +1287,7 @@ buildMetricExports startT t temp dims series =
                     , histogramDataPointSum = hcSum hc
                     , histogramDataPointBucketCounts = hcBuckets hc
                     , histogramDataPointExplicitBounds = hcBounds hc
-                    , histogramDataPointAttributes = applyDimAttrs d attrs
+                    , histogramDataPointAttributes = attrs
                     , histogramDataPointMin = hcMin hc
                     , histogramDataPointMax = hcMax hc
                     , histogramDataPointExemplars = hcExemplars hc
@@ -1278,23 +1298,23 @@ buildMetricExports startT t temp dims series =
 
     expHistExport =
       let points =
-            collectCells $ \(attrs, cell, d) -> case cell of
+            collectCells $ \(attrs, cell, _) -> case cell of
               CsExpHist ehc ->
-                Just (expHistToDataPoint startT t (applyDimAttrs d attrs) ehc)
+                Just (expHistToDataPoint startT t attrs ehc)
               _ -> Nothing
       in [ MetricExportExponentialHistogram (dimName dims) (dimDescription dims) (dimUnit dims) (dimScope dims) temp points
          ]
 
     gaugeExport _isAsync =
       let points =
-            collectCells $ \(attrs, cell, d) -> case cell of
+            collectCells $ \(attrs, cell, _) -> case cell of
               CsGauge gc ->
                 Just
                   GaugeDataPoint
                     { gaugeDataPointStartTimeUnixNano = startT
                     , gaugeDataPointTimeUnixNano = gcTimeUnixNano gc
                     , gaugeDataPointValue = gcValue gc
-                    , gaugeDataPointAttributes = applyDimAttrs d attrs
+                    , gaugeDataPointAttributes = attrs
                     , gaugeDataPointExemplars = gcExemplars gc
                     }
               _ -> Nothing

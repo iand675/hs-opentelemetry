@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Apply metric attribute allow-lists before series aggregation and cardinality
+  admission, so measurements with identical retained attributes share one series.
+  Preserve excluded measurement attributes on exemplars, including attributes
+  displaced by overflow aggregation. Values removed from a metric stream can now
+  appear on its exemplars; disable exemplar sampling if those values must not be
+  exported.
+
 - Store metric series in individual transactional cells. Recording an existing
   series no longer rebuilds or replaces a provider-wide immutable map, reducing
   allocation and contention between unrelated series. Cardinality admission and

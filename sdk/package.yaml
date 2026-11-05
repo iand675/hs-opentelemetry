@@ -179,6 +179,7 @@ tests:
     - OpenTelemetry.ContextSpec
     - OpenTelemetry.LogSpec
     - OpenTelemetry.MeterProviderSpec
+    - OpenTelemetry.MetricAttributeFilterSpec
     - OpenTelemetry.MetricReaderSpec
     - OpenTelemetry.Resource.DetectorSpec
     - OpenTelemetry.ResourceSpec
