@@ -1,3 +1,8 @@
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+  keep_trailing_newline: true
+
 templates:
   - pattern: model.json.j2
     filter: >-
@@ -9,3 +14,33 @@ templates:
           end]}]}
     application_mode: single
     file_name: model.json
+  - pattern: Metrics.hs.j2
+    filter: >-
+      def haskell_segment:
+        split("_") | .[0] + (.[1:] | map((.[0:1] | ascii_upcase) + .[1:]) | join(""));
+      .groups | map(select(.type == "metric")) | sort_by(.metric_name) |
+      map(. + {
+        haskell_name: (.metric_name | split(".") | map(haskell_segment) | join("_")),
+        value_type: (.annotations.code_generation.metric_value_type // "unspecified"),
+        haskell_value_types:
+          (if .annotations.code_generation.metric_value_type == "int" then ["Int64"]
+           elif .annotations.code_generation.metric_value_type == "double" then ["Double"]
+           else ["Int64", "Double"] end)
+      })
+    application_mode: single
+    file_name: Metrics.hs
+  - pattern: metrics.md.j2
+    filter: >-
+      def haskell_segment:
+        split("_") | .[0] + (.[1:] | map((.[0:1] | ascii_upcase) + .[1:]) | join(""));
+      .groups | map(select(.type == "metric")) | sort_by(.metric_name) |
+      map(. + {
+        haskell_name: (.metric_name | split(".") | map(haskell_segment) | join("_")),
+        value_type: (.annotations.code_generation.metric_value_type // "unspecified"),
+        haskell_value_types:
+          (if .annotations.code_generation.metric_value_type == "int" then ["Int64"]
+           elif .annotations.code_generation.metric_value_type == "double" then ["Double"]
+           else ["Int64", "Double"] end)
+      })
+    application_mode: single
+    file_name: metrics.md
