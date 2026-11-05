@@ -53,6 +53,8 @@ tests:
     - hs-opentelemetry-sdk ^>= 1.0
     - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - hs-opentelemetry-semantic-conventions >= 1.40 && < 2
+    - wai
+    - warp
     - hspec
     - text
     - http-client
