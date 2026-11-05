@@ -17,6 +17,15 @@
   export construction runs after recording resumes. The existing `SdkMeterEnv`
   storage field and `emptyStorageState` initializer remain source-compatible.
 
+- Fix environment substitution in file-based configuration to follow the OTel
+  configuration data model. Substitute only scalar values, leaving mapping keys
+  and YAML structure intact. Honor `$$` escaping and defaults for empty variables,
+  do not recursively expand replacements, and reject invalid references without
+  returning a partial configuration. Scalar quoting and numeric/boolean resolution
+  are preserved. Existing configurations relying on raw YAML injection, key
+  substitution, or the previous escaping/default behavior must be updated; `${}`
+  is now preserved literally because it is not a valid substitution reference.
+
 ## 1.0.0.0 - 2026-05-29
 
 ### Spec conformance (1.55.0 audit)

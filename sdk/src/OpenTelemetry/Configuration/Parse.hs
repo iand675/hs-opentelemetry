@@ -12,10 +12,13 @@ module OpenTelemetry.Configuration.Parse (
   ConfigParseError (..),
 ) where
 
-import Control.Exception (Exception, try)
+import Control.Applicative ((<|>))
+import Control.Exception (Exception, throwIO, try)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson (Object, Value (..))
 import qualified Data.Aeson.Key as AesonKey
 import qualified Data.Aeson.KeyMap as KM
+import Data.Conduit (ConduitM, await, yield, (.|))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Scientific (toBoundedInteger, toRealFloat)
@@ -29,9 +32,10 @@ import Data.Text.Lazy.Builder.Int (decimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import qualified Data.Vector as V
 import qualified Data.Yaml as Yaml
+import qualified Data.Yaml.Internal as YamlInternal
 import OpenTelemetry.Configuration.Types
-import OpenTelemetry.Internal.Logging (otelLogWarning)
 import System.Environment (lookupEnv)
+import qualified Text.Libyaml as Libyaml
 
 
 -- | @since 0.1.0.0
@@ -64,55 +68,122 @@ parseConfigFile path = do
 -}
 parseConfigBytes :: Text -> IO (Either ConfigParseError OTelConfiguration)
 parseConfigBytes content = do
-  substituted <- substituteEnvVars content
-  case parseYamlToValue substituted of
-    Left err -> pure $ Left $ ConfigYamlError err
-    Right val -> pure $ valueToConfig val
+  -- Resolve scalar types only after substitution. Transforming parser events
+  -- instead of YAML text prevents replacement values from creating structure.
+  parsed <- try $ YamlInternal.decodeHelper (Libyaml.decode (TE.encodeUtf8 content) .| substituteYamlValues)
+  pure $ case parsed of
+    Left err -> Left err
+    Right (Left err) -> Left $ ConfigYamlError (T.pack (Yaml.prettyPrintParseException err))
+    Right (Right (_, Left err)) -> Left $ ConfigValidationError (T.pack err)
+    Right (Right (_, Right val)) -> valueToConfig val
 
 
-parseYamlToValue :: Text -> Either Text Value
-parseYamlToValue input =
-  case Yaml.decodeEither' (TE.encodeUtf8 input) of
-    Left err -> Left (T.pack (Yaml.prettyPrintParseException err))
-    Right val -> Right val
+-- The first flag says whether this collection belongs to a value (rather than
+-- a mapping key). A mapping's second flag says its next node is a key.
+data YamlContext
+  = MappingContext !Bool !Bool
+  | SequenceContext !Bool
+
+
+nextYamlNode :: [YamlContext] -> (Bool, [YamlContext])
+nextYamlNode [] = (True, [])
+nextYamlNode (MappingContext allowed key : rest) =
+  (allowed && not key, MappingContext allowed (not key) : rest)
+nextYamlNode contexts@(SequenceContext allowed : _) = (allowed, contexts)
+
+
+substituteYamlValues :: (MonadIO m) => ConduitM Libyaml.Event Libyaml.Event m ()
+substituteYamlValues = go [] Map.empty
+  where
+    go contexts anchors =
+      await >>= \case
+        Nothing -> pure ()
+        Just event -> case event of
+          Libyaml.EventDocumentStart -> yield event >> go [] Map.empty
+          Libyaml.EventMappingStart _ _ anchor -> do
+            let (allowed, parents) = nextYamlNode contexts
+            yield event
+            go (MappingContext allowed True : parents) (forgetAnchor anchor anchors)
+          Libyaml.EventSequenceStart _ _ anchor -> do
+            let (allowed, parents) = nextYamlNode contexts
+            yield event
+            go (SequenceContext allowed : parents) (forgetAnchor anchor anchors)
+          Libyaml.EventMappingEnd -> yield event >> go (drop 1 contexts) anchors
+          Libyaml.EventSequenceEnd -> yield event >> go (drop 1 contexts) anchors
+          Libyaml.EventScalar value tag style anchor -> do
+            let (allowed, parents) = nextYamlNode contexts
+                -- Keep the original scalar so aliases used as mapping keys are
+                -- never rewritten by a substitution at the anchor's value site.
+                anchors' = maybe anchors (\name -> Map.insert name (value, tag, style) anchors) anchor
+            scalar <- substituteScalar allowed value tag style anchor
+            yield scalar
+            go parents anchors'
+          Libyaml.EventAlias name -> do
+            let (allowed, parents) = nextYamlNode contexts
+            case Map.lookup name anchors of
+              Just (value, tag, style) -> substituteScalar allowed value tag style Nothing >>= yield
+              Nothing -> yield event
+            go parents anchors
+          _ -> yield event >> go contexts anchors
+
+    forgetAnchor anchor anchors = maybe anchors (\name -> Map.delete name anchors) anchor
+
+    substituteScalar allowed value tag style anchor
+      | not allowed = pure (Libyaml.EventScalar value tag style anchor)
+      | otherwise = do
+          substituted <- liftIO $ substituteEnvVars (TE.decodeUtf8 value)
+          -- yaml's scalar resolver already preserves quoted/folded strings;
+          -- give literal block scalars the same string semantics.
+          let tag' = case (style, tag) of
+                (Libyaml.Literal, Libyaml.NoTag) -> Libyaml.StrTag
+                _ -> tag
+          pure (Libyaml.EventScalar (TE.encodeUtf8 substituted) tag' style anchor)
 
 
 {- | Substitute environment variable references in text.
 Supports: ${VAR}, ${env:VAR}, ${VAR:-default}, ${env:VAR:-default}
 -}
 substituteEnvVars :: Text -> IO Text
-substituteEnvVars input = go input T.empty
+substituteEnvVars input = T.intercalate "$" <$> mapM (go []) (T.splitOn "$$" input)
   where
-    go remaining acc
-      | T.null remaining = pure acc
-      | otherwise =
-          case T.breakOn "${" remaining of
-            (before, "") -> pure (acc <> before)
-            (before, withRef) ->
-              let afterOpen = T.drop 2 withRef
-              in case T.breakOn "}" afterOpen of
-                   (_, "") -> do
-                     otelLogWarning $ "Malformed environment variable reference in config (no closing '}'): " <> T.unpack withRef
-                     pure (acc <> remaining)
-                   (ref, afterClose) -> do
-                     val <- resolveRef ref
-                     go (T.drop 1 afterClose) (acc <> before <> val)
+    -- Escapes delimit independently substituted chunks, as required by the
+    -- spec's nested-default examples. Neither inserted values nor defaults
+    -- are scanned again for references or escapes.
+    go chunks remaining = case T.breakOn "${" remaining of
+      (_, "") -> pure $ T.concat (reverse (remaining : chunks))
+      (before, withRef) ->
+        let afterOpen = T.drop 2 withRef
+        in case T.breakOn "}" afterOpen of
+             (_, "") -> pure $ T.concat (reverse (remaining : chunks))
+             (ref, afterClose)
+               | T.null ref || not (T.all genericCharacter ref) ->
+                   -- This is not a complete SUBSTITUTION-REF. Leave the
+                   -- opening literal but still recognize later references.
+                   go ("${" : before : chunks) afterOpen
+               | otherwise -> do
+                   value <- resolveRef ref
+                   go (value : before : chunks) (T.drop 1 afterClose)
 
-    resolveRef ref =
-      let (varSpec, defaultVal) = splitDefault ref
-          varName = T.strip $ case T.stripPrefix "env:" varSpec of
-            Just name -> name
-            Nothing -> varSpec
-      in do
-           result <- lookupEnv (T.unpack varName)
-           pure $ case result of
-             Just v -> T.pack v
-             Nothing -> defaultVal
+    resolveRef ref = case envReference ref <|> (T.stripPrefix "env:" ref >>= envReference) of
+      Nothing -> throwIO $ ConfigValidationError "Invalid environment variable reference in configuration; expected ${NAME}, ${env:NAME}, or a :-default suffix"
+      Just (name, fallback) -> do
+        value <- lookupEnv (T.unpack name)
+        pure $ case value of
+          Just v | not (null v) -> T.pack v
+          _ -> fallback
 
-    splitDefault ref =
-      case T.breakOn ":-" ref of
-        (v, "") -> (v, T.empty)
-        (v, rest) -> (v, T.drop 2 rest)
+    envReference ref = do
+      (first, _) <- T.uncons ref
+      if not (asciiLetter first || first == '_')
+        then Nothing
+        else do
+          let (name, suffix) = T.span nameCharacter ref
+          fallback <- if T.null suffix then Just T.empty else T.stripPrefix ":-" suffix
+          pure (name, fallback)
+
+    asciiLetter c = ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+    nameCharacter c = asciiLetter c || ('0' <= c && c <= '9') || c == '_'
+    genericCharacter c = ('!' <= c && c <= '|') || c == '~' || c == ' ' || c == '\t'
 
 
 -- | Convert a parsed JSON Value to an OTelConfiguration.
