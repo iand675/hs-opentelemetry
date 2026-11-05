@@ -31,6 +31,7 @@ library:
   - OpenTelemetry.Exporter.OTLP.Span
   - OpenTelemetry.Exporter.OTLP.Metric
   - OpenTelemetry.Exporter.OTLP.Internal.Config
+  - OpenTelemetry.Exporter.OTLP.Internal.Timeout
   other-modules:
   - Paths_hs_opentelemetry_exporter_otlp
   dependencies:
@@ -79,6 +80,9 @@ tests:
     - hs-opentelemetry-otlp ^>= 1.0
     - hspec
     - http-types
+    - async
+    - wai
+    - warp
     - microlens
     - proto-lens
     - text

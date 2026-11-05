@@ -31,6 +31,7 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
+import OpenTelemetry.Exporter.OTLP.Internal.Timeout (withExportTimeout)
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Log.Types
@@ -74,7 +75,7 @@ otlpLogRecordExporter conf = liftIO $ do
       { logRecordExporterArgumentsExport = \lrs -> do
           if V.null lrs
             then pure Success
-            else do
+            else withExportTimeout (otlpTimeout conf) $ do
               result <- try $ exporterExportCall encoder baseReq lrs
               case result of
                 Left err -> case fromException err of
