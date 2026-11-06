@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Honor per-signal HTTP endpoints without appending a signal path. Generic
+  endpoints still receive `/v1/traces`, `/v1/metrics`, or `/v1/logs`. Remove URL
+  workarounds that relied on the old path-appending behavior.
+- Honor `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`, `_HEADERS`, `_COMPRESSION`, and
+  `_TIMEOUT`. Per-signal header settings replace the generic header setting.
+  `LogRecordExporterOptions` provides explicit log overrides without environment
+  reads; the existing public `OTLPExporterConfig` constructor is unchanged.
+
 - **gRPC: exporters now reconnect after the connection drops.** ([#305](https://github.com/iand675/hs-opentelemetry/issues/305))
   `grpcOtlpSpanExporter`, `grpcOtlpMetricExporter`, and `grpcOtlpLogRecordExporter`
   previously opened their grapesy connection with the default `DontReconnect`

@@ -74,6 +74,10 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - bytestring
+    - async
+    - wai
+    - warp
+    - zlib
     - hs-opentelemetry-api ^>= 1.0
     - hs-opentelemetry-exporter-otlp ^>= 1.0
     - hs-opentelemetry-otlp ^>= 1.0

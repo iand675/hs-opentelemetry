@@ -5,10 +5,15 @@
 
 module OpenTelemetry.Exporter.OTLP.LogRecord (
   otlpLogRecordExporter,
+  otlpLogRecordExporterWithOptions,
+  LogRecordExporterOptions (..),
+  defaultLogRecordExporterOptions,
+  loadLogRecordExporterOptions,
   immutableLogRecordToProto,
 ) where
 
 import Codec.Compression.GZip (compress)
+import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Exception (SomeAsyncException (..), SomeException (..), fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -17,7 +22,6 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
-import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
 import Data.Text (Text)
@@ -31,6 +35,7 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
+import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types
 import OpenTelemetry.Internal.Log.Types
@@ -59,15 +64,50 @@ httpProtobufMimeType :: C.ByteString
 httpProtobufMimeType = "application/x-protobuf"
 
 
+{- | Per-log overrides, separate from the legacy config record so existing
+record construction and updates remain source-compatible.
+-}
+data LogRecordExporterOptions = LogRecordExporterOptions
+  { logEndpoint :: Maybe String
+  , logHeaders :: Maybe RequestHeaders
+  , logCompression :: Maybe CompressionFormat
+  , logTimeoutMillis :: Maybe Int
+  }
+
+
+defaultLogRecordExporterOptions :: LogRecordExporterOptions
+defaultLogRecordExporterOptions = LogRecordExporterOptions Nothing Nothing Nothing Nothing
+
+
+loadLogRecordExporterOptions :: IO LogRecordExporterOptions
+loadLogRecordExporterOptions = do
+  conf <- Config.loadExporterEnvironmentVariables
+  pure $
+    LogRecordExporterOptions
+      (Config.otlpLogsEndpoint conf)
+      (Config.otlpLogsHeaders conf)
+      (fmap (\c -> case c of Config.None -> None; Config.GZip -> GZip) (Config.otlpLogsCompression conf))
+      (Config.otlpLogsTimeout conf)
+
+
+{- | Read OTEL_EXPORTER_OTLP_LOGS_* when constructing the exporter. Use
+'otlpLogRecordExporterWithOptions' for explicit configuration without env reads.
+-}
 otlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
 otlpLogRecordExporter conf = liftIO $ do
-  req <- parseRequest (logsEndpointUrl conf)
-  let (encodingHeaders, encoder) = httpLogsCompression conf
+  opts <- loadLogRecordExporterOptions
+  otlpLogRecordExporterWithOptions opts conf
+
+
+otlpLogRecordExporterWithOptions :: (MonadIO m) => LogRecordExporterOptions -> OTLPExporterConfig -> m LogRecordExporter
+otlpLogRecordExporterWithOptions opts conf = liftIO $ do
+  req <- parseRequest (Config.httpSignalEndpointUrlFromBase (logEndpoint opts) (otlpEndpoint conf) "/v1/logs")
+  let (encodingHeaders, encoder) = httpLogsCompression opts conf
   let baseReq =
         req
           { method = "POST"
-          , requestHeaders = encodingHeaders <> httpLogsBaseHeaders conf req
-          , responseTimeout = httpLogsResponseTimeout conf
+          , requestHeaders = encodingHeaders <> httpLogsBaseHeaders opts conf req
+          , responseTimeout = httpLogsResponseTimeout opts conf
           }
   mkLogRecordExporter
     LogRecordExporterArguments
@@ -323,40 +363,26 @@ attrsToProto =
 type Encoder = L.ByteString -> L.ByteString
 
 
-httpLogsCompression :: OTLPExporterConfig -> ([(HeaderName, C.ByteString)], Encoder)
-httpLogsCompression conf =
-  case otlpCompression conf of
+httpLogsCompression :: LogRecordExporterOptions -> OTLPExporterConfig -> ([(HeaderName, C.ByteString)], Encoder)
+httpLogsCompression opts conf =
+  case logCompression opts <|> otlpCompression conf of
     Just GZip -> ([(hContentEncoding, "gzip")], compress)
     _ -> ([], id)
 
 
-httpLogsResponseTimeout :: OTLPExporterConfig -> ResponseTimeout
-httpLogsResponseTimeout conf = case otlpTimeout conf of
+httpLogsResponseTimeout :: LogRecordExporterOptions -> OTLPExporterConfig -> ResponseTimeout
+httpLogsResponseTimeout opts conf = case logTimeoutMillis opts <|> otlpTimeout conf of
   Just timeoutMilli
     | timeoutMilli == 0 -> responseTimeoutNone
     | timeoutMilli >= 1 -> responseTimeoutMicro (timeoutMilli * 1_000)
   _ -> responseTimeoutMicro (defaultExporterTimeout * 1_000)
 
 
-httpLogsBaseHeaders :: OTLPExporterConfig -> Request -> RequestHeaders
-httpLogsBaseHeaders conf req =
+httpLogsBaseHeaders :: LogRecordExporterOptions -> OTLPExporterConfig -> Request -> RequestHeaders
+httpLogsBaseHeaders opts conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
     , [(hAccept, httpProtobufMimeType)]
-    , fromMaybe [] (otlpHeaders conf)
+    , fromMaybe [] (logHeaders opts <|> otlpHeaders conf)
     , requestHeaders req
     ]
-
-
-logsEndpointUrl :: OTLPExporterConfig -> String
-logsEndpointUrl conf =
-  case otlpEndpoint conf of
-    Nothing -> "http://localhost:4318/v1/logs"
-    Just e ->
-      if "/v1/" `isInfixOf` e
-        then e
-        else trimTrailingSlash e <> "/v1/logs"
-
-
-trimTrailingSlash :: String -> String
-trimTrailingSlash = reverse . dropWhile (== '/') . reverse

@@ -79,6 +79,7 @@ import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Common (optionalTimestampToMaybe)
 import OpenTelemetry.Environment
+import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
 import OpenTelemetry.Propagator.W3CTraceContext (encodeTraceStateFull)
@@ -268,7 +269,7 @@ httpOtlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
 httpOtlpExporter conf = do
   -- TODO url parsing is jankym
   -- TODO make retryDelay and maximum retry counts configurable
-  req <- liftIO $ parseRequest (httpHost conf <> "/v1/traces")
+  req <- liftIO $ parseRequest (Config.httpSignalEndpointUrlFromBase (otlpTracesEndpoint conf) (otlpEndpoint conf) "/v1/traces")
   let (encodingHeaders, encoder) = httpCompression conf
   let baseReq =
         req
@@ -369,16 +370,6 @@ httpTracesResponseTimeout conf = case otlpTracesTimeout conf <|> otlpTimeout con
 
 {- |
 Internal helper.
-Get the HTTP host from the `OTLPExporterConfig`.
--}
-httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost $ otlpTracesEndpoint conf <|> otlpEndpoint conf
-  where
-    defaultHost = "http://localhost:4318"
-
-
-{- |
-Internal helper.
 The type of `L.ByteString` encoders.
 -}
 type Encoder = L.ByteString -> L.ByteString
@@ -412,8 +403,7 @@ httpBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
     , [(hAccept, httpProtobufMimeType)]
-    , fromMaybe [] (otlpHeaders conf)
-    , fromMaybe [] (otlpTracesHeaders conf)
+    , fromMaybe [] (otlpTracesHeaders conf <|> otlpHeaders conf)
     , requestHeaders req
     ]
 

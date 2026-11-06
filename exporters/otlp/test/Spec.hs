@@ -6,6 +6,7 @@ import Data.Text (Text)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word64)
+import qualified HTTPConfigSpec
 import Lens.Micro ((^.))
 import OpenTelemetry.Attributes (emptyAttributes)
 import OpenTelemetry.Exporter.Metric (
@@ -36,6 +37,7 @@ decodeExport rms =
 
 main :: IO ()
 main = hspec $ do
+  HTTPConfigSpec.spec
   describe "resourceMetricsToExportRequest" $ do
     it "round-trips SumDataPoint through protobuf decode" $ do
       let lib = "lib" :: InstrumentationLibrary
