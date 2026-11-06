@@ -21,7 +21,6 @@ import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
-import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
 import Data.Text (Text)
@@ -48,6 +47,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
+import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
@@ -65,12 +65,6 @@ import Text.Read (readMaybe)
 -- | Default OTLP timeout (milliseconds), aligned with "OpenTelemetry.Exporter.OTLP.Span".
 defaultExporterTimeout :: Int
 defaultExporterTimeout = 10_000
-
-
-httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost (otlpEndpoint conf)
-  where
-    defaultHost = "http://localhost:4318"
 
 
 httpProtobufMimeType :: C.ByteString
@@ -181,25 +175,14 @@ httpMetricsBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
     , [(hAccept, httpProtobufMimeType)]
-    , fromMaybe [] (otlpHeaders conf)
-    , fromMaybe [] (otlpMetricsHeaders conf)
+    , fromMaybe [] (otlpMetricsHeaders conf <|> otlpHeaders conf)
     , requestHeaders req
     ]
 
 
 -- | Like traces: default @http:\/\/localhost:4318\/v1\/metrics@, or 'otlpMetricsEndpoint' if set (path appended when missing).
 metricsEndpointUrl :: OTLPExporterConfig -> String
-metricsEndpointUrl conf =
-  case otlpMetricsEndpoint conf of
-    Nothing -> httpHost conf <> "/v1/metrics"
-    Just e ->
-      if "/v1/" `isInfixOf` e
-        then e
-        else trimTrailingSlash e <> "/v1/metrics"
-
-
-trimTrailingSlash :: String -> String
-trimTrailingSlash = reverse . dropWhile (== '/') . reverse
+metricsEndpointUrl conf = Config.httpSignalEndpointUrlFromBase (otlpMetricsEndpoint conf) (otlpEndpoint conf) "/v1/metrics"
 
 
 anyMetricsToExport :: Vector ResourceMetricsExport -> Bool
