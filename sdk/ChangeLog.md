@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Connect provider flush and shutdown to the periodic reader. Serialize exports,
+  preserve export failures in lifecycle results, flush before shutdown, and
+  perform cleanup only once. Concurrent shutdown callers join the same cleanup.
+- Honor `OTEL_METRIC_EXPORT_TIMEOUT` and declarative periodic-reader timeouts.
+  Provider lifecycle timeout arguments now bound the operation, including lock
+  waits. Shutdown finishes an active export before final flushing when its budget
+  permits. Metric recording still uses the existing per-series TVars.
+
 - Apply metric attribute allow-lists before series aggregation and cardinality
   admission, so measurements with identical retained attributes share one series.
   Preserve excluded measurement attributes on exemplars, including attributes
