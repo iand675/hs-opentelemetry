@@ -27,6 +27,7 @@ import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetr
 import qualified Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields as MSF
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
+import qualified ResponseLimitSpec
 import Test.Hspec
 
 
@@ -38,6 +39,7 @@ decodeExport rms =
 main :: IO ()
 main = hspec $ do
   HTTPConfigSpec.spec
+  ResponseLimitSpec.spec
   describe "resourceMetricsToExportRequest" $ do
     it "round-trips SumDataPoint through protobuf decode" $ do
       let lib = "lib" :: InstrumentationLibrary

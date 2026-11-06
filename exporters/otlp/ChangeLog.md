@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Bound decompressed OTLP/HTTP responses to 4 MiB by default, including chunked
+  and gzip bodies. Read incrementally and fail oversized responses without
+  retrying. The `*WithResponseLimit` constructors allow a different byte budget;
+  existing exporter constructors and config records remain supported. Servers
+  returning oversized diagnostic responses now produce an export failure.
+
 - Honor per-signal HTTP endpoints without appending a signal path. Generic
   endpoints still receive `/v1/traces`, `/v1/metrics`, or `/v1/logs`. Remove URL
   workarounds that relied on the old path-appending behavior.

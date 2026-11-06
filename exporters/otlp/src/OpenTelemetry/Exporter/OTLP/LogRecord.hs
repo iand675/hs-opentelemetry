@@ -5,6 +5,8 @@
 
 module OpenTelemetry.Exporter.OTLP.LogRecord (
   otlpLogRecordExporter,
+  otlpLogRecordExporterWithResponseLimit,
+  otlpLogRecordExporterWithOptionsAndResponseLimit,
   otlpLogRecordExporterWithOptions,
   LogRecordExporterOptions (..),
   defaultLogRecordExporterOptions,
@@ -30,11 +32,11 @@ import qualified Data.Vector as V
 import Data.Word (Word64)
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import qualified OpenTelemetry.Attributes as A
 import OpenTelemetry.Common (Timestamp (..))
+import OpenTelemetry.Exporter.OTLP.HTTP (defaultMaxResponseBytes, httpWithResponseLimit)
 import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types
@@ -94,13 +96,23 @@ loadLogRecordExporterOptions = do
 'otlpLogRecordExporterWithOptions' for explicit configuration without env reads.
 -}
 otlpLogRecordExporter :: (MonadIO m) => OTLPExporterConfig -> m LogRecordExporter
-otlpLogRecordExporter conf = liftIO $ do
+otlpLogRecordExporter = otlpLogRecordExporterWithResponseLimit defaultMaxResponseBytes
+
+
+-- | Read log overrides from the environment with an explicit response budget.
+otlpLogRecordExporterWithResponseLimit :: (MonadIO m) => Int -> OTLPExporterConfig -> m LogRecordExporter
+otlpLogRecordExporterWithResponseLimit responseLimit conf = liftIO $ do
   opts <- loadLogRecordExporterOptions
-  otlpLogRecordExporterWithOptions opts conf
+  otlpLogRecordExporterWithOptionsAndResponseLimit responseLimit opts conf
 
 
 otlpLogRecordExporterWithOptions :: (MonadIO m) => LogRecordExporterOptions -> OTLPExporterConfig -> m LogRecordExporter
-otlpLogRecordExporterWithOptions opts conf = liftIO $ do
+otlpLogRecordExporterWithOptions = otlpLogRecordExporterWithOptionsAndResponseLimit defaultMaxResponseBytes
+
+
+-- | Explicit log configuration and decompressed response-size budget.
+otlpLogRecordExporterWithOptionsAndResponseLimit :: (MonadIO m) => Int -> LogRecordExporterOptions -> OTLPExporterConfig -> m LogRecordExporter
+otlpLogRecordExporterWithOptionsAndResponseLimit responseLimit opts conf = liftIO $ do
   req <- parseRequest (Config.httpSignalEndpointUrlFromBase (logEndpoint opts) (otlpEndpoint conf) "/v1/logs")
   let (encodingHeaders, encoder) = httpLogsCompression opts conf
   let baseReq =
@@ -151,7 +163,7 @@ otlpLogRecordExporterWithOptions opts conf = liftIO $ do
       sendReq req 0
 
     sendReq req backoffCount = do
-      eResp <- try $ httpBS req
+      eResp <- try $ httpWithResponseLimit responseLimit req
       let exponentialBackoff =
             if backoffCount == maxRetryCount
               then pure $ Failure Nothing
