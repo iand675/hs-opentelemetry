@@ -27,6 +27,7 @@ library:
   source-dirs: src
   exposed-modules:
   - OpenTelemetry.Exporter.OTLP
+  - OpenTelemetry.Exporter.OTLP.HTTP
   - OpenTelemetry.Exporter.OTLP.LogRecord
   - OpenTelemetry.Exporter.OTLP.Span
   - OpenTelemetry.Exporter.OTLP.Metric
@@ -35,6 +36,7 @@ library:
   - Paths_hs_opentelemetry_exporter_otlp
   dependencies:
   - bytestring
+  - conduit
   - case-insensitive
   - hs-opentelemetry-api ^>= 1.0
   - hs-opentelemetry-otlp ^>= 1.0
