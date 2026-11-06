@@ -43,6 +43,7 @@ library
       OpenTelemetry.MetricReader
       OpenTelemetry.MeterProvider
       OpenTelemetry.Metric
+      OpenTelemetry.Metric.MultiReader
       OpenTelemetry.Metric.ExporterSelection
       OpenTelemetry.Metric.View
       OpenTelemetry.Processor.Batch
@@ -176,6 +177,7 @@ test-suite hs-opentelemetry-sdk-test
       OpenTelemetry.LogSpec
       OpenTelemetry.MeterProviderSpec
       OpenTelemetry.MetricAttributeFilterSpec
+      OpenTelemetry.MultiReaderSpec
       OpenTelemetry.MetricReaderSpec
       OpenTelemetry.Resource.DetectorSpec
       OpenTelemetry.ResourceSpec
@@ -198,11 +200,14 @@ test-suite hs-opentelemetry-sdk-test
     , hs-opentelemetry-sdk
     , hs-opentelemetry-semantic-conventions
     , hspec
+    , http-types
     , process
     , text
     , unix
     , unordered-containers
     , vector
+    , wai
+    , warp
   default-language: Haskell2010
 
 benchmark metric-storage-contention
