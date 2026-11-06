@@ -33,6 +33,8 @@ module OpenTelemetry.Trace.Sampler (
   -- * Running samplers
   shouldSample,
   getDescription,
+  withSamplerShutdown,
+  shutdownSampler,
 
   -- * Built-in samplers
   alwaysOn,
@@ -43,8 +45,13 @@ module OpenTelemetry.Trace.Sampler (
   alwaysRecord,
 ) where
 
+import Control.Concurrent.Async (async, waitCatch)
+import Control.Concurrent.MVar
+import Control.Exception (SomeException, finally, mask, try)
+import Control.Monad (void, when)
 import Data.Bits
 import qualified Data.HashMap.Strict as H
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.Builder (toLazyText)
@@ -53,11 +60,12 @@ import Data.Word (Word64, byteSwap64)
 import GHC.ByteOrder (ByteOrder (..), targetByteOrder)
 import OpenTelemetry.Attributes (toAttribute)
 import OpenTelemetry.Context
-import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary)
+import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary, ShutdownResult (..), worstShutdown)
 import OpenTelemetry.Internal.Trace.Id (TraceId (..))
 import OpenTelemetry.Internal.Trace.Types
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.TraceState as TraceState
+import System.Timeout (timeout)
 
 
 {- | Returns @RecordAndSample@ always.
@@ -211,11 +219,25 @@ shouldSampleComplex (ParentBasedSampler ParentBasedOptions {..}) ctxt tid name a
             then shouldSample localParentSampled ctxt tid name args scope
             else shouldSample localParentNotSampled ctxt tid name args scope
 shouldSampleComplex (AlwaysRecordSampler inner) ctxt tid name args scope = do
-  decision <- shouldSample inner ctxt tid name args scope
-  let !outcome' = case samplingOutcome decision of
-        Drop -> RecordOnly
-        other -> other
-  pure $! decision {samplingOutcome = outcome'}
+  closed <- samplerShutdownStarted inner
+  if closed
+    then pure $ SamplingDecision Drop H.empty (parentTraceState ctxt)
+    else do
+      decision <- shouldSample inner ctxt tid name args scope
+      let !outcome' = case samplingOutcome decision of
+            Drop -> RecordOnly
+            other -> other
+      pure $! decision {samplingOutcome = outcome'}
+shouldSampleComplex (SamplerWithLifecycle inner lifecycle) ctxt tid name args scope = mask $ \restore -> do
+  entered <- modifyMVar (samplerLifecycleState lifecycle) $ \(closed, count) ->
+    pure ((closed, if closed then count else count + 1), not closed)
+  if not entered
+    then pure $ SamplingDecision Drop H.empty (parentTraceState ctxt)
+    else
+      restore (shouldSample inner ctxt tid name args scope) `finally` do
+        drained <- modifyMVar (samplerLifecycleState lifecycle) $ \(closed, count) ->
+          pure ((closed, count - 1), closed && count == 1)
+        when drained $ void $ tryPutMVar (samplerLifecycleDrained lifecycle) ()
 shouldSampleComplex (CustomSampler _ f) ctxt tid name args scope = f ctxt tid name args scope
 shouldSampleComplex AlwaysOnSampler ctxt tid name args scope = shouldSample AlwaysOnSampler ctxt tid name args scope
 shouldSampleComplex AlwaysOffSampler ctxt tid name args scope = shouldSample AlwaysOffSampler ctxt tid name args scope
@@ -246,6 +268,7 @@ getDescription (ParentBasedSampler ParentBasedOptions {..}) =
 getDescription (AlwaysRecordSampler inner) =
   "AlwaysRecord{" <> getDescription inner <> "}"
 getDescription (CustomSampler desc _) = desc
+getDescription (SamplerWithLifecycle inner _) = getDescription inner
 
 
 {- | Extract the parent's 'SpanContext' from the 'Context', if present.
@@ -266,3 +289,49 @@ parentTraceState ctxt = case parentSpanContext ctxt of
   Nothing -> TraceState.empty
   Just sc -> traceState sc
 {-# INLINE parentTraceState #-}
+
+
+{- | Add an idempotent cleanup action to a resource-owning sampler. Existing
+CustomSampler construction remains unchanged. Cleanup starts only after
+in-flight sampling calls finish; subsequent calls return Drop.
+-}
+withSamplerShutdown :: Sampler -> IO ShutdownResult -> IO Sampler
+withSamplerShutdown sampler cleanup = do
+  lifecycle <- SamplerLifecycle <$> newMVar (False, 0) <*> newEmptyMVar <*> newMVar Nothing <*> pure cleanup
+  pure $ SamplerWithLifecycle sampler lifecycle
+
+
+{- | Shut down each resource-owning delegate once. A timeout bounds the caller's
+wait, not the lifetime of an in-progress ShouldSample: releasing its resources
+early would be unsafe. Cleanup continues when those calls finish, and later
+shutdown calls join the same task. Legacy/static samplers have no cleanup.
+-}
+shutdownSampler :: Sampler -> Maybe Int -> IO ShutdownResult
+shutdownSampler sampler limit = do
+  jobs <- mapM startShutdown (lifecycles sampler)
+  result <- timeout (max 0 (fromMaybe 5000000 limit)) $ mapM waitCatch jobs
+  pure $ case result of
+    Nothing -> ShutdownTimeout
+    Just results -> foldr worstShutdown ShutdownSuccess (map (either (const ShutdownFailure) id) results)
+  where
+    startShutdown lifecycle = modifyMVar (samplerLifecycleShutdown lifecycle) $ \existing -> case existing of
+      Just job -> pure (existing, job)
+      Nothing -> do
+        idle <- modifyMVar (samplerLifecycleState lifecycle) $ \(_, count) -> pure ((True, count), count == 0)
+        when idle $ void $ tryPutMVar (samplerLifecycleDrained lifecycle) ()
+        job <- async $ do
+          readMVar (samplerLifecycleDrained lifecycle)
+          result <- try (samplerLifecycleCleanup lifecycle) :: IO (Either SomeException ShutdownResult)
+          pure $ either (const ShutdownFailure) id result
+        pure (Just job, job)
+
+
+lifecycles :: Sampler -> [SamplerLifecycle]
+lifecycles (SamplerWithLifecycle inner lifecycle) = lifecycle : lifecycles inner
+lifecycles (AlwaysRecordSampler inner) = lifecycles inner
+lifecycles (ParentBasedSampler ParentBasedOptions {..}) = concatMap lifecycles ([rootSampler, remoteParentSampled, remoteParentNotSampled, localParentSampled, localParentNotSampled] :: [Sampler])
+lifecycles _ = []
+
+
+samplerShutdownStarted :: Sampler -> IO Bool
+samplerShutdownStarted sampler = or <$> mapM (fmap fst . readMVar . samplerLifecycleState) (lifecycles sampler)
