@@ -1436,7 +1436,9 @@ shutdownTracerProvider TracerProvider {..} mtimeout = liftIO $ do
   if alreadyShut
     then pure ShutdownFailure
     else do
-      jobs <- V.mapM (async . spanProcessorShutdown) tracerProviderProcessors
+      processorJobs <- V.mapM (async . spanProcessorShutdown) tracerProviderProcessors
+      samplerJob <- async (shutdownSampler tracerProviderSampler mtimeout)
+      let jobs = V.snoc processorJobs samplerJob
       mresult <-
         timeout (fromMaybe 5_000_000 mtimeout) $
           V.foldM'
