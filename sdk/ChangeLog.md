@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Support independent metric readers through `createMeterProviderWithReaders`.
+  Each reader owns its aggregates, cardinality accounting, callbacks and delta
+  timestamps. A collection no longer consumes another reader's delta values.
+  Temporality selectors apply per instrument kind. Additional readers increase
+  recording work proportionally; the one-reader path uses its meter directly.
+- Start every configured declarative periodic reader instead of ignoring all but
+  the first. Flush and shutdown include all readers.
+
 - Connect provider flush and shutdown to the periodic reader. Serialize exports,
   preserve export failures in lifecycle results, flush before shutdown, and
   perform cleanup only once. Concurrent shutdown callers join the same cleanup.

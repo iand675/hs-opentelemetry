@@ -92,6 +92,7 @@ module OpenTelemetry.Metric (
   SdkMeterExemplarOptions (..),
   defaultSdkMeterExemplarOptions,
   createMeterProvider,
+  createMeterProviderWithReaders,
   SdkMeterEnv (..),
 
   -- ** Metric readers
@@ -148,6 +149,7 @@ import OpenTelemetry.MeterProvider (
  )
 import OpenTelemetry.Metric.Core
 import OpenTelemetry.Metric.ExporterSelection (resolveMetricExporter)
+import OpenTelemetry.Metric.MultiReader (createMeterProviderWithReaders)
 import OpenTelemetry.Metric.View (
   View (..),
   ViewAggregation (..),

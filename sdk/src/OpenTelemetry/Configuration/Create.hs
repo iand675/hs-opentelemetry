@@ -13,10 +13,10 @@ module OpenTelemetry.Configuration.Create (
   OTelComponents,
 ) where
 
-import Control.Monad (when)
+import Control.Monad (forM, forM_)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -37,6 +37,7 @@ import OpenTelemetry.Internal.Logging (otelLogWarning)
 import OpenTelemetry.Log.Core (LoggerProvider, LoggerProviderOptions (..), createLoggerProvider, emptyLoggerProviderOptions, shutdownLoggerProvider)
 import OpenTelemetry.MeterProvider
 import OpenTelemetry.Metric.Core (MeterProvider (..), shutdownMeterProvider)
+import OpenTelemetry.Metric.MultiReader (createMeterProviderWithReaders)
 import OpenTelemetry.MetricReader
 import OpenTelemetry.Processor.Batch.LogRecord (batchLogRecordProcessor)
 import qualified OpenTelemetry.Processor.Batch.LogRecord as BlogProc
@@ -264,21 +265,21 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
       [] -> do
         (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
         pure mp
-      (MetricReaderPeriodic pmc : rest) -> do
-        when (not (null rest)) $
-          otelLogWarning "Multiple metric readers configured; only the first is currently supported — additional readers will be ignored"
-        mExporter <- buildMetricExporter (pmrExporter pmc)
-        case mExporter of
-          Just ex -> do
-            let opts = defaultSdkMeterProviderOptions {metricExporter = Just ex}
-            (mp, env) <- createMeterProvider res opts
-            let interval = fromMaybe 60000 (pmrInterval pmc)
-                readerOpts = PeriodicMetricReaderOptions {periodicIntervalMicros = interval * 1000}
-            _ <- forkPeriodicMetricReaderWithTimeout env ex readerOpts (fromInteger (min (toInteger (maxBound :: Int)) (max 0 (toInteger (fromMaybe 30000 (pmrTimeout pmc))) * 1000)))
-            pure mp
-          Nothing -> do
-            (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
-            pure mp
+      _ -> do
+        configured <- fmap catMaybes $ forM readers $ \(MetricReaderPeriodic pmc) -> do
+          exporter <- buildMetricExporter (pmrExporter pmc)
+          pure $ fmap (\ex -> (pmc, ex)) exporter
+        (provider, environments) <-
+          createMeterProviderWithReaders
+            res
+            defaultSdkMeterProviderOptions
+            [MetricReader ex cumulativeTemporality | (_, ex) <- configured]
+        forM_ (zip configured environments) $ \((pmc, ex), env) -> do
+          let micros ms = fromInteger (min (toInteger (maxBound :: Int)) (max 0 (toInteger ms) * 1000))
+              readerOpts = PeriodicMetricReaderOptions (micros (fromMaybe 60000 (pmrInterval pmc)))
+          _ <- forkPeriodicMetricReaderWithTimeout env ex readerOpts (micros (fromMaybe 30000 (pmrTimeout pmc)))
+          pure ()
+        pure provider
 
 
 buildMetricExporter :: PushMetricExporterConfig -> IO (Maybe MetricExporter)

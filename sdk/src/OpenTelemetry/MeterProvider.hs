@@ -25,6 +25,7 @@ module OpenTelemetry.MeterProvider (
   registerMetricExporter,
   exportMetricReader,
   shutdownMetricReader,
+  setMetricReaderTemporality,
   MetricReader (..),
   cumulativeTemporality,
   deltaTemporality,
@@ -159,11 +160,13 @@ data MetricStorage = MetricStorage
   { storageCells :: !(H.HashMap DimKey (TVar Cell))
   , seriesCountByDims :: !(H.HashMap InstrumentDims Int)
   , storageCollecting :: !Bool
+  , storageTemporality :: !(Maybe (InstrumentKind -> AggregationTemporality))
+  , storageLastCollection :: !(Maybe Word64)
   }
 
 
 emptyMetricStorage :: MetricStorage
-emptyMetricStorage = MetricStorage H.empty H.empty False
+emptyMetricStorage = MetricStorage H.empty H.empty False Nothing Nothing
 
 
 newStorageState :: IO SdkMeterStorageState
@@ -273,12 +276,9 @@ updateMetricCell ref lim originalKey@(dims, originalAttrs) sample update = do
 the registry in that transaction also orders new-series admission with the
 snapshot. Export construction runs afterwards, outside the transaction.
 -}
-snapshotMetricStorage :: AggregationTemporality -> IORef SdkMeterStorageState -> IO (H.HashMap DimKey Cell)
-snapshotMetricStorage temp ref = do
+snapshotMetricStorage :: AggregationTemporality -> IORef SdkMeterStorageState -> IO (Word64, Maybe Word64, InstrumentKind -> AggregationTemporality, H.HashMap DimKey Cell)
+snapshotMetricStorage fallback ref = do
   storage <- getMetricStorage ref
-  -- A large snapshot can otherwise restart indefinitely under sustained writes.
-  -- Close admission/recording before reading the cells, then reopen it before
-  -- building the export. bracket_ releases the gate even if collection is killed.
   bracket_
     ( atomically $ do
         registry <- readTVar storage
@@ -286,17 +286,28 @@ snapshotMetricStorage temp ref = do
         writeTVar storage registry {storageCollecting = True}
     )
     (atomically $ modifyTVar' storage (\registry -> registry {storageCollecting = False}))
-    ( atomically $ do
-        registry <- readTVar storage
-        traverse snapshotCell (storageCells registry)
+    ( do
+        time <- nowNanos
+        atomically $ do
+          registry <- readTVar storage
+          let choose = fromMaybe (const fallback) (storageTemporality registry)
+              snapshotCell (dims, _) cell = do
+                value <- readTVar cell
+                case choose (dimKind dims) of
+                  AggregationDelta -> writeTVar cell $! resetCellForDelta value
+                  AggregationCumulative -> pure ()
+                pure value
+          cells <- H.traverseWithKey snapshotCell (storageCells registry)
+          writeTVar storage registry {storageLastCollection = Just time}
+          pure (time, storageLastCollection registry, choose, cells)
     )
-  where
-    snapshotCell cell = do
-      value <- readTVar cell
-      case temp of
-        AggregationDelta -> writeTVar cell $! resetCellForDelta value
-        AggregationCumulative -> pure ()
-      pure value
+
+
+-- | Configure a newly created reader's temporality selection before recording.
+setMetricReaderTemporality :: SdkMeterEnv -> (InstrumentKind -> AggregationTemporality) -> IO ()
+setMetricReaderTemporality env choose = do
+  storage <- getMetricStorage (sdkMeterStorage env)
+  atomically $ modifyTVar' storage (\state -> state {storageTemporality = Just choose})
 
 
 clearMetricStorage :: IORef SdkMeterStorageState -> IO ()
@@ -1222,13 +1233,12 @@ collectResourceMetrics :: (MonadIO m) => SdkMeterEnv -> m [ResourceMetricsExport
 collectResourceMetrics env = liftIO $ do
   cbs <- readIORef (sdkMeterCollectCallbacks env)
   mapM_ id (toList cbs)
-  t <- nowNanos
   let temp = sdkMeterAggregationTemporality env
       startT = sdkMeterStartTimeNanos env
   -- For delta temporality, snapshot and reset must be atomic so concurrent
   -- record* calls between read and reset cannot be silently dropped.
-  cells <- snapshotMetricStorage temp (sdkMeterStorage env)
-  let rme = buildResourceExport (sdkMeterResource env) startT t temp cells
+  (t, previous, choose, cells) <- snapshotMetricStorage temp (sdkMeterStorage env)
+  let rme = buildResourceExport (sdkMeterResource env) startT (fromMaybe startT previous) t choose cells
   pure [rme]
 
 
@@ -1236,10 +1246,11 @@ buildResourceExport
   :: MaterializedResources
   -> Word64
   -> Word64
-  -> AggregationTemporality
+  -> Word64
+  -> (InstrumentKind -> AggregationTemporality)
   -> H.HashMap DimKey Cell
   -> ResourceMetricsExport
-buildResourceExport res startT t temp m =
+buildResourceExport res startT previous t choose m =
   let groups :: H.HashMap (InstrumentationLibrary, Text, InstrumentKind, Text, Text) [(Attributes, Cell, InstrumentDims)]
       groups =
         H.foldrWithKey
@@ -1249,16 +1260,18 @@ buildResourceExport res startT t temp m =
           )
           H.empty
           m
-      scopes = V.fromList $ fmap (toScope startT t temp) $ H.elems groups
+      scopes = V.fromList $ fmap (toScope startT previous t choose) $ H.elems groups
   in ResourceMetricsExport res scopes
 
 
-toScope :: Word64 -> Word64 -> AggregationTemporality -> [(Attributes, Cell, InstrumentDims)] -> ScopeMetricsExport
-toScope startT t temp series =
+toScope :: Word64 -> Word64 -> Word64 -> (InstrumentKind -> AggregationTemporality) -> [(Attributes, Cell, InstrumentDims)] -> ScopeMetricsExport
+toScope startT previous t choose series =
   let dims = case series of
         (_, _, d) : _ -> d
         [] -> error "MeterProvider.toScope: empty"
-      exports = buildMetricExports startT t temp dims series
+      temp = choose (dimKind dims)
+      from = case temp of AggregationDelta -> previous; AggregationCumulative -> startT
+      exports = buildMetricExports from t temp dims series
   in ScopeMetricsExport (dimScope dims) (V.fromList exports)
 
 

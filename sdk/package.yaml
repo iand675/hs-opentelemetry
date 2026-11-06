@@ -39,6 +39,7 @@ library:
   - OpenTelemetry.MetricReader
   - OpenTelemetry.MeterProvider
   - OpenTelemetry.Metric
+  - OpenTelemetry.Metric.MultiReader
   - OpenTelemetry.Metric.ExporterSelection
   - OpenTelemetry.Metric.View
   - OpenTelemetry.Processor.Batch
@@ -185,6 +186,7 @@ tests:
     - OpenTelemetry.LogSpec
     - OpenTelemetry.MeterProviderSpec
     - OpenTelemetry.MetricAttributeFilterSpec
+    - OpenTelemetry.MultiReaderSpec
     - OpenTelemetry.MetricReaderSpec
     - OpenTelemetry.Resource.DetectorSpec
     - OpenTelemetry.ResourceSpec
@@ -208,6 +210,9 @@ tests:
     - hs-opentelemetry-sdk
     - hs-opentelemetry-semantic-conventions
     - hspec
+    - http-types
+    - wai
+    - warp
     - process
     - text
     - unix
