@@ -267,9 +267,6 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
       (MetricReaderPeriodic pmc : rest) -> do
         when (not (null rest)) $
           otelLogWarning "Multiple metric readers configured; only the first is currently supported — additional readers will be ignored"
-        case pmrTimeout pmc of
-          Just _ -> otelLogWarning "metric_reader.periodic.timeout is configured but not yet supported; the setting will be ignored"
-          Nothing -> pure ()
         mExporter <- buildMetricExporter (pmrExporter pmc)
         case mExporter of
           Just ex -> do
@@ -277,13 +274,8 @@ buildMeterProvider cfg res = case configMeterProvider cfg >>= mpReaders of
             (mp, env) <- createMeterProvider res opts
             let interval = fromMaybe 60000 (pmrInterval pmc)
                 readerOpts = PeriodicMetricReaderOptions {periodicIntervalMicros = interval * 1000}
-            handle <- forkPeriodicMetricReader env ex readerOpts
-            pure
-              mp
-                { meterProviderShutdown = \mTimeout -> do
-                    stopPeriodicMetricReader handle
-                    meterProviderShutdown mp mTimeout
-                }
+            _ <- forkPeriodicMetricReaderWithTimeout env ex readerOpts (fromInteger (min (toInteger (maxBound :: Int)) (max 0 (toInteger (fromMaybe 30000 (pmrTimeout pmc))) * 1000)))
+            pure mp
           Nothing -> do
             (mp, _env) <- createMeterProvider res defaultSdkMeterProviderOptions
             pure mp
