@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import Data.Bits ((.|.))
+import qualified Data.HashMap.Strict as H
 import Data.Int (Int64)
 import Data.ProtoLens (decodeMessage, encodeMessage)
 import Data.Text (Text)
@@ -8,6 +10,7 @@ import qualified Data.Vector.Unboxed as U
 import Data.Word (Word64)
 import Lens.Micro ((^.))
 import OpenTelemetry.Attributes (emptyAttributes)
+import qualified OpenTelemetry.Context as Context
 import OpenTelemetry.Exporter.Metric (
   AggregationTemporality (..),
   ExponentialHistogramDataPoint (..),
@@ -20,12 +23,18 @@ import OpenTelemetry.Exporter.Metric (
   SumDataPoint (..),
  )
 import OpenTelemetry.Exporter.OTLP.Metric (resourceMetricsToExportRequest)
+import OpenTelemetry.Exporter.OTLP.Span (immutableSpansToProtobuf)
 import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..))
+import OpenTelemetry.Processor.Span (FlushResult (..), ShutdownResult (..), SpanProcessor (..))
 import OpenTelemetry.Resource (emptyMaterializedResources)
+import qualified OpenTelemetry.Trace.Core as OT
+import OpenTelemetry.Trace.Id (spanIdBytes)
 import Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService (ExportMetricsServiceRequest)
 import qualified Proto.Opentelemetry.Proto.Collector.Metrics.V1.MetricsService_Fields as MSF
+import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceServiceRequest)
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
+import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Tf
 import Test.Hspec
 
 
@@ -36,6 +45,44 @@ decodeExport rms =
 
 main :: IO ()
 main = hspec $ do
+  describe "immutableSpansToProtobuf" $ do
+    it "round-trips W3C trace flags and distinguishes root, local-parent, and remote-parent spans" $ do
+      let library = "test" :: InstrumentationLibrary
+          processor =
+            SpanProcessor
+              { spanProcessorOnStart = \_ _ -> pure ()
+              , spanProcessorOnEnd = \_ -> pure ()
+              , spanProcessorShutdown = pure ShutdownSuccess
+              , spanProcessorForceFlush = pure FlushSuccess
+              }
+      provider <- OT.createTracerProvider [processor] OT.emptyTracerProviderOptions
+      let tracer = OT.makeTracer provider library OT.tracerOptions
+          start context name = OT.createSpan tracer context name OT.defaultSpanArguments
+      root <- start Context.empty "root"
+      parentContext <- OT.getSpanContext root
+      let remoteParent = OT.wrapSpanContext parentContext {OT.isRemote = True}
+      localChild <- start (Context.insertSpan root Context.empty) "local"
+      remoteChild <- start (Context.insertSpan remoteParent Context.empty) "remote"
+      let spans = [root, localChild, remoteChild]
+      mapM_ (`OT.endSpan` Nothing) spans
+      completed <- traverse OT.toImmutableSpan spans
+      contexts <- traverse OT.getSpanContext spans
+      case sequence completed of
+        Left _ -> expectationFailure "expected recorded spans"
+        Right recorded -> do
+          request <- immutableSpansToProtobuf (H.singleton library (V.fromList recorded))
+          case decodeMessage (encodeMessage request) :: Either String ExportTraceServiceRequest of
+            Left e -> expectationFailure e
+            Right decoded -> do
+              let exported = do
+                    resource <- V.toList (decoded ^. Tf.vec'resourceSpans)
+                    scope <- V.toList (resource ^. Tf.vec'scopeSpans)
+                    V.toList (scope ^. Tf.vec'spans)
+                  expectedFlags = zipWith (.|.) (map (fromIntegral . OT.traceFlagsValue . OT.traceFlags) contexts) [0, 0x100, 0x300]
+                  parentId = spanIdBytes (OT.spanId parentContext)
+              map (^. Tf.flags) exported `shouldBe` expectedFlags
+              map (^. Tf.parentSpanId) exported `shouldBe` ["", parentId, parentId]
+
   describe "resourceMetricsToExportRequest" $ do
     it "round-trips SumDataPoint through protobuf decode" $ do
       let lib = "lib" :: InstrumentationLibrary

@@ -487,12 +487,8 @@ makeSpan :: (MonadIO m) => OT.ImmutableSpan -> m Span
 makeSpan completedSpan = do
   hot <- liftIO $ readIORef (OT.spanHot completedSpan)
   let startTime = timestampNanoseconds (OT.spanStart completedSpan)
-  parentSpanF <- do
-    case OT.spanParent completedSpan of
-      Nothing -> pure id
-      Just s -> do
-        spanCtxt <- OT.spanId <$> OT.getSpanContext s
-        pure (\otlpSpan -> otlpSpan & Trace_Fields.parentSpanId .~ spanIdBytes spanCtxt)
+      traceFlags = fromIntegral (OT.traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
+  parentContext <- traverse OT.getSpanContext (OT.spanParent completedSpan)
 
   pure $
     defMessage
@@ -502,8 +498,10 @@ makeSpan completedSpan = do
         .~ spanIdBytes (OT.spanId $ OT.spanContext completedSpan)
       & Trace_Fields.traceState
         .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState $ OT.spanContext completedSpan)
+      & Trace_Fields.parentSpanId
+        .~ maybe mempty (spanIdBytes . OT.spanId) parentContext
       & Trace_Fields.flags
-        .~ fromIntegral (OT.traceFlagsValue $ OT.traceFlags $ OT.spanContext completedSpan)
+        .~ (traceFlags .|. maybe 0 contextRemoteFlags parentContext)
       & Trace_Fields.name
         .~ OT.hotName hot
       & Trace_Fields.kind
@@ -547,7 +545,6 @@ makeSpan completedSpan = do
                    & Trace_Fields.message
                      .~ e
            )
-      & parentSpanF
 
 
 {- |
@@ -581,7 +578,7 @@ makeLink l =
     & Trace_Fields.traceState
       .~ T.decodeUtf8 (encodeTraceStateFull $ OT.traceState ctx)
     & Trace_Fields.flags
-      .~ linkFlags ctx
+      .~ (fromIntegral (OT.traceFlagsValue $ OT.traceFlags ctx) .|. contextRemoteFlags ctx)
     & Trace_Fields.vec'attributes
       .~ attributesToProto (OT.frozenLinkAttributes l)
     & Trace_Fields.droppedAttributesCount
@@ -590,20 +587,15 @@ makeLink l =
     ctx = OT.frozenLinkContext l
 
 
-{- |
-Internal helper.
-Translate a collection of `Attributes` to a vector of OTLP `KeyValue` pairs.
--}
-
--- | OTLP link flags: bits 0-7 = W3C trace flags, bit 8 = HAS_IS_REMOTE, bit 9 = IS_REMOTE.
-linkFlags :: OT.SpanContext -> Data.Word.Word32
-linkFlags ctx =
-  let w8flags = fromIntegral (OT.traceFlagsValue $ OT.traceFlags ctx) :: Data.Word.Word32
-      hasIsRemote = 1 `shiftL` 8
-      isRemoteBit = if OT.isRemote ctx then 1 `shiftL` 9 else 0
-  in w8flags .|. hasIsRemote .|. isRemoteBit
+-- | OTLP remoteness bits for a known span context.
+contextRemoteFlags :: OT.SpanContext -> Data.Word.Word32
+contextRemoteFlags ctx =
+  let hasIsRemote = fromIntegral (fromEnum SPAN_FLAGS_CONTEXT_HAS_IS_REMOTE_MASK)
+      isRemote = fromIntegral (fromEnum SPAN_FLAGS_CONTEXT_IS_REMOTE_MASK)
+  in hasIsRemote .|. if OT.isRemote ctx then isRemote else 0
 
 
+-- | Translate a collection of `Attributes` to a vector of OTLP `KeyValue` pairs.
 attributesToProto :: Attributes -> Vector KeyValue
 attributesToProto =
   V.fromList
