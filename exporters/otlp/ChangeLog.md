@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- OTLP spans now tell the receiver whether their parent was local or remote
+  when the parent context is available.
 - **gRPC: exporters now reconnect after the connection drops.** ([#305](https://github.com/iand675/hs-opentelemetry/issues/305))
   `grpcOtlpSpanExporter`, `grpcOtlpMetricExporter`, and `grpcOtlpLogRecordExporter`
   previously opened their grapesy connection with the default `DontReconnect`
