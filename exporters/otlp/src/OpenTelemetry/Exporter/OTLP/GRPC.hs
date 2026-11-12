@@ -259,7 +259,7 @@ grpcOtlpMetricExporter conf toProto = liftIO $ do
 {- | Create a gRPC-based log record exporter.
 
 The serialization function converts log records into the OTLP
-protobuf request.
+protobuf request. Pass 'OpenTelemetry.Exporter.OTLP.LogRecord.buildExportReqFromBatch'.
 -}
 grpcOtlpLogRecordExporter
   :: (MonadIO m)

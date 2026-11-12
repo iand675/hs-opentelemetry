@@ -356,24 +356,32 @@ otlpHttpToExporterConfig cfg' =
     { otlpEndpoint = fmap T.unpack (otlpCfgEndpoint cfg')
     , otlpTracesEndpoint = fmap T.unpack (otlpSignalEndpoint cfg')
     , otlpMetricsEndpoint = Nothing
+    , otlpLogsEndpoint = Nothing
     , otlpInsecure = False
-    , otlpSpanInsecure = False
-    , otlpMetricInsecure = False
+    , otlpTracesInsecure = False
+    , otlpMetricsInsecure = False
+    , otlpLogsInsecure = False
     , otlpCertificate = Nothing
     , otlpTracesCertificate = Nothing
-    , otlpMetricCertificate = Nothing
+    , otlpMetricsCertificate = Nothing
+    , otlpLogsCertificate = Nothing
     , otlpHeaders = fmap headersFromMap (otlpCfgHeaders cfg')
     , otlpTracesHeaders = Nothing
     , otlpMetricsHeaders = Nothing
+    , otlpLogsHeaders = Nothing
     , otlpCompression = otlpCfgCompression cfg' >>= parseCompression
     , otlpTracesCompression = Nothing
     , otlpMetricsCompression = Nothing
+    , otlpLogsCompression = Nothing
     , otlpTimeout = otlpCfgTimeout cfg'
     , otlpTracesTimeout = Nothing
     , otlpMetricsTimeout = Nothing
+    , otlpLogsTimeout = Nothing
     , otlpProtocol = Nothing
     , otlpTracesProtocol = Nothing
     , otlpMetricsProtocol = Nothing
+    , otlpLogsProtocol = Nothing
+    , otlpConcurrentExports = 1
     }
 
 
