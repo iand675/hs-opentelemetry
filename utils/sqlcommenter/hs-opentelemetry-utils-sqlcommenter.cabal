@@ -1,0 +1,67 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.38.3.
+--
+-- see: https://github.com/sol/hpack
+
+name:           hs-opentelemetry-utils-sqlcommenter
+version:        1.0.0.0
+synopsis:       SqlCommenter utilities for OpenTelemetry instrumentation
+description:    Please see the README on GitHub at <https://github.com/iand675/hs-opentelemetry/tree/main/utils/sqlcommenter#readme>
+category:       OpenTelemetry, Telemetry, Database
+homepage:       https://github.com/iand675/hs-opentelemetry#readme
+bug-reports:    https://github.com/iand675/hs-opentelemetry/issues
+author:         Ian Duncan, Jade Lovelace
+maintainer:     ian@iankduncan.com
+copyright:      2024 Ian Duncan, Mercury Technologies
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  exposed-modules:
+      OpenTelemetry.Utils.SqlCommenter
+  other-modules:
+      OpenTelemetry.Utils.SqlCommenter.Internal.Compat
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      attoparsec
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-propagator-w3c ==1.0.*
+    , http-types
+    , text >=2.0 && <2.2
+  default-language: Haskell2010
+
+test-suite sqlcommenter-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_hs_opentelemetry_utils_sqlcommenter
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , containers
+    , hedgehog
+    , hs-opentelemetry-api ==1.0.*
+    , hs-opentelemetry-exporter-in-memory ==1.0.*
+    , hs-opentelemetry-utils-sqlcommenter ==1.0.*
+    , hspec
+    , hspec-hedgehog
+    , http-types
+    , text
+  default-language: Haskell2010

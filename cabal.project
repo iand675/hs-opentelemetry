@@ -27,6 +27,7 @@ packages:
   , instrumentation/wai
   , instrumentation/yesod
   , utils/exceptions
+  , utils/sqlcommenter
   , vendors/honeycomb
   , examples/hspec
   -- GHC 9.10 dep incompatibilities:
