@@ -240,13 +240,8 @@ initializeGlobalMeterProvider = do
       envVarRs <- mkResource . map Just <$> detectResourceAttributes
       let rs = materializeResources (mergeResources envVarRs builtInRs)
       (provider, env) <- createMeterProvider rs defaultSdkMeterProviderOptions
-      readerHandle <- forkPeriodicMetricReader env exporter readerOpts
-      let provider' =
-            provider
-              { meterProviderShutdown = \timeout -> do
-                  stopPeriodicMetricReader readerHandle
-                  meterProviderShutdown provider timeout
-              }
+      _ <- forkPeriodicMetricReader env exporter readerOpts
+      let provider' = provider
       setGlobalMeterProvider provider'
       otelLogDebug "MeterProvider initialized from environment"
       pure provider'

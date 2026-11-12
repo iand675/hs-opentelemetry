@@ -22,6 +22,9 @@ module OpenTelemetry.MeterProvider (
   emptyStorageState,
   createMeterProvider,
   collectResourceMetrics,
+  registerMetricExporter,
+  exportMetricReader,
+  shutdownMetricReader,
   MetricReader (..),
   cumulativeTemporality,
   deltaTemporality,
@@ -64,7 +67,8 @@ import OpenTelemetry.Exporter.Metric (
   SumDataPoint (..),
   filterAttributesByKeys,
  )
-import OpenTelemetry.Internal.Common.Types (FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
+import OpenTelemetry.Internal.Common.Types (ExportResult, InstrumentationLibrary (..), ShutdownResult (..))
+import qualified OpenTelemetry.Internal.MetricExport as ME
 import OpenTelemetry.Metric.Core (
   AdvisoryParameters (..),
   Counter (..),
@@ -144,7 +148,7 @@ defaultSdkMeterProviderOptions =
 -- measurements subsequently update only the transactional registry and cells.
 data SdkMeterStorageState
   = EmptyStorageState
-  | SdkMeterStorageState !(TVar MetricStorage)
+  | SdkMeterStorageState !(TVar MetricStorage) !ME.MetricExportState
 
 
 emptyStorageState :: SdkMeterStorageState
@@ -163,21 +167,55 @@ emptyMetricStorage = MetricStorage H.empty H.empty False
 
 
 newStorageState :: IO SdkMeterStorageState
-newStorageState = SdkMeterStorageState <$> newTVarIO emptyMetricStorage
+newStorageState = SdkMeterStorageState <$> newTVarIO emptyMetricStorage <*> ME.newMetricExportState
+
+
+getStorageState :: IORef SdkMeterStorageState -> IO SdkMeterStorageState
+getStorageState ref = do
+  current <- readIORef ref
+  case current of
+    SdkMeterStorageState {} -> pure current
+    EmptyStorageState -> do
+      candidate <- newStorageState
+      atomicModifyIORef' ref $ \value -> case value of
+        EmptyStorageState -> (candidate, candidate)
+        _ -> (value, value)
 
 
 getMetricStorage :: IORef SdkMeterStorageState -> IO (TVar MetricStorage)
 getMetricStorage ref = do
-  state <- readIORef ref
-  case state of
-    SdkMeterStorageState storage -> pure storage
-    EmptyStorageState -> do
-      -- Only legacy/manual environments take this path. Concurrent first uses
-      -- must all receive the same registry; discarded candidates contain no data.
-      candidate <- newTVarIO emptyMetricStorage
-      atomicModifyIORef' ref $ \current -> case current of
-        EmptyStorageState -> (SdkMeterStorageState candidate, candidate)
-        SdkMeterStorageState storage -> (current, storage)
+  SdkMeterStorageState storage _ <- getStorageState ref
+  pure storage
+
+
+getExportState :: SdkMeterEnv -> IO ME.MetricExportState
+getExportState env = do
+  SdkMeterStorageState _ state <- getStorageState (sdkMeterStorage env)
+  pure state
+
+
+-- | Register a reader's exporter and scheduler cleanup on its provider.
+registerMetricExporter :: SdkMeterEnv -> MetricExporter -> IO () -> IO ()
+registerMetricExporter env ex stop = getExportState env >>= \state -> ME.installMetricExporter state ex stop
+
+
+-- | Serialized, bounded collection/export for this reader.
+exportMetricReader :: SdkMeterEnv -> MetricExporter -> Maybe Int -> IO ExportResult
+exportMetricReader env ex limit = do
+  state <- getExportState env
+  ME.exportMetricBatch state (V.fromList <$> collectResourceMetrics env) ex limit
+
+
+-- | Stop scheduling, flush, and shut down exactly once.
+shutdownMetricReader :: SdkMeterEnv -> Maybe Int -> IO ShutdownResult
+shutdownMetricReader env limit = do
+  writeIORef (sdkMeterShutdown env) True
+  state <- getExportState env
+  ME.shutdownMetricExport
+    state
+    (V.fromList <$> collectResourceMetrics env)
+    (clearMetricStorage (sdkMeterStorage env) >> writeIORef (sdkMeterCollectCallbacks env) Seq.empty)
+    limit
 
 
 {- | Existing series only read the registry and write their own cell. Admission
@@ -1357,29 +1395,17 @@ createMeterProvider res opts = do
           , sdkMeterExemplarOptions = exOpts
           , sdkMeterStartTimeNanos = startT
           }
-      mExporter = metricExporter opts
-      provider =
+  case metricExporter opts of
+    Just ex -> registerMetricExporter env ex (pure ())
+    Nothing -> pure ()
+  let provider =
         MeterProvider
           { meterProviderGetMeter = \scope -> do
               shut <- readIORef sd
               if shut then pure (noopMeter scope) else pure (mkMeter env scope)
-          , meterProviderShutdown = \_timeoutMicros -> do
-              writeIORef sd True
-              batches <- collectResourceMetrics env
-              shutdownRes <- case mExporter of
-                Just ex -> do
-                  _ <- metricExporterExport ex (V.fromList batches)
-                  metricExporterShutdown ex
-                Nothing -> pure ShutdownSuccess
-              clearMetricStorage st
-              writeIORef cbs Seq.empty
-              pure shutdownRes
-          , meterProviderForceFlush = \_timeoutMicros -> do
-              batches <- collectResourceMetrics env
-              case mExporter of
-                Just ex -> do
-                  _ <- metricExporterExport ex (V.fromList batches)
-                  metricExporterForceFlush ex
-                Nothing -> pure FlushSuccess
+          , meterProviderShutdown = shutdownMetricReader env
+          , meterProviderForceFlush = \limit -> do
+              state <- getExportState env
+              ME.flushMetricExport state (V.fromList <$> collectResourceMetrics env) limit
           }
   pure (provider, env)
