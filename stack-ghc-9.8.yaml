@@ -6,6 +6,7 @@ packages:
 - sdk
 - otlp
 - semantic-conventions
+- semantic-conventions-metrics
 - exporters/handle
 - exporters/in-memory
 - exporters/otlp
