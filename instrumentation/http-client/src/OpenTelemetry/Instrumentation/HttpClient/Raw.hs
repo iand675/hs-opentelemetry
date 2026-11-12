@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 {- |
 Module      : OpenTelemetry.Instrumentation.HttpClient.Raw
@@ -40,13 +41,14 @@ module OpenTelemetry.Instrumentation.HttpClient.Raw (
 ) where
 
 import Control.Applicative ((<|>))
-import Control.Exception (SomeException, catch, throwIO)
+import Control.Exception (SomeException, catch, finally, mask, mask_, throwIO, try)
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
 import Data.CaseInsensitive (foldedCase)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.HashMap.Strict as H
+import Data.IORef
 import Data.Int (Int64)
 import Data.Maybe
 import qualified Data.Text as T
@@ -103,24 +105,12 @@ httpClientInstrumentationConfig :: HttpClientInstrumentationConfig
 httpClientInstrumentationConfig = mempty
 
 
--- Context key for the span created by Manager-level hooks, so we can
--- retrieve "our" span in managerModifyResponse without confusing it with
--- a caller's span.
-managedSpanKey :: Ctx.Key Span
-managedSpanKey = unsafePerformIO $ Ctx.newKey "http-client.managed-span"
-{-# NOINLINE managedSpanKey #-}
-
-
--- Context key to stash the attach token so we can restore context
--- after managerModifyResponse completes.
-parentTokenKey :: Ctx.Key Token
-parentTokenKey = unsafePerformIO $ Ctx.newKey "http-client.parent-token"
-{-# NOINLINE parentTokenKey #-}
-
-
-metricStartKey :: Ctx.Key (Word64, Request)
-metricStartKey = unsafePerformIO $ Ctx.newKey "http-client.metric-start"
-{-# NOINLINE metricStartKey #-}
+{- | Keep the caller's context and the open attempt for one managed call.
+The key is shared, but each exception wrapper creates a separate reference.
+-}
+managedRequestKey :: Ctx.Key (Ctx.Context, IORef (Maybe (Span, Word64, Request)))
+managedRequestKey = unsafePerformIO $ Ctx.newKey "http-client.managed-request"
+{-# NOINLINE managedRequestKey #-}
 
 
 httpTracerProvider :: (MonadIO m) => m Tracer
@@ -226,66 +216,78 @@ instrumentManagerSettings
 instrumentManagerSettings conf settings = do
   tracer <- httpTracerProvider
   hcm <- resolveMetrics conf
+  let recordRequestMetrics req startNs endNs = do
+        let durationSec = fromIntegral (endNs - startNs) / 1_000_000_000
+            attrs = metricRequestAttrs req
+        histogramRecord (hcmDuration hcm) durationSec attrs
+        counterAdd (hcmCount hcm) 1 attrs
+      endAttempt state record = do
+        attempt <- atomicModifyIORef' state (Nothing,)
+        forM_ attempt $ \(s, startNs, req) -> do
+          endTs <- getTimestamp
+          record s req startNs (timestampNanoseconds endTs)
+            `finally` ( upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs req)
+                          `finally` endSpan s Nothing
+                      )
+      endWithoutResponse state = endAttempt state (const recordRequestMetrics)
+      endWithError state e = endAttempt state $ \s origReq startNs endNs -> do
+        let errText = T.pack (show e)
+        addAttributes s [(unkey SC.error_type, toAttribute errText)]
+        setStatus s (Error errText)
+        recordErrorMetrics hcm origReq startNs endNs e
   pure $
     settings
       { managerModifyRequest = \req -> do
+          ctx <- getContext
+          case Ctx.lookup managedRequestKey ctx of
+            Nothing -> pure ()
+            Just (_, state) ->
+              -- End the redirect attempt before the user's hook can throw.
+              mask_ $ endWithoutResponse state
           req' <- managerModifyRequest settings req
-          parentCtx <- getContext
 
-          let methodText = T.decodeUtf8 (method req')
-              reqSpanName = fromMaybe methodText (requestName conf)
+          forM_ (Ctx.lookup managedRequestKey ctx) $ \(parentCtx, state) -> do
+            s <- mask_ $ do
+              startTs <- getTimestamp
+              let methodText = T.decodeUtf8 (method req')
+                  reqSpanName = fromMaybe methodText (requestName conf)
 
-          s <-
-            createSpanWithoutCallStack
-              tracer
-              parentCtx
-              reqSpanName
-              defaultSpanArguments {kind = Client}
+              s <-
+                createSpanWithoutCallStack
+                  tracer
+                  parentCtx
+                  reqSpanName
+                  defaultSpanArguments {kind = Client}
 
-          let newCtx =
-                Ctx.insert managedSpanKey s
-                  . insertSpan s
-                  $ parentCtx
-
-          tok <- attachContext newCtx
-          adjustContext (Ctx.insert parentTokenKey tok)
-
-          upDownCounterAdd (hcmActive hcm) 1 (metricRequestAttrs req')
-
-          addRequestAttributes conf s req'
+              writeIORef state (Just (s, timestampNanoseconds startTs, req'))
+              upDownCounterAdd (hcmActive hcm) 1 (metricRequestAttrs req')
+              adjustContext (insertSpan s)
+              pure s
+            addRequestAttributes conf s req'
 
           propagator <- getGlobalTextMapPropagator
           ctx' <- getContext
           hdrs <- injectToHeaders propagator ctx' (requestHeaders req')
-          startTs <- getTimestamp
-          adjustContext (Ctx.insert metricStartKey (timestampNanoseconds startTs, req'))
           pure req' {requestHeaders = hdrs}
       , managerModifyResponse = \resp -> do
           resp' <- managerModifyResponse settings resp
           ctx <- getContext
-          forM_ (Ctx.lookup managedSpanKey ctx) $ \s -> do
-            instrumentResponseOnSpan conf s resp'
-            endSpan s Nothing
-          forM_ (Ctx.lookup metricStartKey ctx) $ \(startNs, origReq) -> do
-            endTs <- getTimestamp
-            upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs origReq)
-            recordResponseMetrics hcm origReq startNs (timestampNanoseconds endTs) resp'
-          forM_ (Ctx.lookup parentTokenKey ctx) detachContext
+          forM_ (Ctx.lookup managedRequestKey ctx) $ \(_, state) ->
+            mask_ $ endAttempt state $ \s origReq startNs endNs -> do
+              instrumentResponseOnSpan conf s resp'
+              recordResponseMetrics hcm origReq startNs endNs resp'
           pure resp'
-      , managerWrapException = \req action ->
-          managerWrapException settings req action `catch` \(e :: SomeException) -> do
-            ctx <- getContext
-            forM_ (Ctx.lookup managedSpanKey ctx) $ \s -> do
-              let errText = T.pack (show e)
-              addAttributes s [(unkey SC.error_type, toAttribute errText)]
-              setStatus s (Error errText)
-              endSpan s Nothing
-            forM_ (Ctx.lookup metricStartKey ctx) $ \(startNs, origReq) -> do
-              endTs <- getTimestamp
-              upDownCounterAdd (hcmActive hcm) (-1) (metricRequestAttrs origReq)
-              recordErrorMetrics hcm origReq startNs (timestampNanoseconds endTs) e
-            forM_ (Ctx.lookup parentTokenKey ctx) detachContext
-            throwIO e
+      , managerWrapException = \req action -> mask $ \restore -> do
+          parentCtx <- getContext
+          state <- newIORef Nothing
+          tok <- attachContext (Ctx.insert managedRequestKey (parentCtx, state) parentCtx)
+          result <- try (restore (managerWrapException settings req action))
+          ( case result of
+              Left (e :: SomeException) -> endWithError state e
+              Right _ -> endWithoutResponse state
+            )
+            `finally` detachContext tok
+          either throwIO pure result
       }
 
 

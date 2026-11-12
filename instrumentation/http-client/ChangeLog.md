@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- End each managed HTTP attempt span and balance its metrics on redirects,
+  responses, exceptions, and cancellation. Restore the caller's context.
+  Requests through responseOpenHistory only propagate context.
+
 ## 1.0.0.0 - 2026-05-29
 
 - **Fix: stable attribute `http.host` → `server.address`.** The stable
