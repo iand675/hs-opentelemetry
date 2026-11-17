@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a 2.5 ms bucket to the default `db.client.operation.duration` histogram.
+  Existing bucket boundaries are retained.
+
 ## 1.0.0.0 - 2026-05-29
 
 - Internal: `db.transaction.*` attribute keys are now typed `AttributeKey` constants

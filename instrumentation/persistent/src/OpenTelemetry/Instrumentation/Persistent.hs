@@ -200,7 +200,7 @@ wrapSqlBackend' tp attrs conn_ = do
         (Just "Duration of database client operations")
         defaultAdvisoryParameters
           { advisoryExplicitBucketBoundaries =
-              Just [0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0]
+              Just [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0]
           }
   let t = makeTracer tp $detectInstrumentationLibrary tracerOptions
       dbNamespace = lookupDbNamespace dbSemOpt attrs

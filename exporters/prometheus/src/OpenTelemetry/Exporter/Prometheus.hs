@@ -5,7 +5,8 @@
 {- | Prometheus text exposition format (0.0.4) for 'ResourceMetricsExport' batches.
 
 Labels combine resource attributes with point attributes (point wins on key clash).
-Instrumentation scope name is exposed as @job@ when non-empty.
+Instrumentation scope is exported in @otel_scope_@ labels. The scope name
+is also exposed as @job@ when non-empty.
 
 Exponential histograms are mapped to classic @histogram@ buckets using OTel-style
 @le@ upper bounds derived from scale and bucket index (@2^((i+1)/2^scale)@ for positive indices).
@@ -20,8 +21,8 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import qualified Data.HashMap.Strict as H
-import Data.Int (Int32, Int64)
-import Data.List (sort)
+import Data.Int (Int32)
+import Data.List (intersperse, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
@@ -49,97 +50,96 @@ import OpenTelemetry.Internal.Common.Types (InstrumentationLibrary (..))
 import OpenTelemetry.Resource (getMaterializedResourcesAttributes)
 
 
--- | Render Prometheus text (lines separated by @\\n@, trailing newline).
+type Labels = Map.Map Text Text
+
+
+data MetricFamily = MetricFamily
+  { familyDescription :: !Text
+  , familyType :: !Text
+  , familySamples :: !(Map.Map Labels (Word64, Builder))
+  }
+
+
+-- | Render Prometheus text (lines separated by @\n@, trailing newline).
 renderPrometheusText :: Vector ResourceMetricsExport -> Text
-renderPrometheusText batches
-  | V.null batches = ""
-  | otherwise =
-      TL.toStrict $
-        toLazyText $
-          V.ifoldl'
-            ( \acc i r ->
-                acc <> (if i == 0 then mempty else nl) <> renderResource r
-            )
-            mempty
-            batches
+renderPrometheusText batches =
+  TL.toStrict $ toLazyText $ Map.foldMapWithKey renderFamily families
+  where
+    families = V.foldl' collectResource Map.empty batches
+    renderFamily name family =
+      helpLine name (familyDescription family)
+        <> typeLine name (familyType family)
+        <> foldMap snd (familySamples family)
 
 
-renderResource :: ResourceMetricsExport -> Builder
-renderResource ResourceMetricsExport {..} =
-  let resMap = attributesToLabelMap (getMaterializedResourcesAttributes resourceMetricsResource)
-  in V.ifoldl'
-       ( \acc i s ->
-           acc <> (if i == 0 then mempty else nl) <> renderScope resMap s
-       )
-       mempty
-       resourceMetricsScopes
+collectResource :: Map.Map Text MetricFamily -> ResourceMetricsExport -> Map.Map Text MetricFamily
+collectResource families ResourceMetricsExport {..} =
+  V.foldl' collectScope families resourceMetricsScopes
+  where
+    resourceLabels = attributesToLabelMap (getMaterializedResourcesAttributes resourceMetricsResource)
+    collectScope acc ScopeMetricsExport {..} =
+      let name = libraryName scopeMetricsScope
+          legacyLabels = if T.null name then resourceLabels else Map.insert "job" name resourceLabels
+      in V.foldl' (collectMetric legacyLabels (scopeLabels scopeMetricsScope)) acc scopeMetricsExports
 
 
-renderScope :: Map.Map Text Text -> ScopeMetricsExport -> Builder
-renderScope resMap ScopeMetricsExport {..} =
-  let jobMap =
-        if T.null (libraryName scopeMetricsScope)
-          then resMap
-          else Map.insert "job" (libraryName scopeMetricsScope) resMap
-  in V.ifoldl'
-       ( \acc i m ->
-           acc <> (if i == 0 then mempty else nl) <> renderMetric jobMap m
-       )
-       mempty
-       scopeMetricsExports
+scopeLabels :: InstrumentationLibrary -> [(Text, Text)]
+scopeLabels scope =
+  [ ("otel_scope_name", libraryName scope)
+  , ("otel_scope_version", libraryVersion scope)
+  , ("otel_scope_schema_url", librarySchemaUrl scope)
+  ]
+    <> [ (key, value)
+       | (attr, value) <- Map.toList (attributesToLabelMap (libraryAttributes scope))
+       , let key = "otel_scope_" <> attr
+       , sanitizeLabelName key `notElem` ["otel_scope_name", "otel_scope_version", "otel_scope_schema_url"]
+       ]
 
 
-intersperse :: a -> [a] -> [a]
-intersperse _ [] = []
-intersperse _ [x] = [x]
-intersperse sep (x : xs) = x : sep : intersperse sep xs
-
-
-renderMetric :: Map.Map Text Text -> MetricExport -> Builder
-renderMetric baseLabels = \case
-  MetricExportSum name desc _unit _lib monotonic _isInt _temp pts ->
+collectMetric :: Labels -> [(Text, Text)] -> Map.Map Text MetricFamily -> MetricExport -> Map.Map Text MetricFamily
+collectMetric baseLabels scope families = \case
+  MetricExportSum name desc _unit _lib monotonic _isInt _temp points ->
     let typ = if monotonic then "counter" else "gauge"
-        nm = sanitizeName name
-    in helpLine nm desc
-         <> typeLine nm typ
-         <> V.foldl'
-           ( \acc p ->
-               acc
-                 <> fromText nm
-                 <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (sumDataPointAttributes p)))
-                 <> sp
-                 <> numberValue (sumDataPointValue p)
-                 <> exemplarSuffix (sumDataPointExemplars p)
-                 <> nl
-           )
-           mempty
-           pts
-  MetricExportGauge name desc _unit _lib _isInt pts ->
-    let nm = sanitizeName name
-    in helpLine nm desc
-         <> typeLine nm "gauge"
-         <> V.foldl'
-           ( \acc p ->
-               acc
-                 <> fromText nm
-                 <> formatLabels (mergeLabels baseLabels (attributesToLabelMap (gaugeDataPointAttributes p)))
-                 <> sp
-                 <> numberValue (gaugeDataPointValue p)
-                 <> exemplarSuffix (gaugeDataPointExemplars p)
-                 <> nl
-           )
-           mempty
-           pts
-  MetricExportHistogram name desc _unit _lib _temp pts ->
-    let nm = sanitizeName name
-    in helpLine nm desc
-         <> typeLine nm "histogram"
-         <> V.foldl' (\acc p -> acc <> renderHistogramPoint baseLabels nm p) mempty pts
-  MetricExportExponentialHistogram name desc _unit _lib _temp pts ->
-    let nm = sanitizeName name
-    in helpLine nm desc
-         <> typeLine nm "histogram"
-         <> V.foldl' (\acc p -> acc <> renderExponentialHistogramPoint baseLabels nm p) mempty pts
+        render nm p =
+          sample id (sumDataPointTimeUnixNano p) (sumDataPointAttributes p) $
+            renderNumberPoint nm (sumDataPointValue p) (sumDataPointExemplars p)
+    in addFamily name desc typ render points
+  MetricExportGauge name desc _unit _lib _isInt points ->
+    let render nm p =
+          sample id (gaugeDataPointTimeUnixNano p) (gaugeDataPointAttributes p) $
+            renderNumberPoint nm (gaugeDataPointValue p) (gaugeDataPointExemplars p)
+    in addFamily name desc "gauge" render points
+  MetricExportHistogram name desc _unit _lib _temp points ->
+    let render nm p =
+          sample (Map.delete "le") (histogramDataPointTimeUnixNano p) (histogramDataPointAttributes p) $
+            \labels -> renderHistogramPoint labels nm p
+    in addFamily name desc "histogram" render points
+  MetricExportExponentialHistogram name desc _unit _lib _temp points ->
+    let render nm p =
+          sample (Map.delete "le") (exponentialHistogramDataPointTimeUnixNano p) (exponentialHistogramDataPointAttributes p) $
+            \labels -> renderExponentialHistogramPoint labels nm p
+    in addFamily name desc "histogram" render points
+  where
+    addFamily rawName description typ render points =
+      let name = sanitizeName rawName
+          update entry =
+            let family = fromMaybe (MetricFamily description typ Map.empty) entry
+            in if familyType family == typ
+                 then Just family {familySamples = V.foldl' (insertSample name) (familySamples family) points}
+                 else entry
+          insertSample nm acc point =
+            let (labels, time, builder) = render nm point
+            in Map.insertWith preferLatest labels (time, builder) acc
+      in Map.alter update name families
+    preferLatest new old = if fst new > fst old then new else old
+    sample prepare time attrs render =
+      let labels = prepare $ normalizeLabels (scope <> Map.toList (mergeLabels baseLabels (attributesToLabelMap attrs)))
+      in (labels, time, render labels)
+
+
+renderNumberPoint :: Text -> NumberValue -> Vector MetricExemplar -> Labels -> Builder
+renderNumberPoint name value exemplars labels =
+  fromText name <> formatLabels labels <> sp <> numberValue value <> exemplarSuffix exemplars <> nl
 
 
 helpLine :: Text -> Text -> Builder
@@ -147,9 +147,9 @@ helpLine nm desc =
   "# HELP " <> fromText nm <> sp <> fromText (escapeHelp desc) <> nl
 
 
-typeLine :: Text -> Builder -> Builder
+typeLine :: Text -> Text -> Builder
 typeLine nm typ =
-  "# TYPE " <> fromText nm <> sp <> typ <> nl
+  "# TYPE " <> fromText nm <> sp <> fromText typ <> nl
 
 
 nl :: Builder
@@ -212,9 +212,8 @@ exemplarValue e = case metricExemplarValue e of
 
 
 renderHistogramPoint :: Map.Map Text Text -> Text -> HistogramDataPoint -> Builder
-renderHistogramPoint baseLabels hname p =
-  let lbls = mergeLabels baseLabels (attributesToLabelMap (histogramDataPointAttributes p))
-      bounds = histogramDataPointExplicitBounds p
+renderHistogramPoint lbls hname p =
+  let bounds = histogramDataPointExplicitBounds p
       counts = histogramDataPointBucketCounts p
       cum = V.scanl1' (+) counts
       bucketName = fromText hname <> "_bucket"
@@ -259,9 +258,8 @@ leUpperBoundExp scale idx =
 
 
 renderExponentialHistogramPoint :: Map.Map Text Text -> Text -> ExponentialHistogramDataPoint -> Builder
-renderExponentialHistogramPoint baseLabels hname p =
-  let lbls = mergeLabels baseLabels (attributesToLabelMap (exponentialHistogramDataPointAttributes p))
-      sc = exponentialHistogramDataPointScale p
+renderExponentialHistogramPoint lbls hname p =
+  let sc = exponentialHistogramDataPointScale p
       posOff = exponentialHistogramDataPointPositiveOffset p
       posCnt = exponentialHistogramDataPointPositiveBucketCounts p
       negOff = exponentialHistogramDataPointNegativeOffset p
@@ -374,17 +372,21 @@ isAsciiAlphaNum :: Char -> Bool
 isAsciiAlphaNum c = isAsciiLetter c || isDigit c
 
 
-formatLabels :: Map.Map Text Text -> Builder
-formatLabels m
-  | Map.null m = mempty
+-- | Concatenate collisions in original key order, including generated scope labels.
+normalizeLabels :: [(Text, Text)] -> Labels
+normalizeLabels =
+  Map.fromListWith (\new old -> old <> ";" <> new)
+    . map (\(key, value) -> (sanitizeLabelName key, value))
+    . sortOn fst
+
+
+formatLabels :: Labels -> Builder
+formatLabels labels
+  | Map.null labels = mempty
   | otherwise =
-      let pairs =
-            sort $
-              fmap
-                (\(k, v) -> (sanitizeLabelName k, escapeLabelValue v))
-                (Map.toList m)
+      let render (key, value) = fromText key <> "=\"" <> fromText (escapeLabelValue value) <> singleton '"'
       in singleton '{'
-           <> mconcat (intersperse (singleton ',') (fmap (\(k, v) -> fromText k <> "=\"" <> fromText v <> singleton '"') pairs))
+           <> mconcat (intersperse (singleton ',') (map render (Map.toList labels)))
            <> singleton '}'
 
 
