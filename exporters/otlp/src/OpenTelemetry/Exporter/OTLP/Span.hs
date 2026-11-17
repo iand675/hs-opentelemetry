@@ -33,6 +33,7 @@
 module OpenTelemetry.Exporter.OTLP.Span (
   -- * Initializing the exporter
   otlpExporter,
+  otlpExporterWithResponseLimit,
 
   -- * Configuring the exporter
   OTLPExporterConfig (..),
@@ -72,13 +73,13 @@ import qualified Data.Vector as Vector
 import qualified Data.Word
 import Lens.Micro
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
 import qualified OpenTelemetry.Baggage as Baggage
 import OpenTelemetry.Common (optionalTimestampToMaybe)
 import OpenTelemetry.Environment
+import OpenTelemetry.Exporter.OTLP.HTTP (defaultMaxResponseBytes, httpWithResponseLimit)
 import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.Span
 import OpenTelemetry.Internal.Common.Types (FlushResult (..), ShutdownResult (..))
@@ -100,7 +101,14 @@ import Text.Read (readMaybe)
 
 -- | Initial the OTLP 'Exporter'
 otlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
-otlpExporter conf = httpOtlpExporter conf
+otlpExporter = otlpExporterWithResponseLimit defaultMaxResponseBytes
+
+
+{- | Configure the maximum decompressed HTTP response size without changing
+the existing config record. Oversized responses fail without retrying.
+-}
+otlpExporterWithResponseLimit :: (MonadIO m) => Int -> OTLPExporterConfig -> m SpanExporter
+otlpExporterWithResponseLimit = httpOtlpExporter
 
 
 --------------------------------------------------------------------------------
@@ -265,8 +273,8 @@ putWarningLn = liftIO . IO.hPutStrLn IO.stderr
 Internal helper.
 Construct a `SpanExporter` that uses HTTP/Protobuf.
 -}
-httpOtlpExporter :: (MonadIO m) => OTLPExporterConfig -> m SpanExporter
-httpOtlpExporter conf = do
+httpOtlpExporter :: (MonadIO m) => Int -> OTLPExporterConfig -> m SpanExporter
+httpOtlpExporter responseLimit conf = do
   -- TODO url parsing is jankym
   -- TODO make retryDelay and maximum retry counts configurable
   req <- liftIO $ parseRequest (Config.httpSignalEndpointUrlFromBase (otlpTracesEndpoint conf) (otlpEndpoint conf) "/v1/traces")
@@ -322,7 +330,7 @@ httpOtlpExporter conf = do
               }
       sendReq req 0 -- TODO =<< getTime for maximum cutoff
     sendReq req backoffCount = do
-      eResp <- try $ httpBS req
+      eResp <- try $ httpWithResponseLimit responseLimit req
 
       let exponentialBackoff =
             if backoffCount == maxRetryCount

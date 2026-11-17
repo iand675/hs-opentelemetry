@@ -9,6 +9,7 @@ See "OpenTelemetry.Exporter.OTLP.Span" for shared configuration ('OTLPExporterCo
 -}
 module OpenTelemetry.Exporter.OTLP.Metric (
   otlpMetricExporter,
+  otlpMetricExporterWithResponseLimit,
   resourceMetricsToExportRequest,
 ) where
 
@@ -30,7 +31,6 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
@@ -47,6 +47,7 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
+import OpenTelemetry.Exporter.OTLP.HTTP (defaultMaxResponseBytes, httpWithResponseLimit)
 import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
@@ -81,7 +82,12 @@ resourceMetricsToExportRequest rms =
 
 -- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
 otlpMetricExporter :: (MonadIO m) => OTLPExporterConfig -> m MetricExporter
-otlpMetricExporter conf = liftIO $ do
+otlpMetricExporter = otlpMetricExporterWithResponseLimit defaultMaxResponseBytes
+
+
+-- | Maximum decompressed HTTP response size in bytes.
+otlpMetricExporterWithResponseLimit :: (MonadIO m) => Int -> OTLPExporterConfig -> m MetricExporter
+otlpMetricExporterWithResponseLimit responseLimit conf = liftIO $ do
   req <- parseRequest (metricsEndpointUrl conf)
   let (encodingHeaders, encoder) = httpMetricsCompression conf
   let baseReq =
@@ -126,7 +132,7 @@ otlpMetricExporter conf = liftIO $ do
               }
       sendReq req 0
     sendReq req backoffCount = do
-      eResp <- try $ httpBS req
+      eResp <- try $ httpWithResponseLimit responseLimit req
       let exponentialBackoff =
             if backoffCount == maxRetryCount
               then pure $ Failure Nothing

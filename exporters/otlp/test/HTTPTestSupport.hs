@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module HTTPTestSupport (Signal (..), signals, exportBatch, withExporterEnv, signalPrefix, succeeded) where
+module HTTPTestSupport (Signal (..), signals, exportBatch, exportBatchWithLimit, withExporterEnv, signalPrefix, succeeded) where
 
 import Control.Exception (bracket)
 import Control.Monad (forM_, void)
@@ -49,9 +49,13 @@ succeeded _ = False
 
 
 exportBatch :: Signal -> OTLPExporterConfig -> IO ExportResult
-exportBatch signal conf = case signal of
+exportBatch = exportBatchWithLimit Nothing
+
+
+exportBatchWithLimit :: Maybe Int -> Signal -> OTLPExporterConfig -> IO ExportResult
+exportBatchWithLimit limit signal conf = case signal of
   Metrics -> do
-    ex <- otlpMetricExporter conf
+    ex <- maybe otlpMetricExporter otlpMetricExporterWithResponseLimit limit conf
     let p = SumDataPoint 0 1 (IntNumber 1) emptyAttributes V.empty
         m = MetricExportSum "test.counter" "" "1" "test" True True AggregationCumulative (V.singleton p)
         b = ResourceMetricsExport emptyMaterializedResources (V.singleton (ScopeMetricsExport "test" (V.singleton m)))
@@ -63,7 +67,7 @@ exportBatch signal conf = case signal of
     s <- Trace.createSpanWithoutCallStack tracer Context.empty "test" Trace.defaultSpanArguments
     Trace.endSpan s Nothing
     immutable <- Trace.toImmutableSpan s >>= either (fail . show) pure
-    ex <- otlpExporter conf
+    ex <- maybe otlpExporter otlpExporterWithResponseLimit limit conf
     spanExporterExport ex (H.singleton "test" (V.singleton immutable))
   Logs -> do
     records <- newIORef []
@@ -75,5 +79,5 @@ exportBatch signal conf = case signal of
     provider <- Log.createLoggerProvider [proc] Log.emptyLoggerProviderOptions
     void $ Log.emitLogRecord (Log.makeLogger provider "test") Log.emptyLogRecordArguments
     batch <- V.fromList <$> readIORef records
-    ex <- otlpLogRecordExporter conf
+    ex <- maybe otlpLogRecordExporter otlpLogRecordExporterWithResponseLimit limit conf
     Log.logRecordExporterExport ex batch

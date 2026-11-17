@@ -33,6 +33,7 @@ flag grpc
 library
   exposed-modules:
       OpenTelemetry.Exporter.OTLP
+      OpenTelemetry.Exporter.OTLP.HTTP
       OpenTelemetry.Exporter.OTLP.LogRecord
       OpenTelemetry.Exporter.OTLP.Span
       OpenTelemetry.Exporter.OTLP.Metric
@@ -46,6 +47,7 @@ library
       base >=4.7 && <5
     , bytestring
     , case-insensitive
+    , conduit
     , hs-opentelemetry-api ==1.0.*
     , hs-opentelemetry-otlp ==1.0.*
     , hs-opentelemetry-propagator-w3c ==1.0.*
@@ -74,6 +76,7 @@ test-suite hs-opentelemetry-exporter-otlp-test
   other-modules:
       HTTPConfigSpec
       HTTPTestSupport
+      ResponseLimitSpec
       Paths_hs_opentelemetry_exporter_otlp
   hs-source-dirs:
       test
