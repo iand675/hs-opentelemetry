@@ -63,10 +63,12 @@
 #elif defined(__PIC__)
   #define THREAD_LOCAL __thread
   #define TLS_IE_MODEL __attribute__((tls_model("initial-exec")))
-  #include <pthread.h>
 #else
   #define THREAD_LOCAL __thread
   #define TLS_IE_MODEL
+#endif
+
+#if !defined(_WIN32) && !defined(_WIN64)
   #include <pthread.h>
 #endif
 

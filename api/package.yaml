@@ -32,6 +32,10 @@ library:
   - cbits/hs_otel_hex.c
   - cbits/hs_otel_rng.c
   - cbits/hs_otel_time.c
+  when:
+  # BCryptGenRandom seeds the RNG in cbits/hs_otel_rng.c.
+  - condition: os(windows)
+    extra-libraries: bcrypt
   include-dirs:
   - include
   install-includes:
