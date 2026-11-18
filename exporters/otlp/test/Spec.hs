@@ -8,6 +8,7 @@ import Data.Text (Text)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import Data.Word (Word64)
+import qualified HTTPConfigSpec
 import Lens.Micro ((^.))
 import OpenTelemetry.Attributes (emptyAttributes)
 import qualified OpenTelemetry.Context as Context
@@ -35,6 +36,7 @@ import Proto.Opentelemetry.Proto.Collector.Trace.V1.TraceService (ExportTraceSer
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics as PM
 import qualified Proto.Opentelemetry.Proto.Metrics.V1.Metrics_Fields as Mf
 import qualified Proto.Opentelemetry.Proto.Trace.V1.Trace_Fields as Tf
+import qualified ResponseLimitSpec
 import Test.Hspec
 
 
@@ -45,6 +47,8 @@ decodeExport rms =
 
 main :: IO ()
 main = hspec $ do
+  HTTPConfigSpec.spec
+  ResponseLimitSpec.spec
   describe "immutableSpansToProtobuf" $ do
     it "round-trips W3C trace flags and distinguishes root, local-parent, and remote-parent spans" $ do
       let library = "test" :: InstrumentationLibrary

@@ -77,6 +77,7 @@ module OpenTelemetry.Exporter.OTLP.Internal.Config (
   otlpUserAgent,
   httpProtobufContentType,
   httpSignalEndpointUrl,
+  httpSignalEndpointUrlFromBase,
   isRetryableHttpStatus,
 
   -- * Retry-After parsing
@@ -330,11 +331,15 @@ httpSignalEndpointUrl
   -> String
   -- ^ Signal path, e.g. @\"\/v1\/traces\"@
   -> String
-httpSignalEndpointUrl perSignalEndpoint conf signalPath =
+httpSignalEndpointUrl perSignalEndpoint conf = httpSignalEndpointUrlFromBase perSignalEndpoint (otlpEndpoint conf)
+
+-- | Shared URL construction for callers retaining the legacy public config.
+httpSignalEndpointUrlFromBase :: Maybe String -> Maybe String -> String -> String
+httpSignalEndpointUrlFromBase perSignalEndpoint baseEndpoint signalPath =
   case perSignalEndpoint of
     Just url -> url
     Nothing ->
-      let base = maybe "http://localhost:4318" id (otlpEndpoint conf)
+      let base = takeWhile (\c -> c /= '?' && c /= '#') (fromMaybe "http://localhost:4318" baseEndpoint)
       in ensureTrailingSlash base <> dropWhile (== '/') signalPath
 
 

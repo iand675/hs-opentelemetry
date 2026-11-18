@@ -9,6 +9,7 @@ See "OpenTelemetry.Exporter.OTLP.Span" for shared configuration ('OTLPExporterCo
 -}
 module OpenTelemetry.Exporter.OTLP.Metric (
   otlpMetricExporter,
+  otlpMetricExporterWithResponseLimit,
   resourceMetricsToExportRequest,
 ) where
 
@@ -21,7 +22,6 @@ import Data.Bits (shiftL)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
-import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.ProtoLens (defMessage, encodeMessage)
 import Data.Text (Text)
@@ -31,7 +31,6 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as VG
 import Lens.Micro ((&), (.~))
 import Network.HTTP.Client
-import Network.HTTP.Simple (httpBS)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status
 import OpenTelemetry.Attributes
@@ -48,6 +47,8 @@ import OpenTelemetry.Exporter.Metric (
   ScopeMetricsExport (..),
   SumDataPoint (..),
  )
+import OpenTelemetry.Exporter.OTLP.HTTP (defaultMaxResponseBytes, httpWithResponseLimit)
+import qualified OpenTelemetry.Exporter.OTLP.Internal.Config as Config
 import OpenTelemetry.Exporter.OTLP.Span (CompressionFormat (..), OTLPExporterConfig (..))
 import OpenTelemetry.Internal.Common.Types (ExportResult (..), FlushResult (..), InstrumentationLibrary (..), ShutdownResult (..))
 import OpenTelemetry.Resource (MaterializedResources, getMaterializedResourcesAttributes, getMaterializedResourcesSchema)
@@ -67,12 +68,6 @@ defaultExporterTimeout :: Int
 defaultExporterTimeout = 10_000
 
 
-httpHost :: OTLPExporterConfig -> String
-httpHost conf = fromMaybe defaultHost (otlpEndpoint conf)
-  where
-    defaultHost = "http://localhost:4318"
-
-
 httpProtobufMimeType :: C.ByteString
 httpProtobufMimeType = "application/x-protobuf"
 
@@ -87,7 +82,12 @@ resourceMetricsToExportRequest rms =
 
 -- | OTLP 'MetricExporter' using HTTP\/Protobuf (same transport as 'OpenTelemetry.Exporter.OTLP.Span.otlpExporter').
 otlpMetricExporter :: (MonadIO m) => OTLPExporterConfig -> m MetricExporter
-otlpMetricExporter conf = liftIO $ do
+otlpMetricExporter = otlpMetricExporterWithResponseLimit defaultMaxResponseBytes
+
+
+-- | Maximum decompressed HTTP response size in bytes.
+otlpMetricExporterWithResponseLimit :: (MonadIO m) => Int -> OTLPExporterConfig -> m MetricExporter
+otlpMetricExporterWithResponseLimit responseLimit conf = liftIO $ do
   req <- parseRequest (metricsEndpointUrl conf)
   let (encodingHeaders, encoder) = httpMetricsCompression conf
   let baseReq =
@@ -132,7 +132,7 @@ otlpMetricExporter conf = liftIO $ do
               }
       sendReq req 0
     sendReq req backoffCount = do
-      eResp <- try $ httpBS req
+      eResp <- try $ httpWithResponseLimit responseLimit req
       let exponentialBackoff =
             if backoffCount == maxRetryCount
               then pure $ Failure Nothing
@@ -181,25 +181,14 @@ httpMetricsBaseHeaders conf req =
   concat
     [ [(hContentType, httpProtobufMimeType)]
     , [(hAccept, httpProtobufMimeType)]
-    , fromMaybe [] (otlpHeaders conf)
-    , fromMaybe [] (otlpMetricsHeaders conf)
+    , fromMaybe [] (otlpMetricsHeaders conf <|> otlpHeaders conf)
     , requestHeaders req
     ]
 
 
 -- | Like traces: default @http:\/\/localhost:4318\/v1\/metrics@, or 'otlpMetricsEndpoint' if set (path appended when missing).
 metricsEndpointUrl :: OTLPExporterConfig -> String
-metricsEndpointUrl conf =
-  case otlpMetricsEndpoint conf of
-    Nothing -> httpHost conf <> "/v1/metrics"
-    Just e ->
-      if "/v1/" `isInfixOf` e
-        then e
-        else trimTrailingSlash e <> "/v1/metrics"
-
-
-trimTrailingSlash :: String -> String
-trimTrailingSlash = reverse . dropWhile (== '/') . reverse
+metricsEndpointUrl conf = Config.httpSignalEndpointUrlFromBase (otlpMetricsEndpoint conf) (otlpEndpoint conf) "/v1/metrics"
 
 
 anyMetricsToExport :: Vector ResourceMetricsExport -> Bool
