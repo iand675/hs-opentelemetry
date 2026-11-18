@@ -1,0 +1,38 @@
+{%- macro hs_string(value) -%}
+"{{ value | replace("\\", "\\\\") | replace('"', '\\"') | replace("\n", "\\n") | replace("\r", "\\r") | replace("\t", "\\t") | replace("\b", "\\b") | replace("\f", "\\f") }}"
+{%- endmacro -%}
+
+{%- macro factory_name(metric, value_type, observable) -%}
+{{ "create_observable_" if observable else "create_" }}{{ metric.haskell_name }}{{ "_" ~ (value_type | lower) if metric.instrument != "histogram" else "" }}
+{%- endmacro -%}
+
+{%- macro factory(metric, value_type, observable, exports) %}
+{%- set name = factory_name(metric, value_type, observable) %}
+{%- set kind = {"counter": "Counter", "updowncounter": "UpDownCounter", "gauge": "Gauge", "histogram": "Histogram"}[metric.instrument] %}
+{%- set result = ("Observable" if observable else "") ~ kind %}
+{%- set field = "meterCreate" ~ result ~ (value_type if metric.instrument != "histogram" else "") %}
+{% if exports %}
+  {{ name }},
+{% else %}
+-- | Creates @{{ metric.metric_name }}@ in @{{ metric.unit }}@.
+-- Stability: {{ metric.stability | default("unspecified") | replace("_", " ") }}.
+{% if metric.deprecated is defined %}
+-- Deprecated upstream; see the generated metric catalogue for migration guidance.
+{% endif %}
+{{ name }} :: Meter -> AdvisoryParameters -> {{ "[ObservableResult " ~ value_type ~ " -> IO ()] -> " if observable else "" }}IO {{ "Histogram" if metric.instrument == "histogram" else "(" ~ result ~ " " ~ value_type ~ ")" }}
+{{ name }} meter advisory{{ " callbacks" if observable else "" }} =
+  {{ field }} meter {{ hs_string(metric.metric_name) }} (Just {{ hs_string(metric.unit) }}) (Just {{ hs_string(metric.brief) }}) advisory{{ " callbacks" if observable else "" }}
+
+{% endif %}
+{%- endmacro %}
+
+{%- macro factories(metric, exports) %}
+{% if metric.instrument == "histogram" %}
+{{ factory(metric, "Double", false, exports) }}
+{% else %}
+{% for value_type in metric.haskell_value_types %}
+{{ factory(metric, value_type, false, exports) }}
+{{ factory(metric, value_type, true, exports) }}
+{% endfor %}
+{% endif %}
+{%- endmacro %}

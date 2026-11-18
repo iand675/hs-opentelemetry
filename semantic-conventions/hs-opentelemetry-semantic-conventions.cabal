@@ -19,6 +19,9 @@ extra-doc-files: CHANGELOG.md
                 README.md
 extra-source-files: dev/templates/haskell/weaver.yaml
                     dev/templates/haskell/model.json.j2
+                    dev/templates/haskell/Metrics.hs.j2
+                    dev/templates/haskell/metrics.md.j2
+                    dev/templates/haskell/metric_macros.j2
                     Makefile
 
 source-repository head

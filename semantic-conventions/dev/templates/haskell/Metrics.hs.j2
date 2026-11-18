@@ -1,0 +1,33 @@
+{% import "metric_macros.j2" as metrics %}
+-- Generated from OpenTelemetry semantic conventions 1.45.0 by Weaver 0.28.0.
+-- Edit the templates, not this file.
+{-# LANGUAGE OverloadedStrings #-}
+
+-- | Metric constructors with upstream names, units and descriptions.
+--
+-- Choose synchronous or observable factories for the measurement being made.
+-- Supply advisory parameters and record measurements in each metric's unit.
+-- The generated catalogue documents attributes, stability and deprecations.
+module OpenTelemetry.SemanticConventions.Metrics (
+{% for metric in ctx %}
+{{ metrics.factories(metric, true) }}
+{% endfor %}
+) where
+
+import Data.Int (Int64)
+import OpenTelemetry.Metric.Core (
+  AdvisoryParameters,
+  Counter,
+  Gauge,
+  Histogram,
+  Meter (..),
+  ObservableCounter,
+  ObservableGauge,
+  ObservableResult,
+  ObservableUpDownCounter,
+  UpDownCounter,
+ )
+
+{% for metric in ctx %}
+{{ metrics.factories(metric, false) }}
+{% endfor %}

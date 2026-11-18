@@ -38,6 +38,7 @@ in rec {
     hs-opentelemetry-sdk = ../sdk;
     hs-opentelemetry-otlp = ../otlp;
     hs-opentelemetry-semantic-conventions = ../semantic-conventions;
+    hs-opentelemetry-semantic-conventions-metrics = ../semantic-conventions-metrics;
     hs-opentelemetry-exporter-handle = ../exporters/handle;
     hs-opentelemetry-exporter-in-memory = ../exporters/in-memory;
     hs-opentelemetry-exporter-otlp = ../exporters/otlp;

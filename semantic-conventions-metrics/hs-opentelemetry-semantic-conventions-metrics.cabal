@@ -1,0 +1,40 @@
+cabal-version: 2.4
+name: hs-opentelemetry-semantic-conventions-metrics
+version: 1.45.0.0
+synopsis: Generated OpenTelemetry semantic metric constructors
+description: Typed metric constructors and a generated catalogue from OpenTelemetry semantic conventions 1.45.0.
+license: BSD-3-Clause
+license-file: LICENSE
+author: Ian Duncan
+maintainer: ian@iankduncan.com
+homepage: https://github.com/iand675/hs-opentelemetry
+bug-reports: https://github.com/iand675/hs-opentelemetry/issues
+category: OpenTelemetry, Telemetry, Monitoring
+build-type: Simple
+extra-doc-files: README.md CHANGELOG.md docs/metrics.md
+
+source-repository head
+  type: git
+  location: https://github.com/iand675/hs-opentelemetry
+
+library
+  hs-source-dirs: src
+  exposed-modules: OpenTelemetry.SemanticConventions.Metrics
+  build-depends: base >= 4.7 && < 5,
+                 hs-opentelemetry-api ^>= 1.0
+  default-language: Haskell2010
+  ghc-options: -Wall
+
+test-suite metric-constructors-test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Spec.hs
+  build-depends: base >= 4.7 && < 5,
+                 hs-opentelemetry-semantic-conventions-metrics,
+                 hs-opentelemetry-api ^>= 1.0,
+                 hs-opentelemetry-sdk ^>= 1.0,
+                 hspec,
+                 text,
+                 vector
+  default-language: Haskell2010
+  ghc-options: -Wall -threaded -rtsopts
