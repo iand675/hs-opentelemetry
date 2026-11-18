@@ -33,6 +33,7 @@ packages:
 - instrumentation/wai
 - instrumentation/yesod
 - utils/exceptions
+- utils/sqlcommenter
 - examples/hspec
 - examples/otlp-demo
 - examples/yesod-minimal
