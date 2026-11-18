@@ -44,3 +44,4 @@ tests:
     - hs-opentelemetry-exporter-in-memory ^>= 1.0
     - hspec
     - text
+    - transformers

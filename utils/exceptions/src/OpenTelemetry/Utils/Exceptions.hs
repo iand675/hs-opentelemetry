@@ -27,23 +27,33 @@ import OpenTelemetry.Trace.Core (ToAttribute (..), codeAttributes, endSpan, reco
 import qualified OpenTelemetry.Trace.Core as TraceCore
 
 
+{- | Like 'Control.Monad.Catch.generalBracket', but hands @after@ the exception,
+if any, that ended the action.
+
+It is built on 'MonadMask.generalBracket' rather than on 'MonadMask.try', so
+@after@ also runs when the action ends without an exception and without a
+result: a 'Control.Monad.Trans.Except.throwE' under @ExceptT@, or 'Nothing'
+under @MaybeT@ ('MonadMask.ExitCaseAbort'). With 'MonadMask.try', those leave
+the span open and its context installed as the parent of every later span on
+the thread.
+-}
 bracketError' :: (MonadMask m) => m a -> (Maybe SomeException -> a -> m b) -> (a -> m c) -> m c
-bracketError' before after thing = MonadMask.mask $ \restore -> do
-  x <- before
-  res1 <- MonadMask.try $ restore $ thing x
-  case res1 of
-    Left (e1 :: SomeException) -> do
-      -- explicitly ignore exceptions from after. We know that
-      -- no async exceptions were thrown there, so therefore
-      -- the stronger exception must come from thing
-      --
-      -- https://github.com/fpco/safe-exceptions/issues/2
-      _ :: Either SomeException b <-
-        MonadMask.try $ MonadMask.uninterruptibleMask_ $ after (Just e1) x
-      MonadMask.throwM e1
-    Right y -> do
-      MonadMask.uninterruptibleMask_ $ after Nothing x
-      return y
+bracketError' before after thing = do
+  (y, _) <- MonadMask.generalBracket before release thing
+  pure y
+  where
+    release x exitCase = case exitCase of
+      MonadMask.ExitCaseSuccess _ -> () <$ MonadMask.uninterruptibleMask_ (after Nothing x)
+      MonadMask.ExitCaseAbort -> () <$ MonadMask.uninterruptibleMask_ (after Nothing x)
+      MonadMask.ExitCaseException e1 -> do
+        -- explicitly ignore exceptions from after. We know that
+        -- no async exceptions were thrown there, so therefore
+        -- the stronger exception must come from thing
+        --
+        -- https://github.com/fpco/safe-exceptions/issues/2
+        _ :: Either SomeException b <-
+          MonadMask.try $ MonadMask.uninterruptibleMask_ $ after (Just e1) x
+        pure ()
 
 
 -- | The simplest function for annotating code with trace information.

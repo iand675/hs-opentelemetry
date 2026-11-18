@@ -5,9 +5,13 @@ module Main where
 
 import Control.Exception (IOException, throwIO, try)
 import Control.Monad (filterM)
+import Control.Monad.Trans.Except (runExceptT, throwE)
+import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.IORef
 import Data.Text (Text)
 import OpenTelemetry.Attributes (Attributes, lookupAttribute)
+import OpenTelemetry.Context (lookupSpan)
+import OpenTelemetry.Context.ThreadLocal (getContext)
 import OpenTelemetry.Attributes.Attribute (Attribute (..), PrimitiveAttribute (..))
 import OpenTelemetry.Exporter.InMemory.Span (inMemoryListExporter)
 import OpenTelemetry.Trace.Core
@@ -107,3 +111,32 @@ spec = describe "OpenTelemetry.Utils.Exceptions" $ do
         (inner : _) -> case spanParent inner of
           Nothing -> expectationFailure "expected inner span to have a parent"
           Just _ -> pure ()
+
+    it "ends the span and restores the context on an ExceptT short-circuit" $ do
+      (spans, (result, leftover)) <- withTracer $ \t -> do
+        r <-
+          runExceptT $
+            inSpanM t "aborted" defaultSpanArguments $
+              throwE ("nope" :: Text)
+        ctx <- getContext
+        pure (r :: Either Text (), lookupSpan ctx)
+      result `shouldBe` Left "nope"
+      names <- mapM getSpanName spans
+      names `shouldBe` ["aborted"]
+      case leftover of
+        Nothing -> pure ()
+        Just _ -> expectationFailure "the aborted span is still in the thread's context"
+
+    it "ends the span and restores the context on a MaybeT short-circuit" $ do
+      (spans, (result, leftover)) <- withTracer $ \t -> do
+        r <-
+          runMaybeT $
+            inSpanM t "aborted" defaultSpanArguments (MaybeT (pure Nothing))
+        ctx <- getContext
+        pure (r :: Maybe (), lookupSpan ctx)
+      result `shouldBe` Nothing
+      names <- mapM getSpanName spans
+      names `shouldBe` ["aborted"]
+      case leftover of
+        Nothing -> pure ()
+        Just _ -> expectationFailure "the aborted span is still in the thread's context"

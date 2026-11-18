@@ -56,4 +56,5 @@ test-suite exceptions-test
     , hs-opentelemetry-utils-exceptions ==1.0.*
     , hspec
     , text
+    , transformers
   default-language: Haskell2010

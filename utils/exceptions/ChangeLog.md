@@ -1,5 +1,12 @@
 # Changelog for exceptions
 
+## Unreleased
+
+- `inSpanM`, `inSpanM'` and `inSpanM''` now end the span and restore the
+  parent context when the action short-circuits without an exception, as
+  `throwE` does under `ExceptT` and `Nothing` under `MaybeT`. They used
+  `try`, which skipped the cleanup in that case.
+
 ## 1.0.0.0 - 2026-05-29
 
 - Promoted to 1.0.0.0 for the hs-opentelemetry 1.0 release.
