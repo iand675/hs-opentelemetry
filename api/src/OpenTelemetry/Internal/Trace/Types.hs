@@ -12,6 +12,8 @@ Stability   : experimental
 -}
 module OpenTelemetry.Internal.Trace.Types where
 
+import Control.Concurrent.Async (Async)
+import Control.Concurrent.MVar (MVar)
 import Control.Exception (SomeException)
 import Control.Monad.IO.Class
 import Data.Bits
@@ -736,6 +738,17 @@ Spec: <https://opentelemetry.io/docs/specs/otel/trace/sdk/#sampler>
 
 @since 0.0.1.0
 -}
+
+-- Internal state is shared when the same managed sampler is delegated to
+-- more than once. Cleanup waits for active sampling calls to leave.
+data SamplerLifecycle = SamplerLifecycle
+  { samplerLifecycleState :: !(MVar (Bool, Int))
+  , samplerLifecycleDrained :: !(MVar ())
+  , samplerLifecycleShutdown :: !(MVar (Maybe (Async ShutdownResult)))
+  , samplerLifecycleCleanup :: !(IO ShutdownResult)
+  }
+
+
 data Sampler
   = -- | Always returns 'RecordAndSample'.
     AlwaysOnSampler
@@ -757,6 +770,8 @@ data Sampler
     Spec: <https://opentelemetry.io/docs/specs/otel/trace/sdk/#shouldsample>
     -}
     CustomSampler !Text !(Context -> TraceId -> Text -> SpanArguments -> InstrumentationLibrary -> IO SamplingDecision)
+  | -- | Resource-owning sampler, created with withSamplerShutdown.
+    SamplerWithLifecycle !Sampler !SamplerLifecycle
 
 
 {- | Options for 'ParentBasedSampler'. Each field designates which sampler

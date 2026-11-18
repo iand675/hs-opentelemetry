@@ -44,6 +44,7 @@ main = hspec $ do
   IdCodec.spec
   TraceMonad.spec
   Sampler.spec
+  Sampler.lifecycleSpec
   TraceFlags.spec
   Tracer.spec
   Utils.spec

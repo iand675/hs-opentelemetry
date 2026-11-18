@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add opt-in sampler cleanup with `withSamplerShutdown` and `shutdownSampler`.
+  Provider shutdown cleans up resource-owning delegates once and waits for
+  in-flight sampling before releasing resources. Timed-out cleanup continues
+  safely in the background; later shutdown calls join it. Existing sampler
+  constructors and static sampling behavior remain supported.
+
+
 ## 1.0.0.0 - 2026-05-29
 
 ### Full Spec conformance against 1.55.0

@@ -1,7 +1,10 @@
 module OpenTelemetry.Trace.SamplerSpec where
 
+import Control.Concurrent (newEmptyMVar, putMVar, readMVar)
+import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Monad
 import qualified Data.ByteString.Char8 as BS
+import Data.IORef
 import qualified Data.Text as T
 import Data.Word (Word64)
 import qualified OpenTelemetry.Context as Context
@@ -9,7 +12,7 @@ import OpenTelemetry.Trace.Core
 import OpenTelemetry.Trace.Id
 import OpenTelemetry.Trace.Sampler (
   ParentBasedOptions (..),
-  Sampler,
+  Sampler (..),
   SamplingDecision (..),
   SamplingResult (..),
   alwaysOff,
@@ -19,9 +22,12 @@ import OpenTelemetry.Trace.Sampler (
   parentBased,
   parentBasedOptions,
   shouldSample,
+  shutdownSampler,
   traceIdRatioBased,
+  withSamplerShutdown,
  )
 import qualified OpenTelemetry.Trace.TraceState as TraceState
+import System.Timeout (timeout)
 import Test.Hspec
 import Text.Printf (printf)
 
@@ -478,3 +484,61 @@ spec = describe "Sampler" $ do
     it "clamps negative ratio to 0" $ do
       let desc = getDescription (traceIdRatioBased (-1.0))
       desc `shouldSatisfy` T.isPrefixOf "TraceIdRatioBased{"
+
+
+-- Separate entry point keeps these stateful tests independent of pure sampler cases.
+lifecycleSpec :: Spec
+lifecycleSpec = describe "sampler lifecycle" $ do
+  it "cleans a shared delegate only once across composite and concurrent shutdown" $ do
+    calls <- newIORef (0 :: Int)
+    managed <- withSamplerShutdown alwaysOn (modifyIORef' calls (+ 1) >> pure ShutdownSuccess)
+    let composite =
+          alwaysRecord $
+            parentBased $
+              (parentBasedOptions managed)
+                { remoteParentSampled = managed
+                , localParentSampled = managed
+                }
+    concurrently (shutdownSampler composite Nothing) (shutdownSampler composite Nothing) `shouldReturn` (ShutdownSuccess, ShutdownSuccess)
+    shutdownSampler managed Nothing `shouldReturn` ShutdownSuccess
+    readIORef calls `shouldReturn` 1
+    samplingOutcome <$> shouldSample composite Context.empty (fst (generateTestTraceId)) "closed" defaultSpanArguments "test" `shouldReturn` Drop
+
+  it "keeps in-flight sampling safe and drops new calls while closing" $ do
+    entered <- newEmptyMVar
+    release <- newEmptyMVar
+    cleaned <- newEmptyMVar
+    let custom = CustomSampler "resource" (\_ _ _ _ _ -> putMVar entered () >> readMVar release >> pure (SamplingDecision RecordAndSample mempty TraceState.empty))
+    managed <- withSamplerShutdown custom (putMVar cleaned () >> pure ShutdownSuccess)
+    sample <- async $ shouldSample managed Context.empty (fst generateTestTraceId) "active" defaultSpanArguments "test"
+    readMVar entered
+    shutdownSampler managed (Just 10000) `shouldReturn` ShutdownTimeout
+    timeout 10000 (readMVar cleaned) `shouldReturn` Nothing
+    samplingOutcome <$> shouldSample managed Context.empty (fst generateTestTraceId) "late" defaultSpanArguments "test" `shouldReturn` Drop
+    putMVar release ()
+    samplingOutcome <$> wait sample `shouldReturn` RecordAndSample
+    timeout 100000 (readMVar cleaned) `shouldReturn` Just ()
+    shutdownSampler managed Nothing `shouldReturn` ShutdownSuccess
+
+  it "invokes sampler cleanup when its provider shuts down" $ do
+    calls <- newIORef (0 :: Int)
+    managed <- withSamplerShutdown alwaysOn (modifyIORef' calls (+ 1) >> pure ShutdownSuccess)
+    provider <- createTracerProvider [] emptyTracerProviderOptions {tracerProviderOptionsSampler = managed}
+    shutdownTracerProvider provider Nothing `shouldReturn` ShutdownSuccess
+    readIORef calls `shouldReturn` 1
+
+  it "reports sampler cleanup failure through provider shutdown" $ do
+    managed <- withSamplerShutdown alwaysOn (pure ShutdownFailure)
+    provider <- createTracerProvider [] emptyTracerProviderOptions {tracerProviderOptionsSampler = managed}
+    shutdownTracerProvider provider Nothing `shouldReturn` ShutdownFailure
+
+  it "does not repeat a cleanup action that throws" $ do
+    calls <- newIORef (0 :: Int)
+    managed <- withSamplerShutdown alwaysOn (modifyIORef' calls (+ 1) >> ioError (userError "cleanup"))
+    shutdownSampler managed Nothing `shouldReturn` ShutdownFailure
+    shutdownSampler managed Nothing `shouldReturn` ShutdownFailure
+    readIORef calls `shouldReturn` 1
+
+
+generateTestTraceId :: (TraceId, ())
+generateTestTraceId = (either error id (baseEncodedToTraceId Base16 "00000000000000000000000000000001"), ())
