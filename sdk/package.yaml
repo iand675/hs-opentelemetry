@@ -67,6 +67,7 @@ library:
   - OpenTelemetry.Trace
   - OpenTelemetry.Trace.Id.Generator.Default
   other-modules:
+  - OpenTelemetry.Internal.MetricExport
   - OpenTelemetry.Resource.Detector.Internal
   - Paths_hs_opentelemetry_sdk
   ghc-options: -Wall
